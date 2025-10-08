@@ -1,27 +1,57 @@
 import { useState, useEffect, useRef } from "react";
 
-export const useCamera = () => {
+export interface CameraDevice {
+  deviceId: string;
+  label: string;
+}
+
+export const useCamera = (selectedDeviceId?: string) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [isReady, setIsReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [availableCameras, setAvailableCameras] = useState<CameraDevice[]>([]);
 
   useEffect(() => {
-    startCamera();
+    enumerateCameras();
+  }, []);
+
+  useEffect(() => {
+    if (availableCameras.length > 0) {
+      startCamera(selectedDeviceId);
+    }
     return () => {
       stopCamera();
     };
-  }, []);
+  }, [selectedDeviceId, availableCameras]);
 
-  const startCamera = async () => {
+  const enumerateCameras = async () => {
     try {
-      const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: "user",
-          width: { ideal: 1920 },
-          height: { ideal: 1080 }
-        }
-      });
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const videoDevices = devices
+        .filter(device => device.kind === "videoinput")
+        .map(device => ({
+          deviceId: device.deviceId,
+          label: device.label || `Camera ${device.deviceId.slice(0, 5)}`
+        }));
+      setAvailableCameras(videoDevices);
+    } catch (err) {
+      console.error("Error enumerating cameras:", err);
+    }
+  };
+
+  const startCamera = async (deviceId?: string) => {
+    try {
+      // Stop existing stream first
+      stopCamera();
+
+      const constraints: MediaStreamConstraints = {
+        video: deviceId 
+          ? { deviceId: { exact: deviceId }, width: { ideal: 1920 }, height: { ideal: 1080 } }
+          : { facingMode: "user", width: { ideal: 1920 }, height: { ideal: 1080 } }
+      };
+
+      const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
       
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
@@ -65,6 +95,7 @@ export const useCamera = () => {
     isReady,
     error,
     captureFrame,
-    stopCamera
+    stopCamera,
+    availableCameras
   };
 };

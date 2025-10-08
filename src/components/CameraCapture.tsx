@@ -1,7 +1,14 @@
 import { useEffect, useRef, useState } from "react";
-import { Camera, RotateCcw } from "lucide-react";
+import { Camera, RotateCcw, Video } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface CameraCaptureProps {
   onCapture: (imageData: string) => void;
@@ -14,25 +21,51 @@ export const CameraCapture = ({ onCapture, selectedBackground }: CameraCapturePr
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [countdown, setCountdown] = useState<number | null>(null);
   const [isCameraReady, setIsCameraReady] = useState(false);
+  const [availableCameras, setAvailableCameras] = useState<MediaDeviceInfo[]>([]);
+  const [selectedCameraId, setSelectedCameraId] = useState<string>("");
 
   useEffect(() => {
-    startCamera();
+    enumerateCameras();
+  }, []);
+
+  useEffect(() => {
+    if (selectedCameraId || availableCameras.length > 0) {
+      startCamera(selectedCameraId || availableCameras[0]?.deviceId);
+    }
     return () => {
       if (stream) {
         stream.getTracks().forEach(track => track.stop());
       }
     };
-  }, []);
+  }, [selectedCameraId]);
 
-  const startCamera = async () => {
+  const enumerateCameras = async () => {
     try {
-      const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: { 
-          facingMode: "user",
-          width: { ideal: 1920 },
-          height: { ideal: 1080 }
-        }
-      });
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const videoDevices = devices.filter(device => device.kind === "videoinput");
+      setAvailableCameras(videoDevices);
+      if (videoDevices.length > 0 && !selectedCameraId) {
+        setSelectedCameraId(videoDevices[0].deviceId);
+      }
+    } catch (error) {
+      console.error("Error enumerating cameras:", error);
+    }
+  };
+
+  const startCamera = async (deviceId?: string) => {
+    try {
+      // Stop existing stream first
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+      }
+
+      const constraints: MediaStreamConstraints = {
+        video: deviceId 
+          ? { deviceId: { exact: deviceId }, width: { ideal: 1920 }, height: { ideal: 1080 } }
+          : { facingMode: "user", width: { ideal: 1920 }, height: { ideal: 1080 } }
+      };
+
+      const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
       
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
@@ -106,6 +139,25 @@ export const CameraCapture = ({ onCapture, selectedBackground }: CameraCapturePr
           <div className="text-[200px] font-bold text-primary glow-teal animate-scale-in">
             {countdown}
           </div>
+        </div>
+      )}
+
+      {/* Camera Selector */}
+      {availableCameras.length > 1 && (
+        <div className="absolute top-8 left-1/2 -translate-x-1/2 z-10">
+          <Select value={selectedCameraId} onValueChange={setSelectedCameraId}>
+            <SelectTrigger className="w-[280px] bg-black/50 backdrop-blur-sm border-primary/30 text-white">
+              <Video className="w-4 h-4 mr-2" />
+              <SelectValue placeholder="Select camera" />
+            </SelectTrigger>
+            <SelectContent>
+              {availableCameras.map((camera) => (
+                <SelectItem key={camera.deviceId} value={camera.deviceId}>
+                  {camera.label || `Camera ${camera.deviceId.slice(0, 8)}`}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       )}
 
