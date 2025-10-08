@@ -11,31 +11,31 @@ const backgrounds = [
     id: "glares",
     name: "Particle Field",
     image: glaresImg,
-    prompt: "Place the person in a magical scene with scattered orange glowing particles floating around them on a black background, ethereal atmosphere, dramatic lighting"
+    prompt: "Keep the person's face and body exactly as they are. Only change their clothing to sleek black and orange tech outfit. Place them in a magical scene with scattered orange glowing particles floating around on a black background, ethereal atmosphere, dramatic lighting. Maintain their facial features, skin tone, and hair exactly."
   },
   {
     id: "jungle",
     name: "Jungle Depths",
     image: jungleImg,
-    prompt: "Place the person in a mysterious dark teal jungle environment with bokeh light effects and natural foliage, atmospheric depth"
+    prompt: "Keep the person's face, hair and body exactly as they are. Only change their clothing to explorer outfit with earthy tones - khaki vest and cargo pants. Place them in a mysterious dark teal jungle environment with bokeh light effects and natural foliage. Do not cover their face. Maintain all facial features identical."
   },
   {
     id: "ocean",
     name: "Underwater",
     image: oceanImg,
-    prompt: "Place the person in a deep underwater scene with bubbles rising around them, dark teal water, serene aquatic environment"
+    prompt: "Keep the person's face completely visible and unchanged. Only change their clothing to a modern wetsuit in dark blue and teal colors. Place them in a deep underwater scene with bubbles rising around, dark teal water. No mask, no diving gear on face. Maintain their facial features, expression, and hair exactly as in original photo."
   },
   {
     id: "rain",
     name: "Rain Storm",
     image: rainImg,
-    prompt: "Add dramatic rain falling around the person on a dark teal background, moody atmosphere, water droplets visible"
+    prompt: "Keep the person's face and features exactly as they are. Only change their clothing to stylish raincoat or jacket in dark colors. Add dramatic rain falling around them on a dark teal background, moody atmosphere, water droplets. Face must remain completely visible and unchanged. Maintain all facial features identical."
   },
   {
     id: "leafs",
     name: "Nature Bokeh",
     image: leafsImg,
-    prompt: "Place the person among dark teal leaves with beautiful bokeh light effects, organic natural background, elegant atmosphere"
+    prompt: "Keep the person's face, hair and body exactly as they are. Only change their clothing to elegant natural tones outfit in greens and teals. Place them among dark teal leaves with beautiful bokeh light effects. Face must remain visible and unchanged. Maintain their exact facial features, skin tone, and expression."
   }
 ];
 

@@ -24,14 +24,92 @@ const SharePhoto = () => {
     }
   }, [shareCode]);
 
-  const handleDownload = () => {
+  const handleDownload = async () => {
     if (photo) {
-      const link = document.createElement("a");
-      link.href = photo.processedImageBase64;
-      link.download = `photobooth-${photo.shareCode}.jpg`;
-      link.click();
-      toast.success("Photo downloaded!");
+      try {
+        // Burn branding into the image before downloading
+        const brandedImageUrl = await burnBrandingIntoImage(photo.processedImageBase64);
+        
+        const link = document.createElement("a");
+        link.href = brandedImageUrl;
+        link.download = `siemens-photobooth-${photo.shareCode}.jpg`;
+        link.click();
+        toast.success("Photo downloaded!");
+      } catch (error) {
+        console.error("Download error:", error);
+        toast.error("Failed to download photo");
+      }
     }
+  };
+
+  const burnBrandingIntoImage = (imageDataUrl: string): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        canvas.width = img.width;
+        canvas.height = img.height;
+        
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          reject(new Error("Failed to get canvas context"));
+          return;
+        }
+
+        // Draw the base image
+        ctx.drawImage(img, 0, 0);
+
+        // Calculate responsive sizes based on image dimensions
+        const scale = img.width / 1024;
+        const topPadding = 24 * scale;
+        const bottomPadding = 24 * scale;
+        const sidePadding = 24 * scale;
+
+        // Top branding - "Siemens Healthineers"
+        ctx.save();
+        ctx.fillStyle = "#ffffff";
+        ctx.font = `bold ${48 * scale}px Arial, sans-serif`;
+        ctx.textAlign = "center";
+        ctx.shadowColor = "rgba(0, 0, 0, 0.8)";
+        ctx.shadowBlur = 10 * scale;
+        ctx.shadowOffsetX = 2 * scale;
+        ctx.shadowOffsetY = 2 * scale;
+        ctx.fillText("Siemens Healthineers", img.width / 2, topPadding + (48 * scale));
+        ctx.restore();
+
+        // Bottom branding - "Do less."
+        ctx.save();
+        ctx.fillStyle = "#ee6602";
+        ctx.font = `bold ${64 * scale}px Arial, sans-serif`;
+        ctx.textAlign = "left";
+        ctx.shadowColor = "rgba(0, 0, 0, 0.8)";
+        ctx.shadowBlur = 10 * scale;
+        ctx.shadowOffsetX = 2 * scale;
+        ctx.shadowOffsetY = 2 * scale;
+        ctx.fillText("Do less.", sidePadding, img.height - bottomPadding - (40 * scale));
+        ctx.restore();
+
+        // Bottom subtitle
+        ctx.save();
+        ctx.fillStyle = "#ffffff";
+        ctx.font = `${28 * scale}px Arial, sans-serif`;
+        ctx.textAlign = "left";
+        ctx.shadowColor = "rgba(0, 0, 0, 0.8)";
+        ctx.shadowBlur = 8 * scale;
+        ctx.shadowOffsetX = 2 * scale;
+        ctx.shadowOffsetY = 2 * scale;
+        ctx.fillText("Experience the future", sidePadding, img.height - bottomPadding);
+        ctx.restore();
+
+        const brandedDataUrl = canvas.toDataURL("image/jpeg", 0.95);
+        resolve(brandedDataUrl);
+      };
+
+      img.onerror = () => reject(new Error("Failed to load image"));
+      img.src = imageDataUrl;
+    });
   };
 
   if (loading) {
