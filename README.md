@@ -26,32 +26,52 @@ A responsive Photo Booth web application designed for iPad use that allows users
 - **QR Codes**: qrcode.react
 - **Build Tool**: Vite
 
-## Getting Started
+## 🚀 Quick Start
 
-### Prerequisites
-
-- Node.js 18+ and npm
-- Camera-enabled device (iPad recommended)
-
-### Installation
+### Easy Setup (Recommended)
 
 ```bash
-# Install dependencies
+# Run the setup script
+./setup-demo.sh
+
+# Start the development server
+npm run dev
+```
+
+Then open **http://localhost:8080** in your browser.
+
+### Manual Setup
+
+```bash
+# 1. Install dependencies
 npm install
 
-# Start development server
+# 2. Create .env file
+cp env.example .env
+
+# 3. Edit .env and add your fal.ai API key
+# Get your key from: https://fal.ai/dashboard/keys
+
+# 4. Start development server
 npm run dev
 ```
 
 ### Environment Variables
 
-Create a `.env` file:
+Edit `.env` file:
 
 ```env
-FAL_KEY=your_fal_api_key
-FAL_MODEL=fal-ai/gemini-25-flash-image/edit
-# OR use SeedDream: fal-ai/bytedance/seedream/v4/edit
+VITE_FAL_KEY=your_fal_api_key_here
+VITE_FAL_MODEL=fal-ai/bytedance/seedream/v4/edit
+# OR use Gemini: fal-ai/gemini-25-flash-image/edit
+VITE_BASE_URL=http://localhost:8080
 ```
+
+### 📚 Documentation
+
+- **[DEMO_SETUP.md](./DEMO_SETUP.md)** - Complete demo setup guide
+- **[CAMERA_SETUP.md](./CAMERA_SETUP.md)** - Camera troubleshooting & HTTPS setup
+- **[IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md)** - Backend integration plan
 
 ## Usage
 
@@ -84,24 +104,39 @@ The app supports two fal.ai models (configurable via `FAL_MODEL` env variable):
 ```
 src/
 ├── components/
-│   ├── CameraCapture.tsx       # Camera interface with countdown
+│   ├── CameraCapture.tsx       # Camera with debug tools
 │   ├── BackgroundSelector.tsx  # Background gallery
 │   ├── ProcessingLoader.tsx    # AI processing animation
 │   └── ResultDisplay.tsx       # QR code & sharing
-├── hooks/
-│   └── useCamera.ts            # Camera access hook
-├── assets/
-│   └── backgrounds/            # Background images
-└── pages/
-    └── Index.tsx               # Main app flow
+├── services/
+│   ├── aiProcessor.ts          # fal.ai integration
+│   └── localStorage.ts         # Browser storage
+├── pages/
+│   ├── Index.tsx              # Main app flow
+│   └── SharePhoto.tsx         # Shared photo viewer
+└── assets/
+    └── backgrounds/           # Background images
 ```
 
-## TODO: Backend Integration
+## Current Implementation
 
-- [ ] Create edge function for fal.ai API calls
-- [ ] Implement email service integration
-- [ ] Add image storage for QR code persistence
-- [ ] Set up analytics tracking
+✅ **Demo Features (Local Storage)**:
+- AI-powered background compositing via fal.ai
+- Camera capture with permission handling
+- Local browser storage (no backend required)
+- QR code generation for sharing
+- Shareable photo links
+- Download functionality
+- Debug tools for troubleshooting
+
+## Future Enhancements
+
+- [ ] Backend API for persistent storage (see IMPLEMENTATION_PLAN.md)
+- [ ] PostgreSQL database integration
+- [ ] S3/MinIO object storage
+- [ ] Email service integration (Resend)
+- [ ] Analytics tracking
+- [ ] Admin dashboard
 
 ## Browser Support
 

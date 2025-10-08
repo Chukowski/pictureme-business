@@ -4,6 +4,8 @@ import { BackgroundSelector, backgrounds } from "@/components/BackgroundSelector
 import { ProcessingLoader } from "@/components/ProcessingLoader";
 import { ResultDisplay } from "@/components/ResultDisplay";
 import { toast } from "sonner";
+import { processImageWithAI, downloadImageAsBase64 } from "@/services/aiProcessor";
+import { saveProcessedPhoto } from "@/services/localStorage";
 
 type AppState = "selecting" | "capturing" | "processing" | "result";
 
@@ -12,6 +14,8 @@ const Index = () => {
   const [selectedBackground, setSelectedBackground] = useState<typeof backgrounds[0] | null>(null);
   const [capturedPhoto, setCapturedPhoto] = useState<string>("");
   const [processedPhoto, setProcessedPhoto] = useState<string>("");
+  const [processingStatus, setProcessingStatus] = useState<string>("Starting...");
+  const [shareCode, setShareCode] = useState<string>("");
 
   const handleBackgroundSelect = (bg: typeof backgrounds[0]) => {
     setSelectedBackground(bg);
@@ -25,15 +29,60 @@ const Index = () => {
   };
 
   const handlePhotoCapture = async (imageData: string) => {
+    if (!selectedBackground) {
+      toast.error("No background selected");
+      return;
+    }
+
     setCapturedPhoto(imageData);
     setState("processing");
-    
-    // TODO: Call fal.ai API via edge function
-    // For now, simulate processing
-    setTimeout(() => {
-      setProcessedPhoto(imageData); // In production, this would be the AI-processed image
+    setProcessingStatus("Preparing your photo...");
+
+    try {
+      // Process with AI - send both user photo and background image
+      const result = await processImageWithAI({
+        userPhotoBase64: imageData,
+        backgroundPrompt: selectedBackground.prompt,
+        backgroundImageUrl: selectedBackground.image, // Pass the background image
+        onProgress: (status, logs) => {
+          if (status === "queued") {
+            setProcessingStatus("Waiting in queue...");
+          } else if (status === "processing") {
+            setProcessingStatus("AI is working its magic...");
+            if (logs && logs.length > 0) {
+              console.log("AI logs:", logs);
+            }
+          }
+        },
+      });
+
+      setProcessingStatus("Downloading result...");
+      
+      // Download the processed image as base64 for localStorage
+      const processedBase64 = await downloadImageAsBase64(result.url);
+      setProcessedPhoto(processedBase64);
+
+      // Save to localStorage
+      const savedPhoto = saveProcessedPhoto({
+        originalImageBase64: imageData,
+        processedImageBase64: processedBase64,
+        backgroundId: selectedBackground.id,
+        backgroundName: selectedBackground.name,
+        prompt: selectedBackground.prompt,
+      });
+
+      setShareCode(savedPhoto.shareCode);
+      
+      toast.success("Your photo is ready! 🎉");
       setState("result");
-    }, 3000);
+    } catch (error: any) {
+      console.error("Processing error:", error);
+      toast.error(error.message || "Failed to process photo. Please try again.");
+      
+      // Fall back to original photo if AI fails
+      setProcessedPhoto(imageData);
+      setState("result");
+    }
   };
 
   const handleReset = () => {
@@ -41,6 +90,8 @@ const Index = () => {
     setSelectedBackground(null);
     setCapturedPhoto("");
     setProcessedPhoto("");
+    setShareCode("");
+    setProcessingStatus("Starting...");
   };
 
   return (
@@ -70,11 +121,14 @@ const Index = () => {
         />
       )}
 
-      {state === "processing" && <ProcessingLoader />}
+      {state === "processing" && (
+        <ProcessingLoader status={processingStatus} />
+      )}
 
       {state === "result" && (
         <ResultDisplay
           imageUrl={processedPhoto}
+          shareCode={shareCode}
           onReset={handleReset}
         />
       )}

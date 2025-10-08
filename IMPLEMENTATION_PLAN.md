@@ -1,381 +1,307 @@
-# Photo Booth AI - Complete Implementation Plan
+📸 Photo Booth AI — Self-Hosted Implementation Plan (with Model Selection)
 
-## Current Status
-✅ Frontend UI complete (background selector, camera capture, result display)  
-✅ iPad-optimized responsive design  
-✅ fal.ai API key ready  
-❌ No backend integration yet  
-❌ No database setup  
-❌ No image storage  
-❌ No AI processing
+✅ Current Status
 
-## Architecture Overview
+Feature	Status
+Frontend UI (background selector, camera, result)	✅ Complete
+iPad responsive layout	✅ Complete
+fal.ai API key	✅ Ready
+Backend integration	❌ Pending
+Database (PostgreSQL)	❌ Pending
+Image storage (S3/MinIO)	❌ Pending Lets use Local Storage first
+AI processing flow	❌ Pending
 
-```mermaid
+
+⸻
+
+⚙️ Architecture Overview
+
 graph TB
     A[User Selects Background] --> B[Camera Captures Photo]
-    B --> C[Upload to Supabase Storage]
-    C --> D[Edge Function: Process with fal.ai]
+    B --> C[Upload to S3/MinIO Storage]
+    C --> D[Process with fal.ai Model]
     D --> E[AI Combines Photo + Background]
-    E --> F[Save Processed Image to Storage]
-    F --> G[Generate Short URL & QR Code]
+    E --> F[Save Processed Image to S3/MinIO]
+    F --> G[Generate Short URL + QR Code]
     G --> H[Display Result to User]
     H --> I{User Action}
     I -->|Download| J[Direct Download]
-    I -->|Email| K[Edge Function: Send via Resend]
+    I -->|Email| K[Backend Sends via Resend]
     I -->|New Photo| A
-```
 
-## What You Need to Set Up
 
-### 1. **Lovable Cloud** (Replaces PostgreSQL + S3)
-**Good news**: You don't need to set up PostgreSQL or AWS S3 separately! Lovable Cloud includes:
-- ✅ PostgreSQL database (via Supabase)
-- ✅ File storage buckets (like S3)
-- ✅ Edge functions (serverless backend)
-- ✅ Secrets management for API keys
+⸻
 
-**Why this is better**: Everything is integrated, auto-deployed, and managed in one place.
+🧩 Environment Variables
 
----
+Create a .env file:
 
-## Step-by-Step Implementation Plan
+# Database
+DATABASE_URL=postgresql://user:pass@localhost:5432/photobooth_ai
 
-### **PHASE 1: Backend Setup** (5 minutes)
+# fal.ai credentials
+FAL_KEY=your_fal_ai_api_key
 
-#### Step 1.1: Enable Lovable Cloud
-- Click on **Cloud** button in top navigation
-- Enable Lovable Cloud (free tier available)
-- Wait for deployment to complete
+# Choose which model to use
+# Options:
+# fal-ai/bytedance/seedream/v4/edit  (cinematic, multi-image)
+# fal-ai/gemini-25-flash-image/edit  (fast, sharp blending)
+FAL_MODEL=fal-ai/bytedance/seedream/v4/edit
 
-#### Step 1.2: Add Secrets
-Add two secrets:
-- `FAL_KEY`: Your fal.ai API key (for AI image processing)
-- `RESEND_API_KEY`: For email delivery (you'll need to sign up at resend.com)
+# Email service
+RESEND_API_KEY=your_resend_api_key
 
-#### Step 1.3: Create Database Tables
-Run SQL migrations to create:
+# Object Storage
+S3_ENDPOINT=http://localhost:9000
+S3_ACCESS_KEY=admin
+S3_SECRET_KEY=secret123
+S3_BUCKET_ORIGINALS=photo-originals
+S3_BUCKET_PROCESSED=photo-processed
+S3_REGION=us-east-1
 
-**Table 1: `processed_photos`**
-```sql
-create table public.processed_photos (
+# Server
+BASE_URL=https://yourdomain.com
+PORT=8080
+
+
+⸻
+
+🗄️ Database Schema (PostgreSQL)
+
+-- Processed photos
+create table processed_photos (
   id uuid primary key default gen_random_uuid(),
   user_session_id text,
   original_image_url text,
   processed_image_url text,
   background_id text,
   share_code text unique,
-  created_at timestamp with time zone default now()
+  created_at timestamptz default now()
 );
 
--- Enable RLS
-alter table public.processed_photos enable row level security;
-
--- Allow public read access to processed photos
-create policy "Public can view processed photos"
-  on public.processed_photos
-  for select
-  to public
-  using (true);
-
--- Allow authenticated users to insert
-create policy "Authenticated users can create photos"
-  on public.processed_photos
-  for insert
-  to authenticated
-  with check (true);
-```
-
-**Table 2: `email_deliveries`** (optional, for tracking)
-```sql
-create table public.email_deliveries (
+-- Email logs
+create table email_deliveries (
   id uuid primary key default gen_random_uuid(),
-  photo_id uuid references public.processed_photos(id) on delete cascade,
+  photo_id uuid references processed_photos(id) on delete cascade,
   email_address text not null,
-  sent_at timestamp with time zone default now(),
+  sent_at timestamptz default now(),
   delivery_status text default 'sent'
 );
 
--- Enable RLS
-alter table public.email_deliveries enable row level security;
 
--- Only allow authenticated users to insert
-create policy "Authenticated users can log email deliveries"
-  on public.email_deliveries
-  for insert
-  to authenticated
-  with check (true);
-```
+⸻
 
-#### Step 1.4: Create Storage Buckets
-Create two public storage buckets:
+🗂️ Object Storage (S3 / MinIO)
 
-```sql
--- Create buckets
-insert into storage.buckets (id, name, public)
-values 
-  ('photo-originals', 'photo-originals', true),
-  ('photo-processed', 'photo-processed', true);
+Start MinIO via Docker:
 
--- Allow public access to read files
-create policy "Public can view original photos"
-  on storage.objects for select
-  to public
-  using (bucket_id = 'photo-originals');
+docker run -d -p 9000:9000 -p 9001:9001 \
+  -e MINIO_ROOT_USER=admin \
+  -e MINIO_ROOT_PASSWORD=secret123 \
+  -v ~/data/minio:/data \
+  minio/minio server /data --console-address ":9001"
 
-create policy "Public can view processed photos"
-  on storage.objects for select
-  to public
-  using (bucket_id = 'photo-processed');
+Create buckets:
+	•	photo-originals
+	•	photo-processed
 
--- Allow authenticated users to upload
-create policy "Authenticated users can upload originals"
-  on storage.objects for insert
-  to authenticated
-  with check (bucket_id = 'photo-originals');
+Make photo-processed public if you want shareable QR links.
 
-create policy "Authenticated users can upload processed"
-  on storage.objects for insert
-  to authenticated
-  with check (bucket_id = 'photo-processed');
-```
+⸻
 
----
+🧠 AI Processing Service
 
-### **PHASE 2: Edge Functions** (Backend Logic)
+File: services/aiProcessor.ts
 
-#### Function 1: `process-photo`
-**Purpose**: Takes captured photo + background prompt → calls fal.ai → returns processed image
+import { fal } from "@fal-ai/client";
 
-**Input**:
-```typescript
-{
-  imageBase64: string,      // captured photo
-  backgroundPrompt: string, // from backgrounds array
-  backgroundId: string      // jungle, ocean, etc.
-}
-```
+fal.config({ credentials: process.env.FAL_KEY });
 
-**Process**:
-1. Upload original image to `photo-originals` bucket
-2. Call fal.ai API with prompt:
-   - Model: `fal-ai/flux/dev` or similar background replacement model
-   - Input: original image + background prompt
-3. Download processed image from fal.ai
-4. Upload to `photo-processed` bucket
-5. Generate unique `share_code` (6-character alphanumeric)
-6. Save record to `processed_photos` table
-7. Return processed image URL + share code
+export async function processImage(prompt: string, imageUrls: string[]) {
+  const model = process.env.FAL_MODEL || "fal-ai/bytedance/seedream/v4/edit";
 
-**Output**:
-```typescript
-{
-  processedImageUrl: string,
-  shareCode: string,
-  shareUrl: string  // e.g., yourdomain.com/share/ABC123
-}
-```
-
-**File**: `supabase/functions/process-photo/index.ts`
-
-#### Function 2: `send-photo-email`
-**Purpose**: Sends processed photo via email using Resend
-
-**Input**:
-```typescript
-{
-  email: string,
-  photoId: string,
-  imageUrl: string
-}
-```
-
-**Process**:
-1. Validate email format
-2. Send email with Resend API including:
-   - Siemens Healthineers branding
-   - Embedded photo
-   - Download link
-3. Log to `email_deliveries` table
-
-**File**: `supabase/functions/send-photo-email/index.ts`
-
-#### Function 3: `get-shared-photo` (optional)
-**Purpose**: Retrieve photo by share code for QR code scanning
-
-**Input**: `shareCode` from URL parameter
-
-**Output**: Redirects to photo or shows download page
-
-**File**: `supabase/functions/get-shared-photo/index.ts`
-
----
-
-### **PHASE 3: Frontend Integration**
-
-#### Update 1: `src/pages/Index.tsx`
-Replace the `handlePhotoCapture` TODO with actual API call:
-
-```typescript
-const handlePhotoCapture = async (imageData: string) => {
-  setCapturedPhoto(imageData);
-  setState("processing");
-  
-  try {
-    const { data, error } = await supabase.functions.invoke('process-photo', {
-      body: {
-        imageBase64: imageData,
-        backgroundPrompt: selectedBackground.prompt,
-        backgroundId: selectedBackground.id
+  const result = await fal.subscribe(model, {
+    input: {
+      prompt,
+      image_urls: imageUrls,
+      num_images: 1,
+      output_format: "jpeg",
+    },
+    logs: true,
+    onQueueUpdate: (update) => {
+      if (update.status === "IN_PROGRESS") {
+        update.logs.map((log) => log.message).forEach(console.log);
       }
+    },
+  });
+
+  return result.data?.images?.[0]?.url;
+}
+
+The model names and usage follow the official API schemas in the docs for [Gemini Image Edit] ￼ and [Seedream v4 Edit] ￼.
+
+⸻
+
+🌐 Backend Endpoints (Express Example)
+
+File: server.ts
+
+import express from "express";
+import { processImage } from "./services/aiProcessor";
+import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import { v4 as uuid } from "uuid";
+import pg from "pg";
+import multer from "multer";
+
+const upload = multer();
+const app = express();
+app.use(express.json({ limit: "10mb" }));
+
+const db = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+const s3 = new S3Client({
+  endpoint: process.env.S3_ENDPOINT,
+  region: process.env.S3_REGION,
+  credentials: {
+    accessKeyId: process.env.S3_ACCESS_KEY!,
+    secretAccessKey: process.env.S3_SECRET_KEY!,
+  },
+});
+
+app.post("/api/process-photo", upload.single("photo"), async (req, res) => {
+  try {
+    const { backgroundPrompt, backgroundId } = req.body;
+    const imageBase64 = req.file?.buffer.toString("base64");
+    const originalKey = `${uuid()}.jpg`;
+
+    await s3.send(new PutObjectCommand({
+      Bucket: process.env.S3_BUCKET_ORIGINALS!,
+      Key: originalKey,
+      Body: Buffer.from(imageBase64, "base64"),
+      ContentType: "image/jpeg",
+    }));
+
+    const originalUrl = `${process.env.S3_ENDPOINT}/${process.env.S3_BUCKET_ORIGINALS}/${originalKey}`;
+
+    const processedUrl = await processImage(backgroundPrompt, [originalUrl]);
+
+    const processedKey = `${uuid()}.jpg`;
+    await s3.send(new PutObjectCommand({
+      Bucket: process.env.S3_BUCKET_PROCESSED!,
+      Key: processedKey,
+      Body: await fetch(processedUrl!).then(r => r.arrayBuffer()),
+      ContentType: "image/jpeg",
+    }));
+
+    const shareCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+    await db.query(
+      `insert into processed_photos (original_image_url, processed_image_url, background_id, share_code)
+       values ($1, $2, $3, $4)`,
+      [originalUrl, processedUrl, backgroundId, shareCode]
+    );
+
+    res.json({
+      processedImageUrl: processedUrl,
+      shareUrl: `${process.env.BASE_URL}/share/${shareCode}`,
+      shareCode,
     });
-    
-    if (error) throw error;
-    
-    setProcessedPhoto(data.processedImageUrl);
-    setShareUrl(data.shareUrl); // store for QR code
-    setState("result");
-  } catch (error) {
-    toast.error("Failed to process photo. Please try again.");
-    setState("selecting");
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "Processing failed" });
   }
-};
-```
+});
 
-#### Update 2: `src/components/ResultDisplay.tsx`
-- Use actual `shareUrl` prop instead of placeholder
-- Connect email button to `send-photo-email` function
-- Add proper error handling
 
----
+⸻
 
-### **PHASE 4: Email Setup** (External)
+✉️ Email Sending (Optional)
 
-You'll need to:
-1. Sign up at [resend.com](https://resend.com) (free tier: 100 emails/day)
-2. Verify your domain (or use their test domain `onboarding@resend.dev`)
-3. Create API key at: https://resend.com/api-keys
-4. Validate your domain at: https://resend.com/domains
-5. Provide API key to add as `RESEND_API_KEY` secret
+File: services/sendEmail.ts
 
----
+import fetch from "node-fetch";
 
-### **PHASE 5: Testing Checklist**
+export async function sendPhotoEmail(email: string, imageUrl: string) {
+  const apiKey = process.env.RESEND_API_KEY;
+  await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from: "Photo Booth <noreply@yourdomain.com>",
+      to: email,
+      subject: "Your AI Photo Booth Image",
+      html: `<p>Here’s your photo!</p><img src="${imageUrl}" width="400" />`,
+    }),
+  });
+}
 
-- [ ] Select background → prompt appears
-- [ ] Capture photo → uploads to storage
-- [ ] AI processing → fal.ai returns edited image
-- [ ] Processed image displays with branding
-- [ ] QR code scans → opens shareable link
-- [ ] Download button → downloads image
-- [ ] Email input → sends photo via Resend
-- [ ] Test on iPad in portrait mode
-- [ ] Test multiple camera switching
 
----
+⸻
 
-## File Structure After Implementation
+🧱 Docker Compose (Full Stack)
 
-```
-supabase/
-├── config.toml
-├── functions/
-│   ├── process-photo/
-│   │   └── index.ts
-│   ├── send-photo-email/
-│   │   └── index.ts
-│   └── get-shared-photo/
-│       └── index.ts
-└── migrations/
-    ├── 20240101000001_create_processed_photos.sql
-    ├── 20240101000002_create_email_deliveries.sql
-    └── 20240101000003_create_storage_buckets.sql
+version: '3.8'
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: photobooth_ai
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: pass
+    volumes:
+      - ./data/db:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
 
-src/
-├── integrations/supabase/  (auto-generated)
-└── pages/Index.tsx (updated)
-```
+  minio:
+    image: minio/minio
+    environment:
+      MINIO_ROOT_USER: admin
+      MINIO_ROOT_PASSWORD: secret123
+    command: server /data
+    volumes:
+      - ./data/minio:/data
+    ports:
+      - "9000:9000"
 
----
+  app:
+    build: .
+    environment:
+      DATABASE_URL: postgresql://user:pass@db:5432/photobooth_ai
+      FAL_KEY: ${FAL_KEY}
+      FAL_MODEL: ${FAL_MODEL}
+      S3_ENDPOINT: http://minio:9000
+      RESEND_API_KEY: ${RESEND_API_KEY}
+      BASE_URL: http://localhost:8080
+    depends_on:
+      - db
+      - minio
+    ports:
+      - "8080:8080"
 
-## Cost Estimate (Monthly)
 
-**Lovable Cloud**: Free tier includes:
-- Database: PostgreSQL with 500MB storage
-- Storage: 1GB file storage
-- Edge Functions: 500K invocations
+⸻
 
-**fal.ai**: ~$0.05 per image generation (you'll need to add credits)
+🧪 Testing Checklist
+	•	Capture photo & select background
+	•	Uploads original image to S3/MinIO
+	•	Calls fal.ai model (Seedream or Gemini)
+	•	Displays processed image + QR code
+	•	Optional email delivery works
+	•	Works on iPad Safari
+	•	Works offline in LAN mode
 
-**Resend**: Free tier = 100 emails/day
+⸻
 
-**For an event**: Estimate 100 photos = ~$5 in AI costs
+🧠 Model Reference Summary
 
----
+Model	Env Var	Use Case	Output
+fal-ai/bytedance/seedream/v4/edit	FAL_MODEL	Multi-image, cinematic, fashion shots	JPG
+fal-ai/gemini-25-flash-image/edit	FAL_MODEL	Fast, lightweight photo blending	JPG
 
-## FAL.ai Model Recommendations
+Docs:/Users/zerker/ai-photo-booth-hub/docs
+	•	Gemini Image Edit (Google model) ￼
+	•	Bytedance Seedream v4 Edit (Bytedance model) ￼
 
-For background replacement, use one of these models:
-
-### Option 1: fal.ai Models (Paid)
-- **Model**: `fal-ai/flux/dev` - Best quality for background replacement
-- **Alternative**: `fal-ai/recraft-v3` - Faster, slightly lower quality
-- **Cost**: ~$0.05 per image
-
-### Option 2: Lovable AI Gateway (FREE until Oct 13, 2025)
-- **Model**: `google/gemini-2.5-flash-image-preview`
-- **Cost**: FREE during promotional period
-- **Benefit**: No need for fal.ai API key, uses Lovable's built-in AI gateway
-
-**Recommendation**: Start with Lovable AI Gateway (Gemini) since it's free during the promo period!
-
----
-
-## API Keys Needed
-
-1. **FAL_KEY** (if using fal.ai)
-   - Sign up at: https://fal.ai
-   - Get API key from dashboard
-   - Your key: `ed5babff-97f0-4af5-9ff7-6fb1be23358c:879ef6b4e55e7fd8e4d0c68b491867e6`
-
-2. **RESEND_API_KEY** (for email)
-   - Sign up at: https://resend.com
-   - Create API key
-   - Verify domain or use test domain
-
----
-
-## Next Steps Summary
-
-1. ✅ Review this plan
-2. Enable Lovable Cloud from top navigation
-3. Add `FAL_KEY` secret in Cloud → Secrets
-4. Create database tables using SQL above
-5. Create storage buckets using SQL above
-6. Implement the 3 edge functions
-7. Update frontend to call edge functions
-8. Sign up for Resend and add `RESEND_API_KEY`
-9. Integrate email functionality
-10. Test the complete flow
-11. 🎉 App is production-ready!
-
----
-
-## Support Resources
-
-- **Lovable Cloud Docs**: https://docs.lovable.dev/features/cloud
-- **Lovable AI Docs**: https://docs.lovable.dev/features/ai
-- **fal.ai Docs**: https://fal.ai/docs
-- **Resend Docs**: https://resend.com/docs
-- **Supabase Storage**: https://supabase.com/docs/guides/storage
-
----
-
-## Security Considerations
-
-1. **RLS Policies**: All tables have Row Level Security enabled
-2. **Public Access**: Only processed photos are publicly accessible via share codes
-3. **API Keys**: All secrets stored securely in Lovable Cloud
-4. **CORS**: Edge functions configured with proper CORS headers
-5. **Email Validation**: Email addresses validated before sending
-6. **Storage**: Buckets configured with appropriate public/private access
+⸻

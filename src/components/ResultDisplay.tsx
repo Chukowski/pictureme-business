@@ -1,21 +1,23 @@
 import { useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
-import { Download, Mail, RotateCcw, Share2 } from "lucide-react";
+import { Download, Mail, RotateCcw, Share2, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+import { getShareUrl } from "@/services/localStorage";
 
 interface ResultDisplayProps {
   imageUrl: string;
+  shareCode?: string;
   onReset: () => void;
 }
 
-export const ResultDisplay = ({ imageUrl, onReset }: ResultDisplayProps) => {
+export const ResultDisplay = ({ imageUrl, shareCode, onReset }: ResultDisplayProps) => {
   const [email, setEmail] = useState("");
   const [isSending, setIsSending] = useState(false);
   
-  // Generate a shareable URL for QR code (placeholder until backend is implemented)
-  const shareUrl = `${window.location.origin}/photo/${Date.now()}`;
+  // Generate a shareable URL for QR code
+  const shareUrl = shareCode ? getShareUrl(shareCode) : `${window.location.origin}/photo/${Date.now()}`;
 
   const handleDownload = () => {
     const link = document.createElement("a");
@@ -33,11 +35,18 @@ export const ResultDisplay = ({ imageUrl, onReset }: ResultDisplayProps) => {
 
     setIsSending(true);
     // TODO: Integrate with email service via edge function
+    // For now, just copy the link
     setTimeout(() => {
-      toast.success("Photo sent to your email!");
+      toast.info("Email integration coming soon! The link has been copied to your clipboard.");
+      navigator.clipboard.writeText(shareUrl);
       setIsSending(false);
       setEmail("");
-    }, 1500);
+    }, 1000);
+  };
+
+  const handleCopyLink = () => {
+    navigator.clipboard.writeText(shareUrl);
+    toast.success("Link copied to clipboard!");
   };
 
   return (
@@ -78,6 +87,20 @@ export const ResultDisplay = ({ imageUrl, onReset }: ResultDisplayProps) => {
                 includeMargin
               />
             </div>
+            {shareCode && (
+              <div className="text-xs text-muted-foreground">
+                Code: <span className="font-mono font-bold text-primary">{shareCode}</span>
+              </div>
+            )}
+            <Button
+              onClick={handleCopyLink}
+              variant="outline"
+              size="sm"
+              className="w-full"
+            >
+              <Copy className="w-3 h-3 mr-2" />
+              Copy Link
+            </Button>
           </div>
 
           <div className="bg-card rounded-2xl p-4 md:p-6 space-y-3">
