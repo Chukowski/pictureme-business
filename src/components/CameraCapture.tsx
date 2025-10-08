@@ -61,8 +61,8 @@ export const CameraCapture = ({ onCapture, selectedBackground }: CameraCapturePr
 
       const constraints: MediaStreamConstraints = {
         video: deviceId 
-          ? { deviceId: { exact: deviceId }, width: { ideal: 1920 }, height: { ideal: 1080 } }
-          : { facingMode: "user", width: { ideal: 1920 }, height: { ideal: 1080 } }
+          ? { deviceId: { exact: deviceId }, width: { ideal: 1080 }, height: { ideal: 1920 } }
+          : { facingMode: "user", width: { ideal: 1080 }, height: { ideal: 1920 } }
       };
 
       const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
@@ -123,14 +123,15 @@ export const CameraCapture = ({ onCapture, selectedBackground }: CameraCapturePr
   };
 
   return (
-    <div className="relative w-full h-full flex items-center justify-center bg-black overflow-hidden">
-      <video
-        ref={videoRef}
-        autoPlay
-        playsInline
-        muted
-        className="w-full h-full object-cover"
-      />
+    <div className="relative w-full min-h-screen flex items-center justify-center bg-black overflow-hidden">
+      <div className="relative w-full max-w-3xl h-screen">
+        <video
+          ref={videoRef}
+          autoPlay
+          playsInline
+          muted
+          className="w-full h-full object-cover"
+        />
       
       <canvas ref={canvasRef} className="hidden" />
       
@@ -175,6 +176,7 @@ export const CameraCapture = ({ onCapture, selectedBackground }: CameraCapturePr
         >
           <Camera className="w-10 h-10" />
         </Button>
+      </div>
       </div>
     </div>
   );
