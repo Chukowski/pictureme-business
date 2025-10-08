@@ -13,6 +13,9 @@ interface ResultDisplayProps {
 export const ResultDisplay = ({ imageUrl, onReset }: ResultDisplayProps) => {
   const [email, setEmail] = useState("");
   const [isSending, setIsSending] = useState(false);
+  
+  // Generate a shareable URL for QR code (placeholder until backend is implemented)
+  const shareUrl = `${window.location.origin}/photo/${Date.now()}`;
 
   const handleDownload = () => {
     const link = document.createElement("a");
@@ -82,7 +85,7 @@ export const ResultDisplay = ({ imageUrl, onReset }: ResultDisplayProps) => {
               <h3 className="text-2xl font-bold text-primary">Scan to Download</h3>
               <div className="bg-white p-6 rounded-xl inline-block">
                 <QRCodeSVG
-                  value={imageUrl}
+                  value={shareUrl}
                   size={256}
                   level="H"
                   includeMargin
