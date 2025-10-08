@@ -80,10 +80,32 @@ export default {
             height: "0",
           },
         },
+        "scale-in": {
+          "0%": {
+            transform: "scale(0.5)",
+            opacity: "0"
+          },
+          "100%": {
+            transform: "scale(1)",
+            opacity: "1"
+          }
+        },
+        "fade-in": {
+          "0%": {
+            opacity: "0",
+            transform: "translateY(10px)"
+          },
+          "100%": {
+            opacity: "1",
+            transform: "translateY(0)"
+          }
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        "scale-in": "scale-in 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55)",
+        "fade-in": "fade-in 0.3s ease-out",
       },
     },
   },

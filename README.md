@@ -1,73 +1,118 @@
-# Welcome to your Lovable project
+# Photo Booth AI - Siemens Healthineers
 
-## Project info
+A responsive Photo Booth web application designed for iPad use that allows users to capture photos, select AI-generated backgrounds, and receive their edited photos via QR code or email.
 
-**URL**: https://lovable.dev/projects/0de7f6a7-7c1c-46b9-8dfd-993f6705265a
+## Features
 
-## How can I edit this code?
+- 📸 Live camera capture with countdown timer
+- 🎨 5 stunning pre-designed backgrounds:
+  - Particle Field (orange glowing particles)
+  - Jungle Depths (mysterious teal jungle)
+  - Underwater (bubbles and aquatic scene)
+  - Rain Storm (dramatic rainfall)
+  - Nature Bokeh (teal leaves with bokeh)
+- 🤖 AI-powered background integration via fal.ai
+- 📱 QR code generation for instant downloads
+- 📧 Email delivery option
+- 🎯 iPad-optimized responsive design
+- 🏢 Siemens Healthineers branding
 
-There are several ways of editing your application.
+## Tech Stack
 
-**Use Lovable**
+- **Frontend**: React + TypeScript
+- **Styling**: Tailwind CSS
+- **AI Integration**: fal.ai (Gemini or SeedDream models)
+- **Camera**: MediaDevices API
+- **QR Codes**: qrcode.react
+- **Build Tool**: Vite
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/0de7f6a7-7c1c-46b9-8dfd-993f6705265a) and start prompting.
+## Getting Started
 
-Changes made via Lovable will be committed automatically to this repo.
+### Prerequisites
 
-**Use your preferred IDE**
+- Node.js 18+ and npm
+- Camera-enabled device (iPad recommended)
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### Installation
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+```bash
+# Install dependencies
+npm install
 
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Start development server
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+### Environment Variables
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+Create a `.env` file:
 
-**Use GitHub Codespaces**
+```env
+FAL_KEY=your_fal_api_key
+FAL_MODEL=fal-ai/gemini-25-flash-image/edit
+# OR use SeedDream: fal-ai/bytedance/seedream/v4/edit
+```
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## Usage
 
-## What technologies are used for this project?
+1. **Select Background**: Choose from 5 artistic backgrounds
+2. **Position**: Stand in front of the camera
+3. **Capture**: Press the capture button (3-2-1 countdown)
+4. **AI Processing**: Wait while AI composites your photo
+5. **Download/Share**: Use QR code or email to get your photo
 
-This project is built with:
+## AI Models
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+The app supports two fal.ai models (configurable via `FAL_MODEL` env variable):
 
-## How can I deploy this project?
+- **Gemini Nano Banana** (`fal-ai/gemini-25-flash-image/edit`): Fast image editing
+- **SeedDream v4** (`fal-ai/bytedance/seedream/v4/edit`): High-quality compositing
 
-Simply open [Lovable](https://lovable.dev/projects/0de7f6a7-7c1c-46b9-8dfd-993f6705265a) and click on Share -> Publish.
+## Design System
 
-## Can I connect a custom domain to my Lovable project?
+**Colors:**
+- Primary Teal: `#009999` (HSL: 180, 100%, 30%)
+- Secondary Orange: `#ee6602` (HSL: 24, 96%, 48%)
+- Background: Black `#000000`
 
-Yes, you can!
+**Typography:**
+- System fonts optimized for readability
+- Bold headings for impact
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+## Project Structure
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+```
+src/
+├── components/
+│   ├── CameraCapture.tsx       # Camera interface with countdown
+│   ├── BackgroundSelector.tsx  # Background gallery
+│   ├── ProcessingLoader.tsx    # AI processing animation
+│   └── ResultDisplay.tsx       # QR code & sharing
+├── hooks/
+│   └── useCamera.ts            # Camera access hook
+├── assets/
+│   └── backgrounds/            # Background images
+└── pages/
+    └── Index.tsx               # Main app flow
+```
+
+## TODO: Backend Integration
+
+- [ ] Create edge function for fal.ai API calls
+- [ ] Implement email service integration
+- [ ] Add image storage for QR code persistence
+- [ ] Set up analytics tracking
+
+## Browser Support
+
+- Modern browsers with MediaDevices API
+- Optimized for iPad Safari
+- Chrome, Firefox, Edge supported
+
+## License
+
+Proprietary - Siemens Healthineers
+
+## Contact
+
+For questions or support, contact the Siemens Healthineers development team.
