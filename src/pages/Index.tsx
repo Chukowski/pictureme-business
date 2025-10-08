@@ -15,8 +15,13 @@ const Index = () => {
 
   const handleBackgroundSelect = (bg: typeof backgrounds[0]) => {
     setSelectedBackground(bg);
-    setState("capturing");
-    toast.success(`${bg.name} selected! Position yourself and press capture.`);
+  };
+
+  const handleConfirmBackground = () => {
+    if (selectedBackground) {
+      setState("capturing");
+      toast.success(`${selectedBackground.name} selected! Position yourself and press capture.`);
+    }
   };
 
   const handlePhotoCapture = async (imageData: string) => {
@@ -48,9 +53,10 @@ const Index = () => {
             </h1>
             <p className="text-lg text-secondary">Powered by Siemens Healthineers</p>
           </header>
-          <div className="flex-1 flex items-center justify-center">
+          <div className="flex-1 flex items-center justify-center py-8">
             <BackgroundSelector
               onSelect={handleBackgroundSelect}
+              onConfirm={handleConfirmBackground}
               selectedId={selectedBackground?.id || null}
             />
           </div>
