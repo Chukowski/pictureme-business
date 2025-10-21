@@ -24,6 +24,9 @@ export interface EventConfig {
     text?: string;
   };
   aiModel: string;
+  enableVideoGeneration?: boolean;
+  videoModel?: string;
+  enableVideoRecording?: boolean;
   active: boolean;
   createdAt: string;
   updatedAt: string;

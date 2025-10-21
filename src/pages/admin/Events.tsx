@@ -280,6 +280,54 @@ export default function AdminEvents() {
                         <option value="fal-ai/gemini-25-flash-image/edit">Gemini Flash Image Edit</option>
                       </select>
                     </div>
+
+                    <div className="space-y-4 p-4 rounded-lg border border-border">
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          id="enableVideo"
+                          checked={editForm.enableVideoGeneration || false}
+                          onChange={(e) => setEditForm({ ...editForm, enableVideoGeneration: e.target.checked })}
+                          className="w-4 h-4"
+                        />
+                        <Label htmlFor="enableVideo" className="cursor-pointer">Enable Video Generation</Label>
+                      </div>
+
+                      {editForm.enableVideoGeneration && (
+                        <div>
+                          <Label>Video Model</Label>
+                          <select
+                            className="w-full p-2 rounded-lg border border-border bg-background"
+                            value={editForm.videoModel || 'fal-ai/google/veo-3-1/image-to-video'}
+                            onChange={(e) => setEditForm({ ...editForm, videoModel: e.target.value })}
+                          >
+                            <option value="fal-ai/google/veo-3-1/image-to-video">Veo 3.1 Image to Video</option>
+                            <option value="fal-ai/google/veo-3-1/first-last-frame-to-video">Veo 3.1 First-Last Frame to Video</option>
+                            <option value="fal-ai/openai/sora-2/image-to-video">SORA 2 Image to Video</option>
+                            <option value="fal-ai/kling-video/v1.6/standard/image-to-video">Kling Image to Video</option>
+                            <option value="fal-ai/wan/animate/v1">Wan Video to Video Animate</option>
+                          </select>
+                          <p className="text-xs text-muted-foreground mt-2">
+                            {editForm.videoModel === 'fal-ai/google/veo-3-1/image-to-video' && 'Generates video from a single image with audio support'}
+                            {editForm.videoModel === 'fal-ai/google/veo-3-1/first-last-frame-to-video' && 'Creates video between two frames with audio'}
+                            {editForm.videoModel === 'fal-ai/openai/sora-2/image-to-video' && 'High-quality video generation from static image'}
+                            {editForm.videoModel === 'fal-ai/kling-video/v1.6/standard/image-to-video' && 'Fast video generation with motion control'}
+                            {editForm.videoModel === 'fal-ai/wan/animate/v1' && 'Animates video using reference image'}
+                          </p>
+                        </div>
+                      )}
+
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          id="enableVideoRecording"
+                          checked={editForm.enableVideoRecording || false}
+                          onChange={(e) => setEditForm({ ...editForm, enableVideoRecording: e.target.checked })}
+                          className="w-4 h-4"
+                        />
+                        <Label htmlFor="enableVideoRecording" className="cursor-pointer">Enable Video Recording in Booth</Label>
+                      </div>
+                    </div>
                   </div>
                 </Card>
               )}
