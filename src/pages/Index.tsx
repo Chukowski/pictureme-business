@@ -95,16 +95,25 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-dark">
+    <div className="min-h-screen gradient-dark">
       {state === "selecting" && (
         <div className="min-h-screen flex flex-col">
-          <header className="p-6 text-center border-b border-border">
-            <h1 className="text-4xl md:text-5xl font-bold text-primary mb-2 text-shadow-glow">
-              Photo Booth AI
-            </h1>
-            <p className="text-lg text-secondary">Powered by Siemens Healthineers</p>
+          {/* Modern header with glassmorphism */}
+          <header className="relative p-6 md:p-8 text-center border-b border-border/50 backdrop-blur-sm">
+            <div className="absolute inset-0 bg-gradient-to-b from-background/50 to-transparent" />
+            <div className="relative">
+              <h1 className="text-4xl md:text-6xl font-bold mb-3">
+                <span className="gradient-primary bg-clip-text text-transparent">
+                  Photo Booth AI
+                </span>
+              </h1>
+              <p className="text-base md:text-xl text-secondary font-medium">
+                Powered by Siemens Healthineers
+              </p>
+            </div>
           </header>
-          <div className="flex-1 flex items-center justify-center py-8">
+          
+          <div className="flex-1 flex items-center justify-center">
             <BackgroundSelector
               onSelect={handleBackgroundSelect}
               onConfirm={handleConfirmBackground}

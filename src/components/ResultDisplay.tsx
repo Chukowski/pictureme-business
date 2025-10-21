@@ -132,88 +132,113 @@ export const ResultDisplay = ({ imageUrl, shareCode, onReset }: ResultDisplayPro
   };
 
   return (
-    <div className="min-h-screen bg-gradient-dark p-4 md:p-8 flex items-center justify-center">
-      <div className="w-full max-w-3xl mx-auto space-y-6">
-        {/* Result Image */}
-        <div className="relative rounded-2xl overflow-hidden shadow-elegant">
+    <div className="min-h-screen gradient-dark p-4 md:p-8 flex items-center justify-center">
+      <div className="w-full max-w-4xl mx-auto space-y-6">
+        {/* Result Image with modern card */}
+        <div className="relative rounded-3xl overflow-hidden shadow-elegant glow-primary animate-fade-in">
           <img
             src={imageUrl}
             alt="Processed photo"
             className="w-full h-auto"
           />
-          {/* Siemens Branding Overlay */}
-          <div className="absolute top-4 md:top-6 left-0 right-0 text-center">
-            <h1 className="text-2xl md:text-4xl font-bold text-foreground text-shadow-glow">
-              Siemens Healthineers
-            </h1>
+          {/* Brand overlay with glassmorphism */}
+          <div className="absolute top-6 left-0 right-0 flex justify-center">
+            <div className="glass-panel px-6 py-3 rounded-2xl">
+              <h1 className="text-xl md:text-3xl font-bold text-foreground">
+                Siemens Healthineers
+              </h1>
+            </div>
           </div>
-          <div className="absolute bottom-4 md:bottom-6 left-4 md:left-6 right-4 md:right-6">
-            <p className="text-3xl md:text-5xl font-bold text-secondary text-shadow-glow mb-2">
-              Do less.
-            </p>
-            <p className="text-lg md:text-xl text-foreground">
-              Experience the future
-            </p>
+          <div className="absolute bottom-6 left-6 right-6">
+            <div className="glass-panel p-4 md:p-6 rounded-2xl">
+              <p className="text-2xl md:text-4xl font-bold gradient-secondary bg-clip-text text-transparent mb-1">
+                Do less.
+              </p>
+              <p className="text-sm md:text-lg text-foreground/90">
+                Experience the future
+              </p>
+            </div>
           </div>
         </div>
 
-        {/* QR Code & Actions */}
-        <div className="grid grid-cols-2 gap-4">
-          <div className="bg-card rounded-2xl p-4 md:p-6 text-center space-y-3">
-            <h3 className="text-lg md:text-xl font-bold text-primary">Scan to Download</h3>
-            <div className="bg-white p-3 md:p-4 rounded-xl inline-block">
+        {/* QR Code & Email Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* QR Code Card */}
+          <div className="gradient-card rounded-3xl p-6 shadow-card border border-border/50 space-y-4">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 rounded-full gradient-primary flex items-center justify-center">
+                <Share2 className="w-5 h-5 text-primary-foreground" />
+              </div>
+              <h3 className="text-xl font-bold text-foreground">Scan to Download</h3>
+            </div>
+            
+            <div className="bg-white p-4 rounded-2xl inline-block w-full flex justify-center">
               <QRCodeSVG
                 value={shareUrl}
-                size={160}
+                size={180}
                 level="H"
                 includeMargin
               />
             </div>
+            
             {shareCode && (
-              <div className="text-xs text-muted-foreground">
-                Code: <span className="font-mono font-bold text-primary">{shareCode}</span>
+              <div className="glass-panel px-4 py-2 rounded-xl text-center">
+                <span className="text-xs text-muted-foreground">Code:</span>
+                <span className="ml-2 font-mono font-bold text-primary">{shareCode}</span>
               </div>
             )}
+            
             <Button
               onClick={handleCopyLink}
               variant="outline"
-              size="sm"
-              className="w-full"
+              size="lg"
+              className="w-full rounded-xl"
             >
-              <Copy className="w-3 h-3 mr-2" />
-              Copy Link
+              <Copy className="w-4 h-4 mr-2" />
+              Copy Share Link
             </Button>
           </div>
 
-          <div className="bg-card rounded-2xl p-4 md:p-6 space-y-3">
-            <h3 className="text-lg md:text-xl font-bold text-primary">Email Photo</h3>
-            <div className="flex flex-col gap-2">
+          {/* Email Card */}
+          <div className="gradient-card rounded-3xl p-6 shadow-card border border-border/50 space-y-4">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 rounded-full gradient-secondary flex items-center justify-center glow-secondary">
+                <Mail className="w-5 h-5 text-secondary-foreground" />
+              </div>
+              <h3 className="text-xl font-bold text-foreground">Email Photo</h3>
+            </div>
+            
+            <p className="text-sm text-muted-foreground">
+              Receive your photo directly in your inbox
+            </p>
+            
+            <div className="space-y-3">
               <Input
                 type="email"
                 placeholder="your@email.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="text-sm"
+                className="h-12 rounded-xl text-base"
               />
               <Button
                 onClick={handleEmailSend}
                 disabled={isSending}
-                className="w-full bg-secondary hover:bg-secondary/90"
-                size="sm"
+                size="lg"
+                className="w-full gradient-secondary hover:scale-105 transition-transform rounded-xl"
               >
-                <Mail className="w-4 h-4 mr-2" />
-                Send
+                <Mail className="w-5 h-5 mr-2" />
+                {isSending ? "Sending..." : "Send Photo"}
               </Button>
             </div>
           </div>
         </div>
 
         {/* Action Buttons */}
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-3 gap-3 md:gap-4">
           <Button
             onClick={handleDownload}
             size="lg"
-            className="bg-primary hover:bg-primary-glow"
+            className="gradient-primary hover:scale-105 transition-transform rounded-2xl h-14 glow-primary"
           >
             <Download className="w-5 h-5 md:mr-2" />
             <span className="hidden md:inline">Download</span>
@@ -222,6 +247,7 @@ export const ResultDisplay = ({ imageUrl, shareCode, onReset }: ResultDisplayPro
             onClick={() => toast.info("Share feature coming soon!")}
             size="lg"
             variant="outline"
+            className="rounded-2xl h-14 border-primary/30 hover:border-primary"
           >
             <Share2 className="w-5 h-5 md:mr-2" />
             <span className="hidden md:inline">Share</span>
@@ -230,6 +256,7 @@ export const ResultDisplay = ({ imageUrl, shareCode, onReset }: ResultDisplayPro
             onClick={onReset}
             variant="outline"
             size="lg"
+            className="rounded-2xl h-14 border-border hover:border-muted-foreground"
           >
             <RotateCcw className="w-5 h-5 md:mr-2" />
             <span className="hidden md:inline">New Photo</span>

@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { Check } from "lucide-react";
+import { ArrowRight, Sparkles } from "lucide-react";
+import { SceneCard } from "@/components/SceneCard";
+import { Button } from "@/components/ui/button";
 import glaresImg from "@/assets/backgrounds/glares.jpg";
 import jungleImg from "@/assets/backgrounds/jungle.jpg";
 import oceanImg from "@/assets/backgrounds/ocean.jpg";
@@ -49,65 +50,83 @@ export const BackgroundSelector = ({ onSelect, onConfirm, selectedId }: Backgrou
   const selectedBg = backgrounds.find(bg => bg.id === selectedId);
 
   return (
-    <div className="w-full max-w-7xl mx-auto px-6">
-      {/* Preview Section */}
+    <div className="w-full max-w-7xl mx-auto px-6 py-8">
+      {/* Hero Section with Selected Preview */}
       {selectedBg && (
-        <div className="mb-8 animate-fade-in">
-          <div className="relative aspect-[16/10] rounded-2xl overflow-hidden glow-teal">
-            <img
-              src={selectedBg.image}
-              alt={selectedBg.name}
-              className="w-full h-full object-cover"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent flex flex-col justify-end p-8">
-              <h2 className="text-4xl md:text-5xl font-bold text-white mb-3 text-shadow-glow">
-                {selectedBg.name}
-              </h2>
-              <p className="text-lg text-white/90 mb-6 max-w-2xl">
-                {selectedBg.prompt}
-              </p>
-              <button
+        <div className="mb-12 animate-fade-in">
+          <div className="relative rounded-3xl overflow-hidden shadow-elegant glow-primary">
+            <div className="relative aspect-[21/9] md:aspect-[16/7]">
+              <img
+                src={selectedBg.image}
+                alt={selectedBg.name}
+                className="w-full h-full object-cover"
+              />
+              {/* Animated gradient overlay */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent" />
+              
+              {/* Floating particles effect */}
+              <div className="absolute inset-0 opacity-20">
+                <div className="absolute top-1/4 left-1/4 w-2 h-2 rounded-full bg-primary animate-pulse" />
+                <div className="absolute top-1/3 right-1/3 w-1 h-1 rounded-full bg-secondary animate-pulse delay-100" />
+                <div className="absolute bottom-1/4 right-1/4 w-2 h-2 rounded-full bg-primary animate-pulse delay-200" />
+              </div>
+            </div>
+            
+            {/* Content overlay */}
+            <div className="absolute inset-0 flex flex-col justify-end p-6 md:p-10">
+              <div className="flex items-start gap-3 mb-4">
+                <Sparkles className="w-8 h-8 text-primary animate-pulse" />
+                <div>
+                  <h2 className="text-3xl md:text-5xl font-bold text-white mb-2 text-shadow-glow">
+                    {selectedBg.name}
+                  </h2>
+                  <p className="text-sm md:text-base text-white/80 max-w-2xl leading-relaxed">
+                    AI-powered scene transformation
+                  </p>
+                </div>
+              </div>
+              
+              <Button
                 onClick={onConfirm}
-                className="self-start px-8 py-4 bg-secondary hover:bg-secondary/90 text-white font-bold rounded-xl text-xl transition-all hover:scale-105 glow-orange"
+                size="lg"
+                className="self-start mt-4 text-lg px-8 py-6 rounded-2xl gradient-secondary hover:scale-105 transition-transform glow-secondary group"
               >
                 Start Photo Booth
-              </button>
+                <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
+              </Button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Gallery Section */}
-      <div className={selectedBg ? "mt-8" : ""}>
-        <h3 className="text-2xl font-bold mb-6 text-primary">
-          {selectedBg ? "Change Scene" : "Choose Your Scene"}
-        </h3>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-          {backgrounds.map((bg) => (
-            <button
-              key={bg.id}
-              onClick={() => onSelect(bg)}
-              className={`relative aspect-video rounded-lg overflow-hidden transition-all hover:scale-105 hover:shadow-lg ${
-                selectedId === bg.id ? "ring-4 ring-primary glow-teal" : "ring-2 ring-border"
-              }`}
-            >
-              <img
-                src={bg.image}
-                alt={bg.name}
-                className="w-full h-full object-cover"
-              />
-              {selectedId === bg.id && (
-                <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
-                  <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center glow-teal">
-                    <Check className="w-6 h-6" />
-                  </div>
-                </div>
-              )}
-              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2">
-                <p className="text-sm font-semibold text-center">{bg.name}</p>
+      {/* Scene Gallery */}
+      <div>
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h3 className="text-2xl md:text-3xl font-bold text-foreground mb-1">
+              {selectedBg ? "Choose Different Scene" : "Select Your Scene"}
+            </h3>
+            <p className="text-sm text-muted-foreground">
+              Pick a magical background for your photo
+            </p>
+          </div>
+        </div>
+        
+        {/* Horizontal scrollable carousel on mobile, grid on desktop */}
+        <div className="overflow-x-auto md:overflow-visible -mx-6 px-6 md:mx-0 md:px-0">
+          <div className="flex md:grid md:grid-cols-5 gap-4 md:gap-6 pb-4 md:pb-0 min-w-max md:min-w-0">
+            {backgrounds.map((bg) => (
+              <div key={bg.id} className="w-48 md:w-auto flex-shrink-0 md:flex-shrink">
+                <SceneCard
+                  id={bg.id}
+                  name={bg.name}
+                  image={bg.image}
+                  active={selectedId === bg.id}
+                  onClick={() => onSelect(bg)}
+                />
               </div>
-            </button>
-          ))}
+            ))}
+          </div>
         </div>
       </div>
     </div>

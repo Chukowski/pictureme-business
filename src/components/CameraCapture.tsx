@@ -281,18 +281,28 @@ export const CameraCapture = ({ onCapture, selectedBackground }: CameraCapturePr
 
       <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-4">
         {selectedBackground && (
-          <p className="text-sm text-muted-foreground px-4 py-2 rounded-full bg-black/50 backdrop-blur-sm">
-            Background selected
-          </p>
+          <div className="glass-panel px-6 py-3 rounded-2xl">
+            <p className="text-sm text-foreground font-medium">Scene ready</p>
+          </div>
         )}
-        <Button
+        
+        {/* Modern capture button with ring effect */}
+        <button
           onClick={handleCapture}
           disabled={!isCameraReady || countdown !== null}
-          size="lg"
-          className="w-20 h-20 rounded-full bg-primary hover:bg-primary-glow glow-teal transition-all"
+          className="group relative w-24 h-24 rounded-full disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          <Camera className="w-10 h-10" />
-        </Button>
+          {/* Outer pulsing ring */}
+          <div className="absolute inset-0 rounded-full bg-primary/20 animate-pulse glow-primary" />
+          
+          {/* Middle ring */}
+          <div className="absolute inset-2 rounded-full border-4 border-primary/50" />
+          
+          {/* Inner button */}
+          <div className="absolute inset-4 rounded-full gradient-primary flex items-center justify-center group-hover:scale-110 transition-transform glow-primary">
+            <Camera className="w-10 h-10 text-primary-foreground" />
+          </div>
+        </button>
       </div>
       </div>
     </div>
