@@ -45,6 +45,16 @@ All colors MUST be HSL.
 
     --radius: 1rem;
 
+    /* Sidebar colors */
+    --sidebar: 0 0% 100%;
+    --sidebar-foreground: 220 15% 20%;
+    --sidebar-primary: var(--brand-primary);
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 13% 95%;
+    --sidebar-accent-foreground: 220 15% 20%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: var(--brand-primary);
+
     /* Glow variants */
     --primary-glow: 250 84% 70%;
     --secondary-glow: 340 82% 68%;

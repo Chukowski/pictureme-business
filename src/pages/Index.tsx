@@ -102,11 +102,13 @@ const Index = () => {
           <header className="relative p-6 md:p-8 text-center border-b border-border/30">
             <div className="absolute inset-0 bg-gradient-to-b from-muted/30 to-transparent" />
             <div className="relative">
-              <h1 className="text-4xl md:text-6xl font-bold mb-3 bg-gradient-primary bg-clip-text text-transparent">
-                Photo Booth AI
+              <h1 className="text-4xl md:text-6xl font-bold mb-3">
+                <span className="bg-gradient-to-r from-brand-primary to-brand-secondary bg-clip-text text-transparent">
+                  AI Photo Booth
+                </span>
               </h1>
-              <p className="text-base md:text-xl text-secondary font-medium">
-                Powered by Siemens Healthineers
+              <p className="text-base md:text-xl text-muted-foreground font-medium">
+                Powered by Akitá
               </p>
             </div>
           </header>
