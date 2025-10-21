@@ -10,6 +10,7 @@ interface BrandConfig {
   logo?: string;
   brandName?: string;
   tagline?: string;
+  mode?: "light" | "dark";
 }
 
 interface ThemeContextType {
@@ -24,6 +25,7 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
     theme: "siemens",
     brandName: "Siemens Healthineers",
     tagline: "Do less. Experience the future",
+    mode: "light",
   });
 
   useEffect(() => {
@@ -38,6 +40,7 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
           tagline: current.tagline || prev.tagline,
           primaryColor: current.primaryColor || prev.primaryColor,
           secondaryColor: current.secondaryColor || prev.secondaryColor,
+          mode: current.themeMode || prev.mode || "light",
         }));
       }
     } catch (_) {
@@ -46,8 +49,16 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   useEffect(() => {
+    const mode = brandConfig.mode || "light";
+
     // Apply theme to document root
     document.documentElement.setAttribute("data-theme", brandConfig.theme);
+    document.documentElement.setAttribute("data-theme-mode", mode);
+    if (mode === "dark") {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
     
     // Apply custom colors if provided
     if (brandConfig.primaryColor) {

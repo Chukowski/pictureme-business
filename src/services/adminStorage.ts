@@ -17,6 +17,7 @@ export interface EventConfig {
   logo?: string;
   brandName: string;
   tagline?: string;
+  themeMode?: 'light' | 'dark';
   userProfile?: {
     name: string;
     role?: string;
@@ -71,6 +72,7 @@ export const getEvents = (): EventConfig[] => {
   return events.map((event: any) => ({
     ...event,
     templates: event.templates || [],
+    themeMode: event.themeMode || 'light',
   }));
 };
 
@@ -82,6 +84,7 @@ export const getEvent = (id: string): EventConfig | null => {
 export const createEvent = (event: Omit<EventConfig, 'id' | 'createdAt' | 'updatedAt'>): EventConfig => {
   const newEvent: EventConfig = {
     ...event,
+    themeMode: event.themeMode || 'light',
     id: crypto.randomUUID(),
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),

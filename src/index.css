@@ -92,6 +92,49 @@ All colors MUST be HSL.
     --brand-primary: 174 100% 37%;       /* Soft teal */
     --brand-secondary: 340 82% 62%;      /* Soft pink */
   }
+
+  [data-theme-mode="dark"] {
+    --background: 222 47% 11%;
+    --foreground: 210 40% 96%;
+
+    --card: 222 47% 15%;
+    --card-foreground: 210 40% 96%;
+
+    --popover: 222 47% 12%;
+    --popover-foreground: 210 40% 96%;
+
+    --muted: 217 28% 20%;
+    --muted-foreground: 214 20% 70%;
+
+    --accent: 215 27% 25%;
+    --accent-foreground: 210 40% 96%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 217 28% 24%;
+    --input: 217 28% 24%;
+    --ring: var(--brand-primary);
+
+    --sidebar: 222 47% 16%;
+    --sidebar-background: 222 47% 16%;
+    --sidebar-foreground: 210 40% 96%;
+    --sidebar-accent: 216 28% 21%;
+    --sidebar-accent-foreground: 210 40% 96%;
+    --sidebar-border: 217 28% 24%;
+    --sidebar-ring: var(--brand-primary);
+
+    --gradient-dark: linear-gradient(180deg, hsl(223 47% 12%), hsl(222 47% 8%));
+    --gradient-card: linear-gradient(145deg, hsl(222 47% 14%), hsl(222 47% 10%));
+
+    --glass-bg: hsla(222, 30%, 16%, 0.75);
+    --glass-border: hsla(var(--brand-primary), 0.25);
+
+    --shadow-glow-primary: 0 12px 32px hsl(var(--brand-primary) / 0.35);
+    --shadow-glow-secondary: 0 12px 32px hsl(var(--brand-secondary) / 0.35);
+    --shadow-elegant: 0 20px 60px -16px hsl(210 30% 6% / 0.65);
+    --shadow-card: 0 12px 32px -12px hsl(210 30% 6% / 0.6);
+  }
 }
 
 @layer base {

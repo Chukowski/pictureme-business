@@ -42,6 +42,7 @@ export default function AdminEvents() {
       brandName: 'Photo Booth',
       aiModel: 'fal-ai/bytedance/seedream/v4/edit',
       active: true,
+      themeMode: 'light',
     });
     setEvents(getEvents());
     setSelectedEvent(newEvent);
@@ -309,6 +310,23 @@ export default function AdminEvents() {
                         value={editForm.tagline || ''}
                         onChange={(e) => setEditForm({ ...editForm, tagline: e.target.value })}
                       />
+                    </div>
+
+                    <div>
+                      <Label>Theme Mode</Label>
+                      <select
+                        className="w-full p-2 rounded-lg border border-border bg-background"
+                        value={editForm.themeMode || 'light'}
+                        onChange={(e) =>
+                          setEditForm({
+                            ...editForm,
+                            themeMode: e.target.value as 'light' | 'dark',
+                          })
+                        }
+                      >
+                        <option value="light">Light</option>
+                        <option value="dark">Dark</option>
+                      </select>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
