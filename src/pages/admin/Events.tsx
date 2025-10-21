@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { getEvents, createEvent, updateEvent, deleteEvent, adminLogout, setCurrentEvent, addTemplateToEvent, updateEventTemplate, deleteEventTemplate, type EventConfig, type Template } from '@/services/adminStorage';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Trash2, Power, Save } from 'lucide-react';
+import { Plus, Trash2, Power, Save, X, Upload } from 'lucide-react';
 
 export default function AdminEvents() {
   const [events, setEvents] = useState<EventConfig[]>([]);
@@ -43,17 +43,41 @@ export default function AdminEvents() {
     toast({ title: 'Event created' });
   };
 
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    Array.from(files).forEach(file => {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const base64 = event.target?.result as string;
+        setNewTemplate(prev => ({
+          ...prev,
+          images: [...(prev.images || []), base64]
+        }));
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleRemoveImage = (index: number) => {
+    setNewTemplate(prev => ({
+      ...prev,
+      images: (prev.images || []).filter((_, i) => i !== index)
+    }));
+  };
+
   const handleAddTemplate = () => {
     if (!selectedEvent) return;
-    if (!newTemplate.name || !newTemplate.imageUrl || !newTemplate.prompt) {
-      toast({ title: 'Fill all template fields', variant: 'destructive' });
+    if (!newTemplate.name || !newTemplate.images?.length || !newTemplate.prompt) {
+      toast({ title: 'Fill all template fields and add at least one image', variant: 'destructive' });
       return;
     }
     
     addTemplateToEvent(selectedEvent.id, {
       name: newTemplate.name,
       description: newTemplate.description || '',
-      imageUrl: newTemplate.imageUrl,
+      images: newTemplate.images,
       prompt: newTemplate.prompt,
       active: true,
     });
@@ -289,12 +313,40 @@ export default function AdminEvents() {
                       />
                     </div>
                     <div>
-                      <Label>Image URL</Label>
-                      <Input
-                        value={newTemplate.imageUrl || ''}
-                        onChange={(e) => setNewTemplate({ ...newTemplate, imageUrl: e.target.value })}
-                        placeholder="/src/assets/backgrounds/ocean.jpg"
-                      />
+                      <Label>Upload Images</Label>
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2">
+                          <Input
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            onChange={handleImageUpload}
+                            className="cursor-pointer"
+                          />
+                          <Upload className="w-5 h-5 text-muted-foreground" />
+                        </div>
+                        {newTemplate.images && newTemplate.images.length > 0 && (
+                          <div className="grid grid-cols-3 gap-2">
+                            {newTemplate.images.map((img, idx) => (
+                              <div key={idx} className="relative group">
+                                <img 
+                                  src={img} 
+                                  alt={`Preview ${idx + 1}`}
+                                  className="w-full h-24 object-cover rounded-lg border"
+                                />
+                                <Button
+                                  size="sm"
+                                  variant="destructive"
+                                  className="absolute top-1 right-1 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                                  onClick={() => handleRemoveImage(idx)}
+                                >
+                                  <X className="w-3 h-3" />
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </div>
                     <div>
                       <Label>AI Prompt</Label>
@@ -316,13 +368,38 @@ export default function AdminEvents() {
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {(selectedEvent.templates || []).map((template) => (
                       <Card key={template.id} className="p-4">
-                        <img
-                          src={template.imageUrl}
-                          alt={template.name}
-                          className="w-full h-40 object-cover rounded-lg mb-3"
-                        />
+                        {template.images && template.images.length > 0 && (
+                          <div className="mb-3">
+                            {template.images.length === 1 ? (
+                              <img
+                                src={template.images[0]}
+                                alt={template.name}
+                                className="w-full h-40 object-cover rounded-lg"
+                              />
+                            ) : (
+                              <div className="grid grid-cols-2 gap-1">
+                                {template.images.slice(0, 4).map((img, idx) => (
+                                  <img
+                                    key={idx}
+                                    src={img}
+                                    alt={`${template.name} ${idx + 1}`}
+                                    className="w-full h-20 object-cover rounded"
+                                  />
+                                ))}
+                                {template.images.length > 4 && (
+                                  <div className="absolute bottom-1 right-1 bg-black/60 text-white text-xs px-2 py-1 rounded">
+                                    +{template.images.length - 4} more
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        )}
                         <h3 className="font-semibold">{template.name}</h3>
                         <p className="text-sm text-muted-foreground mb-2">{template.description}</p>
+                        <p className="text-xs text-muted-foreground mb-2">
+                          {template.images?.length || 0} image(s)
+                        </p>
                         <Button
                           size="sm"
                           variant="destructive"

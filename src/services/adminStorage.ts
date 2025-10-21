@@ -2,7 +2,7 @@ export interface Template {
   id: string;
   name: string;
   description: string;
-  imageUrl: string;
+  images: string[]; // Array of image URLs/base64
   prompt: string;
   active: boolean;
 }
@@ -112,7 +112,7 @@ const getDefaultTemplates = (): Template[] => [
     id: crypto.randomUUID(),
     name: 'Particle Field',
     description: 'Immersive glowing particles',
-    imageUrl: '/src/assets/backgrounds/glares.jpg',
+    images: ['/src/assets/backgrounds/glares.jpg'],
     prompt: 'photorealistic portrait with glowing particle field background, cinematic lighting',
     active: true,
   },
@@ -120,7 +120,7 @@ const getDefaultTemplates = (): Template[] => [
     id: crypto.randomUUID(),
     name: 'Ocean Waves',
     description: 'Serene ocean backdrop',
-    imageUrl: '/src/assets/backgrounds/ocean.jpg',
+    images: ['/src/assets/backgrounds/ocean.jpg'],
     prompt: 'professional portrait with ocean waves background, natural lighting',
     active: true,
   },
@@ -128,7 +128,7 @@ const getDefaultTemplates = (): Template[] => [
     id: crypto.randomUUID(),
     name: 'Jungle Vibes',
     description: 'Tropical rainforest',
-    imageUrl: '/src/assets/backgrounds/jungle.jpg',
+    images: ['/src/assets/backgrounds/jungle.jpg'],
     prompt: 'vibrant portrait with tropical jungle background, natural atmosphere',
     active: true,
   },
@@ -136,7 +136,7 @@ const getDefaultTemplates = (): Template[] => [
     id: crypto.randomUUID(),
     name: 'Rain Effect',
     description: 'Dramatic rain backdrop',
-    imageUrl: '/src/assets/backgrounds/rain.jpg',
+    images: ['/src/assets/backgrounds/rain.jpg'],
     prompt: 'cinematic portrait with rain and bokeh lights background',
     active: true,
   },
@@ -144,7 +144,7 @@ const getDefaultTemplates = (): Template[] => [
     id: crypto.randomUUID(),
     name: 'Autumn Leaves',
     description: 'Warm fall colors',
-    imageUrl: '/src/assets/backgrounds/leafs.jpg',
+    images: ['/src/assets/backgrounds/leafs.jpg'],
     prompt: 'warm portrait with autumn leaves background, golden hour lighting',
     active: true,
   },
