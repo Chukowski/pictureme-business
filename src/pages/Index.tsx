@@ -11,7 +11,7 @@ type AppState = "selecting" | "capturing" | "processing" | "result";
 
 const Index = () => {
   const [state, setState] = useState<AppState>("selecting");
-  const [selectedBackground, setSelectedBackground] = useState<typeof backgrounds[0] | null>(null);
+  const [selectedBackground, setSelectedBackground] = useState<typeof backgrounds[0] | null>(backgrounds[0]); // Default to first background
   const [capturedPhoto, setCapturedPhoto] = useState<string>("");
   const [processedPhoto, setProcessedPhoto] = useState<string>("");
   const [processingStatus, setProcessingStatus] = useState<string>("Starting...");
@@ -95,17 +95,15 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen gradient-dark">
+    <div className="min-h-screen bg-gradient-dark">
       {state === "selecting" && (
-        <div className="min-h-screen flex flex-col">
-          {/* Modern header with glassmorphism */}
-          <header className="relative p-6 md:p-8 text-center border-b border-border/50 backdrop-blur-sm">
-            <div className="absolute inset-0 bg-gradient-to-b from-background/50 to-transparent" />
+        <div className="min-h-screen flex flex-col bg-gradient-dark">
+          {/* Modern header with subtle background */}
+          <header className="relative p-6 md:p-8 text-center border-b border-border/30">
+            <div className="absolute inset-0 bg-gradient-to-b from-muted/30 to-transparent" />
             <div className="relative">
-              <h1 className="text-4xl md:text-6xl font-bold mb-3">
-                <span className="gradient-primary bg-clip-text text-transparent">
-                  Photo Booth AI
-                </span>
+              <h1 className="text-4xl md:text-6xl font-bold mb-3 bg-gradient-primary bg-clip-text text-transparent">
+                Photo Booth AI
               </h1>
               <p className="text-base md:text-xl text-secondary font-medium">
                 Powered by Siemens Healthineers

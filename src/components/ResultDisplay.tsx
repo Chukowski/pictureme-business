@@ -132,7 +132,7 @@ export const ResultDisplay = ({ imageUrl, shareCode, onReset }: ResultDisplayPro
   };
 
   return (
-    <div className="min-h-screen gradient-dark p-4 md:p-8 flex items-center justify-center">
+    <div className="min-h-screen bg-gradient-dark p-4 md:p-8 flex items-center justify-center">
       <div className="w-full max-w-4xl mx-auto space-y-6">
         {/* Result Image with modern card */}
         <div className="relative rounded-3xl overflow-hidden shadow-elegant glow-primary animate-fade-in">

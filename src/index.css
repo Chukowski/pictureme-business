@@ -8,62 +8,62 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* Brand-neutral base (Akitá inspired) */
-    --background: 220 13% 5%;        /* #0D0F10 - dark graphite */
-    --foreground: 40 15% 90%;        /* #E8E4DD - neutral beige */
+    /* Modern light mode with smooth colors */
+    --background: 0 0% 98%;              /* #FAFAFA - soft white */
+    --foreground: 220 15% 20%;           /* #2D3139 - dark charcoal */
 
-    --card: 220 15% 8%;              /* Slightly lighter than background */
-    --card-foreground: 40 15% 90%;
+    --card: 0 0% 100%;                   /* Pure white cards */
+    --card-foreground: 220 15% 20%;
 
-    --popover: 220 15% 10%;
-    --popover-foreground: 40 15% 90%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 15% 20%;
 
-    /* Dynamic theme colors - can be overridden per event */
-    --brand-primary: 174 100% 37%;   /* #00BFA5 - soft teal (default) */
-    --brand-secondary: 24 96% 48%;   /* #EE6602 - Siemens orange (available) */
-    --brand-accent: 40 15% 90%;      /* Neutral accent */
+    /* Modern smooth brand colors */
+    --brand-primary: 250 84% 64%;        /* #6366F1 - smooth indigo */
+    --brand-secondary: 340 82% 62%;      /* #F472B6 - soft pink */
+    --brand-accent: 210 100% 56%;        /* #3B82F6 - vibrant blue */
     
-    /* Map to standard tokens for component compatibility */
+    /* Map to standard tokens */
     --primary: var(--brand-primary);
-    --primary-foreground: 220 13% 5%;
+    --primary-foreground: 0 0% 100%;
     
     --secondary: var(--brand-secondary);
     --secondary-foreground: 0 0% 100%;
 
-    --muted: 220 15% 15%;
-    --muted-foreground: 220 10% 60%;
+    --muted: 220 13% 95%;                /* #F1F2F4 - very light gray */
+    --muted-foreground: 220 9% 46%;      /* #6B7280 - medium gray */
 
     --accent: var(--brand-accent);
-    --accent-foreground: 220 13% 5%;
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 15% 20%;
-    --input: 220 15% 12%;
+    --border: 220 13% 91%;               /* #E5E7EB - light border */
+    --input: 220 13% 95%;
     --ring: var(--brand-primary);
 
     --radius: 1rem;
 
-    /* Glow variants for theming */
-    --primary-glow: 174 100% 45%;
-    --secondary-glow: 24 100% 60%;
+    /* Glow variants */
+    --primary-glow: 250 84% 70%;
+    --secondary-glow: 340 82% 68%;
     
-    /* Gradients using brand colors */
-    --gradient-primary: linear-gradient(135deg, hsl(var(--brand-primary)), hsl(var(--primary-glow)));
-    --gradient-secondary: linear-gradient(135deg, hsl(var(--brand-secondary)), hsl(var(--secondary-glow)));
-    --gradient-dark: linear-gradient(180deg, hsl(220 13% 5%), hsl(220 15% 8%));
-    --gradient-card: linear-gradient(145deg, hsl(220 15% 10%), hsl(220 15% 6%));
+    /* Modern gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(250 84% 64%), hsl(210 100% 56%));
+    --gradient-secondary: linear-gradient(135deg, hsl(340 82% 62%), hsl(280 82% 66%));
+    --gradient-dark: linear-gradient(180deg, hsl(0 0% 98%), hsl(220 13% 95%));
+    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%), hsl(220 13% 98%));
     
-    /* Glassmorphism */
-    --glass-bg: hsla(220, 15%, 10%, 0.6);
-    --glass-border: hsla(var(--brand-primary), 0.2);
+    /* Glassmorphism for light mode */
+    --glass-bg: hsla(0, 0%, 100%, 0.8);
+    --glass-border: hsla(var(--brand-primary), 0.15);
     
-    /* Shadows with brand color */
-    --shadow-glow-primary: 0 0 40px hsl(var(--brand-primary) / 0.3);
-    --shadow-glow-secondary: 0 0 30px hsl(var(--brand-secondary) / 0.3);
-    --shadow-elegant: 0 10px 50px -10px hsl(0 0% 0% / 0.9);
-    --shadow-card: 0 8px 32px -8px hsl(0 0% 0% / 0.5);
+    /* Soft shadows */
+    --shadow-glow-primary: 0 8px 32px hsl(var(--brand-primary) / 0.2);
+    --shadow-glow-secondary: 0 8px 32px hsl(var(--brand-secondary) / 0.2);
+    --shadow-elegant: 0 20px 60px -10px hsl(220 15% 20% / 0.15);
+    --shadow-card: 0 4px 24px -4px hsl(220 15% 20% / 0.08);
     
     /* Animations */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -71,16 +71,15 @@ All colors MUST be HSL.
     --transition-spring: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
   
-  /* Event theme overrides - example for Siemens */
+  /* Event theme overrides */
   [data-theme="siemens"] {
-    --brand-primary: 180 100% 30%;   /* Teal */
-    --brand-secondary: 24 96% 48%;   /* Orange */
+    --brand-primary: 180 100% 30%;       /* Teal */
+    --brand-secondary: 24 96% 48%;       /* Orange */
   }
   
-  /* Event theme - Akitá (neutral) */
   [data-theme="akita"] {
-    --brand-primary: 174 100% 37%;   /* Soft teal */
-    --brand-secondary: 40 15% 70%;   /* Neutral beige */
+    --brand-primary: 174 100% 37%;       /* Soft teal */
+    --brand-secondary: 340 82% 62%;      /* Soft pink */
   }
 }
 

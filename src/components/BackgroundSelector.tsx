@@ -61,8 +61,8 @@ export const BackgroundSelector = ({ onSelect, onConfirm, selectedId }: Backgrou
                 alt={selectedBg.name}
                 className="w-full h-full object-cover"
               />
-              {/* Animated gradient overlay */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent" />
+              {/* Gradient overlay - lighter for light mode */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
               
               {/* Floating particles effect */}
               <div className="absolute inset-0 opacity-20">
