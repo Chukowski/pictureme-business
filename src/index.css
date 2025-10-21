@@ -46,7 +46,8 @@ All colors MUST be HSL.
     --radius: 1rem;
 
     /* Sidebar colors */
-    --sidebar: 0 0% 100%;
+    --sidebar: 0 0% 100%; /* legacy var kept for back-compat */
+    --sidebar-background: 0 0% 100%;
     --sidebar-foreground: 220 15% 20%;
     --sidebar-primary: var(--brand-primary);
     --sidebar-primary-foreground: 0 0% 100%;
@@ -111,6 +112,11 @@ All colors MUST be HSL.
 }
 
 @layer utilities {
+  /* Back-compat alias: many pages use `bg-gradient-dark`, keep supporting it */
+  .bg-gradient-dark {
+    background: var(--gradient-dark);
+  }
+
   .gradient-primary {
     background: var(--gradient-primary);
   }

@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { getCurrentEvent } from "@/services/adminStorage";
 
 type EventTheme = "default" | "siemens" | "akita" | "custom";
 
@@ -24,6 +25,25 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
     brandName: "Siemens Healthineers",
     tagline: "Do less. Experience the future",
   });
+
+  useEffect(() => {
+    // Initialize from active event configuration if available
+    try {
+      const current = getCurrentEvent();
+      if (current) {
+        setBrandConfig((prev) => ({
+          ...prev,
+          theme: "custom",
+          brandName: current.brandName || prev.brandName,
+          tagline: current.tagline || prev.tagline,
+          primaryColor: current.primaryColor || prev.primaryColor,
+          secondaryColor: current.secondaryColor || prev.secondaryColor,
+        }));
+      }
+    } catch (_) {
+      // no-op: admin storage may be empty on first run
+    }
+  }, []);
 
   useEffect(() => {
     // Apply theme to document root

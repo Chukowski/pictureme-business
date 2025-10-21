@@ -9,18 +9,78 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  useSidebar,
+  SidebarHeader,
+  SidebarTrigger,
+  SidebarRail,
 } from '@/components/ui/sidebar';
 import { useTheme } from '@/contexts/ThemeContext';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { getCurrentEvent } from '@/services/adminStorage';
+import { useEffect, useState } from 'react';
 
 export function AppSidebar() {
-  const { state } = useSidebar();
   const { brandConfig } = useTheme();
-  const isCollapsed = state === 'collapsed';
+  const [userName, setUserName] = useState<string>('Event Guest');
+  const [userRole, setUserRole] = useState<string>('Attendee');
+  const [avatarUrl, setAvatarUrl] = useState<string | undefined>(undefined);
+
+  useEffect(() => {
+    // Load event user from current event if present
+    try {
+      const current = getCurrentEvent();
+      if (current?.userProfile) {
+        setUserName(current.userProfile.name || 'Event Guest');
+        setUserRole(current.userProfile.role || 'Attendee');
+        setAvatarUrl(current.userProfile.avatarUrl);
+      } else {
+        // Graceful fallback using brand
+        const brand = brandConfig.brandName || 'Photobooth';
+        setUserName(`${brand} Guest`);
+        setUserRole('Attendee');
+        setAvatarUrl(undefined);
+      }
+    } catch {
+      // ignore
+    }
+  }, [brandConfig.brandName]);
 
   return (
     <Sidebar collapsible="offcanvas">
+      <SidebarHeader className="flex items-center justify-between gap-2 border-b border-sidebar-border px-3 py-3">
+        <div className="h-8 w-8 rounded-xl gradient-primary shadow-card" />
+        <span className="text-sm font-semibold text-sidebar-foreground truncate max-w-[10rem]">
+          {brandConfig.brandName || 'AI Photobooth'}
+        </span>
+        <SidebarTrigger className="h-7 w-7 rounded-full border border-sidebar-border text-sidebar-foreground hover:bg-sidebar-accent" />
+      </SidebarHeader>
       <SidebarContent>
+        {/* Event User Profile */}
+        <SidebarGroup>
+          <SidebarGroupLabel>User</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <div className="px-3 py-3 flex items-center gap-3 rounded-lg border border-sidebar-border bg-sidebar-accent">
+              <Avatar className="h-9 w-9">
+                {avatarUrl ? (
+                  <AvatarImage src={avatarUrl} alt={userName} />
+                ) : (
+                  <AvatarFallback>
+                    {userName
+                      .split(' ')
+                      .map((s) => s[0])
+                      .join('')
+                      .slice(0, 2)
+                      .toUpperCase()}
+                  </AvatarFallback>
+                )}
+              </Avatar>
+              <div className="min-w-0">
+                <p className="text-sm font-medium truncate text-sidebar-foreground">{userName}</p>
+                <p className="text-xs text-sidebar-foreground/70 truncate">{userRole}</p>
+              </div>
+            </div>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
         <SidebarGroup>
           <SidebarGroupLabel>Event Info</SidebarGroupLabel>
           <SidebarGroupContent>
@@ -83,6 +143,11 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
+      <SidebarRail className="relative border-none bg-transparent after:content-[''] after:bg-transparent group-data-[state=collapsed]:w-12">
+        <div className="absolute left-full top-1/2 -translate-y-1/2 ml-1 hidden group-data-[state=collapsed]:flex">
+          <div className="h-8 w-8 rounded-xl gradient-primary shadow-card" />
+        </div>
+      </SidebarRail>
     </Sidebar>
   );
 }

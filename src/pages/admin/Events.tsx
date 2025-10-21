@@ -11,6 +11,9 @@ import { useToast } from '@/hooks/use-toast';
 import { Plus, Trash2, Power, Save, X, Upload, Sparkles } from 'lucide-react';
 
 export default function AdminEvents() {
+  const primaryButtonClass = "gradient-primary text-primary-foreground shadow-card border-0 hover:opacity-90";
+  const secondaryButtonClass = "gradient-secondary text-secondary-foreground shadow-card border-0 hover:opacity-90";
+
   const [events, setEvents] = useState<EventConfig[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<EventConfig | null>(null);
   const [editForm, setEditForm] = useState<Partial<EventConfig>>({});
@@ -193,67 +196,83 @@ export default function AdminEvents() {
           <TabsContent value="events" className="space-y-6">
             <div className="flex justify-between items-center">
               <h2 className="text-2xl font-bold">Events</h2>
-              <Button onClick={handleCreateEvent}>
+              <Button onClick={handleCreateEvent} className={primaryButtonClass}>
                 <Plus className="w-4 h-4 mr-2" />
-                Create Event
+                Add Event
               </Button>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <Card className="p-4 lg:col-span-1">
-                <h3 className="font-semibold mb-4">Event List</h3>
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="font-semibold">Event List</h3>
+                  <Button size="sm" onClick={handleCreateEvent} className={secondaryButtonClass}>
+                    <Plus className="w-3 h-3 mr-1" />
+                    Add
+                  </Button>
+                </div>
                 <div className="space-y-2">
-                  {events.map((event) => (
-                    <div
-                      key={event.id}
-                      className={`p-3 rounded-lg border cursor-pointer transition-all ${
-                        selectedEvent?.id === event.id
-                          ? 'border-brand-primary bg-brand-primary/10'
-                          : 'border-border hover:border-brand-primary/50'
-                      }`}
-                      onClick={() => {
-                        setSelectedEvent(event);
-                        setEditForm(event);
-                      }}
-                    >
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <p className="font-medium">{event.name}</p>
-                          <p className="text-xs text-muted-foreground">{event.slug}</p>
-                        </div>
-                        <div className="flex gap-1">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleActivateEvent(event);
-                            }}
-                          >
-                            <Power className="w-3 h-3" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteEvent(event.id);
-                            }}
-                          >
-                            <Trash2 className="w-3 h-3" />
-                          </Button>
+                  {events.length === 0 ? (
+                    <div className="border border-dashed border-border rounded-lg p-6 text-center space-y-3">
+                      <p className="text-sm text-muted-foreground">No events yet.</p>
+                      <Button onClick={handleCreateEvent} className={primaryButtonClass}>
+                        <Plus className="w-4 h-4 mr-2" />
+                        Create your first event
+                      </Button>
+                    </div>
+                  ) : (
+                    events.map((event) => (
+                      <div
+                        key={event.id}
+                        className={`p-3 rounded-lg border cursor-pointer transition-all ${
+                          selectedEvent?.id === event.id
+                            ? 'border-brand-primary bg-brand-primary/10'
+                            : 'border-border hover:border-brand-primary/50'
+                        }`}
+                        onClick={() => {
+                          setSelectedEvent(event);
+                          setEditForm(event);
+                        }}
+                      >
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <p className="font-medium">{event.name}</p>
+                            <p className="text-xs text-muted-foreground">{event.slug}</p>
+                          </div>
+                          <div className="flex gap-1">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleActivateEvent(event);
+                              }}
+                            >
+                              <Power className="w-3 h-3" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteEvent(event.id);
+                              }}
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </Button>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
               </Card>
 
               {selectedEvent && (
                 <Card className="p-6 lg:col-span-2">
-                  <div className="flex justify-between items-center mb-6">
+                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-6">
                     <h3 className="text-xl font-semibold">Edit Event</h3>
-                    <Button onClick={handleSaveEvent}>
+                    <Button onClick={handleSaveEvent} className={`md:self-end ${primaryButtonClass}`}>
                       <Save className="w-4 h-4 mr-2" />
                       Save
                     </Button>
@@ -370,6 +389,17 @@ export default function AdminEvents() {
                         <Label htmlFor="enableVideoRecording" className="cursor-pointer">Enable Video Recording in Booth</Label>
                       </div>
                     </div>
+
+                    <div className="flex justify-end pt-2 gap-2 flex-wrap">
+                      <Button onClick={handleCreateEvent} className={secondaryButtonClass}>
+                        <Plus className="w-4 h-4 mr-2" />
+                        Add Event
+                      </Button>
+                      <Button onClick={handleSaveEvent} className={`min-w-[140px] ${primaryButtonClass}`}>
+                        <Save className="w-4 h-4 mr-2" />
+                        Save Changes
+                      </Button>
+                    </div>
                   </div>
                 </Card>
               )}
@@ -384,7 +414,13 @@ export default function AdminEvents() {
             ) : (
               <div className="space-y-6">
                 <Card className="p-6">
-                  <h3 className="text-xl font-semibold mb-4">Add Template to {selectedEvent.name}</h3>
+                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
+                    <h3 className="text-xl font-semibold">Add Template to {selectedEvent.name}</h3>
+                    <Button onClick={handleAddTemplate} type="button" className={`md:self-end ${primaryButtonClass}`}>
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add Template
+                    </Button>
+                  </div>
                   <div className="space-y-4">
                     <div>
                       <Label>Template Name</Label>
@@ -478,7 +514,7 @@ export default function AdminEvents() {
                         placeholder="professional portrait with ocean background, natural lighting"
                       />
                     </div>
-                    <Button onClick={handleAddTemplate}>
+                    <Button onClick={handleAddTemplate} className={`w-full md:hidden ${primaryButtonClass}`} type="button">
                       <Plus className="w-4 h-4 mr-2" />
                       Add Template
                     </Button>

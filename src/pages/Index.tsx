@@ -6,6 +6,7 @@ import { ResultDisplay } from "@/components/ResultDisplay";
 import { toast } from "sonner";
 import { processImageWithAI, downloadImageAsBase64 } from "@/services/aiProcessor";
 import { saveProcessedPhoto } from "@/services/localStorage";
+import { EventTitle } from "@/components/EventTitle";
 type AppState = "selecting" | "capturing" | "processing" | "result";
 const Index = () => {
   const [state, setState] = useState<AppState>("selecting");
@@ -83,23 +84,10 @@ const Index = () => {
     setShareCode("");
     setProcessingStatus("Starting...");
   };
-  return <div className="min-h-screen bg-gradient-dark">
+  return <div className="min-h-screen bg-gradient-dark relative">
+      {state === "selecting" && <EventTitle />}
+
       {state === "selecting" && <div className="min-h-screen flex flex-col bg-gradient-dark">
-          {/* Modern header with subtle background */}
-          <header className="relative p-6 md:p-8 text-center border-b border-border/30">
-            <div className="absolute inset-0 bg-gradient-to-b from-muted/30 to-transparent" />
-            <div className="relative">
-              <h1 className="text-4xl md:text-6xl font-bold mb-3">
-                <span className="bg-gradient-to-r from-brand-primary to-brand-secondary bg-clip-text text-purple-500">
-                  AI Photo Booth
-                </span>
-              </h1>
-              <p className="text-base md:text-xl text-muted-foreground font-medium">
-                Powered by Akitá
-              </p>
-            </div>
-          </header>
-          
           <div className="flex-1 flex items-center justify-center">
             <BackgroundSelector onSelect={handleBackgroundSelect} onConfirm={handleConfirmBackground} selectedId={selectedBackground?.id || null} />
           </div>

@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { Download, Mail, RotateCcw, Share2, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { getShareUrl } from "@/services/localStorage";
+import { useTheme } from "@/contexts/ThemeContext";
 
 interface ResultDisplayProps {
   imageUrl: string;
@@ -13,11 +14,20 @@ interface ResultDisplayProps {
 }
 
 export const ResultDisplay = ({ imageUrl, shareCode, onReset }: ResultDisplayProps) => {
+  const { brandConfig } = useTheme();
   const [email, setEmail] = useState("");
   const [isSending, setIsSending] = useState(false);
   
   // Generate a shareable URL for QR code
   const shareUrl = shareCode ? getShareUrl(shareCode) : `${window.location.origin}/photo/${Date.now()}`;
+
+  // Resolve brand secondary color from CSS vars for canvas usage
+  const brandSecondaryCss = useMemo(() => {
+    const hsl = getComputedStyle(document.documentElement).getPropertyValue("--brand-secondary").trim();
+    return hsl ? `hsl(${hsl})` : "#ee6602";
+  }, []);
+
+  const safeBrandSlug = useMemo(() => (brandConfig.brandName || "photobooth").toLowerCase().replace(/\s+/g, "-"), [brandConfig.brandName]);
 
   const handleDownload = async () => {
     try {
@@ -26,7 +36,7 @@ export const ResultDisplay = ({ imageUrl, shareCode, onReset }: ResultDisplayPro
       
       const link = document.createElement("a");
       link.href = brandedImageUrl;
-      link.download = `siemens-photobooth-${Date.now()}.jpg`;
+      link.download = `${safeBrandSlug}-photobooth-${Date.now()}.jpg`;
       link.click();
       toast.success("Photo downloaded!");
     } catch (error) {
@@ -60,7 +70,7 @@ export const ResultDisplay = ({ imageUrl, shareCode, onReset }: ResultDisplayPro
         const bottomPadding = 24 * scale;
         const sidePadding = 24 * scale;
 
-        // Top branding - "Siemens Healthineers"
+        // Top branding - brand name
         ctx.save();
         ctx.fillStyle = "#ffffff";
         ctx.font = `bold ${48 * scale}px Arial, sans-serif`;
@@ -69,22 +79,22 @@ export const ResultDisplay = ({ imageUrl, shareCode, onReset }: ResultDisplayPro
         ctx.shadowBlur = 10 * scale;
         ctx.shadowOffsetX = 2 * scale;
         ctx.shadowOffsetY = 2 * scale;
-        ctx.fillText("Siemens Healthineers", img.width / 2, topPadding + (48 * scale));
+        ctx.fillText(brandConfig.brandName || "AI Photobooth", img.width / 2, topPadding + (48 * scale));
         ctx.restore();
 
-        // Bottom branding - "Do less."
+        // Bottom branding - primary tagline (brand secondary color)
         ctx.save();
-        ctx.fillStyle = "#ee6602"; // Orange color
+        ctx.fillStyle = brandSecondaryCss; // Brand secondary color
         ctx.font = `bold ${64 * scale}px Arial, sans-serif`;
         ctx.textAlign = "left";
         ctx.shadowColor = "rgba(0, 0, 0, 0.8)";
         ctx.shadowBlur = 10 * scale;
         ctx.shadowOffsetX = 2 * scale;
         ctx.shadowOffsetY = 2 * scale;
-        ctx.fillText("Do less.", sidePadding, img.height - bottomPadding - (40 * scale));
+        ctx.fillText(brandConfig.tagline || "Do less.", sidePadding, img.height - bottomPadding - (40 * scale));
         ctx.restore();
 
-        // Bottom subtitle - "Experience the future"
+        // Bottom subtitle - keep subtle supporting line
         ctx.save();
         ctx.fillStyle = "#ffffff";
         ctx.font = `${28 * scale}px Arial, sans-serif`;
@@ -145,14 +155,14 @@ export const ResultDisplay = ({ imageUrl, shareCode, onReset }: ResultDisplayPro
           <div className="absolute top-6 left-0 right-0 flex justify-center">
             <div className="glass-panel px-6 py-3 rounded-2xl">
               <h1 className="text-xl md:text-3xl font-bold text-foreground">
-                Siemens Healthineers
+                {brandConfig.brandName || "AI Photobooth"}
               </h1>
             </div>
           </div>
           <div className="absolute bottom-6 left-6 right-6">
             <div className="glass-panel p-4 md:p-6 rounded-2xl">
               <p className="text-2xl md:text-4xl font-bold gradient-secondary bg-clip-text text-transparent mb-1">
-                Do less.
+                {brandConfig.tagline || "Do less."}
               </p>
               <p className="text-sm md:text-lg text-foreground/90">
                 Experience the future

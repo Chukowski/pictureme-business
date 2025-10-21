@@ -25,12 +25,10 @@ const App = () => (
             <div className="min-h-screen flex w-full">
               <AppSidebar />
               <div className="flex-1 flex flex-col">
-                <header className="h-12 flex items-center border-b bg-background/80 backdrop-blur-sm sticky top-0 z-10">
-                  <SidebarTrigger className="ml-2" />
-                  <h1 className="ml-4 text-sm font-semibold text-foreground">
-                    AI Photobooth by <span className="text-brand-primary">Akitá</span>
-                  </h1>
-                </header>
+                {/* Mobile toggle for sidebar */}
+                <div className="fixed top-3 left-3 z-30 md:hidden">
+                  <SidebarTrigger className="shadow-card" />
+                </div>
                 <main className="flex-1">
                   <Routes>
                     <Route path="/" element={<Index />} />

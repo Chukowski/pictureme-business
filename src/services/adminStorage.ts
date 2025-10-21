@@ -17,6 +17,11 @@ export interface EventConfig {
   logo?: string;
   brandName: string;
   tagline?: string;
+  userProfile?: {
+    name: string;
+    role?: string;
+    avatarUrl?: string;
+  };
   watermark?: {
     imageUrl?: string;
     position: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'center';

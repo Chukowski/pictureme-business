@@ -1,16 +1,24 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Download, Home } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getPhotoByShareCode } from "@/services/localStorage";
 import type { ProcessedPhoto } from "@/services/localStorage";
 import { toast } from "sonner";
+import { useTheme } from "@/contexts/ThemeContext";
 
 const SharePhoto = () => {
   const { shareCode } = useParams<{ shareCode: string }>();
   const navigate = useNavigate();
   const [photo, setPhoto] = useState<ProcessedPhoto | null>(null);
   const [loading, setLoading] = useState(true);
+  const { brandConfig } = useTheme();
+
+  const brandSecondaryCss = useMemo(() => {
+    const hsl = getComputedStyle(document.documentElement).getPropertyValue("--brand-secondary").trim();
+    return hsl ? `hsl(${hsl})` : "#ee6602";
+  }, []);
+  const safeBrandSlug = useMemo(() => (brandConfig.brandName || "photobooth").toLowerCase().replace(/\s+/g, "-"), [brandConfig.brandName]);
 
   useEffect(() => {
     if (shareCode) {
@@ -32,7 +40,7 @@ const SharePhoto = () => {
         
         const link = document.createElement("a");
         link.href = brandedImageUrl;
-        link.download = `siemens-photobooth-${photo.shareCode}.jpg`;
+        link.download = `${safeBrandSlug}-photobooth-${photo.shareCode}.jpg`;
         link.click();
         toast.success("Photo downloaded!");
       } catch (error) {
@@ -67,7 +75,7 @@ const SharePhoto = () => {
         const bottomPadding = 24 * scale;
         const sidePadding = 24 * scale;
 
-        // Top branding - "Siemens Healthineers"
+        // Top branding - brand name
         ctx.save();
         ctx.fillStyle = "#ffffff";
         ctx.font = `bold ${48 * scale}px Arial, sans-serif`;
@@ -76,19 +84,19 @@ const SharePhoto = () => {
         ctx.shadowBlur = 10 * scale;
         ctx.shadowOffsetX = 2 * scale;
         ctx.shadowOffsetY = 2 * scale;
-        ctx.fillText("Siemens Healthineers", img.width / 2, topPadding + (48 * scale));
+        ctx.fillText(brandConfig.brandName || "AI Photobooth", img.width / 2, topPadding + (48 * scale));
         ctx.restore();
 
-        // Bottom branding - "Do less."
+        // Bottom branding - primary tagline
         ctx.save();
-        ctx.fillStyle = "#ee6602";
+        ctx.fillStyle = brandSecondaryCss;
         ctx.font = `bold ${64 * scale}px Arial, sans-serif`;
         ctx.textAlign = "left";
         ctx.shadowColor = "rgba(0, 0, 0, 0.8)";
         ctx.shadowBlur = 10 * scale;
         ctx.shadowOffsetX = 2 * scale;
         ctx.shadowOffsetY = 2 * scale;
-        ctx.fillText("Do less.", sidePadding, img.height - bottomPadding - (40 * scale));
+        ctx.fillText(brandConfig.tagline || "Do less.", sidePadding, img.height - bottomPadding - (40 * scale));
         ctx.restore();
 
         // Bottom subtitle
@@ -147,7 +155,7 @@ const SharePhoto = () => {
         {/* Header */}
         <div className="text-center space-y-2">
           <h1 className="text-4xl font-bold text-primary text-shadow-glow">
-            Photo Booth AI
+            {brandConfig.brandName || "Photo Booth AI"}
           </h1>
           <p className="text-muted-foreground">
             {photo.backgroundName} • {new Date(photo.createdAt).toLocaleDateString()}
@@ -161,15 +169,15 @@ const SharePhoto = () => {
             alt="Shared photo"
             className="w-full h-auto"
           />
-          {/* Siemens Branding Overlay */}
+          {/* Branding Overlay */}
           <div className="absolute top-4 md:top-6 left-0 right-0 text-center">
             <h2 className="text-2xl md:text-4xl font-bold text-foreground text-shadow-glow">
-              Siemens Healthineers
+              {brandConfig.brandName || "AI Photobooth"}
             </h2>
           </div>
           <div className="absolute bottom-4 md:bottom-6 left-4 md:left-6 right-4 md:right-6">
             <p className="text-3xl md:text-5xl font-bold text-secondary text-shadow-glow mb-2">
-              Do less.
+              {brandConfig.tagline || "Do less."}
             </p>
             <p className="text-lg md:text-xl text-foreground">
               Experience the future
@@ -199,4 +207,3 @@ const SharePhoto = () => {
 };
 
 export default SharePhoto;
-
