@@ -6,14 +6,17 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { getEvents, createEvent, updateEvent, deleteEvent, adminLogout, setCurrentEvent, addTemplateToEvent, updateEventTemplate, deleteEventTemplate, type EventConfig, type Template } from '@/services/adminStorage';
+import { suggestPromptsFromImages, type PromptSuggestion } from '@/services/aiPromptSuggester';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Trash2, Power, Save, X, Upload } from 'lucide-react';
+import { Plus, Trash2, Power, Save, X, Upload, Sparkles } from 'lucide-react';
 
 export default function AdminEvents() {
   const [events, setEvents] = useState<EventConfig[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<EventConfig | null>(null);
   const [editForm, setEditForm] = useState<Partial<EventConfig>>({});
   const [newTemplate, setNewTemplate] = useState<Partial<Template>>({});
+  const [suggestedPrompts, setSuggestedPrompts] = useState<PromptSuggestion[]>([]);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -65,6 +68,45 @@ export default function AdminEvents() {
       ...prev,
       images: (prev.images || []).filter((_, i) => i !== index)
     }));
+    setSuggestedPrompts([]);
+  };
+
+  const handleAnalyzeImages = async () => {
+    if (!newTemplate.images || newTemplate.images.length === 0) {
+      toast({
+        title: 'No images',
+        description: 'Please upload at least one image to analyze',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsAnalyzing(true);
+    try {
+      const suggestions = await suggestPromptsFromImages(newTemplate.images);
+      setSuggestedPrompts(suggestions);
+      toast({
+        title: 'Analysis complete',
+        description: '3 prompt suggestions generated',
+      });
+    } catch (error) {
+      console.error('Analysis error:', error);
+      toast({
+        title: 'Analysis failed',
+        description: error instanceof Error ? error.message : 'Failed to analyze images',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  const handleSelectPrompt = (prompt: string) => {
+    setNewTemplate({ ...newTemplate, prompt });
+    toast({
+      title: 'Prompt selected',
+      description: 'The suggested prompt has been applied',
+    });
   };
 
   const handleAddTemplate = () => {
@@ -396,8 +438,40 @@ export default function AdminEvents() {
                         )}
                       </div>
                     </div>
-                    <div>
-                      <Label>AI Prompt</Label>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label>AI Prompt</Label>
+                        {newTemplate.images && newTemplate.images.length > 0 && (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={handleAnalyzeImages}
+                            disabled={isAnalyzing}
+                            className="gap-2"
+                          >
+                            <Sparkles className="h-4 w-4" />
+                            {isAnalyzing ? 'Analyzing...' : 'AI Suggest'}
+                          </Button>
+                        )}
+                      </div>
+                      
+                      {suggestedPrompts.length > 0 && (
+                        <div className="space-y-2 p-3 rounded-lg border border-border bg-muted/50">
+                          <p className="text-sm font-medium">Suggested Prompts:</p>
+                          {suggestedPrompts.map((suggestion, index) => (
+                            <div
+                              key={index}
+                              className="p-2 rounded border border-border bg-background cursor-pointer hover:bg-accent transition-colors"
+                              onClick={() => handleSelectPrompt(suggestion.prompt)}
+                            >
+                              <p className="text-sm font-medium">{suggestion.description}</p>
+                              <p className="text-xs text-muted-foreground mt-1">{suggestion.prompt}</p>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
                       <Input
                         value={newTemplate.prompt || ''}
                         onChange={(e) => setNewTemplate({ ...newTemplate, prompt: e.target.value })}
