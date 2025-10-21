@@ -173,8 +173,8 @@ export default function AdminEvents() {
     <div className="min-h-screen bg-gradient-to-br from-background via-card to-background">
       <div className="container mx-auto p-6">
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-brand-primary to-brand-secondary bg-clip-text text-transparent">
-            Admin Dashboard
+          <h1 className="text-4xl font-bold text-foreground">
+            Admin <span className="bg-gradient-to-r from-brand-primary to-brand-secondary bg-clip-text text-transparent text-shadow-glow">Dashboard</span>
           </h1>
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => navigate('/')}>

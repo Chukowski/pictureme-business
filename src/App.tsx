@@ -4,7 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "@/contexts/ThemeContext";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { SidebarProvider, SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import Index from "./pages/Index";
 import SharePhoto from "./pages/SharePhoto";
@@ -13,6 +13,16 @@ import AdminLogin from "./pages/admin/Login";
 import AdminEvents from "./pages/admin/Events";
 
 const queryClient = new QueryClient();
+
+const FloatingSidebarToggle = () => {
+  const { state } = useSidebar();
+  if (state !== "collapsed") return null;
+  return (
+    <div className="hidden md:flex fixed top-3 left-3 z-30">
+      <SidebarTrigger className="shadow-card" />
+    </div>
+  );
+};
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -29,6 +39,7 @@ const App = () => (
                 <div className="fixed top-3 left-3 z-30 md:hidden">
                   <SidebarTrigger className="shadow-card" />
                 </div>
+                <FloatingSidebarToggle />
                 <main className="flex-1">
                   <Routes>
                     <Route path="/" element={<Index />} />

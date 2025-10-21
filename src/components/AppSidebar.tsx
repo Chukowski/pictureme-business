@@ -10,8 +10,9 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarHeader,
-  SidebarTrigger,
   SidebarRail,
+  SidebarTrigger,
+  useSidebar,
 } from '@/components/ui/sidebar';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -21,6 +22,7 @@ import { useEffect, useState } from 'react';
 
 export function AppSidebar() {
   const { brandConfig, updateTheme } = useTheme();
+  const { state } = useSidebar();
   const [userName, setUserName] = useState<string>('Event Guest');
   const [userRole, setUserRole] = useState<string>('Attendee');
   const [avatarUrl, setAvatarUrl] = useState<string | undefined>(undefined);
@@ -64,12 +66,14 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="offcanvas">
-      <SidebarHeader className="flex items-center justify-between gap-2 border-b border-sidebar-border px-3 py-3">
+      <SidebarHeader className="relative flex items-center gap-3 border-b border-sidebar-border px-5 py-3">
+        {state !== 'collapsed' && (
+          <SidebarTrigger className="hidden md:flex fixed top-3 left-3 z-40 shadow-card" />
+        )}
         <div className="h-8 w-8 rounded-xl gradient-primary shadow-card" />
         <span className="text-sm font-semibold text-sidebar-foreground truncate max-w-[10rem]">
           {brandConfig.brandName || 'AI Photobooth'}
         </span>
-        <SidebarTrigger className="h-7 w-7 rounded-full border border-sidebar-border text-sidebar-foreground hover:bg-sidebar-accent" />
       </SidebarHeader>
       <SidebarContent>
         {/* Event User Profile */}
