@@ -314,7 +314,7 @@ export default function AdminEvents() {
                 <div>
                   <h3 className="text-xl font-semibold mb-4">Templates for {selectedEvent.name}</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {selectedEvent.templates.map((template) => (
+                    {(selectedEvent.templates || []).map((template) => (
                       <Card key={template.id} className="p-4">
                         <img
                           src={template.imageUrl}
@@ -333,7 +333,7 @@ export default function AdminEvents() {
                         </Button>
                       </Card>
                     ))}
-                    {selectedEvent.templates.length === 0 && (
+                    {(!selectedEvent.templates || selectedEvent.templates.length === 0) && (
                       <p className="text-muted-foreground col-span-full">No templates yet. Add one above.</p>
                     )}
                   </div>

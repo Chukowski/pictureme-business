@@ -56,7 +56,14 @@ export const isAdminAuthenticated = (): boolean => {
 // Events
 export const getEvents = (): EventConfig[] => {
   const data = localStorage.getItem(STORAGE_KEYS.EVENTS);
-  return data ? JSON.parse(data) : [];
+  if (!data) return [];
+  
+  const events = JSON.parse(data);
+  // Migrate old events that don't have templates array
+  return events.map((event: any) => ({
+    ...event,
+    templates: event.templates || [],
+  }));
 };
 
 export const getEvent = (id: string): EventConfig | null => {
