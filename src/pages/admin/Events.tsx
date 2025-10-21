@@ -5,21 +5,20 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { getEvents, getTemplates, createEvent, updateEvent, deleteEvent, adminLogout, setCurrentEvent, type EventConfig } from '@/services/adminStorage';
+import { getEvents, createEvent, updateEvent, deleteEvent, adminLogout, setCurrentEvent, addTemplateToEvent, updateEventTemplate, deleteEventTemplate, type EventConfig, type Template } from '@/services/adminStorage';
 import { useToast } from '@/hooks/use-toast';
 import { Plus, Trash2, Power, Save } from 'lucide-react';
 
 export default function AdminEvents() {
   const [events, setEvents] = useState<EventConfig[]>([]);
-  const [templates, setTemplates] = useState<any[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<EventConfig | null>(null);
   const [editForm, setEditForm] = useState<Partial<EventConfig>>({});
+  const [newTemplate, setNewTemplate] = useState<Partial<Template>>({});
   const navigate = useNavigate();
   const { toast } = useToast();
 
   useEffect(() => {
     setEvents(getEvents());
-    setTemplates(getTemplates());
   }, []);
 
   const handleLogout = () => {
@@ -31,7 +30,7 @@ export default function AdminEvents() {
     const newEvent = createEvent({
       name: 'New Event',
       slug: 'new-event',
-      templateIds: [],
+      templates: [],
       primaryColor: '#4F46E5',
       secondaryColor: '#EC4899',
       brandName: 'Photo Booth',
@@ -42,6 +41,37 @@ export default function AdminEvents() {
     setSelectedEvent(newEvent);
     setEditForm(newEvent);
     toast({ title: 'Event created' });
+  };
+
+  const handleAddTemplate = () => {
+    if (!selectedEvent) return;
+    if (!newTemplate.name || !newTemplate.imageUrl || !newTemplate.prompt) {
+      toast({ title: 'Fill all template fields', variant: 'destructive' });
+      return;
+    }
+    
+    addTemplateToEvent(selectedEvent.id, {
+      name: newTemplate.name,
+      description: newTemplate.description || '',
+      imageUrl: newTemplate.imageUrl,
+      prompt: newTemplate.prompt,
+      active: true,
+    });
+    
+    const updated = getEvents();
+    setEvents(updated);
+    setSelectedEvent(updated.find(e => e.id === selectedEvent.id) || null);
+    setNewTemplate({});
+    toast({ title: 'Template added' });
+  };
+
+  const handleDeleteTemplate = (templateId: string) => {
+    if (!selectedEvent) return;
+    deleteEventTemplate(selectedEvent.id, templateId);
+    const updated = getEvents();
+    setEvents(updated);
+    setSelectedEvent(updated.find(e => e.id === selectedEvent.id) || null);
+    toast({ title: 'Template deleted' });
   };
 
   const handleSaveEvent = () => {
@@ -233,19 +263,83 @@ export default function AdminEvents() {
           </TabsContent>
 
           <TabsContent value="templates">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {templates.map((template) => (
-                <Card key={template.id} className="p-4">
-                  <img
-                    src={template.imageUrl}
-                    alt={template.name}
-                    className="w-full h-40 object-cover rounded-lg mb-3"
-                  />
-                  <h3 className="font-semibold">{template.name}</h3>
-                  <p className="text-sm text-muted-foreground">{template.description}</p>
+            {!selectedEvent ? (
+              <Card className="p-6">
+                <p className="text-muted-foreground">Select an event to manage its templates</p>
+              </Card>
+            ) : (
+              <div className="space-y-6">
+                <Card className="p-6">
+                  <h3 className="text-xl font-semibold mb-4">Add Template to {selectedEvent.name}</h3>
+                  <div className="space-y-4">
+                    <div>
+                      <Label>Template Name</Label>
+                      <Input
+                        value={newTemplate.name || ''}
+                        onChange={(e) => setNewTemplate({ ...newTemplate, name: e.target.value })}
+                        placeholder="e.g., Ocean Sunset"
+                      />
+                    </div>
+                    <div>
+                      <Label>Description</Label>
+                      <Input
+                        value={newTemplate.description || ''}
+                        onChange={(e) => setNewTemplate({ ...newTemplate, description: e.target.value })}
+                        placeholder="Short description"
+                      />
+                    </div>
+                    <div>
+                      <Label>Image URL</Label>
+                      <Input
+                        value={newTemplate.imageUrl || ''}
+                        onChange={(e) => setNewTemplate({ ...newTemplate, imageUrl: e.target.value })}
+                        placeholder="/src/assets/backgrounds/ocean.jpg"
+                      />
+                    </div>
+                    <div>
+                      <Label>AI Prompt</Label>
+                      <Input
+                        value={newTemplate.prompt || ''}
+                        onChange={(e) => setNewTemplate({ ...newTemplate, prompt: e.target.value })}
+                        placeholder="professional portrait with ocean background, natural lighting"
+                      />
+                    </div>
+                    <Button onClick={handleAddTemplate}>
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add Template
+                    </Button>
+                  </div>
                 </Card>
-              ))}
-            </div>
+
+                <div>
+                  <h3 className="text-xl font-semibold mb-4">Templates for {selectedEvent.name}</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {selectedEvent.templates.map((template) => (
+                      <Card key={template.id} className="p-4">
+                        <img
+                          src={template.imageUrl}
+                          alt={template.name}
+                          className="w-full h-40 object-cover rounded-lg mb-3"
+                        />
+                        <h3 className="font-semibold">{template.name}</h3>
+                        <p className="text-sm text-muted-foreground mb-2">{template.description}</p>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => handleDeleteTemplate(template.id)}
+                        >
+                          <Trash2 className="w-3 h-3 mr-1" />
+                          Delete
+                        </Button>
+                      </Card>
+                    ))}
+                    {selectedEvent.templates.length === 0 && (
+                      <p className="text-muted-foreground col-span-full">No templates yet. Add one above.</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="settings">

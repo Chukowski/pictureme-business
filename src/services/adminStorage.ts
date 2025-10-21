@@ -1,8 +1,17 @@
+export interface Template {
+  id: string;
+  name: string;
+  description: string;
+  imageUrl: string;
+  prompt: string;
+  active: boolean;
+}
+
 export interface EventConfig {
   id: string;
   name: string;
   slug: string;
-  templateIds: string[];
+  templates: Template[];
   primaryColor: string;
   secondaryColor: string;
   logo?: string;
@@ -20,20 +29,9 @@ export interface EventConfig {
   updatedAt: string;
 }
 
-export interface Template {
-  id: string;
-  name: string;
-  description: string;
-  imageUrl: string;
-  prompt: string;
-  active: boolean;
-  createdAt: string;
-}
-
-const ADMIN_PASSWORD = 'photobooth2025'; // Simple password protection
+const ADMIN_PASSWORD = 'photobooth2025';
 const STORAGE_KEYS = {
   EVENTS: 'pb_events',
-  TEMPLATES: 'pb_templates',
   CURRENT_EVENT: 'pb_current_event',
   ADMIN_AUTH: 'pb_admin_auth',
 };
@@ -101,91 +99,92 @@ export const deleteEvent = (id: string): boolean => {
   return true;
 };
 
-// Templates
-export const getTemplates = (): Template[] => {
-  const data = localStorage.getItem(STORAGE_KEYS.TEMPLATES);
-  if (data) return JSON.parse(data);
-  
-  // Initialize with default templates
-  const defaults: Template[] = [
-    {
-      id: '1',
-      name: 'Particle Field',
-      description: 'Immersive glowing particles',
-      imageUrl: '/src/assets/backgrounds/glares.jpg',
-      prompt: 'photorealistic portrait with glowing particle field background, cinematic lighting',
-      active: true,
-      createdAt: new Date().toISOString(),
-    },
-    {
-      id: '2',
-      name: 'Ocean Waves',
-      description: 'Serene ocean backdrop',
-      imageUrl: '/src/assets/backgrounds/ocean.jpg',
-      prompt: 'professional portrait with ocean waves background, natural lighting',
-      active: true,
-      createdAt: new Date().toISOString(),
-    },
-    {
-      id: '3',
-      name: 'Jungle Vibes',
-      description: 'Tropical rainforest',
-      imageUrl: '/src/assets/backgrounds/jungle.jpg',
-      prompt: 'vibrant portrait with tropical jungle background, natural atmosphere',
-      active: true,
-      createdAt: new Date().toISOString(),
-    },
-    {
-      id: '4',
-      name: 'Rain Effect',
-      description: 'Dramatic rain backdrop',
-      imageUrl: '/src/assets/backgrounds/rain.jpg',
-      prompt: 'cinematic portrait with rain and bokeh lights background',
-      active: true,
-      createdAt: new Date().toISOString(),
-    },
-    {
-      id: '5',
-      name: 'Autumn Leaves',
-      description: 'Warm fall colors',
-      imageUrl: '/src/assets/backgrounds/leafs.jpg',
-      prompt: 'warm portrait with autumn leaves background, golden hour lighting',
-      active: true,
-      createdAt: new Date().toISOString(),
-    },
-  ];
-  localStorage.setItem(STORAGE_KEYS.TEMPLATES, JSON.stringify(defaults));
-  return defaults;
-};
+// Template Management for Events
+const getDefaultTemplates = (): Template[] => [
+  {
+    id: crypto.randomUUID(),
+    name: 'Particle Field',
+    description: 'Immersive glowing particles',
+    imageUrl: '/src/assets/backgrounds/glares.jpg',
+    prompt: 'photorealistic portrait with glowing particle field background, cinematic lighting',
+    active: true,
+  },
+  {
+    id: crypto.randomUUID(),
+    name: 'Ocean Waves',
+    description: 'Serene ocean backdrop',
+    imageUrl: '/src/assets/backgrounds/ocean.jpg',
+    prompt: 'professional portrait with ocean waves background, natural lighting',
+    active: true,
+  },
+  {
+    id: crypto.randomUUID(),
+    name: 'Jungle Vibes',
+    description: 'Tropical rainforest',
+    imageUrl: '/src/assets/backgrounds/jungle.jpg',
+    prompt: 'vibrant portrait with tropical jungle background, natural atmosphere',
+    active: true,
+  },
+  {
+    id: crypto.randomUUID(),
+    name: 'Rain Effect',
+    description: 'Dramatic rain backdrop',
+    imageUrl: '/src/assets/backgrounds/rain.jpg',
+    prompt: 'cinematic portrait with rain and bokeh lights background',
+    active: true,
+  },
+  {
+    id: crypto.randomUUID(),
+    name: 'Autumn Leaves',
+    description: 'Warm fall colors',
+    imageUrl: '/src/assets/backgrounds/leafs.jpg',
+    prompt: 'warm portrait with autumn leaves background, golden hour lighting',
+    active: true,
+  },
+];
 
-export const createTemplate = (template: Omit<Template, 'id' | 'createdAt'>): Template => {
+export const addTemplateToEvent = (eventId: string, template: Omit<Template, 'id'>): EventConfig | null => {
+  const events = getEvents();
+  const index = events.findIndex(e => e.id === eventId);
+  if (index === -1) return null;
+  
   const newTemplate: Template = {
     ...template,
     id: crypto.randomUUID(),
-    createdAt: new Date().toISOString(),
   };
-  const templates = getTemplates();
-  templates.push(newTemplate);
-  localStorage.setItem(STORAGE_KEYS.TEMPLATES, JSON.stringify(templates));
-  return newTemplate;
+  
+  events[index].templates.push(newTemplate);
+  events[index].updatedAt = new Date().toISOString();
+  localStorage.setItem(STORAGE_KEYS.EVENTS, JSON.stringify(events));
+  return events[index];
 };
 
-export const updateTemplate = (id: string, updates: Partial<Template>): Template | null => {
-  const templates = getTemplates();
-  const index = templates.findIndex(t => t.id === id);
+export const updateEventTemplate = (eventId: string, templateId: string, updates: Partial<Template>): EventConfig | null => {
+  const events = getEvents();
+  const eventIndex = events.findIndex(e => e.id === eventId);
+  if (eventIndex === -1) return null;
+  
+  const templateIndex = events[eventIndex].templates.findIndex(t => t.id === templateId);
+  if (templateIndex === -1) return null;
+  
+  events[eventIndex].templates[templateIndex] = {
+    ...events[eventIndex].templates[templateIndex],
+    ...updates,
+  };
+  events[eventIndex].updatedAt = new Date().toISOString();
+  localStorage.setItem(STORAGE_KEYS.EVENTS, JSON.stringify(events));
+  return events[eventIndex];
+};
+
+export const deleteEventTemplate = (eventId: string, templateId: string): EventConfig | null => {
+  const events = getEvents();
+  const index = events.findIndex(e => e.id === eventId);
   if (index === -1) return null;
   
-  templates[index] = { ...templates[index], ...updates };
-  localStorage.setItem(STORAGE_KEYS.TEMPLATES, JSON.stringify(templates));
-  return templates[index];
-};
-
-export const deleteTemplate = (id: string): boolean => {
-  const templates = getTemplates();
-  const filtered = templates.filter(t => t.id !== id);
-  if (filtered.length === templates.length) return false;
-  localStorage.setItem(STORAGE_KEYS.TEMPLATES, JSON.stringify(filtered));
-  return true;
+  events[index].templates = events[index].templates.filter(t => t.id !== templateId);
+  events[index].updatedAt = new Date().toISOString();
+  localStorage.setItem(STORAGE_KEYS.EVENTS, JSON.stringify(events));
+  return events[index];
 };
 
 // Current Event
