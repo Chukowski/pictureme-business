@@ -14,6 +14,7 @@ export interface CompositionOptions {
   backgroundColor?: string;
   taglineText?: string;
   includeHeader?: boolean;
+  campaignText?: string; // Text overlay on AI image (e.g., "Need extra hands?")
 }
 
 /**
@@ -33,6 +34,7 @@ export async function applyBrandingOverlay(
     backgroundColor = '#000000',
     taglineText = 'With Atellica systems, our goal is simple: less.',
     includeHeader = false,
+    campaignText,
   } = options;
 
   try {
@@ -60,11 +62,30 @@ export async function applyBrandingOverlay(
     // Draw the AI image as the base layer
     ctx.drawImage(aiImage, 0, 0, aiImageWidth, aiImageHeight);
 
+    // Add campaign text overlay on AI image if provided
+    if (campaignText) {
+      const campaignFontSize = Math.max(36, Math.round(aiImageWidth * 0.055)); // Larger, bold text
+      ctx.save();
+      ctx.fillStyle = '#FFFFFF';
+      ctx.font = `700 ${campaignFontSize}px "Inter", "Arial", sans-serif`; // Bold weight
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+      // Strong shadow for readability
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
+      ctx.shadowBlur = Math.round(campaignFontSize * 0.3);
+      ctx.shadowOffsetY = 3;
+      
+      // Position at top of AI image
+      const campaignY = Math.round(aiImageHeight * 0.08);
+      ctx.fillText(campaignText, aiImageWidth / 2, campaignY);
+      ctx.restore();
+    }
+
     // Define layout proportions based on canvas height
     const headerHeight = includeHeader ? Math.round(aiImageHeight * 0.16) : 0;
-    const footerHeightPx = footerHeight ?? Math.round(aiImageHeight * 0.23);
-    const taglineHeight = Math.round(aiImageHeight * 0.08);
-    const gap = Math.round((spacing ?? aiImageHeight * 0.02));
+    const footerHeightPx = footerHeight ?? Math.round(aiImageHeight * 0.20); // Reduced footer size
+    const taglineHeight = Math.round(aiImageHeight * 0.05); // Smaller tagline band
+    const gap = Math.round((spacing ?? aiImageHeight * 0.01)); // Smaller gap
 
     // Background bands for header, tagline and footer
     ctx.fillStyle = backgroundColor;
@@ -90,16 +111,16 @@ export async function applyBrandingOverlay(
       ctx.drawImage(logoImage, logoX, logoY, logoDrawWidth, logoDrawHeight);
     }
 
-    // Render tagline text
-    const fontSize = Math.max(28, Math.round(aiImageWidth * 0.045));
+    // Render tagline text (smaller, above footer)
+    const fontSize = Math.max(20, Math.round(aiImageWidth * 0.028)); // Reduced font size
     ctx.save();
     ctx.fillStyle = '#FFFFFF';
-    ctx.font = `600 ${fontSize}px "Inter", "Arial", sans-serif`;
+    ctx.font = `500 ${fontSize}px "Inter", "Arial", sans-serif`; // Medium weight instead of semibold
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.35)';
-    ctx.shadowBlur = Math.round(fontSize * 0.6);
-    ctx.shadowOffsetY = 2;
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
+    ctx.shadowBlur = Math.round(fontSize * 0.4);
+    ctx.shadowOffsetY = 1;
     ctx.fillText(taglineText, aiImageWidth / 2, taglineTop + taglineHeight / 2);
     ctx.restore();
 

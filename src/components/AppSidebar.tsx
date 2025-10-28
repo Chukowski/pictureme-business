@@ -130,18 +130,19 @@ export function AppSidebar() {
                   {(brandConfig.mode || 'light').charAt(0).toUpperCase() + (brandConfig.mode || 'light').slice(1)}
                 </span>
               </div>
-              <Button
-                size="sm"
-                onClick={toggleThemeMode}
-                className="w-full mt-2 flex items-center justify-center gap-2 gradient-primary text-primary-foreground shadow-card border-0 hover:opacity-90"
-              >
-                <ModeIcon className="w-4 h-4" />
-                <span className="text-xs font-semibold">
-                  Switch to {currentMode === 'dark' ? 'Light' : 'Dark'}
-                </span>
-              </Button>
             </div>
           </SidebarGroupContent>
+          <div className="px-3 pb-2">
+            <button
+              onClick={toggleThemeMode}
+              className="w-full py-2 px-3 rounded-md flex items-center justify-center gap-2 gradient-primary text-primary-foreground shadow-card border-0 hover:opacity-90 text-xs font-semibold transition-opacity"
+            >
+              <ModeIcon className="w-4 h-4" />
+              <span>
+                Switch to {currentMode === 'dark' ? 'Light' : 'Dark'}
+              </span>
+            </button>
+          </div>
         </SidebarGroup>
 
         <SidebarGroup>

@@ -7,7 +7,7 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
 import { SidebarProvider, SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import Index from "./pages/Index";
-import SharePhoto from "./pages/SharePhoto";
+import { SharePage } from "./pages/SharePage";
 import NotFound from "./pages/NotFound";
 import AdminLogin from "./pages/admin/Login";
 import AdminEvents from "./pages/admin/Events";
@@ -31,28 +31,35 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          <SidebarProvider>
-            <div className="min-h-screen flex w-full">
-              <AppSidebar />
-              <div className="flex-1 flex flex-col">
-                {/* Mobile toggle for sidebar */}
-                <div className="fixed top-3 left-3 z-30 md:hidden">
-                  <SidebarTrigger className="shadow-card" />
+          <Routes>
+            {/* Share page - no sidebar, clean display */}
+            <Route path="/share/:shareCode" element={<SharePage />} />
+            
+            {/* Main app routes with sidebar */}
+            <Route path="/*" element={
+              <SidebarProvider>
+                <div className="min-h-screen flex w-full">
+                  <AppSidebar />
+                  <div className="flex-1 flex flex-col">
+                    {/* Mobile toggle for sidebar */}
+                    <div className="fixed top-3 left-3 z-30 md:hidden">
+                      <SidebarTrigger className="shadow-card" />
+                    </div>
+                    <FloatingSidebarToggle />
+                    <main className="flex-1">
+                      <Routes>
+                        <Route path="/" element={<Index />} />
+                        <Route path="/admin/login" element={<AdminLogin />} />
+                        <Route path="/admin/events" element={<AdminEvents />} />
+                        {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                        <Route path="*" element={<NotFound />} />
+                      </Routes>
+                    </main>
+                  </div>
                 </div>
-                <FloatingSidebarToggle />
-                <main className="flex-1">
-                  <Routes>
-                    <Route path="/" element={<Index />} />
-                    <Route path="/share/:shareCode" element={<SharePhoto />} />
-                    <Route path="/admin/login" element={<AdminLogin />} />
-                    <Route path="/admin/events" element={<AdminEvents />} />
-                    {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                    <Route path="*" element={<NotFound />} />
-                  </Routes>
-                </main>
-              </div>
-            </div>
-          </SidebarProvider>
+              </SidebarProvider>
+            } />
+          </Routes>
         </BrowserRouter>
       </TooltipProvider>
     </ThemeProvider>

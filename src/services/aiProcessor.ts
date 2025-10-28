@@ -19,6 +19,7 @@ export interface ProcessImageOptions {
   backgroundImageUrls?: string[]; // Support multiple background images
   includeBranding?: boolean;
   includeHeader?: boolean;
+  campaignText?: string; // Campaign text overlay (e.g., "Need extra hands?")
   onProgress?: (status: string, logs?: string[]) => void;
 }
 
@@ -42,6 +43,7 @@ export async function processImageWithAI(
     backgroundImageUrls,
     includeBranding = true,
     includeHeader = false,
+    campaignText,
     onProgress,
   } = options;
 
@@ -144,6 +146,7 @@ export async function processImageWithAI(
       const brandedImageUrl = await applyBrandingOverlay(processedUrl, {
         backgroundColor: '#000000',
         includeHeader,
+        campaignText,
       });
 
       console.log("✅ Branded composition created successfully");

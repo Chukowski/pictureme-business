@@ -7,6 +7,7 @@ export interface Template {
   active: boolean;
   includeBranding?: boolean;
   includeHeader?: boolean;
+  campaignText?: string; // Text overlay on the AI image (e.g., "Need extra hands?")
 }
 
 export interface EventConfig {
@@ -136,40 +137,44 @@ const getDefaultTemplates = (): Template[] => [
     name: 'Ocean Depths',
     description: 'Underwater exploration',
     images: ['/src/assets/backgrounds/ocean.jpg'],
-    prompt: 'Take the person from the first image and place them into the second image background. Keep the person\'s face and body exactly as they appear in the first photo without any modifications to their facial features. Do not cover their face with masks, goggles, or breathing apparatus—keep the face fully visible and natural. Use all the visual elements from the second image: the octopus with tentacles, the bubbles, the turquoise underwater lighting, and the deep ocean atmosphere. Dress the person in professional black diving suit with equipment, harness and gear. The person should be positioned in the lower center area looking at camera with the large octopus tentacles surrounding them in the background. Professional underwater photography with dramatic turquoise lighting. Campaign text: "Need extra hands?"',
+    prompt: 'Take the person from the first image and place them into the second image background. Keep the person\'s face and body exactly as they appear in the first photo without any modifications to their facial features. Do not cover their face with masks, goggles, or breathing apparatus—keep the face fully visible and natural. Use all the visual elements from the second image: the octopus with tentacles, the bubbles, the turquoise underwater lighting, and the deep ocean atmosphere. Dress the person in professional black diving suit with equipment, harness and gear. The person should be positioned in the lower center area looking at camera with the large octopus tentacles surrounding them in the background. Professional underwater photography with dramatic turquoise lighting.',
     active: true,
     includeBranding: true,
     includeHeader: false,
+    campaignText: 'Need extra hands?',
   },
   {
     id: crypto.randomUUID(),
     name: 'Jungle Explorer',
     description: 'Running with wildlife',
     images: ['/src/assets/backgrounds/jungle.jpg'],
-    prompt: 'Take the person from the first image and place them into the second image background. Keep the person\'s face and body exactly as they appear in the first photo without any modifications to their facial features. Use all the visual elements from the second image: the majestic turquoise cheetah/leopard running, the particles, and the dark teal jungle environment. Dress the person in safari/outdoor explorer outfit (beige/tan shirt and cargo pants) with backpack. The person should be running or in dynamic motion pose on the left side, with the cheetah running beside them on the right. Both should appear to be running together. Professional wildlife photography with dramatic turquoise atmospheric lighting. Campaign text: "Run lean. Run fast."',
+    prompt: 'Take the person from the first image and place them into the second image background. Keep the person\'s face and body exactly as they appear in the first photo without any modifications to their facial features. Use all the visual elements from the second image: the majestic turquoise cheetah/leopard running, the particles, and the dark teal jungle environment. Dress the person in safari/outdoor explorer outfit (beige/tan shirt and cargo pants) with backpack. The person should be running or in dynamic motion pose on the left side, with the cheetah running beside them on the right. Both should appear to be running together. Professional wildlife photography with dramatic turquoise atmospheric lighting.',
     active: true,
     includeBranding: true,
     includeHeader: false,
+    campaignText: 'Run lean. Run fast.',
   },
   {
     id: crypto.randomUUID(),
     name: 'Rain Magic',
     description: 'Sustainable growth',
     images: ['/src/assets/backgrounds/rain.jpg'],
-    prompt: 'Take the person from the first image and place them into the second image background. Keep the person\'s face and body exactly as they appear in the first photo without any modifications to their facial features. Use all the visual elements from the second image: the rain falling heavily, the turquoise-tinted lighting, and the dark moody atmosphere with water reflections on ground. Dress the person in casual earth-tone clothing (olive/grey t-shirt and jeans). The person should be sitting cross-legged on the wet ground, smiling at camera while holding a small plant or seedling with glowing turquoise leaves growing from soil in their hands. Professional environmental photography with rain and dramatic turquoise lighting. Campaign text: "Simply sustainable."',
+    prompt: 'Take the person from the first image and place them into the second image background. Keep the person\'s face and body exactly as they appear in the first photo without any modifications to their facial features. Use all the visual elements from the second image: the rain falling heavily, the turquoise-tinted lighting, and the dark moody atmosphere with water reflections on ground. Dress the person in casual earth-tone clothing (olive/grey t-shirt and jeans). The person should be sitting cross-legged on the wet ground, smiling at camera while holding a small plant or seedling with glowing turquoise leaves growing from soil in their hands. Professional environmental photography with rain and dramatic turquoise lighting.',
     active: true,
     includeBranding: true,
     includeHeader: false,
+    campaignText: 'Simply sustainable.',
   },
   {
     id: crypto.randomUUID(),
     name: 'Mystical Leaves',
     description: 'Lightening the load',
     images: ['/src/assets/backgrounds/leafs.jpg'],
-    prompt: 'Take the person from the first image and place them into the second image background. Keep the person\'s face and body exactly as they appear in the first photo without any modifications to their facial features. Use all the visual elements from the second image: the glowing turquoise leaves with visible leaf veins, the small ant on leaf, the bokeh effects, and the dark mystical background. Dress the person in professional dark clothing (black jacket or professional attire with white collar visible). The person should be centered looking at camera with calm expression while gently holding or presenting a glowing turquoise leaf with their gloved hands. Professional photography with dramatic turquoise accent lighting and floating particles. Campaign text: "Lighten the load."',
+    prompt: 'Take the person from the first image and place them into the second image background. Keep the person\'s face and body exactly as they appear in the first photo without any modifications to their facial features. Use all the visual elements from the second image: the glowing turquoise leaves with visible leaf veins, the small ant on leaf, the bokeh effects, and the dark mystical background. Dress the person in professional dark clothing (black jacket or professional attire with white collar visible). The person should be centered looking at camera with calm expression while gently holding or presenting a glowing turquoise leaf with their gloved hands. Professional photography with dramatic turquoise accent lighting and floating particles.',
     active: true,
     includeBranding: true,
     includeHeader: false,
+    campaignText: 'Lighten the load.',
   },
 ];
 

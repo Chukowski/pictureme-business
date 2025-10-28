@@ -1,4 +1,4 @@
-# Multi-stage build for Vite React TypeScript app
+# Multi-stage build for AI Photobooth (Frontend + Backend)
 FROM node:18-alpine AS builder
 
 # Set working directory
@@ -7,65 +7,63 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
+# Install ALL dependencies (including devDependencies for build)
 RUN npm ci
 
 # Copy source code
 COPY . .
 
-# Build the application
+# Build the frontend
 RUN npm run build
 
-# Production stage with nginx
-FROM nginx:alpine
+# Production stage
+FROM node:18-alpine
 
 # Install curl for health checks
 RUN apk add --no-cache curl
 
-# Copy custom nginx config
-COPY <<EOF /etc/nginx/conf.d/default.conf
-server {
-    listen 80;
-    server_name _;
-    root /usr/share/nginx/html;
-    index index.html;
+# Set working directory
+WORKDIR /app
 
-    # Enable gzip compression
-    gzip on;
-    gzip_vary on;
-    gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;
+# Copy package files
+COPY package*.json ./
 
-    # SPA routing - serve index.html for all routes
-    location / {
-        try_files \$uri \$uri/ /index.html;
-    }
+# Install ONLY production dependencies
+RUN npm ci --only=production
 
-    # Cache static assets
-    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
-        expires 1y;
-        add_header Cache-Control "public, immutable";
-    }
+# Copy built frontend from builder
+COPY --from=builder /app/dist ./dist
 
-    # Security headers
-    add_header X-Frame-Options "SAMEORIGIN" always;
-    add_header X-Content-Type-Options "nosniff" always;
-    add_header X-XSS-Protection "1; mode=block" always;
+# Copy backend server code
+COPY server ./server
 
-    # Camera API requires HTTPS in production, but for local development:
-    add_header Permissions-Policy "camera=(self)" always;
-}
+# Copy environment variables template
+COPY .env.storage ./.env.example
+
+# Create a simple startup script
+RUN cat > /app/start.sh << 'EOF'
+#!/bin/sh
+echo "🚀 Starting AI Photobooth..."
+echo "📦 Frontend will be served on port 8080"
+echo "🔌 Backend API will run on port 3001"
+
+# Start backend in background
+node server/index.js &
+
+# Install and start a simple static server for frontend
+npm install -g serve
+serve -s dist -l 8080
+
 EOF
 
-# Copy built app from builder stage
-COPY --from=builder /app/dist /usr/share/nginx/html
+RUN chmod +x /app/start.sh
 
-# Expose port 80
-EXPOSE 80
+# Expose ports
+EXPOSE 3001 8080
 
-# Health check using curl
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost/ || exit 1
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
+    CMD curl -f http://localhost:8080/ && curl -f http://localhost:3001/health || exit 1
 
-# Start nginx
-CMD ["nginx", "-g", "daemon off;"]
-
+# Start both services
+CMD ["/app/start.sh"]

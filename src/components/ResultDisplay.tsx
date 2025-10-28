@@ -25,10 +25,23 @@ export const ResultDisplay = ({ imageUrl, shareCode, onReset }: ResultDisplayPro
 
   const handleDownload = async () => {
     try {
-      const link = document.createElement("a");
-      link.href = imageUrl;
-      link.download = `${safeBrandSlug}-photobooth-${Date.now()}.jpg`;
-      link.click();
+      // If it's a cloud URL, fetch and download
+      if (imageUrl.startsWith('http')) {
+        const response = await fetch(imageUrl);
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `${safeBrandSlug}-photobooth-${Date.now()}.jpg`;
+        link.click();
+        window.URL.revokeObjectURL(url);
+      } else {
+        // It's a base64 data URI, download directly
+        const link = document.createElement("a");
+        link.href = imageUrl;
+        link.download = `${safeBrandSlug}-photobooth-${Date.now()}.jpg`;
+        link.click();
+      }
       toast.success("Photo downloaded!");
     } catch (error) {
       console.error("Download error:", error);
@@ -168,7 +181,7 @@ export const ResultDisplay = ({ imageUrl, shareCode, onReset }: ResultDisplayPro
             className="rounded-2xl h-14 border-border hover:border-muted-foreground"
           >
             <RotateCcw className="w-5 h-5 md:mr-2" />
-            <span className="ml-2">New Photo</span>
+            <span className="ml-2">Take Another</span>
           </Button>
         </div>
       </div>

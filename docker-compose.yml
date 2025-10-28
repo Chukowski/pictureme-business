@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  photobooth:
+    build: .
+    container_name: ai-photobooth
+    ports:
+      - "8080:8080"  # Frontend
+      - "3001:3001"  # Backend API
+    environment:
+      # FAL AI
+      - VITE_FAL_KEY=${VITE_FAL_KEY}
+      - VITE_FAL_MODEL=${VITE_FAL_MODEL:-fal-ai/bytedance/seedream/v4/edit}
+      
+      # PostgreSQL
+      - VITE_POSTGRES_URL=${VITE_POSTGRES_URL:-postgresql://photouser:Mc4tnqjb.@209.126.5.246:5432/photodb}
+      
+      # MinIO
+      - VITE_MINIO_ENDPOINT=${VITE_MINIO_ENDPOINT:-storage.akitapr.com}
+      - VITE_MINIO_PORT=${VITE_MINIO_PORT:-443}
+      - VITE_MINIO_USE_SSL=${VITE_MINIO_USE_SSL:-true}
+      - VITE_MINIO_ACCESS_KEY=${VITE_MINIO_ACCESS_KEY:-VDVlK2645nIGwYgG6InN}
+      - VITE_MINIO_SECRET_KEY=${VITE_MINIO_SECRET_KEY:-bMvjHpmeVK3dVEO71Wlr0Ez2rALmVSThwnkdkSmb}
+      - VITE_MINIO_BUCKET=${VITE_MINIO_BUCKET:-photobooth}
+      - VITE_MINIO_SERVER_URL=${VITE_MINIO_SERVER_URL:-https://storage.akitapr.com}
+      
+      # App
+      - VITE_BASE_URL=${VITE_BASE_URL:-https://photo.akitapr.com}
+      - NODE_ENV=production
+    
+    restart: unless-stopped
+    
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/", "&&", "curl", "-f", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+

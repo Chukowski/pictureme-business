@@ -34,12 +34,13 @@ const Index = () => {
     setProcessingStatus("Preparing your photo...");
     try {
       // Process with AI - send user photo + all background images
-      const result = await processImageWithAI({
-        userPhotoBase64: imageData,
-        backgroundPrompt: selectedBackground.prompt,
-        backgroundImageUrls: selectedBackground.images || [selectedBackground.image], // Support multiple images
-        includeBranding: selectedBackground.includeBranding ?? true,
-        includeHeader: selectedBackground.includeHeader ?? false,
+        const result = await processImageWithAI({
+          userPhotoBase64: imageData,
+          backgroundPrompt: selectedBackground.prompt,
+          backgroundImageUrls: selectedBackground.images || [selectedBackground.image], // Support multiple images
+          includeBranding: selectedBackground.includeBranding ?? true,
+          includeHeader: selectedBackground.includeHeader ?? false,
+          campaignText: selectedBackground.campaignText, // Pass campaign text for overlay
         onProgress: (status, logs) => {
           if (status === "queued") {
             setProcessingStatus("Waiting in queue...");
@@ -53,20 +54,37 @@ const Index = () => {
       });
       setProcessingStatus("Downloading result...");
 
-      // Download the processed image as base64 for localStorage
-      const processedBase64 = await downloadImageAsBase64(result.url);
-      setProcessedPhoto(processedBase64);
+      let processedBase64: string;
+      if (result.url.startsWith("data:")) {
+        processedBase64 = result.url;
+      } else {
+        processedBase64 = await downloadImageAsBase64(result.url);
+      }
 
-      // Save to localStorage
-      const savedPhoto = saveProcessedPhoto({
-        originalImageBase64: imageData,
-        processedImageBase64: processedBase64,
-        backgroundId: selectedBackground.id,
-        backgroundName: selectedBackground.name,
-        prompt: selectedBackground.prompt
-      });
-      setShareCode(savedPhoto.shareCode);
-      toast.success("Your photo is ready! 🎉");
+      // Save to storage (cloud or localStorage)
+      try {
+        const savedPhoto = await saveProcessedPhoto({
+          originalImageBase64: imageData,
+          processedImageBase64: processedBase64,
+          backgroundId: selectedBackground.id,
+          backgroundName: selectedBackground.name,
+          prompt: selectedBackground.prompt
+        });
+        
+        // If saved to cloud, use cloud URL; otherwise use base64
+        if (savedPhoto.processedImageUrl) {
+          setProcessedPhoto(savedPhoto.processedImageUrl);
+        } else {
+          setProcessedPhoto(processedBase64);
+        }
+        
+        setShareCode(savedPhoto.shareCode);
+        toast.success("Your photo is ready! 🎉");
+      } catch (storageError: any) {
+        console.warn("Storage error:", storageError);
+        setProcessedPhoto(processedBase64);
+        toast.warning("Photo ready but couldn't save to gallery (storage full)");
+      }
       setState("result");
     } catch (error: any) {
       console.error("Processing error:", error);
