@@ -240,6 +240,8 @@ interface ProcessImageOptions {
   userPhotoBase64: string;        // User's captured photo
   backgroundPrompt: string;       // AI prompt (from background)
   backgroundImageUrl?: string;    // Optional background reference image
+  backgroundImageUrls?: string[]; // Support for multiple reference images
+  includeBranding?: boolean;      // Whether to render Siemens branding (Particle Field only)
   onProgress?: (status: string, logs?: string[]) => void;
 }
 ```

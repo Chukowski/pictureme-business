@@ -33,12 +33,13 @@ const Index = () => {
     setState("processing");
     setProcessingStatus("Preparing your photo...");
     try {
-      // Process with AI - send both user photo and background image
+      // Process with AI - send user photo + all background images
       const result = await processImageWithAI({
         userPhotoBase64: imageData,
         backgroundPrompt: selectedBackground.prompt,
-        backgroundImageUrl: selectedBackground.image,
-        // Pass the background image
+        backgroundImageUrls: selectedBackground.images || [selectedBackground.image], // Support multiple images
+        includeBranding: selectedBackground.includeBranding ?? true,
+        includeHeader: selectedBackground.includeHeader ?? false,
         onProgress: (status, logs) => {
           if (status === "queued") {
             setProcessingStatus("Waiting in queue...");

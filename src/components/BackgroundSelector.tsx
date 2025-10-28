@@ -6,37 +6,53 @@ import jungleImg from "@/assets/backgrounds/jungle.jpg";
 import oceanImg from "@/assets/backgrounds/ocean.jpg";
 import rainImg from "@/assets/backgrounds/rain.jpg";
 import leafsImg from "@/assets/backgrounds/leafs.jpg";
+import chevronOrange from "@/assets/backgrounds/chevron_orange.png";
 
 const backgrounds = [
   {
     id: "glares",
     name: "Particle Field",
     image: glaresImg,
-    prompt: "Keep the person's face and body exactly as they are. Only change their clothing to sleek black and orange tech outfit. Place them in a magical scene with scattered orange glowing particles floating around on a black background, ethereal atmosphere, dramatic lighting. Maintain their facial features, skin tone, and hair exactly."
+    images: [glaresImg, chevronOrange], // Multiple images for this template
+    prompt: "Take the person from the first image and place them into the second image background with the glowing golden particles and dark atmosphere. Keep the person's face and body exactly as they appear in the first photo without any modifications to their facial features. Use all the visual elements from the second image: the golden glowing particles, the dark background, and the technological atmosphere. The person should be holding the orange glowing chevron/arrow symbol from the third image in their hands at chest level. Dress the person in professional business attire (dark sweater or business casual). The person should be centered looking at camera with confident expression, proudly displaying the glowing orange chevron symbol. The chevron should appear to be floating or held by the person with a subtle glow effect. Cinematic lighting with warm golden particle effects creating depth. Professional corporate photography style.",
+    includeBranding: true,
+    includeHeader: true,
   },
   {
     id: "jungle",
-    name: "Jungle Depths",
+    name: "Jungle Explorer",
     image: jungleImg,
-    prompt: "Keep the person's face, hair and body exactly as they are. Only change their clothing to explorer outfit with earthy tones - khaki vest and cargo pants. Place them in a mysterious dark teal jungle environment with bokeh light effects and natural foliage. Do not cover their face. Maintain all facial features identical."
+    images: [jungleImg],
+    prompt: "Take the person from the first image and place them into the second image background. Keep the person's face and body exactly as they appear in the first photo without any modifications to their facial features. Use all the visual elements from the second image: the majestic turquoise cheetah/leopard running, the particles, and the dark teal jungle environment. Dress the person in safari/outdoor explorer outfit (beige/tan shirt and cargo pants) with backpack. The person should be running or in dynamic motion pose on the left side, with the cheetah running beside them on the right. Both should appear to be running together. Professional wildlife photography with dramatic turquoise atmospheric lighting. Campaign text: \"Run lean. Run fast.\"",
+    includeBranding: true,
+    includeHeader: false,
   },
   {
     id: "ocean",
-    name: "Underwater",
+    name: "Ocean Depths",
     image: oceanImg,
-    prompt: "Keep the person's face completely visible and unchanged. Only change their clothing to a modern wetsuit in dark blue and teal colors. Place them in a deep underwater scene with bubbles rising around, dark teal water. No mask, no diving gear on face. Maintain their facial features, expression, and hair exactly as in original photo."
+    images: [oceanImg],
+    prompt: "Take the person from the first image and place them into the second image background. Keep the person's face and body exactly as they appear in the first photo without any modifications to their facial features. Do not cover their face with masks, goggles, or breathing apparatus—keep the face fully visible and natural. Use all the visual elements from the second image: the octopus with tentacles, the bubbles, the turquoise underwater lighting, and the deep ocean atmosphere. Dress the person in professional black diving suit with equipment, harness and gear. The person should be positioned in the lower center area looking at camera with the large octopus tentacles surrounding them in the background. Professional underwater photography with dramatic turquoise lighting. Campaign text: \"Need extra hands?\"",
+    includeBranding: true,
+    includeHeader: false,
   },
   {
     id: "rain",
-    name: "Rain Storm",
+    name: "Rain Magic",
     image: rainImg,
-    prompt: "Keep the person's face and features exactly as they are. Only change their clothing to stylish raincoat or jacket in dark colors. Add dramatic rain falling around them on a dark teal background, moody atmosphere, water droplets. Face must remain completely visible and unchanged. Maintain all facial features identical."
+    images: [rainImg],
+    prompt: "Take the person from the first image and place them into the second image background. Keep the person's face and body exactly as they appear in the first photo without any modifications to their facial features. Use all the visual elements from the second image: the rain falling heavily, the turquoise-tinted lighting, and the dark moody atmosphere with water reflections on ground. Dress the person in casual earth-tone clothing (olive/grey t-shirt and jeans). The person should be sitting cross-legged on the wet ground, smiling at camera while holding a small plant or seedling with glowing turquoise leaves growing from soil in their hands. Professional environmental photography with rain and dramatic turquoise lighting. Campaign text: \"Simply sustainable.\"",
+    includeBranding: true,
+    includeHeader: false,
   },
   {
     id: "leafs",
-    name: "Nature Bokeh",
+    name: "Mystical Leaves",
     image: leafsImg,
-    prompt: "Keep the person's face, hair and body exactly as they are. Only change their clothing to elegant natural tones outfit in greens and teals. Place them among dark teal leaves with beautiful bokeh light effects. Face must remain visible and unchanged. Maintain their exact facial features, skin tone, and expression."
+    images: [leafsImg],
+    prompt: "Take the person from the first image and place them into the second image background. Keep the person's face and body exactly as they appear in the first photo without any modifications to their facial features. Use all the visual elements from the second image: the glowing turquoise leaves with visible leaf veins, the small ant on leaf, the bokeh effects, and the dark mystical background. Dress the person in professional dark clothing (black jacket or professional attire with white collar visible). The person should be centered looking at camera with calm expression while gently holding or presenting a glowing turquoise leaf with their gloved hands. Professional photography with dramatic turquoise accent lighting and floating particles. Campaign text: \"Lighten the load.\"",
+    includeBranding: true,
+    includeHeader: false,
   }
 ];
 

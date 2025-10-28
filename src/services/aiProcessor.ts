@@ -1,4 +1,5 @@
 import { fal } from "@fal-ai/client";
+import { applyBrandingOverlay } from "./imageOverlay";
 
 // Get configuration
 const FAL_KEY = import.meta.env.VITE_FAL_KEY;
@@ -15,6 +16,9 @@ export interface ProcessImageOptions {
   userPhotoBase64: string;
   backgroundPrompt: string;
   backgroundImageUrl?: string;
+  backgroundImageUrls?: string[]; // Support multiple background images
+  includeBranding?: boolean;
+  includeHeader?: boolean;
   onProgress?: (status: string, logs?: string[]) => void;
 }
 
@@ -31,7 +35,15 @@ export interface ProcessImageResult {
 export async function processImageWithAI(
   options: ProcessImageOptions
 ): Promise<ProcessImageResult> {
-  const { userPhotoBase64, backgroundPrompt, backgroundImageUrl, onProgress } = options;
+  const {
+    userPhotoBase64,
+    backgroundPrompt,
+    backgroundImageUrl,
+    backgroundImageUrls,
+    includeBranding = true,
+    includeHeader = false,
+    onProgress,
+  } = options;
 
   if (!FAL_KEY) {
     throw new Error(
@@ -41,24 +53,25 @@ export async function processImageWithAI(
 
   console.log("🤖 Starting AI processing with model:", FAL_MODEL);
   console.log("📝 Prompt:", backgroundPrompt);
-  console.log("🖼️ Background image:", backgroundImageUrl);
+  console.log("🖼️ Background images:", backgroundImageUrls || [backgroundImageUrl]);
 
   try {
-    // Prepare image URLs array
+    // Prepare image URLs array - user photo + all background images
     const imageUrls: string[] = [];
     
     // 1. Add user photo as data URI (base64)
     imageUrls.push(userPhotoBase64);
     
-    // 2. Add background image if provided
-    if (backgroundImageUrl) {
-      // Convert background image to data URI
-      console.log("🖼️ Loading background image:", backgroundImageUrl);
-      const backgroundDataUri = await imageUrlToDataUri(backgroundImageUrl);
-      imageUrls.push(backgroundDataUri);
+    // 2. Add background images (support both single and multiple)
+    const bgImages = backgroundImageUrls || (backgroundImageUrl ? [backgroundImageUrl] : []);
+    
+    for (const bgImageUrl of bgImages) {
+      console.log("🖼️ Loading background image:", bgImageUrl);
+      const bgDataUri = await imageUrlToDataUri(bgImageUrl);
+      imageUrls.push(bgDataUri);
     }
     
-    console.log("📸 Sending images count:", imageUrls.length);
+    console.log("📸 Sending images count:", imageUrls.length, "(1 user photo +", bgImages.length, "background images)");
 
     // Call fal.ai based on model type
     const isSeedream = FAL_MODEL.includes("seedream");
@@ -66,16 +79,16 @@ export async function processImageWithAI(
     let result;
     
     if (isSeedream) {
-      // Seedream v4 Edit model - send multiple images
+      // Seedream v4 Edit model - send both images
       result = await fal.subscribe(FAL_MODEL, {
         input: {
           prompt: backgroundPrompt,
-          image_urls: imageUrls, // Array of user photo + background
+          image_urls: imageUrls, // User photo + background to combine
           num_images: 1,
           output_format: "jpeg",
           image_size: {
-            width: 1024,
-            height: 1024,
+            width: 1080,  // 9:16 portrait ratio (Instagram/Story format)
+            height: 1920,
           },
         },
         logs: true,
@@ -91,11 +104,11 @@ export async function processImageWithAI(
         },
       });
     } else {
-      // Gemini Flash model - send multiple images
+      // Gemini Flash model - send both images
       result = await fal.subscribe(FAL_MODEL, {
         input: {
           prompt: backgroundPrompt,
-          image_urls: imageUrls, // Array of user photo + background
+          image_urls: imageUrls, // User photo + background to combine
           num_images: 1,
           output_format: "jpeg",
         },
@@ -120,6 +133,26 @@ export async function processImageWithAI(
 
     if (!processedUrl) {
       throw new Error("No processed image URL returned from AI");
+    }
+
+    if (includeBranding) {
+      console.log("🎨 Creating branded composition...");
+      if (onProgress) {
+        onProgress("applying_branding");
+      }
+
+      const brandedImageUrl = await applyBrandingOverlay(processedUrl, {
+        backgroundColor: '#000000',
+        includeHeader,
+      });
+
+      console.log("✅ Branded composition created successfully");
+
+      return {
+        url: brandedImageUrl,
+        seed: result.data?.seed,
+        contentType: result.data?.images?.[0]?.content_type || "image/jpeg",
+      };
     }
 
     return {

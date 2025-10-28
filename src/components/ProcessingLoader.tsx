@@ -5,6 +5,14 @@ interface ProcessingLoaderProps {
 }
 
 export const ProcessingLoader = ({ status = "AI is processing your photo..." }: ProcessingLoaderProps) => {
+  // Map status to user-friendly messages
+  const getStatusMessage = (status: string): string => {
+    if (status === "queued") return "Waiting in queue...";
+    if (status === "processing") return "AI is creating your photo...";
+    if (status === "applying_branding") return "Composing final image with branding...";
+    return status;
+  };
+
   return (
     <div className="fixed inset-0 bg-white/95 backdrop-blur-md flex items-center justify-center z-50 overflow-hidden">
       {/* Animated background gradient - light mode */}
@@ -39,7 +47,7 @@ export const ProcessingLoader = ({ status = "AI is processing your photo..." }: 
         {/* Status text */}
         <div className="space-y-2">
           <h2 className="text-3xl font-bold text-primary">Creating Magic</h2>
-          <p className="text-muted-foreground animate-pulse">{status}</p>
+          <p className="text-muted-foreground animate-pulse">{getStatusMessage(status)}</p>
         </div>
       </div>
     </div>
