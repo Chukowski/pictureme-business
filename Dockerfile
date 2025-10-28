@@ -41,22 +41,18 @@ COPY server ./server
 COPY .env.storage ./.env.example
 
 # Create a simple startup script
-RUN cat > /app/start.sh << 'EOF'
-#!/bin/sh
-echo "🚀 Starting AI Photobooth..."
-echo "📦 Frontend will be served on port 8080"
-echo "🔌 Backend API will run on port 3001"
-
-# Start backend in background
-node server/index.js &
-
-# Install and start a simple static server for frontend
-npm install -g serve
-serve -s dist -l 8080
-
-EOF
-
-RUN chmod +x /app/start.sh
+RUN echo '#!/bin/sh' > /app/start.sh && \
+    echo 'echo "🚀 Starting AI Photobooth..."' >> /app/start.sh && \
+    echo 'echo "📦 Frontend will be served on port 8080"' >> /app/start.sh && \
+    echo 'echo "🔌 Backend API will run on port 3001"' >> /app/start.sh && \
+    echo '' >> /app/start.sh && \
+    echo '# Start backend in background' >> /app/start.sh && \
+    echo 'node server/index.js &' >> /app/start.sh && \
+    echo '' >> /app/start.sh && \
+    echo '# Install and start a simple static server for frontend' >> /app/start.sh && \
+    echo 'npm install -g serve' >> /app/start.sh && \
+    echo 'serve -s dist -l 8080' >> /app/start.sh && \
+    chmod +x /app/start.sh
 
 # Expose ports
 EXPOSE 3001 8080
