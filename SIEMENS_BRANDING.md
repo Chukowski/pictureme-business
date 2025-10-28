@@ -10,17 +10,17 @@ The Particle Field template keeps the image at 1080 × 1920 and renders the bran
 
 ```
 ┌─────────────────┐
-│   Siemens Logo  │ ← Header band (black)
+│   Siemens Logo  │ ← Header band (WHITE background)
 ├─────────────────┤
 │                 │
 │   AI Generated  │ ← 9:16 portrait photo
 │      Photo      │
 │                 │
 ├─────────────────┤
-│ With Atellica   │ ← Tagline (white, centered)
+│ With Atellica   │ ← Tagline (white text, black background)
 │ systems...      │
 ├─────────────────┤
-│  "Do less"      │ ← Footer artwork (transparent PNG)
+│  "Do less"      │ ← Footer artwork (transparent PNG, black background)
 │   Footer        │
 └─────────────────┘
 ```
@@ -86,7 +86,7 @@ The Particle Field template keeps the image at 1080 × 1920 and renders the bran
 - **File**: `/src/assets/backgrounds/logo-siemens.png`
 - **Position**: Top, centered horizontally
 - **Width**: 60% of image width
-- **Background**: Black (#000000)
+- **Background**: White (#FFFFFF)
 - **Section**: Separate from AI image
 
 #### Footer (Bottom Section)
@@ -101,8 +101,8 @@ The Particle Field template keeps the image at 1080 × 1920 and renders the bran
 
 ### Composition Details (Particle Field)
 - **Canvas**: 1080 × 1920 (9:16)
-- **Header**: Siemens logo centered inside a black band
-- **Tagline**: “With Atellica systems, our goal is simple: less.” centered on its own black band above the footer
+- **Header**: Siemens logo centered inside a white band
+- **Tagline**: "With Atellica systems, our goal is simple: less." centered on its own black band above the footer
 - **Footer**: Transparent PNG artwork centered on a black band
 - **Other Templates**: Render as plain AI images (no additional branding)
 
@@ -115,7 +115,8 @@ This service applies the Particle Field branding within a single 9:16 canvas:
 
 ```typescript
 applyBrandingOverlay(aiImageUrl, {
-  backgroundColor: '#000000',
+  backgroundColor: '#000000', // Footer and tagline
+  headerBackgroundColor: '#FFFFFF', // White header for logo
   taglineText: 'With Atellica systems, our goal is simple: less.'
 })
 ```
@@ -123,11 +124,12 @@ applyBrandingOverlay(aiImageUrl, {
 **Process:**
 1. Loads AI image (1080 × 1920)
 2. Draws the photo as the base layer
-3. Paints black header/tagline/footer bands
-4. Centers the Siemens logo in the header band
-5. Renders the tagline text above the footer band
-6. Centers the footer artwork in the bottom band
-7. Returns the branded image (still 1080 × 1920)
+3. Paints white header band (for logo)
+4. Paints black tagline/footer bands
+5. Centers the Siemens logo in the white header band
+6. Renders the tagline text above the footer band
+7. Centers the footer artwork in the bottom band
+8. Returns the branded image (still 1080 × 1920)
 
 ### AI Processing Flow
 1. User takes photo with camera
@@ -189,8 +191,9 @@ Edit in `/src/services/aiProcessor.ts`:
 
 ```typescript
 const brandedImageUrl = await applyBrandingOverlay(processedUrl, {
-  backgroundColor: '#000000',
-  taglineText: 'With Atellica systems, our goal is simple: less.'
+  backgroundColor: '#000000', // Footer and tagline
+  headerBackgroundColor: '#FFFFFF', // White header for logo
+  taglineText: 'With Atellica systems, our goal is simple: less.',
   includeHeader: true, // Set to true only for Particle Field
 });
 ```

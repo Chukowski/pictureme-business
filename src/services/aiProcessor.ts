@@ -144,7 +144,8 @@ export async function processImageWithAI(
       }
 
       const brandedImageUrl = await applyBrandingOverlay(processedUrl, {
-        backgroundColor: '#000000',
+        backgroundColor: '#000000', // Footer and tagline
+        headerBackgroundColor: '#FFFFFF', // White header for logo
         includeHeader,
         campaignText,
       });

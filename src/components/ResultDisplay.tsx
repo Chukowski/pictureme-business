@@ -18,8 +18,9 @@ export const ResultDisplay = ({ imageUrl, shareCode, onReset }: ResultDisplayPro
   const [email, setEmail] = useState("");
   const [isSending, setIsSending] = useState(false);
   
-  // Generate a shareable URL for QR code
-  const shareUrl = shareCode ? getShareUrl(shareCode) : `${window.location.origin}/photo/${Date.now()}`;
+  // Use direct image URL for QR code (MinIO URL or base64)
+  // If it's a cloud URL (MinIO), use it directly; otherwise use share code fallback
+  const shareUrl = imageUrl.startsWith('http') ? imageUrl : (shareCode ? getShareUrl(shareCode) : imageUrl);
 
   const safeBrandSlug = useMemo(() => (brandConfig.brandName || "photobooth").toLowerCase().replace(/\s+/g, "-"), [brandConfig.brandName]);
 
@@ -68,7 +69,7 @@ export const ResultDisplay = ({ imageUrl, shareCode, onReset }: ResultDisplayPro
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(shareUrl);
-    toast.success("Link copied to clipboard!");
+    toast.success("Image link copied to clipboard!");
   };
 
   return (
@@ -91,8 +92,12 @@ export const ResultDisplay = ({ imageUrl, shareCode, onReset }: ResultDisplayPro
               <div className="w-10 h-10 rounded-full gradient-primary flex items-center justify-center">
                 <Share2 className="w-5 h-5 text-primary-foreground" />
               </div>
-              <h3 className="text-xl font-bold text-foreground">Scan to Download</h3>
+              <h3 className="text-xl font-bold text-foreground">Scan to View</h3>
             </div>
+            
+            <p className="text-sm text-muted-foreground">
+              Scan this QR code to open your photo directly
+            </p>
             
             <div className="bg-white p-4 rounded-2xl inline-block w-full flex justify-center">
               <QRCodeSVG
@@ -103,13 +108,6 @@ export const ResultDisplay = ({ imageUrl, shareCode, onReset }: ResultDisplayPro
               />
             </div>
             
-            {shareCode && (
-              <div className="glass-panel px-4 py-2 rounded-xl text-center">
-                <span className="text-xs text-muted-foreground">Code:</span>
-                <span className="ml-2 font-mono font-bold text-primary">{shareCode}</span>
-              </div>
-            )}
-            
             <Button
               onClick={handleCopyLink}
               variant="outline"
@@ -117,7 +115,7 @@ export const ResultDisplay = ({ imageUrl, shareCode, onReset }: ResultDisplayPro
               className="w-full rounded-xl"
             >
               <Copy className="w-4 h-4 mr-2" />
-              Copy Share Link
+              Copy Image Link
             </Button>
           </div>
 

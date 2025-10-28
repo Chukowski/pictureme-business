@@ -15,41 +15,43 @@ When a user takes a photo:
    - **Primary**: PostgreSQL (metadata) + MinIO (image files)
    - **Fallback**: Browser localStorage (if cloud fails)
 
-### 2. **Share URL Generation**
+### 2. **Direct Image Sharing**
 
-Share URLs are generated using the format:
+The QR code now points **directly to the image file** on MinIO, not to an intermediate page:
+
 ```
-https://photo.akitapr.com/share/{shareCode}
+https://storage.akitapr.com/photobooth/photo_1761681865008_u11c1b6_processed.jpg
 ```
 
-For example:
-- Share code: `PWE1VA`
-- Share URL: `https://photo.akitapr.com/share/PWE1VA`
+**Benefits:**
+- ✅ Works immediately after upload (no share page needed)
+- ✅ Opens directly in browser/gallery
+- ✅ Can be downloaded with right-click
+- ✅ No database lookup required
+- ✅ Simpler and more reliable
 
 ### 3. **QR Code Display**
 
 After processing, users see:
 - Their processed photo with Siemens branding
-- A QR code that links to the share URL
+- A QR code that links **directly to the image URL**
 - Options to:
   - Download the photo
-  - Copy the share link
+  - Copy the image link
   - Send via email (coming soon)
   - Take another photo
 
 ### 4. **Viewing Shared Photos**
 
-When someone scans the QR code or visits the share URL:
-1. They are taken to `/share/{shareCode}` route
-2. The `SharePage` component loads
-3. Photo is fetched from:
-   - **First try**: Cloud storage (PostgreSQL + MinIO)
-   - **Fallback**: Browser localStorage
-4. A clean, full-screen display shows:
-   - The processed photo
-   - Download button
-   - Siemens branding footer
-   - NO sidebar or navigation (clean display)
+When someone scans the QR code:
+1. Opens the **direct MinIO image URL** (e.g., `https://storage.akitapr.com/photobooth/photo_xxx_processed.jpg`)
+2. Image opens in browser or gallery app
+3. Can be downloaded, shared, or saved directly
+4. No intermediate page or database lookup needed
+
+**For base64/localStorage fallback:**
+- If cloud storage fails, QR code contains the base64 data URI
+- Opens the image directly in browser
 
 ## Technical Implementation
 
@@ -179,35 +181,56 @@ server {
 ```mermaid
 graph TD
     A[User takes photo] --> B[AI processes photo]
-    B --> C[Generate share code]
-    C --> D[Save to cloud/localStorage]
-    D --> E[Show QR code + share link]
+    B --> C[Upload to MinIO]
+    C --> D[Get direct image URL]
+    D --> E[Show QR code with image URL]
     E --> F[User scans QR code]
-    F --> G[Open photo.akitapr.com/share/CODE]
-    G --> H[SharePage fetches photo]
-    H --> I[Display photo + download option]
+    F --> G[Opens image directly in browser/gallery]
+    G --> H[User can download/share]
 ```
 
 ## Troubleshooting
 
-### QR Code doesn't work
-- Check `VITE_BASE_URL` is set to production URL
-- Verify backend is running and accessible
-- Check MinIO bucket permissions (public read required)
+### QR Code shows image not found / 403 error
+**Causa**: MinIO bucket doesn't have public read permissions
 
-### Photo not found
-- **Most common**: The photo doesn't exist - share codes are only created when someone takes a photo
-- Verify the share code is correct (it's case-sensitive, e.g., `GWBWXL`)
-- Check if backend is running (`npm run server` or `npm run dev:full`)
-- Verify PostgreSQL connection is working
-- Check if photo was saved successfully (check backend logs)
-- Ensure MinIO images are accessible
-- Check localStorage fallback if cloud storage failed
+**Solución**:
+```bash
+npm run setup-minio
+```
 
-### Download fails
-- Verify MinIO CORS settings
-- Check bucket public read policy
-- Ensure image URLs are accessible
+This sets the bucket policy to allow public read access.
+
+### QR Code doesn't open anything
+**Causa**: Image wasn't uploaded to MinIO or URL is incorrect
+
+**Solución**:
+1. Check backend logs for upload errors
+2. Verify MinIO credentials in `.env`
+3. Test MinIO connection: `curl https://storage.akitapr.com/photobooth/`
+4. Check that photo was saved: look for success message in backend logs
+
+### Image loads but is corrupted
+**Causa**: Upload failed or image buffer corrupted
+
+**Solución**:
+1. Check backend logs during upload
+2. Verify image is valid before upload
+3. Test with a smaller image
+4. Check MinIO storage capacity
+
+### QR code contains base64 instead of URL
+**Causa**: Cloud storage failed, fell back to localStorage
+
+**Why it happens**:
+- Backend not running
+- PostgreSQL connection failed
+- MinIO upload failed
+
+**Solución**:
+1. Run `npm run dev:full` to start both frontend and backend
+2. Check `.env` has correct credentials
+3. Verify PostgreSQL and MinIO are accessible
 
 ## Future Enhancements
 

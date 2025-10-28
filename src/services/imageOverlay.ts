@@ -11,7 +11,8 @@ export interface CompositionOptions {
   logoHeight?: number;
   footerHeight?: number;
   spacing?: number;
-  backgroundColor?: string;
+  backgroundColor?: string; // Footer and tagline background color
+  headerBackgroundColor?: string; // Header background color (for logo section)
   taglineText?: string;
   includeHeader?: boolean;
   campaignText?: string; // Text overlay on AI image (e.g., "Need extra hands?")
@@ -32,6 +33,7 @@ export async function applyBrandingOverlay(
     footerHeight,
     spacing,
     backgroundColor = '#000000',
+    headerBackgroundColor = '#FFFFFF', // Default white for header
     taglineText = 'With Atellica systems, our goal is simple: less.',
     includeHeader = false,
     campaignText,
@@ -88,10 +90,14 @@ export async function applyBrandingOverlay(
     const gap = Math.round((spacing ?? aiImageHeight * 0.01)); // Smaller gap
 
     // Background bands for header, tagline and footer
-    ctx.fillStyle = backgroundColor;
+    // Header: use headerBackgroundColor (white for glares)
     if (includeHeader && headerHeight > 0) {
+      ctx.fillStyle = headerBackgroundColor;
       ctx.fillRect(0, 0, aiImageWidth, headerHeight);
     }
+    
+    // Tagline and footer: use backgroundColor (black)
+    ctx.fillStyle = backgroundColor;
     const taglineTop = aiImageHeight - footerHeightPx - gap - taglineHeight;
     ctx.fillRect(0, taglineTop, aiImageWidth, taglineHeight);
     ctx.fillRect(0, aiImageHeight - footerHeightPx, aiImageWidth, footerHeightPx);

@@ -61,31 +61,28 @@ Esto configura automáticamente los permisos del bucket `photobooth`.
 
 ---
 
-### Error: QR codes no funcionan / "Photo not found"
-**Causa**: El sistema de compartir no está configurado correctamente
-**Solución**:
-1. Verifica que tu `.env` tenga:
-   ```bash
-   VITE_BASE_URL=https://photo.akitapr.com
-   ```
-2. Si estás en local y quieres probar:
-   ```bash
-   VITE_BASE_URL=http://localhost:8080
-   ```
-3. Asegúrate de que el backend esté corriendo y las fotos se guarden correctamente
-4. Reinicia el frontend después de cambiar `.env`
+### Error: QR codes no funcionan / Imagen no carga
+**Causa**: El QR code ahora apunta directamente a la imagen en MinIO, no a una página intermedia
 
-**Cómo funciona el share:**
-- Al tomar una foto, se genera un código único (ej: `PWE1VA`)
-- El QR code apunta a: `https://photo.akitapr.com/share/PWE1VA`
-- Cualquiera que escanee el QR puede ver y descargar la foto
-- Ver más en: `SHARE_SYSTEM.md`
+**Cómo funciona ahora:**
+- ✅ El QR code contiene la URL directa de la imagen
+- ✅ Al escanear, abre la imagen inmediatamente
+- ✅ No necesita base de datos ni share codes
+- ✅ Ejemplo: `https://storage.akitapr.com/photobooth/photo_xxx_processed.jpg`
 
-**Probar un share code:**
-```bash
-npm run test-share GWBWXL
-```
-Este comando verifica si el código existe en la base de datos y muestra detalles de la foto.
+**Si la imagen no carga:**
+1. Error 403: El bucket no tiene permisos públicos
+   ```bash
+   npm run setup-minio
+   ```
+2. Backend no está corriendo:
+   ```bash
+   npm run dev:full
+   ```
+3. Verifica que la foto se subió exitosamente (revisa logs del backend)
+4. Asegúrate de que MinIO esté accesible: `https://storage.akitapr.com`
+
+**Ver más en:** `SHARE_SYSTEM.md`
 
 ---
 
