@@ -88,13 +88,27 @@ export const SharePage = () => {
     return (
       <div className="min-h-screen bg-gradient-dark flex items-center justify-center p-4">
         <div className="text-center space-y-6 max-w-md">
-          <div className="w-20 h-20 rounded-full bg-red-500/20 mx-auto flex items-center justify-center">
-            <span className="text-4xl">😕</span>
+          <div className="w-24 h-24 rounded-full bg-red-500/20 mx-auto flex items-center justify-center">
+            <span className="text-5xl">😕</span>
           </div>
-          <h1 className="text-2xl font-bold text-white">Photo Not Found</h1>
-          <p className="text-gray-400">
-            {error || "This photo doesn't exist or has been removed."}
+          <h1 className="text-3xl font-bold text-white">Photo Not Found</h1>
+          <p className="text-gray-400 text-lg">
+            This photo may have been removed or the link is incorrect.
           </p>
+          {shareCode && (
+            <div className="glass-panel px-4 py-3 rounded-xl">
+              <p className="text-sm text-gray-500">Share Code:</p>
+              <p className="font-mono font-bold text-white text-lg">{shareCode}</p>
+            </div>
+          )}
+          <div className="text-center space-y-2 pt-4">
+            <p className="text-sm text-gray-400">
+              Powered by Siemens Healthineers
+            </p>
+            <p className="text-xs text-gray-500">
+              Atellica Systems - Do less. Experience more.
+            </p>
+          </div>
         </div>
       </div>
     );

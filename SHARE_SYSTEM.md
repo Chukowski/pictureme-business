@@ -196,10 +196,13 @@ graph TD
 - Check MinIO bucket permissions (public read required)
 
 ### Photo not found
-- Verify share code exists in database
-- Check PostgreSQL connection
+- **Most common**: The photo doesn't exist - share codes are only created when someone takes a photo
+- Verify the share code is correct (it's case-sensitive, e.g., `GWBWXL`)
+- Check if backend is running (`npm run server` or `npm run dev:full`)
+- Verify PostgreSQL connection is working
+- Check if photo was saved successfully (check backend logs)
 - Ensure MinIO images are accessible
-- Check localStorage fallback
+- Check localStorage fallback if cloud storage failed
 
 ### Download fails
 - Verify MinIO CORS settings

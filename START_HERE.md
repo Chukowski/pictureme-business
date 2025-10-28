@@ -81,6 +81,12 @@ Esto configura automáticamente los permisos del bucket `photobooth`.
 - Cualquiera que escanee el QR puede ver y descargar la foto
 - Ver más en: `SHARE_SYSTEM.md`
 
+**Probar un share code:**
+```bash
+npm run test-share GWBWXL
+```
+Este comando verifica si el código existe en la base de datos y muestra detalles de la foto.
+
 ---
 
 ## ✅ Inicio Correcto

@@ -9,6 +9,7 @@
     "dev:full": "concurrently \"npm run dev\" \"npm run server\"",
     "status": "node scripts/check-status.js",
     "setup-minio": "node scripts/setup-minio-bucket.js",
+    "test-share": "node scripts/test-share-code.js",
     "docker:build": "bash scripts/docker-build.sh",
     "docker:up": "docker-compose up -d",
     "docker:down": "docker-compose down",
