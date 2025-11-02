@@ -53,9 +53,14 @@ app = FastAPI(title="AI Photo Booth API", version="2.0.0")
 # CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Configure properly in production
+    allow_origins=[
+        "https://photo.akitapr.com",
+        "https://photoapi.akitapr.com", 
+        "http://localhost:8080",
+        "http://localhost:3000"
+    ],
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
 
