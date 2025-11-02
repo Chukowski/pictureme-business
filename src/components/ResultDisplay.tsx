@@ -19,8 +19,8 @@ export const ResultDisplay = ({ imageUrl, shareCode, onReset }: ResultDisplayPro
   const [isSending, setIsSending] = useState(false);
   
   // Always use short share code URL for QR code to avoid "Data too long" error
-  // Direct image URLs (MinIO/base64) are too long for QR codes
-  const shareUrl = shareCode ? getShareUrl(shareCode) : imageUrl;
+  // If no shareCode (storage failed), use a placeholder short URL
+  const shareUrl = shareCode ? getShareUrl(shareCode) : window.location.origin;
 
   const safeBrandSlug = useMemo(() => (brandConfig.brandName || "photobooth").toLowerCase().replace(/\s+/g, "-"), [brandConfig.brandName]);
 
@@ -68,6 +68,10 @@ export const ResultDisplay = ({ imageUrl, shareCode, onReset }: ResultDisplayPro
   };
 
   const handleCopyLink = () => {
+    if (!shareCode) {
+      toast.error("Share link unavailable (storage offline)");
+      return;
+    }
     navigator.clipboard.writeText(shareUrl);
     toast.success("Image link copied to clipboard!");
   };
@@ -96,17 +100,25 @@ export const ResultDisplay = ({ imageUrl, shareCode, onReset }: ResultDisplayPro
             </div>
             
             <p className="text-sm text-muted-foreground">
-              Scan this QR code to open your photo directly
+              {shareCode ? "Scan this QR code to open your photo directly" : "QR code unavailable (storage offline)"}
             </p>
             
-            <div className="bg-white p-4 rounded-2xl inline-block w-full flex justify-center">
-              <QRCodeSVG
-                value={shareUrl}
-                size={180}
-                level="H"
-                includeMargin
-              />
-            </div>
+            {shareCode ? (
+              <div className="bg-white p-4 rounded-2xl inline-block w-full flex justify-center">
+                <QRCodeSVG
+                  value={shareUrl}
+                  size={180}
+                  level="H"
+                  includeMargin
+                />
+              </div>
+            ) : (
+              <div className="bg-muted/50 p-8 rounded-2xl flex items-center justify-center">
+                <p className="text-muted-foreground text-center">
+                  Photo saved locally.<br/>Share code unavailable.
+                </p>
+              </div>
+            )}
             
             <Button
               onClick={handleCopyLink}
