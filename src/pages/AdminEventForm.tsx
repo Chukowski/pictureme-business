@@ -59,8 +59,8 @@ export default function AdminEventForm() {
       tagline: "Experiencias fotográficas impulsadas por AI.",
     },
     branding: {
-      logoPath: "/src/assets/backgrounds/logo-akita.png",
-      footerPath: "/src/assets/backgrounds/Footer_DoLess_Transparent.png",
+      logoPath: "/backgrounds/logo-akita.png",
+      footerPath: "/backgrounds/Footer_DoLess_Transparent.png",
       headerBackgroundColor: "#FFFFFF",
       footerBackgroundColor: "#000000",
       taglineText: "Powered by Akitá — experiencias visuales para tus eventos.",

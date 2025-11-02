@@ -98,7 +98,7 @@ BEGIN
       'Photos from before multiuser implementation',
       FALSE,
       '{"brandName": "Akitá", "primaryColor": "#0A3D62", "secondaryColor": "#F39C12"}'::jsonb,
-      '{"headerBackgroundColor": "#FFFFFF", "footerBackgroundColor": "#000000", "logoPath": "/src/assets/backgrounds/logo-akita.png"}'::jsonb
+      '{"headerBackgroundColor": "#FFFFFF", "footerBackgroundColor": "#000000", "logoPath": "/backgrounds/logo-akita.png"}'::jsonb
     ON CONFLICT (user_id, slug) DO NOTHING;
     
     -- Copy existing photos to processed_photos
@@ -219,7 +219,7 @@ SELECT
       "id": "glares",
       "name": "Particle Field",
       "description": "Tech Innovation",
-      "images": ["/src/assets/backgrounds/glares.jpg", "/src/assets/backgrounds/chevron_orange.png"],
+      "images": ["/backgrounds/glares.jpg", "/backgrounds/chevron_orange.png"],
       "prompt": "Take the person from the first image and place them into the second image background with the glowing golden particles and dark atmosphere...",
       "active": true,
       "includeHeader": true,
@@ -227,8 +227,8 @@ SELECT
     }
   ]'::jsonb,
   '{
-    "logoPath": "/src/assets/backgrounds/logo-akita.png",
-    "footerPath": "/src/assets/backgrounds/Footer_DoLess_Transparent.png",
+    "logoPath": "/backgrounds/logo-akita.png",
+    "footerPath": "/backgrounds/Footer_DoLess_Transparent.png",
     "headerBackgroundColor": "#FFFFFF",
     "footerBackgroundColor": "#000000",
     "taglineText": "Powered by Akitá — experiencias visuales para tus eventos."
