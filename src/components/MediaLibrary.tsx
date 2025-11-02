@@ -18,9 +18,11 @@ interface MediaItem {
 interface MediaLibraryProps {
   onSelectMedia: (url: string) => void;
   selectedUrl?: string;
+  eventId?: string; // Filter media by event
+  templates?: Array<{ images: string[] }>; // Show only images from event templates
 }
 
-export function MediaLibrary({ onSelectMedia, selectedUrl }: MediaLibraryProps) {
+export function MediaLibrary({ onSelectMedia, selectedUrl, eventId, templates }: MediaLibraryProps) {
   const [media, setMedia] = useState<MediaItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -28,11 +30,38 @@ export function MediaLibrary({ onSelectMedia, selectedUrl }: MediaLibraryProps) 
 
   useEffect(() => {
     loadMediaLibrary();
-  }, []);
+  }, [eventId, templates]);
 
   const loadMediaLibrary = async () => {
     try {
       setLoading(true);
+      
+      // If templates are provided, extract images from them (event-specific)
+      if (templates && templates.length > 0) {
+        const eventImages = new Set<string>();
+        templates.forEach((template) => {
+          template.images.forEach((img) => {
+            if (img && img.trim()) {
+              eventImages.add(img);
+            }
+          });
+        });
+        
+        // Convert to MediaItem format
+        const eventMedia: MediaItem[] = Array.from(eventImages).map((url, index) => ({
+          name: `template-image-${index + 1}`,
+          url,
+          size: 0,
+          uploaded_at: null,
+          type: 'template-image',
+        }));
+        
+        setMedia(eventMedia);
+        setLoading(false);
+        return;
+      }
+      
+      // Otherwise, load from user's media library
       const token = localStorage.getItem("auth_token");
       if (!token) {
         throw new Error("No authentication token found");
@@ -171,7 +200,7 @@ export function MediaLibrary({ onSelectMedia, selectedUrl }: MediaLibraryProps) 
         <CardTitle className="flex items-center justify-between">
           <span className="flex items-center gap-2">
             <ImageIcon className="h-5 w-5" />
-            Media Library
+            {templates && templates.length > 0 ? 'Event Images' : 'Media Library'}
           </span>
           <label htmlFor="media-upload">
             <Button
@@ -211,8 +240,12 @@ export function MediaLibrary({ onSelectMedia, selectedUrl }: MediaLibraryProps) 
         ) : media.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
             <ImageIcon className="h-12 w-12 mx-auto mb-2 opacity-50" />
-            <p>No media uploaded yet</p>
-            <p className="text-sm">Upload images to reuse them in templates</p>
+            <p>{templates && templates.length > 0 ? 'No images in event templates' : 'No media uploaded yet'}</p>
+            <p className="text-sm">
+              {templates && templates.length > 0 
+                ? 'Add images to your templates to see them here' 
+                : 'Upload images to reuse them in templates'}
+            </p>
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">

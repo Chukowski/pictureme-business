@@ -1032,6 +1032,7 @@ export default function AdminEventForm() {
                                   }
                                 }}
                                 selectedUrl={template.images[0]}
+                                templates={formData.templates}
                               />
                             </div>
                             <Textarea
