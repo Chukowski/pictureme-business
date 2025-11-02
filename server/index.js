@@ -70,6 +70,15 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: Date.now() });
 });
 
+// Config endpoint - expose public configuration to frontend
+app.get('/api/config', (req, res) => {
+  res.json({
+    falKey: process.env.VITE_FAL_KEY,
+    falModel: process.env.VITE_FAL_MODEL || 'fal-ai/bytedance/seedream/v4/edit',
+    baseUrl: process.env.VITE_BASE_URL || 'https://photo.akitapr.com',
+  });
+});
+
 // Get all photos
 app.get('/api/photos', async (req, res) => {
   try {

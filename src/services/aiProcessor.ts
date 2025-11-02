@@ -1,11 +1,41 @@
 import { fal } from "@fal-ai/client";
 import { applyBrandingOverlay } from "./imageOverlay";
 
-// Get configuration
-const FAL_KEY = import.meta.env.VITE_FAL_KEY;
-const FAL_MODEL = import.meta.env.VITE_FAL_MODEL || "fal-ai/bytedance/seedream/v4/edit";
+// Configuration state
+let FAL_KEY: string | undefined = import.meta.env.VITE_FAL_KEY;
+let FAL_MODEL: string = import.meta.env.VITE_FAL_MODEL || "fal-ai/bytedance/seedream/v4/edit";
+let configLoaded = false;
 
-// Configure fal client with credentials
+// Load config from backend API if not available in build-time env
+async function loadConfig() {
+  if (configLoaded || FAL_KEY) {
+    return;
+  }
+  
+  try {
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+    const response = await fetch(`${apiUrl}/api/config`);
+    const config = await response.json();
+    
+    if (config.falKey) {
+      FAL_KEY = config.falKey;
+      FAL_MODEL = config.falModel || FAL_MODEL;
+      
+      // Configure fal client
+      fal.config({
+        credentials: FAL_KEY,
+      });
+      
+      console.log('✅ Configuration loaded from backend');
+    }
+  } catch (error) {
+    console.warn('⚠️ Failed to load config from backend:', error);
+  }
+  
+  configLoaded = true;
+}
+
+// Configure fal client with credentials if available at build time
 if (FAL_KEY) {
   fal.config({
     credentials: FAL_KEY,
@@ -47,9 +77,12 @@ export async function processImageWithAI(
     onProgress,
   } = options;
 
+  // Load config from backend if not available
+  await loadConfig();
+
   if (!FAL_KEY) {
     throw new Error(
-      "FAL_KEY not configured. Please add VITE_FAL_KEY to your .env file"
+      "FAL_KEY not configured. Please add VITE_FAL_KEY to your environment variables."
     );
   }
 
