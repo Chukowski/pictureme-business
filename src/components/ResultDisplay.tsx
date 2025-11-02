@@ -18,9 +18,9 @@ export const ResultDisplay = ({ imageUrl, shareCode, onReset }: ResultDisplayPro
   const [email, setEmail] = useState("");
   const [isSending, setIsSending] = useState(false);
   
-  // Use direct image URL for QR code (MinIO URL or base64)
-  // If it's a cloud URL (MinIO), use it directly; otherwise use share code fallback
-  const shareUrl = imageUrl.startsWith('http') ? imageUrl : (shareCode ? getShareUrl(shareCode) : imageUrl);
+  // Always use short share code URL for QR code to avoid "Data too long" error
+  // Direct image URLs (MinIO/base64) are too long for QR codes
+  const shareUrl = shareCode ? getShareUrl(shareCode) : imageUrl;
 
   const safeBrandSlug = useMemo(() => (brandConfig.brandName || "photobooth").toLowerCase().replace(/\s+/g, "-"), [brandConfig.brandName]);
 
