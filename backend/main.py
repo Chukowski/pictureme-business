@@ -13,7 +13,7 @@ from datetime import datetime, timedelta
 import asyncpg
 import boto3
 from jose import JWTError, jwt
-from passlib.context import CryptContext
+import bcrypt
 import os
 import json
 from dotenv import load_dotenv
@@ -41,8 +41,7 @@ MINIO_SERVER_URL = os.getenv("VITE_MINIO_SERVER_URL", "https://storage.akitapr.c
 FAL_KEY = os.getenv("VITE_FAL_KEY")
 FAL_MODEL = os.getenv("VITE_FAL_MODEL", "fal-ai/bytedance/seedream/v4/edit")
 
-# Password hashing
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# Password hashing (using bcrypt directly instead of passlib for compatibility)
 
 # Security
 security = HTTPBearer()
@@ -148,10 +147,17 @@ def parse_iso_datetime(value: Optional[Any]) -> Optional[datetime]:
 
 # ===== Auth Helpers =====
 def hash_password(password: str) -> str:
-    return pwd_context.hash(password)
+    """Hash a password using bcrypt"""
+    password_bytes = password.encode('utf-8')
+    salt = bcrypt.gensalt()
+    hashed = bcrypt.hashpw(password_bytes, salt)
+    return hashed.decode('utf-8')
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    return pwd_context.verify(plain_password, hashed_password)
+    """Verify a password against a bcrypt hash"""
+    password_bytes = plain_password.encode('utf-8')
+    hashed_bytes = hashed_password.encode('utf-8')
+    return bcrypt.checkpw(password_bytes, hashed_bytes)
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     to_encode = data.copy()
