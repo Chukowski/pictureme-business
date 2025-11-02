@@ -57,6 +57,7 @@ export default function AdminEventForm() {
       primaryColor: "#0A3D62",
       secondaryColor: "#F39C12",
       tagline: "Experiencias fotográficas impulsadas por AI.",
+      mode: "dark" as "light" | "dark",
     },
     branding: {
       logoPath: "/backgrounds/logo-akita.png",
@@ -122,6 +123,7 @@ export default function AdminEventForm() {
           primaryColor: event.theme?.primaryColor || prev.theme.primaryColor,
           secondaryColor: event.theme?.secondaryColor || prev.theme.secondaryColor,
           tagline: event.theme?.tagline || prev.theme.tagline,
+          mode: event.theme?.mode || prev.theme.mode,
         },
         branding: {
           ...prev.branding,
@@ -394,6 +396,93 @@ export default function AdminEventForm() {
                     }
                   />
                 </div>
+              </div>
+
+              {/* Theme Mode Selector */}
+              <div className="space-y-2">
+                <Label htmlFor="theme-mode">Photo Booth Theme</Label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setFormData({
+                        ...formData,
+                        theme: { ...formData.theme, mode: "light" },
+                      })
+                    }
+                    className={`p-4 rounded-lg border-2 transition-all ${
+                      formData.theme.mode === "light"
+                        ? "border-primary bg-primary/10 ring-2 ring-primary"
+                        : "border-border hover:border-primary/50"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-white to-gray-100 border border-gray-200 flex items-center justify-center">
+                        <svg
+                          className="w-6 h-6 text-yellow-500"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"
+                          />
+                        </svg>
+                      </div>
+                      <div className="text-left">
+                        <div className="font-semibold">Light Mode</div>
+                        <div className="text-xs text-muted-foreground">
+                          Bright and clean interface
+                        </div>
+                      </div>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setFormData({
+                        ...formData,
+                        theme: { ...formData.theme, mode: "dark" },
+                      })
+                    }
+                    className={`p-4 rounded-lg border-2 transition-all ${
+                      formData.theme.mode === "dark"
+                        ? "border-primary bg-primary/10 ring-2 ring-primary"
+                        : "border-border hover:border-primary/50"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-700 flex items-center justify-center">
+                        <svg
+                          className="w-6 h-6 text-blue-400"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"
+                          />
+                        </svg>
+                      </div>
+                      <div className="text-left">
+                        <div className="font-semibold">Dark Mode</div>
+                        <div className="text-xs text-muted-foreground">
+                          Modern and elegant look
+                        </div>
+                      </div>
+                    </div>
+                  </button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Choose the theme for your photo booth interface
+                </p>
               </div>
 
               <div className="flex items-center justify-between p-4 rounded-lg bg-muted/50">

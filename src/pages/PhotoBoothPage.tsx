@@ -34,6 +34,16 @@ export const PhotoBoothPage = () => {
     if (config?.theme) {
       document.documentElement.style.setProperty('--brand-primary', config.theme.primaryColor || '#009999');
       document.documentElement.style.setProperty('--brand-secondary', config.theme.secondaryColor || '#ee6602');
+      
+      // Apply theme mode (light/dark)
+      const themeMode = config.theme.mode || 'dark';
+      if (themeMode === 'light') {
+        document.documentElement.classList.remove('dark');
+        document.documentElement.classList.add('light');
+      } else {
+        document.documentElement.classList.remove('light');
+        document.documentElement.classList.add('dark');
+      }
     }
   }, [config]);
 
