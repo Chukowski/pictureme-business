@@ -5,6 +5,8 @@
 
 import type { Template } from './eventsApi';
 
+const API_URL = import.meta.env.VITE_API_URL || '';
+
 /**
  * Upload an image file to MinIO and return the public URL
  */
@@ -17,7 +19,7 @@ export async function uploadTemplateImage(file: File): Promise<string> {
   const formData = new FormData();
   formData.append('file', file);
   
-  const response = await fetch('/api/templates/upload-image', {
+  const response = await fetch(`${API_URL}/api/templates/upload-image`, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${token}`,

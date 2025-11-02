@@ -5,6 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Upload, Trash2, Image as ImageIcon, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
+const API_URL = import.meta.env.VITE_API_URL || '';
+
 interface MediaItem {
   name: string;
   url: string;
@@ -35,7 +37,7 @@ export function MediaLibrary({ onSelectMedia, selectedUrl }: MediaLibraryProps) 
       if (!token) {
         throw new Error("No authentication token found");
       }
-      const response = await fetch("/api/media/library", {
+      const response = await fetch(`${API_URL}/api/media/library`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -92,7 +94,7 @@ export function MediaLibrary({ onSelectMedia, selectedUrl }: MediaLibraryProps) 
       const formData = new FormData();
       formData.append("file", file);
 
-      const response = await fetch("/api/media/upload", {
+      const response = await fetch(`${API_URL}/api/media/upload`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -135,7 +137,7 @@ export function MediaLibrary({ onSelectMedia, selectedUrl }: MediaLibraryProps) 
       if (!token) {
         throw new Error("No authentication token found");
       }
-      const response = await fetch(`/api/media/${filename}`, {
+      const response = await fetch(`${API_URL}/api/media/${filename}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,

@@ -5,6 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { Lightbulb, Loader2, Copy, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
+const API_URL = import.meta.env.VITE_API_URL || '';
+
 interface PromptSuggestion {
   id: string;
   category: string;
@@ -32,7 +34,7 @@ export function PromptSuggestions({ onSelectPrompt, currentPrompt }: PromptSugge
   const loadSuggestions = async () => {
     try {
       setLoading(true);
-      const response = await fetch("/api/prompts/suggestions");
+      const response = await fetch(`${API_URL}/api/prompts/suggestions`);
 
       if (!response.ok) {
         throw new Error("Failed to load prompt suggestions");
