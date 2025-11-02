@@ -4,6 +4,16 @@ FROM node:18-alpine AS builder
 # Set working directory
 WORKDIR /app
 
+# Accept build arguments for Vite environment variables
+ARG VITE_FAL_KEY
+ARG VITE_FAL_MODEL
+ARG VITE_BASE_URL
+
+# Set as environment variables for Vite build
+ENV VITE_FAL_KEY=$VITE_FAL_KEY
+ENV VITE_FAL_MODEL=$VITE_FAL_MODEL
+ENV VITE_BASE_URL=$VITE_BASE_URL
+
 # Copy package files
 COPY package*.json ./
 
@@ -13,7 +23,7 @@ RUN npm ci
 # Copy source code
 COPY . .
 
-# Build the frontend
+# Build the frontend (Vite will use VITE_* env vars)
 RUN npm run build
 
 # Production stage
