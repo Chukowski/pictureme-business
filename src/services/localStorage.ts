@@ -17,6 +17,8 @@ export interface ProcessedPhoto {
   shareCode: string;
   createdAt: number;
   prompt: string;
+  userSlug?: string;
+  eventSlug?: string;
 }
 
 const STORAGE_KEY = "photobooth_photos";
@@ -64,10 +66,23 @@ export async function saveProcessedPhoto(photo: Omit<ProcessedPhoto, "id" | "cre
         backgroundId: photo.backgroundId,
         backgroundName: photo.backgroundName,
         prompt: photo.prompt,
+        userSlug: photo.userSlug,
+        eventSlug: photo.eventSlug,
       });
       
       console.log("✅ Photo saved to cloud storage:", cloudPhoto.id);
-      return cloudPhoto;
+      return {
+        id: cloudPhoto.id,
+        originalImageUrl: cloudPhoto.originalImageUrl,
+        processedImageUrl: cloudPhoto.processedImageUrl,
+        backgroundId: cloudPhoto.backgroundId || photo.backgroundId,
+        backgroundName: cloudPhoto.backgroundName || photo.backgroundName,
+        shareCode: cloudPhoto.shareCode,
+        createdAt: cloudPhoto.createdAt,
+        prompt: cloudPhoto.prompt || photo.prompt,
+        userSlug: cloudPhoto.userSlug || photo.userSlug,
+        eventSlug: cloudPhoto.eventSlug || photo.eventSlug,
+      } as ProcessedPhoto;
     }
   } catch (cloudError) {
     console.warn("⚠️ Cloud storage failed, falling back to localStorage:", cloudError);

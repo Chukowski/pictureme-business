@@ -208,7 +208,7 @@ interface ResultDisplayProps {
 ```
 
 **Key Features**:
-- **Siemens Healthineers Branding**: Logo overlay on image
+- **Akitá Branding**: Logo overlay on image
 - **QR Code**: Generated from `shareUrl` using `qrcode.react`
 - **Download Button**: Triggers browser download of image
 - **Share Code Display**: Shows 6-character code for manual sharing
@@ -241,7 +241,7 @@ interface ProcessImageOptions {
   backgroundPrompt: string;       // AI prompt (from background)
   backgroundImageUrl?: string;    // Optional background reference image
   backgroundImageUrls?: string[]; // Support for multiple reference images
-  includeBranding?: boolean;      // Whether to render Siemens branding (Particle Field only)
+  includeBranding?: boolean;      // Whether to render Akitá branding (Particle Field only)
   onProgress?: (status: string, logs?: string[]) => void;
 }
 ```
@@ -390,7 +390,7 @@ interface ProcessedPhoto {
 
 4. RESULT DISPLAY
    └─> ResultDisplay shows:
-       ├─> Processed image with Siemens logo
+       ├─> Processed image with Akitá logo
        ├─> QR code (from share URL)
        ├─> Download button
        ├─> Copy link button
@@ -823,7 +823,7 @@ localStorage.removeItem('photobooth_photos');
 For questions or issues:
 1. Check existing documentation files
 2. Review browser console for errors
-3. Contact Siemens Healthineers development team
+3. Contact the Akitá (akitapr.com) development team
 
 ---
 

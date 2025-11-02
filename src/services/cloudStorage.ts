@@ -8,11 +8,13 @@ export interface CloudPhoto {
   id: string;
   originalImageUrl: string;
   processedImageUrl: string;
-  backgroundId: string;
-  backgroundName: string;
+  backgroundId?: string;
+  backgroundName?: string;
   shareCode: string;
   createdAt: number;
-  prompt: string;
+  prompt?: string;
+  userSlug?: string;
+  eventSlug?: string;
 }
 
 /**
@@ -25,24 +27,48 @@ export async function savePhotoToCloud(photo: {
   backgroundId: string;
   backgroundName: string;
   prompt: string;
+  userSlug?: string;
+  eventSlug?: string;
 }): Promise<CloudPhoto> {
   try {
-    const response = await fetch('/api/photos/upload', {
+    const response = await fetch('/api/photos/upload/public', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(photo),
+      body: JSON.stringify({
+        originalImageBase64: photo.originalImageBase64,
+        processedImageBase64: photo.processedImageBase64,
+        backgroundId: photo.backgroundId,
+        backgroundName: photo.backgroundName,
+        prompt: photo.prompt,
+        userSlug: photo.userSlug,
+        eventSlug: photo.eventSlug,
+      }),
     });
     
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ error: response.statusText }));
-      throw new Error(error.error || 'Failed to upload to cloud');
+      const error = await response.json().catch(() => ({ detail: response.statusText }));
+      throw new Error(error.detail || 'Failed to upload to cloud');
     }
     
     const cloudPhoto = await response.json();
     console.log('☁️ Photo saved to cloud:', cloudPhoto.id);
-    return cloudPhoto;
+    const createdAtValue = typeof cloudPhoto.createdAt === 'number'
+      ? cloudPhoto.createdAt
+      : Number(cloudPhoto.createdAt);
+    return {
+      id: cloudPhoto.id,
+      originalImageUrl: cloudPhoto.originalImageUrl,
+      processedImageUrl: cloudPhoto.processedImageUrl,
+      backgroundId: cloudPhoto.backgroundId ?? photo.backgroundId,
+      backgroundName: cloudPhoto.backgroundName ?? photo.backgroundName,
+      shareCode: cloudPhoto.shareCode,
+      createdAt: Number.isFinite(createdAtValue) ? createdAtValue : Date.now(),
+      prompt: cloudPhoto.prompt ?? photo.prompt,
+      userSlug: cloudPhoto.userSlug ?? photo.userSlug,
+      eventSlug: cloudPhoto.eventSlug ?? photo.eventSlug,
+    } as CloudPhoto;
   } catch (error) {
     console.error('Failed to save to cloud storage:', error);
     throw error;
@@ -62,8 +88,23 @@ export async function getPhotoByShareCode(shareCode: string): Promise<CloudPhoto
       }
       throw new Error(`Failed to fetch photo: ${response.statusText}`);
     }
-    
-    return await response.json();
+
+    const data = await response.json();
+    const createdAtValue = typeof data.createdAt === 'number'
+      ? data.createdAt
+      : Number(data.createdAt);
+    return {
+      id: data.id,
+      originalImageUrl: data.originalImageUrl,
+      processedImageUrl: data.processedImageUrl,
+      backgroundName: data.backgroundName,
+      shareCode: data.shareCode,
+      createdAt: Number.isFinite(createdAtValue) ? createdAtValue : Date.now(),
+      backgroundId: data.backgroundId,
+      prompt: data.prompt,
+      userSlug: data.userSlug,
+      eventSlug: data.eventSlug,
+    } as CloudPhoto;
   } catch (error) {
     console.error('Failed to fetch from cloud:', error);
     return null;

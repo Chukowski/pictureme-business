@@ -46,7 +46,7 @@ A fully functional **AI Photo Booth demo** with local storage that can run witho
 - ✅ Copy link functionality
 - ✅ Download button
 - ✅ Email placeholder (ready for integration)
-- ✅ Siemens branding overlay
+- ✅ Akitá branding overlay
 
 ### 6. **Main App Flow** (`src/pages/Index.tsx`)
 - ✅ Background selection → Camera → AI Processing → Result
@@ -317,4 +317,3 @@ You now have a fully functional AI Photo Booth that:
 - Can be deployed anywhere
 
 **Start creating amazing AI-powered photos!** 📸✨
-

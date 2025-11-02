@@ -6,7 +6,10 @@
   "scripts": {
     "dev": "vite",
     "server": "node server/index.js",
-    "dev:full": "concurrently \"npm run dev\" \"npm run server\"",
+    "backend": "cd backend && uvicorn main:app --reload --host 0.0.0.0 --port 3001",
+    "backend:setup": "bash scripts/setup-backend-env.sh",
+    "migrate": "node server/migrate.js",
+    "dev:full": "concurrently \"npm run dev\" \"npm run backend\"",
     "status": "node scripts/check-status.js",
     "setup-minio": "node scripts/setup-minio-bucket.js",
     "test-share": "node scripts/test-share-code.js",

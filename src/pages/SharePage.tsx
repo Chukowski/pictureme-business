@@ -55,14 +55,14 @@ export const SharePage = () => {
         const url = window.URL.createObjectURL(blob);
         const link = document.createElement("a");
         link.href = url;
-        link.download = `siemens-photobooth-${Date.now()}.jpg`;
+        link.download = `akita-photobooth-${Date.now()}.jpg`;
         link.click();
         window.URL.revokeObjectURL(url);
       } else {
         // Base64 - download directly
         const link = document.createElement("a");
         link.href = imageUrl;
-        link.download = `siemens-photobooth-${Date.now()}.jpg`;
+        link.download = `akita-photobooth-${Date.now()}.jpg`;
         link.click();
       }
       
@@ -103,10 +103,10 @@ export const SharePage = () => {
           )}
           <div className="text-center space-y-2 pt-4">
             <p className="text-sm text-gray-400">
-              Powered by Siemens Healthineers
+              Powered by Akitá — akitapr.com
             </p>
             <p className="text-xs text-gray-500">
-              Atellica Systems - Do less. Experience more.
+              Experiencias de marca impulsadas por inteligencia artificial.
             </p>
           </div>
         </div>
@@ -143,14 +143,13 @@ export const SharePage = () => {
         {/* Branding Footer */}
         <div className="text-center space-y-2 py-6">
           <p className="text-sm text-gray-400">
-            Powered by Siemens Healthineers
+            Powered by Akitá — akitapr.com
           </p>
           <p className="text-xs text-gray-500">
-            Atellica Systems - Do less. Experience more.
+            Experiencias de marca impulsadas por inteligencia artificial.
           </p>
         </div>
       </div>
     </div>
   );
 };
-

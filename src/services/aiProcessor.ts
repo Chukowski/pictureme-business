@@ -42,6 +42,8 @@ if (FAL_KEY) {
   });
 }
 
+import type { WatermarkConfig } from './imageOverlay';
+
 export interface ProcessImageOptions {
   userPhotoBase64: string;
   backgroundPrompt: string;
@@ -50,6 +52,11 @@ export interface ProcessImageOptions {
   includeBranding?: boolean;
   includeHeader?: boolean;
   campaignText?: string; // Campaign text overlay (e.g., "Need extra hands?")
+  taglineText?: string; // Custom tagline text
+  logoUrl?: string; // Custom logo URL
+  footerUrl?: string; // Custom footer URL
+  headerBackgroundColor?: string; // Header background color
+  watermark?: WatermarkConfig; // Watermark configuration
   onProgress?: (status: string, logs?: string[]) => void;
 }
 
@@ -178,9 +185,13 @@ export async function processImageWithAI(
 
       const brandedImageUrl = await applyBrandingOverlay(processedUrl, {
         backgroundColor: '#000000', // Footer and tagline
-        headerBackgroundColor: '#FFFFFF', // White header for logo
+        headerBackgroundColor: options.headerBackgroundColor || '#FFFFFF', // Custom or white header
         includeHeader,
         campaignText,
+        taglineText: options.taglineText,
+        logoUrl: options.logoUrl,
+        footerUrl: options.footerUrl,
+        watermark: options.watermark,
       });
 
       console.log("✅ Branded composition created successfully");

@@ -83,7 +83,7 @@ All colors MUST be HSL.
   }
   
   /* Event theme overrides */
-  [data-theme="siemens"] {
+  [data-theme="legacy"] {
     --brand-primary: 180 100% 30%;       /* Teal */
     --brand-secondary: 24 96% 48%;       /* Orange */
   }

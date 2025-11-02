@@ -33,7 +33,7 @@ https://storage.akitapr.com/photobooth/photo_1761681865008_u11c1b6_processed.jpg
 ### 3. **QR Code Display**
 
 After processing, users see:
-- Their processed photo with Siemens branding
+- Their processed photo with Akitá branding
 - A QR code that links **directly to the image URL**
 - Options to:
   - Download the photo
@@ -239,4 +239,3 @@ This sets the bucket policy to allow public read access.
 - [ ] Photo expiration (auto-delete after X days)
 - [ ] Photo gallery view
 - [ ] Analytics (view count, download count)
-

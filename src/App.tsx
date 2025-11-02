@@ -2,15 +2,18 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { SidebarProvider, SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import Index from "./pages/Index";
 import { SharePage } from "./pages/SharePage";
+import { PhotoBoothPage } from "./pages/PhotoBoothPage";
+import { EventFeedPage } from "./pages/EventFeedPage";
 import NotFound from "./pages/NotFound";
-import AdminLogin from "./pages/admin/Login";
-import AdminEvents from "./pages/admin/Events";
+import AdminAuth from "./pages/AdminAuth";
+import AdminEvents from "./pages/AdminEvents";
+import AdminEventForm from "./pages/AdminEventForm";
 
 const queryClient = new QueryClient();
 
@@ -32,33 +35,27 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
+            {/* Root redirects to admin auth */}
+            <Route path="/" element={<Navigate to="/admin/auth" replace />} />
+            
             {/* Share page - no sidebar, clean display */}
             <Route path="/share/:shareCode" element={<SharePage />} />
             
-            {/* Main app routes with sidebar */}
-            <Route path="/*" element={
-              <SidebarProvider>
-                <div className="min-h-screen flex w-full">
-                  <AppSidebar />
-                  <div className="flex-1 flex flex-col">
-                    {/* Mobile toggle for sidebar */}
-                    <div className="fixed top-3 left-3 z-30 md:hidden">
-                      <SidebarTrigger className="shadow-card" />
-                    </div>
-                    <FloatingSidebarToggle />
-                    <main className="flex-1">
-                      <Routes>
-                        <Route path="/" element={<Index />} />
-                        <Route path="/admin/login" element={<AdminLogin />} />
-                        <Route path="/admin/events" element={<AdminEvents />} />
-                        {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                        <Route path="*" element={<NotFound />} />
-                      </Routes>
-                    </main>
-                  </div>
-                </div>
-              </SidebarProvider>
-            } />
+            {/* Admin routes - no sidebar */}
+            <Route path="/admin/auth" element={<AdminAuth />} />
+            <Route path="/admin/events" element={<AdminEvents />} />
+            <Route path="/admin/events/create" element={<AdminEventForm />} />
+            <Route path="/admin/events/edit/:eventId" element={<AdminEventForm />} />
+            
+            {/* Dynamic event routes - no sidebar */}
+            <Route path="/:userSlug/:eventSlug" element={<PhotoBoothPage />} />
+            <Route path="/:userSlug/:eventSlug/feed" element={<EventFeedPage />} />
+            
+            {/* Legacy Index page (if needed) */}
+            <Route path="/legacy" element={<Index />} />
+            
+            {/* 404 */}
+            <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
       </TooltipProvider>

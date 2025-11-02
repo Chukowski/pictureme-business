@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { getCurrentEvent } from "@/services/adminStorage";
 
-type EventTheme = "default" | "siemens" | "akita" | "custom";
+type EventTheme = "default" | "legacy" | "akita" | "custom";
 
 interface BrandConfig {
   theme: EventTheme;
@@ -22,9 +22,9 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export const ThemeProvider = ({ children }: { children: ReactNode }) => {
   const [brandConfig, setBrandConfig] = useState<BrandConfig>({
-    theme: "siemens",
-    brandName: "Siemens Healthineers",
-    tagline: "Do less. Experience the future",
+    theme: "akita",
+    brandName: "Akitá",
+    tagline: "Experiencias fotográficas impulsadas por AI",
     mode: "light",
   });
 

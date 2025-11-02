@@ -1,4 +1,4 @@
-import { Check } from "lucide-react";
+import { Check, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface SceneCardProps {
@@ -7,6 +7,7 @@ interface SceneCardProps {
   description?: string;
   image: string;
   active: boolean;
+  isCustomPrompt?: boolean;
   onClick: () => void;
 }
 
@@ -15,6 +16,7 @@ export const SceneCard = ({
   description,
   image,
   active,
+  isCustomPrompt,
   onClick,
 }: SceneCardProps) => {
   return (
@@ -37,6 +39,16 @@ export const SceneCard = ({
       
       {/* Gradient overlay */}
       <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent opacity-60 group-hover:opacity-80 transition-opacity" />
+      
+      {/* Custom Prompt Badge */}
+      {isCustomPrompt && (
+        <div className="absolute top-4 left-4 z-10">
+          <div className="bg-gradient-to-r from-purple-500 to-blue-500 text-white px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 shadow-lg">
+            <Sparkles className="w-3 h-3" />
+            Custom
+          </div>
+        </div>
+      )}
       
       {/* Active indicator */}
       {active && (

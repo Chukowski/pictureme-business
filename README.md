@@ -1,4 +1,4 @@
-# Photo Booth AI - Siemens Healthineers
+# Photo Booth AI - Akitá (akitapr.com)
 
 A responsive Photo Booth web application designed for iPad use that allows users to capture photos, select AI-generated backgrounds, and receive their edited photos via QR code or email.
 
@@ -15,7 +15,7 @@ A responsive Photo Booth web application designed for iPad use that allows users
 - 📱 QR code generation for instant downloads
 - 📧 Email delivery option
 - 🎯 iPad-optimized responsive design
-- 🏢 Siemens Healthineers branding
+- 🏢 Akitá event branding
 
 ## Tech Stack
 
@@ -91,8 +91,8 @@ The app supports two fal.ai models (configurable via `FAL_MODEL` env variable):
 ## Design System
 
 **Colors:**
-- Primary Teal: `#009999` (HSL: 180, 100%, 30%)
-- Secondary Orange: `#ee6602` (HSL: 24, 96%, 48%)
+- Primary Deep Blue: `#0A3D62`
+- Secondary Amber: `#F39C12`
 - Background: Black `#000000`
 
 **Typography:**
@@ -146,8 +146,8 @@ src/
 
 ## License
 
-Proprietary - Siemens Healthineers
+Proprietary - Akitá (akitapr.com)
 
 ## Contact
 
-For questions or support, contact the Siemens Healthineers development team.
+For questions or support, contact the Akitá team at https://akitapr.com.

@@ -1,14 +1,25 @@
 /**
  * Image Composition Service
- * Creates vertical composition with Siemens Healthineers branding
+ * Creates vertical composition with event-specific branding
  * Layout: Logo (top) + AI Image (middle) + Footer (bottom)
  */
 
-import logoSiemens from '@/assets/backgrounds/logo-siemens.png';
+import logoAkita from '@/assets/backgrounds/logo-akita.png';
 import footerDoLess from '@/assets/backgrounds/Footer_DoLess_Transparent.png';
 
-const LOGO_PATH = logoSiemens;
-const FOOTER_PATH = footerDoLess;
+// Default fallback paths
+const DEFAULT_LOGO_PATH = logoAkita;
+const DEFAULT_FOOTER_PATH = footerDoLess;
+
+export interface WatermarkConfig {
+  enabled: boolean;
+  type: "image" | "text";
+  imageUrl?: string;
+  text?: string;
+  position: "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center";
+  size: number; // Percentage of image width
+  opacity: number; // 0-1
+}
 
 export interface CompositionOptions {
   logoHeight?: number;
@@ -19,6 +30,9 @@ export interface CompositionOptions {
   taglineText?: string;
   includeHeader?: boolean;
   campaignText?: string; // Text overlay on AI image (e.g., "Need extra hands?")
+  logoUrl?: string; // Custom logo URL (overrides default)
+  footerUrl?: string; // Custom footer URL (overrides default)
+  watermark?: WatermarkConfig; // Watermark configuration
 }
 
 /**
@@ -37,18 +51,27 @@ export async function applyBrandingOverlay(
     spacing,
     backgroundColor = '#000000',
     headerBackgroundColor = '#FFFFFF', // Default white for header
-    taglineText = 'With Atellica systems, our goal is simple: less.',
+    taglineText,
     includeHeader = false,
     campaignText,
+    logoUrl,
+    footerUrl,
+    watermark,
   } = options;
 
   try {
-    // Load all images
-    const [aiImage, logoImage, footerImage] = await Promise.all([
-      loadImage(imageUrl),
-      loadImage(LOGO_PATH),
-      loadImage(FOOTER_PATH),
-    ]);
+    // Determine which images to load
+    const shouldLoadLogo = includeHeader && (logoUrl || logoUrl === undefined);
+    const shouldLoadFooter = (footerUrl || footerUrl === undefined);
+    
+    // Use custom URLs or fallback to defaults (only if not explicitly empty)
+    const finalLogoPath = logoUrl === "" ? null : (logoUrl || DEFAULT_LOGO_PATH);
+    const finalFooterPath = footerUrl === "" ? null : (footerUrl || DEFAULT_FOOTER_PATH);
+
+    // Load images conditionally
+    const aiImage = await loadImage(imageUrl);
+    const logoImage = shouldLoadLogo && finalLogoPath ? await loadImage(finalLogoPath) : null;
+    const footerImage = shouldLoadFooter && finalFooterPath ? await loadImage(finalFooterPath) : null;
 
     // AI image should be 9:16 portrait (1080x1920)
     const aiImageWidth = aiImage.width;
@@ -87,26 +110,34 @@ export async function applyBrandingOverlay(
     }
 
     // Define layout proportions based on canvas height
-    const headerHeight = includeHeader ? Math.round(aiImageHeight * 0.16) : 0;
-    const footerHeightPx = footerHeight ?? Math.round(aiImageHeight * 0.20); // Reduced footer size
-    const taglineHeight = Math.round(aiImageHeight * 0.05); // Smaller tagline band
+    const headerHeight = (includeHeader && logoImage) ? Math.round(aiImageHeight * 0.16) : 0;
+    const footerHeightPx = footerImage ? (footerHeight ?? Math.round(aiImageHeight * 0.20)) : 0; // Only if footer exists
+    const taglineHeight = taglineText ? Math.round(aiImageHeight * 0.05) : 0; // Only if tagline exists
     const gap = Math.round((spacing ?? aiImageHeight * 0.01)); // Smaller gap
 
     // Background bands for header, tagline and footer
     // Header: use headerBackgroundColor (white for glares)
-    if (includeHeader && headerHeight > 0) {
+    if (includeHeader && headerHeight > 0 && logoImage) {
       ctx.fillStyle = headerBackgroundColor;
       ctx.fillRect(0, 0, aiImageWidth, headerHeight);
     }
     
-    // Tagline and footer: use backgroundColor (black)
-    ctx.fillStyle = backgroundColor;
-    const taglineTop = aiImageHeight - footerHeightPx - gap - taglineHeight;
-    ctx.fillRect(0, taglineTop, aiImageWidth, taglineHeight);
-    ctx.fillRect(0, aiImageHeight - footerHeightPx, aiImageWidth, footerHeightPx);
+    // Tagline and footer: use backgroundColor (black) - only if they exist
+    if (taglineHeight > 0 || footerHeightPx > 0) {
+      ctx.fillStyle = backgroundColor;
+      const taglineTop = aiImageHeight - footerHeightPx - gap - taglineHeight;
+      
+      if (taglineHeight > 0) {
+        ctx.fillRect(0, taglineTop, aiImageWidth, taglineHeight);
+      }
+      
+      if (footerHeightPx > 0) {
+        ctx.fillRect(0, aiImageHeight - footerHeightPx, aiImageWidth, footerHeightPx);
+      }
+    }
 
-    // Draw Siemens logo centered in header if enabled
-    if (includeHeader && headerHeight > 0) {
+    // Draw logo centered in header if enabled and exists
+    if (includeHeader && headerHeight > 0 && logoImage) {
       const logoAspectRatio = logoImage.width / logoImage.height;
       let desiredLogoHeight = logoHeight ?? Math.round(headerHeight * 0.65);
       let logoDrawHeight = Math.min(desiredLogoHeight, headerHeight * 0.85);
@@ -120,31 +151,41 @@ export async function applyBrandingOverlay(
       ctx.drawImage(logoImage, logoX, logoY, logoDrawWidth, logoDrawHeight);
     }
 
-    // Render tagline text (smaller, above footer)
-    const fontSize = Math.max(20, Math.round(aiImageWidth * 0.028)); // Reduced font size
-    ctx.save();
-    ctx.fillStyle = '#FFFFFF';
-    ctx.font = `500 ${fontSize}px "Inter", "Arial", sans-serif`; // Medium weight instead of semibold
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
-    ctx.shadowBlur = Math.round(fontSize * 0.4);
-    ctx.shadowOffsetY = 1;
-    ctx.fillText(taglineText, aiImageWidth / 2, taglineTop + taglineHeight / 2);
-    ctx.restore();
-
-    // Draw footer graphic centered within footer band
-    const footerAspectRatio = footerImage.width / footerImage.height;
-    let footerDrawWidth = aiImageWidth * 0.9;
-    let footerDrawHeight = footerDrawWidth / footerAspectRatio;
-    const maxFooterHeight = footerHeightPx * 0.8;
-    if (footerDrawHeight > maxFooterHeight) {
-      footerDrawHeight = maxFooterHeight;
-      footerDrawWidth = footerDrawHeight * footerAspectRatio;
+    // Render tagline text (smaller, above footer) - only if provided
+    if (taglineText && taglineHeight > 0) {
+      const taglineTop = aiImageHeight - footerHeightPx - gap - taglineHeight;
+      const fontSize = Math.max(20, Math.round(aiImageWidth * 0.028)); // Reduced font size
+      ctx.save();
+      ctx.fillStyle = '#FFFFFF';
+      ctx.font = `500 ${fontSize}px "Inter", "Arial", sans-serif`; // Medium weight instead of semibold
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
+      ctx.shadowBlur = Math.round(fontSize * 0.4);
+      ctx.shadowOffsetY = 1;
+      ctx.fillText(taglineText, aiImageWidth / 2, taglineTop + taglineHeight / 2);
+      ctx.restore();
     }
-    const footerX = (aiImageWidth - footerDrawWidth) / 2;
-    const footerY = aiImageHeight - footerHeightPx + (footerHeightPx - footerDrawHeight) / 2;
-    ctx.drawImage(footerImage, footerX, footerY, footerDrawWidth, footerDrawHeight);
+
+    // Draw footer graphic centered within footer band - only if exists
+    if (footerImage && footerHeightPx > 0) {
+      const footerAspectRatio = footerImage.width / footerImage.height;
+      let footerDrawWidth = aiImageWidth * 0.9;
+      let footerDrawHeight = footerDrawWidth / footerAspectRatio;
+      const maxFooterHeight = footerHeightPx * 0.8;
+      if (footerDrawHeight > maxFooterHeight) {
+        footerDrawHeight = maxFooterHeight;
+        footerDrawWidth = footerDrawHeight * footerAspectRatio;
+      }
+      const footerX = (aiImageWidth - footerDrawWidth) / 2;
+      const footerY = aiImageHeight - footerHeightPx + (footerHeightPx - footerDrawHeight) / 2;
+      ctx.drawImage(footerImage, footerX, footerY, footerDrawWidth, footerDrawHeight);
+    }
+
+    // Add watermark if enabled
+    if (watermark?.enabled) {
+      await applyWatermark(ctx, aiImageWidth, aiImageHeight, watermark);
+    }
 
     // Convert canvas to data URL
     return canvas.toDataURL('image/jpeg', 0.95);
@@ -171,6 +212,93 @@ function loadImage(src: string): Promise<HTMLImageElement> {
 }
 
 /**
+ * Apply watermark to canvas
+ */
+async function applyWatermark(
+  ctx: CanvasRenderingContext2D,
+  canvasWidth: number,
+  canvasHeight: number,
+  watermark: WatermarkConfig
+): Promise<void> {
+  const padding = 20; // Padding from edges
+  
+  // Calculate watermark size
+  const watermarkWidth = (canvasWidth * watermark.size) / 100;
+  
+  // Calculate position
+  let x = 0;
+  let y = 0;
+  
+  switch (watermark.position) {
+    case 'top-left':
+      x = padding;
+      y = padding;
+      break;
+    case 'top-right':
+      x = canvasWidth - watermarkWidth - padding;
+      y = padding;
+      break;
+    case 'bottom-left':
+      x = padding;
+      y = canvasHeight - padding;
+      break;
+    case 'bottom-right':
+      x = canvasWidth - watermarkWidth - padding;
+      y = canvasHeight - padding;
+      break;
+    case 'center':
+      x = (canvasWidth - watermarkWidth) / 2;
+      y = canvasHeight / 2;
+      break;
+  }
+  
+  // Set global alpha for opacity
+  ctx.save();
+  ctx.globalAlpha = watermark.opacity;
+  
+  if (watermark.type === 'image' && watermark.imageUrl) {
+    try {
+      const watermarkImage = await loadImage(watermark.imageUrl);
+      const aspectRatio = watermarkImage.width / watermarkImage.height;
+      const watermarkHeight = watermarkWidth / aspectRatio;
+      
+      // Adjust y for bottom positions (text is drawn from baseline, images from top)
+      if (watermark.position === 'bottom-left' || watermark.position === 'bottom-right') {
+        y = y - watermarkHeight;
+      }
+      
+      ctx.drawImage(watermarkImage, x, y, watermarkWidth, watermarkHeight);
+    } catch (error) {
+      console.error('Failed to load watermark image:', error);
+    }
+  } else if (watermark.type === 'text' && watermark.text) {
+    const fontSize = Math.max(16, Math.round(watermarkWidth * 0.15));
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = `600 ${fontSize}px "Inter", "Arial", sans-serif`;
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+    ctx.shadowBlur = 4;
+    ctx.shadowOffsetX = 2;
+    ctx.shadowOffsetY = 2;
+    
+    // Adjust text alignment based on position
+    if (watermark.position === 'top-right' || watermark.position === 'bottom-right') {
+      ctx.textAlign = 'right';
+      x = x + watermarkWidth;
+    } else if (watermark.position === 'center') {
+      ctx.textAlign = 'center';
+      x = x + watermarkWidth / 2;
+    } else {
+      ctx.textAlign = 'left';
+    }
+    
+    ctx.textBaseline = 'top';
+    ctx.fillText(watermark.text, x, y);
+  }
+  
+  ctx.restore();
+}
+
+/**
  * Apply branding to a base64 image
  */
 export async function applyBrandingToBase64(
@@ -179,4 +307,3 @@ export async function applyBrandingToBase64(
 ): Promise<string> {
   return applyBrandingOverlay(base64Image, options);
 }
-
