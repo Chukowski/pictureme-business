@@ -4,8 +4,11 @@
  * Layout: Logo (top) + AI Image (middle) + Footer (bottom)
  */
 
-const LOGO_PATH = '/src/assets/backgrounds/logo-siemens.png';
-const FOOTER_PATH = '/src/assets/backgrounds/Footer_DoLess_Transparent.png';
+import logoSiemens from '@/assets/backgrounds/logo-siemens.png';
+import footerDoLess from '@/assets/backgrounds/Footer_DoLess_Transparent.png';
+
+const LOGO_PATH = logoSiemens;
+const FOOTER_PATH = footerDoLess;
 
 export interface CompositionOptions {
   logoHeight?: number;
