@@ -8,6 +8,7 @@ import { ProcessingLoader } from '@/components/ProcessingLoader';
 import { ResultDisplay } from '@/components/ResultDisplay';
 import { EventTitle } from '@/components/EventTitle';
 import { CustomPromptModal } from '@/components/CustomPromptModal';
+import ShaderBackground from '@/components/ShaderBackground';
 import { processImageWithAI, downloadImageAsBase64 } from '@/services/aiProcessor';
 import { toast } from 'sonner';
 import { Template } from '@/services/eventsApi';
@@ -223,7 +224,7 @@ export const PhotoBoothPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-dark">
+    <div className="min-h-screen bg-gradient-dark relative">
       {/* Only show title in select state */}
       {state === 'select' && (
         <EventTitle 
@@ -272,6 +273,15 @@ export const PhotoBoothPage = () => {
           availableImages={getAllEventImages()}
           template={selectedBackground}
         />
+      )}
+
+      {/* Shader Background - Only visible in dark mode and select state, positioned near bottom with fade */}
+      {state === 'select' && (
+        <div className="hidden dark:block fixed bottom-0 left-0 right-0 h-[40vh] pointer-events-none z-0">
+          <div className="absolute inset-0 [mask-image:linear-gradient(to_top,black_20%,transparent_100%)]">
+            <ShaderBackground />
+          </div>
+        </div>
       )}
     </div>
   );
