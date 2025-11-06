@@ -90,6 +90,7 @@ export interface Template {
 export interface PhotoFeed {
   id: string;
   processed_image_url: string;
+  original_image_url?: string;
   background_name: string;
   share_code: string;
   created_at: number;
@@ -128,8 +129,9 @@ export async function getEventPhotos(userSlug: string, eventSlug: string, limit:
 
   const data = await response.json();
   return data.map((photo: any) => ({
-    id: photo.id,
+    id: photo.id ?? photo._id ?? photo.share_code,
     processed_image_url: photo.processed_image_url ?? photo.processedImageUrl,
+    original_image_url: photo.original_image_url ?? photo.originalImageUrl,
     background_name: photo.background_name ?? photo.backgroundName,
     share_code: photo.share_code ?? photo.shareCode,
     created_at: photo.created_at,
