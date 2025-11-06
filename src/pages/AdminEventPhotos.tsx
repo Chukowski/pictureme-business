@@ -18,6 +18,8 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { DarkModeToggle } from "@/components/DarkModeToggle";
 
+const API_URL = import.meta.env.VITE_API_URL || "";
+
 interface Photo {
   id: string;
   _id?: string;
@@ -52,23 +54,45 @@ export default function AdminEventPhotos() {
     try {
       setIsLoading(true);
       const token = localStorage.getItem("auth_token");
-      const response = await fetch(
-        `/api/admin/events/${eventId}/photos?limit=100&offset=0`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const endpoint = `${API_URL}/api/admin/events/${eventId}/photos?limit=100&offset=0`;
+      const response = await fetch(endpoint, {
+        headers: {
+          Authorization: token ? `Bearer ${token}` : "",
+        },
+      });
 
       if (!response.ok) {
+        if (response.status === 401) {
+          throw new Error("Session expired. Please log in again.");
+        }
+
+        let bodyText = "";
+        try {
+          bodyText = await response.text();
+        } catch (readError) {
+          console.error("Failed to read error response:", readError);
+        }
+
+        console.error("Failed to load photos:", {
+          status: response.status,
+          statusText: response.statusText,
+          bodyText,
+        });
         throw new Error("Failed to load photos");
+      }
+
+      const contentType = response.headers.get("content-type") || "";
+      if (!contentType.includes("application/json")) {
+        const bodyText = await response.text();
+        console.error("Unexpected response from photos endpoint:", bodyText);
+        throw new Error("Unexpected response format from server");
       }
 
       const data = await response.json();
       setPhotos(data.photos || []);
-    } catch (error: any) {
-      toast.error(error.message || "Failed to load photos");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to load photos";
+      toast.error(message);
     } finally {
       setIsLoading(false);
     }
@@ -91,14 +115,20 @@ export default function AdminEventPhotos() {
     try {
       setDeletingPhotoId(photoId);
       const token = localStorage.getItem("auth_token");
-      const response = await fetch(`/api/photos/${photoId}`, {
+      const response = await fetch(`${API_URL}/api/photos/${photoId}`, {
         method: "DELETE",
         headers: {
-          Authorization: `Bearer ${token}`,
+          Authorization: token ? `Bearer ${token}` : "",
         },
       });
 
       if (!response.ok) {
+        const body = await response.text().catch(() => "");
+        console.error("Failed to delete photo:", {
+          status: response.status,
+          statusText: response.statusText,
+          body,
+        });
         throw new Error("Failed to delete photo");
       }
 
@@ -106,8 +136,9 @@ export default function AdminEventPhotos() {
       setPhotos(photos.filter((p) => (p.id || p._id) !== photoId));
       setDeleteDialogOpen(false);
       setPhotoToDelete(null);
-    } catch (error: any) {
-      toast.error(error.message || "Failed to delete photo");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to delete photo";
+      toast.error(message);
     } finally {
       setDeletingPhotoId(null);
     }
