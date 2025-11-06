@@ -134,6 +134,19 @@ export const PhotoBoothPage = () => {
         ? customImages
         : (selectedBackground.images || []);
 
+      // Only pass branding elements if they're explicitly set (not empty strings)
+      const tagline = includeTagline && config?.branding?.taglineText && config.branding.taglineText.trim() 
+        ? config.branding.taglineText 
+        : undefined;
+      
+      const logo = includeHeader && config?.branding?.logoPath && config.branding.logoPath.trim() 
+        ? config.branding.logoPath 
+        : undefined;
+      
+      const footer = config?.branding?.footerPath && config.branding.footerPath.trim() 
+        ? config.branding.footerPath 
+        : undefined;
+
       const result = await processImageWithAI({
         userPhotoBase64: imageData,
         backgroundPrompt: promptToUse,
@@ -141,9 +154,9 @@ export const PhotoBoothPage = () => {
         includeBranding,
         includeHeader,
         campaignText: selectedBackground.campaignText,
-        taglineText: includeTagline ? (config?.branding?.taglineText || undefined) : undefined,
-        logoUrl: config?.branding?.logoPath || undefined,
-        footerUrl: config?.branding?.footerPath || undefined,
+        taglineText: tagline,
+        logoUrl: logo,
+        footerUrl: footer,
         headerBackgroundColor: config?.branding?.headerBackgroundColor,
         watermark: includeWatermark ? config?.branding?.watermark : undefined,
         onProgress: (status) => {

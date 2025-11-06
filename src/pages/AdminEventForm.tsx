@@ -60,11 +60,11 @@ export default function AdminEventForm() {
       mode: "dark" as "light" | "dark",
     },
     branding: {
-      logoPath: "/backgrounds/logo-akita.png",
-      footerPath: "/backgrounds/Footer_DoLess_Transparent.png",
+      logoPath: "", // Empty by default - user must explicitly add
+      footerPath: "", // Empty by default - user must explicitly add
       headerBackgroundColor: "#FFFFFF",
       footerBackgroundColor: "#000000",
-      taglineText: "Powered by Akitá — experiencias visuales para tus eventos.",
+      taglineText: "", // Empty by default - user must explicitly add
       watermark: {
         enabled: false,
         type: "image" as "image" | "text",

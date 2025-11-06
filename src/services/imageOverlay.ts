@@ -4,13 +4,6 @@
  * Layout: Logo (top) + AI Image (middle) + Footer (bottom)
  */
 
-import logoAkita from '@/assets/backgrounds/logo-akita.png';
-import footerDoLess from '@/assets/backgrounds/Footer_DoLess_Transparent.png';
-
-// Default fallback paths
-const DEFAULT_LOGO_PATH = logoAkita;
-const DEFAULT_FOOTER_PATH = footerDoLess;
-
 export interface WatermarkConfig {
   enabled: boolean;
   type: "image" | "text";
@@ -61,17 +54,18 @@ export async function applyBrandingOverlay(
 
   try {
     // Determine which images to load
-    const shouldLoadLogo = includeHeader && (logoUrl || logoUrl === undefined);
-    const shouldLoadFooter = (footerUrl || footerUrl === undefined);
+    // Only load if explicitly provided (not undefined or empty string)
+    const shouldLoadLogo = includeHeader && logoUrl && logoUrl.trim() !== "";
+    const shouldLoadFooter = footerUrl && footerUrl.trim() !== "";
     
-    // Use custom URLs or fallback to defaults (only if not explicitly empty)
-    const finalLogoPath = logoUrl === "" ? null : (logoUrl || DEFAULT_LOGO_PATH);
-    const finalFooterPath = footerUrl === "" ? null : (footerUrl || DEFAULT_FOOTER_PATH);
+    // Use provided URLs directly - no defaults unless explicitly set
+    const finalLogoPath = shouldLoadLogo ? logoUrl : null;
+    const finalFooterPath = shouldLoadFooter ? footerUrl : null;
 
     // Load images conditionally
     const aiImage = await loadImage(imageUrl);
-    const logoImage = shouldLoadLogo && finalLogoPath ? await loadImage(finalLogoPath) : null;
-    const footerImage = shouldLoadFooter && finalFooterPath ? await loadImage(finalFooterPath) : null;
+    const logoImage = finalLogoPath ? await loadImage(finalLogoPath) : null;
+    const footerImage = finalFooterPath ? await loadImage(finalFooterPath) : null;
 
     // AI image should be 9:16 portrait (1080x1920)
     const aiImageWidth = aiImage.width;
@@ -112,7 +106,7 @@ export async function applyBrandingOverlay(
     // Define layout proportions based on canvas height
     const headerHeight = (includeHeader && logoImage) ? Math.round(aiImageHeight * 0.16) : 0;
     const footerHeightPx = footerImage ? (footerHeight ?? Math.round(aiImageHeight * 0.20)) : 0; // Only if footer exists
-    const taglineHeight = taglineText ? Math.round(aiImageHeight * 0.05) : 0; // Only if tagline exists
+    const taglineHeight = (taglineText && taglineText.trim() !== "") ? Math.round(aiImageHeight * 0.05) : 0; // Only if tagline exists and is not empty
     const gap = Math.round((spacing ?? aiImageHeight * 0.01)); // Smaller gap
 
     // Background bands for header, tagline and footer
@@ -151,8 +145,8 @@ export async function applyBrandingOverlay(
       ctx.drawImage(logoImage, logoX, logoY, logoDrawWidth, logoDrawHeight);
     }
 
-    // Render tagline text (smaller, above footer) - only if provided
-    if (taglineText && taglineHeight > 0) {
+    // Render tagline text (smaller, above footer) - only if provided and not empty
+    if (taglineText && taglineText.trim() !== "" && taglineHeight > 0) {
       const taglineTop = aiImageHeight - footerHeightPx - gap - taglineHeight;
       const fontSize = Math.max(20, Math.round(aiImageWidth * 0.028)); // Reduced font size
       ctx.save();
