@@ -30,6 +30,67 @@ export const PhotoBoothPage = () => {
   const [customPrompt, setCustomPrompt] = useState<string>('');
   const [customImages, setCustomImages] = useState<string[]>([]);
 
+  // Fire celebratory confetti when the AI result is ready
+  useEffect(() => {
+    if (state !== 'result') {
+      return;
+    }
+
+    let isCancelled = false;
+    let intervalId: number | undefined;
+    let timeoutId: number | undefined;
+
+    import('canvas-confetti').then((module) => {
+      if (isCancelled) {
+        return;
+      }
+
+      const confetti = module.default ?? module;
+      const defaults = {
+        spread: 120,
+        startVelocity: 46,
+        ticks: 90,
+        gravity: 0.9,
+        scalar: 0.9,
+        zIndex: 2200,
+      };
+
+      const shoot = () => {
+        confetti({
+          ...defaults,
+          particleCount: 90,
+          origin: { x: 0.2, y: 0.75 },
+          angle: 60,
+        });
+
+        confetti({
+          ...defaults,
+          particleCount: 90,
+          origin: { x: 0.8, y: 0.75 },
+          angle: 120,
+        });
+      };
+
+      shoot();
+      intervalId = window.setInterval(shoot, 420);
+      timeoutId = window.setTimeout(() => {
+        if (intervalId !== undefined) {
+          window.clearInterval(intervalId);
+        }
+      }, 2400);
+    });
+
+    return () => {
+      isCancelled = true;
+      if (intervalId !== undefined) {
+        window.clearInterval(intervalId);
+      }
+      if (timeoutId !== undefined) {
+        window.clearTimeout(timeoutId);
+      }
+    };
+  }, [state]);
+
   // Apply theme when config loads
   useEffect(() => {
     if (config?.theme) {
@@ -199,16 +260,20 @@ export const PhotoBoothPage = () => {
 
         setShareCode(savedPhoto.shareCode || "");
         toast.success("Your photo is ready! 🎉");
-      } catch (storageError: any) {
+      } catch (storageError) {
         console.warn("Storage error:", storageError);
         setProcessedPhoto(processedBase64);
-        toast.warning("Photo ready but could not sync with gallery");
+        const warningMessage = storageError instanceof Error
+          ? storageError.message
+          : "Photo ready but could not sync with gallery";
+        toast.warning(warningMessage);
       }
 
       setState("result");
-    } catch (error: any) {
+    } catch (error) {
       console.error("Processing error:", error);
-      toast.error(error.message || "Failed to process photo. Please try again.");
+      const errorMessage = error instanceof Error ? error.message : "Failed to process photo. Please try again.";
+      toast.error(errorMessage);
       setProcessedPhoto(imageData);
       setShareCode('');
       setState("result");

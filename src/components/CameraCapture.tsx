@@ -13,9 +13,10 @@ import {
 interface CameraCaptureProps {
   onCapture: (imageData: string) => void;
   selectedBackground: string | null;
+  onBack?: () => void;
 }
 
-export const CameraCapture = ({ onCapture, selectedBackground }: CameraCaptureProps) => {
+export const CameraCapture = ({ onCapture, selectedBackground, onBack }: CameraCaptureProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
@@ -235,13 +236,22 @@ export const CameraCapture = ({ onCapture, selectedBackground }: CameraCapturePr
         </div>
       )}
 
-      {/* Debug Info Toggle */}
-      <button
-        onClick={() => setShowDebugInfo(!showDebugInfo)}
-        className="absolute top-4 right-4 z-10 p-2 rounded-full bg-black/50 backdrop-blur-sm border border-primary/30 text-white hover:bg-black/70"
-      >
-        <Info className="w-5 h-5" />
-      </button>
+      {/* Back button / Debug Toggle */}
+      <div className="absolute top-4 inset-x-4 z-10 flex justify-between items-center pointer-events-none">
+        <button
+          onClick={onBack}
+          disabled={!onBack}
+          className="pointer-events-auto px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-sm border border-white/20 text-white text-xs uppercase tracking-[0.3em] hover:bg-black/80 transition disabled:opacity-40"
+        >
+          Go Back
+        </button>
+        <button
+          onClick={() => setShowDebugInfo(!showDebugInfo)}
+          className="pointer-events-auto p-2 rounded-full bg-black/50 backdrop-blur-sm border border-primary/30 text-white hover:bg-black/70"
+        >
+          <Info className="w-5 h-5" />
+        </button>
+      </div>
 
       {/* Debug Info Panel */}
       {showDebugInfo && (
@@ -261,7 +271,7 @@ export const CameraCapture = ({ onCapture, selectedBackground }: CameraCapturePr
       )}
 
       {/* Camera Selector */}
-      {availableCameras.length > 1 && !cameraError && (
+      {showDebugInfo && availableCameras.length > 1 && !cameraError && (
         <div className="absolute top-8 left-1/2 -translate-x-1/2 z-10">
           <Select value={selectedCameraId} onValueChange={setSelectedCameraId}>
             <SelectTrigger className="w-[280px] bg-black/50 backdrop-blur-sm border-primary/30 text-white">
