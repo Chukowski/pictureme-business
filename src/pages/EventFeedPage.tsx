@@ -179,7 +179,7 @@ export const EventFeedPage = () => {
       </div>
 
       {/* Photo Carousel - Takes remaining space minus strip footer */}
-      <div className="flex-1 w-full overflow-hidden relative flex items-center justify-center">
+      <div className="flex-1 w-full overflow-hidden relative flex items-center justify-center pt-4 sm:pt-6">
         {photosError && (
           <div className="flex items-center justify-center h-full">
             <div className="text-center">
