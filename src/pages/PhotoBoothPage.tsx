@@ -224,11 +224,14 @@ export const PhotoBoothPage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-dark">
-      <EventTitle 
-        eventName={config.title} 
-        description={config.description}
-        brandName={config.theme?.brandName || 'AI Photobooth'}
-      />
+      {/* Only show title in select state */}
+      {state === 'select' && (
+        <EventTitle 
+          eventName={config.title} 
+          description={config.description}
+          brandName={config.theme?.brandName || 'AI Photobooth'}
+        />
+      )}
 
       {state === 'select' && (
         <BackgroundSelector
