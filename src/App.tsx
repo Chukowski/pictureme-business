@@ -14,6 +14,7 @@ import NotFound from "./pages/NotFound";
 import AdminAuth from "./pages/AdminAuth";
 import AdminEvents from "./pages/AdminEvents";
 import AdminEventForm from "./pages/AdminEventForm";
+import AdminEventPhotos from "./pages/AdminEventPhotos";
 
 const queryClient = new QueryClient();
 
@@ -46,6 +47,7 @@ const App = () => (
             <Route path="/admin/events" element={<AdminEvents />} />
             <Route path="/admin/events/create" element={<AdminEventForm />} />
             <Route path="/admin/events/edit/:eventId" element={<AdminEventForm />} />
+            <Route path="/admin/events/:eventId/photos" element={<AdminEventPhotos />} />
             
             {/* Dynamic event routes - no sidebar */}
             <Route path="/:userSlug/:eventSlug" element={<PhotoBoothPage />} />

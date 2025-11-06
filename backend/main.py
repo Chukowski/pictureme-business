@@ -1108,6 +1108,179 @@ async def upload_photo_public(payload: PublicPhotoUpload):
         "eventSlug": payload.eventSlug
     }
 
+# ===== Get Event Photos for Admin Endpoint =====
+
+@app.get("/api/admin/events/{event_id}/photos")
+async def get_admin_event_photos(
+    event_id: str, 
+    limit: int = 100, 
+    offset: int = 0,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get photos for an event (admin endpoint with authentication)"""
+    
+    print(f"📸 Fetching photos for event: {event_id}")
+    print(f"👤 User: {current_user['id']}")
+    
+    couch = get_couch_service()
+    
+    # Get event from CouchDB to verify ownership
+    try:
+        event_doc = couch.events_db.get(event_id)
+        if not event_doc:
+            print(f"❌ Event not found: {event_id}")
+            raise HTTPException(status_code=404, detail="Event not found")
+        
+        print(f"✅ Event found: {event_doc.get('title', 'N/A')}")
+        
+        # Verify user owns the event
+        event_user_id = str(event_doc.get("user_id", ""))
+        current_user_id = str(current_user["id"])
+        print(f"🔍 Event user_id: {event_user_id}, Current user_id: {current_user_id}")
+        
+        if event_user_id != current_user_id:
+            print(f"❌ User not authorized")
+            raise HTTPException(status_code=403, detail="Not authorized for this event")
+        
+        # Use the same method as the feed endpoint
+        print(f"🔍 Getting photos using get_photos_by_event...")
+        couch_photos = couch.get_photos_by_event(event_id, limit=limit, offset=offset)
+        print(f"📊 Photos from CouchDB: {len(couch_photos)}")
+        
+        # Build photo response
+        photo_map: Dict[str, Dict[str, Any]] = {}
+        for photo in couch_photos:
+            share_code = photo.get("share_code") or photo.get("shareCode")
+            if not share_code:
+                continue
+            photo_map[share_code] = {
+                "id": photo.get("_id"),
+                "_id": photo.get("_id"),
+                "share_code": share_code,
+                "processed_image_url": photo.get("processed_image_url") or photo.get("processedImageUrl"),
+                "original_image_url": photo.get("original_image_url") or photo.get("originalImageUrl"),
+                "background_name": photo.get("background_name"),
+                "created_at": photo.get("created_at"),
+            }
+        
+        # Also check PostgreSQL for compatibility
+        postgres_event_id = event_doc.get("postgres_event_id")
+        if postgres_event_id:
+            print(f"🔍 Checking PostgreSQL for event_id: {postgres_event_id}")
+            async with db_pool.acquire() as conn:
+                rows = await conn.fetch(
+                    """
+                    SELECT id, processed_image_url, original_image_url, background_name, share_code, created_at
+                    FROM processed_photos
+                    WHERE event_id = $1 AND is_visible = TRUE AND is_approved = TRUE
+                    ORDER BY created_at DESC
+                    LIMIT $2 OFFSET $3
+                    """,
+                    postgres_event_id, limit, offset
+                )
+                print(f"📊 Photos from PostgreSQL: {len(rows)}")
+                for row in rows:
+                    share_code = row["share_code"]
+                    if share_code not in photo_map:
+                        photo_map[share_code] = {
+                            "id": row["id"],
+                            "_id": row["id"],
+                            "share_code": share_code,
+                            "processed_image_url": row["processed_image_url"],
+                            "original_image_url": row["original_image_url"],
+                            "background_name": row["background_name"],
+                            "created_at": row["created_at"],
+                        }
+        
+        photos = list(photo_map.values())
+        print(f"✅ Returning {len(photos)} photos")
+        
+        return {"photos": photos, "total": len(photos)}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Error fetching photos: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Failed to fetch photos: {str(e)}")
+
+# ===== Delete Photo Endpoint =====
+
+@app.delete("/api/photos/{photo_id}")
+async def delete_photo(photo_id: str, current_user: dict = Depends(get_current_user)):
+    """Delete a photo from CouchDB, PostgreSQL, and MinIO (requires authentication)"""
+    
+    print(f"🗑️  Deleting photo: {photo_id}")
+    print(f"👤 User: {current_user['id']}")
+    
+    couch = get_couch_service()
+    
+    # Get photo from CouchDB
+    try:
+        photo = couch.photos_db.get(photo_id)
+        if not photo:
+            print(f"❌ Photo not found: {photo_id}")
+            raise HTTPException(status_code=404, detail="Photo not found")
+        
+        print(f"✅ Photo found: {photo.get('share_code', 'N/A')}")
+        
+        # Verify user owns the photo or event
+        photo_user_id = str(photo.get("user_id", ""))
+        current_user_id = str(current_user["id"])
+        print(f"🔍 Photo user_id: {photo_user_id}, Current user_id: {current_user_id}")
+        
+        if photo_user_id != current_user_id:
+            # Check if user owns the event
+            event_id = photo.get("event_id")
+            if event_id:
+                event_doc = couch.events_db.get(event_id)
+                if not event_doc or str(event_doc.get("user_id")) != str(current_user_id):
+                    print(f"❌ User not authorized to delete this photo")
+                    raise HTTPException(status_code=403, detail="Not authorized to delete this photo")
+            else:
+                print(f"❌ No event_id found for photo")
+                raise HTTPException(status_code=403, detail="Not authorized to delete this photo")
+        
+        print(f"🔍 Deleting from CouchDB...")
+        # Delete from CouchDB - requires document ID and revision
+        try:
+            doc_id = photo.get("_id")
+            doc_rev = photo.get("_rev")
+            if not doc_id or not doc_rev:
+                raise ValueError(f"Missing _id or _rev: _id={doc_id}, _rev={doc_rev}")
+            
+            couch.photos_db.delete(doc_id, doc_rev)
+            print(f"✅ Deleted from CouchDB (id={doc_id}, rev={doc_rev})")
+        except Exception as couch_error:
+            print(f"❌ CouchDB delete error: {couch_error}")
+            raise
+        
+        # Delete from PostgreSQL if it exists
+        postgres_event_id = photo.get("postgres_event_id")
+        if postgres_event_id:
+            print(f"🔍 Deleting from PostgreSQL...")
+            try:
+                async with db_pool.acquire() as conn:
+                    await conn.execute(
+                        "DELETE FROM processed_photos WHERE id = $1",
+                        photo_id
+                    )
+                print(f"✅ Deleted from PostgreSQL")
+            except Exception as pg_error:
+                print(f"⚠️  PostgreSQL delete warning: {pg_error}")
+        
+        print(f"✅ Photo deleted successfully")
+        return {"message": "Photo deleted successfully", "id": photo_id}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Error deleting photo: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Failed to delete photo: {str(e)}")
+
 # ===== Template Image Upload Endpoint =====
 
 @app.post("/api/templates/upload-image")

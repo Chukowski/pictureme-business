@@ -22,6 +22,7 @@ import {
   User,
   ExternalLink,
 } from "lucide-react";
+import { DarkModeToggle } from "@/components/DarkModeToggle";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -122,6 +123,7 @@ export default function AdminEvents() {
                 {currentUser?.full_name || currentUser?.username}
               </span>
             </div>
+            <DarkModeToggle />
             <Button variant="outline" onClick={handleLogout}>
               <LogOut className="w-4 h-4 mr-2" />
               Logout
@@ -261,9 +263,19 @@ export default function AdminEvents() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => handleDeleteClick(event)}
+                      onClick={() => navigate(`/admin/events/${event._id}/photos`)}
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Image className="w-4 h-4 mr-1" />
+                      Photos
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleDeleteClick(event)}
+                      className="col-span-2"
+                    >
+                      <Trash2 className="w-4 h-4 mr-1" />
+                      Delete
                     </Button>
                   </div>
                 </CardContent>

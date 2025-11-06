@@ -20,9 +20,10 @@ interface MediaLibraryProps {
   selectedUrl?: string;
   eventId?: string; // Filter media by event
   templates?: Array<{ images: string[] }>; // Show only images from event templates
+  onDeleteMedia?: (url: string) => void; // Callback when media is deleted from template
 }
 
-export function MediaLibrary({ onSelectMedia, selectedUrl, eventId, templates }: MediaLibraryProps) {
+export function MediaLibrary({ onSelectMedia, selectedUrl, eventId, templates, onDeleteMedia }: MediaLibraryProps) {
   const [media, setMedia] = useState<MediaItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -48,13 +49,19 @@ export function MediaLibrary({ onSelectMedia, selectedUrl, eventId, templates }:
         });
         
         // Convert to MediaItem format
-        const eventMedia: MediaItem[] = Array.from(eventImages).map((url, index) => ({
-          name: `template-image-${index + 1}`,
-          url,
-          size: 0,
-          uploaded_at: null,
-          type: 'template-image',
-        }));
+        const eventMedia: MediaItem[] = Array.from(eventImages).map((url) => {
+          // Extract filename from URL for deletion
+          const urlParts = url.split('/');
+          const filename = urlParts[urlParts.length - 1];
+          
+          return {
+            name: filename,
+            url,
+            size: 0,
+            uploaded_at: null,
+            type: 'template-image',
+          };
+        });
         
         setMedia(eventMedia);
         setLoading(false);
@@ -158,15 +165,23 @@ export function MediaLibrary({ onSelectMedia, selectedUrl, eventId, templates }:
     }
   };
 
-  const handleDelete = async (filename: string) => {
+  const handleDelete = async (item: MediaItem) => {
     if (!confirm("Are you sure you want to delete this media?")) return;
 
     try {
+      // If this is from templates (event-specific), notify parent to remove from template
+      if (item.type === 'template-image' && onDeleteMedia) {
+        onDeleteMedia(item.url);
+        // Parent will handle the toast message
+        return;
+      }
+      
+      // Otherwise, delete from user's media library
       const token = localStorage.getItem("auth_token");
       if (!token) {
         throw new Error("No authentication token found");
       }
-      const response = await fetch(`${API_URL}/api/media/${filename}`, {
+      const response = await fetch(`${API_URL}/api/media/${item.name}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -272,7 +287,7 @@ export function MediaLibrary({ onSelectMedia, selectedUrl, eventId, templates }:
                     className="h-8 w-8"
                     onClick={(e) => {
                       e.stopPropagation();
-                      handleDelete(item.name);
+                      handleDelete(item);
                     }}
                   >
                     <Trash2 className="h-4 w-4" />

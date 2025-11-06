@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import {
   createEvent,
@@ -14,7 +15,7 @@ import {
   type EventConfig,
   type Template,
 } from "@/services/eventsApi";
-import { ArrowLeft, Plus, Save, Trash2, Image as ImageIcon, Upload, Download, FileJson } from "lucide-react";
+import { ArrowLeft, Plus, Save, Trash2, Image as ImageIcon, Upload, Download, FileJson, Settings, Palette, Layers } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import {
   Accordion,
@@ -213,12 +214,37 @@ export default function AdminEventForm() {
     }));
   };
 
-  const deleteTemplate = (index: number) => {
+  const deleteTemplate = async (index: number) => {
+    const templateName = formData.templates[index]?.name || "Template";
+    
+    if (!confirm(`Delete "${templateName}"?`)) {
+      return;
+    }
+    
+    // Update local state first for immediate UI feedback
+    const updatedTemplates = formData.templates.filter((_, i) => i !== index);
     setFormData((prev) => ({
       ...prev,
-      templates: prev.templates.filter((_, i) => i !== index),
+      templates: updatedTemplates,
     }));
-    toast.success("Template deleted");
+    
+    // If editing an existing event, save the change immediately
+    if (isEdit && eventId) {
+      try {
+        await updateEvent(eventId, { ...formData, templates: updatedTemplates });
+        toast.success("Template deleted successfully");
+      } catch (error: any) {
+        // Revert on error
+        setFormData((prev) => ({
+          ...prev,
+          templates: formData.templates,
+        }));
+        toast.error(error.message || "Failed to delete template");
+      }
+    } else {
+      // For new events, just update local state
+      toast.success("Template removed (save to confirm)");
+    }
   };
 
   const loadDefaultTemplates = () => {
@@ -299,32 +325,61 @@ export default function AdminEventForm() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-dark p-6">
-      <div className="max-w-4xl mx-auto">
+    <div className="min-h-screen bg-gradient-dark p-4 md:p-6 lg:p-8">
+      <div className="max-w-[1400px] mx-auto">
         {/* Header */}
-        <div className="flex items-center gap-4 mb-8">
-          <Button variant="ghost" onClick={() => navigate("/admin/events")}>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-6 md:mb-8">
+          <Button variant="ghost" onClick={() => navigate("/admin/events")} className="shrink-0">
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back
           </Button>
-          <div>
-            <h1 className="text-3xl font-bold text-white">
+          <div className="flex-1">
+            <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-white">
               {isEdit ? "Edit Event" : "Create New Event"}
             </h1>
-            <p className="text-muted-foreground">
+            <p className="text-sm md:text-base text-muted-foreground mt-1">
               {isEdit ? "Update your event details" : "Set up a new photo booth event"}
             </p>
           </div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Basic Information */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Basic Information</CardTitle>
-              <CardDescription>Event details and settings</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          <Tabs defaultValue="basic" className="w-full">
+            <TabsList className="grid w-full grid-cols-3 h-auto p-1 bg-black/40 backdrop-blur-sm border border-white/10">
+              <TabsTrigger 
+                value="basic" 
+                className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground py-3"
+              >
+                <Settings className="w-4 h-4" />
+                <span className="hidden sm:inline">Basic Info</span>
+                <span className="sm:hidden">Info</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="branding" 
+                className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground py-3"
+              >
+                <Palette className="w-4 h-4" />
+                <span className="hidden sm:inline">Branding</span>
+                <span className="sm:hidden">Brand</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="templates" 
+                className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground py-3"
+              >
+                <Layers className="w-4 h-4" />
+                <span className="hidden sm:inline">Templates</span>
+                <span className="sm:hidden">AI</span>
+              </TabsTrigger>
+            </TabsList>
+
+            {/* Basic Information Tab */}
+            <TabsContent value="basic" className="space-y-6 mt-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Basic Information</CardTitle>
+                  <CardDescription>Event details and settings</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="slug">
@@ -504,15 +559,19 @@ export default function AdminEventForm() {
               </div>
             </CardContent>
           </Card>
+            </TabsContent>
+            {/* End Basic Info Tab */}
 
-          {/* Branding */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Branding & Overlays</CardTitle>
-              <CardDescription>
-                Customize logo, footer, and tagline for your event photos
-              </CardDescription>
-            </CardHeader>
+            {/* Branding Tab */}
+            <TabsContent value="branding" className="space-y-6 mt-6">
+              {/* Branding */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Branding & Overlays</CardTitle>
+                  <CardDescription>
+                    Customize logo, footer, and tagline for your event photos
+                  </CardDescription>
+                </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label>Tagline Text (Optional)</Label>
@@ -971,7 +1030,11 @@ export default function AdminEventForm() {
               </div>
             </CardContent>
           </Card>
+            </TabsContent>
+            {/* End Branding Tab */}
 
+            {/* Templates Tab */}
+            <TabsContent value="templates" className="space-y-6 mt-6">
           {/* Templates */}
           <Card>
             <CardHeader>
@@ -1120,6 +1183,33 @@ export default function AdminEventForm() {
                                     });
                                   }
                                 }}
+                                onDeleteMedia={async (url) => {
+                                  // Remove the URL from template images
+                                  const currentImages = template.images;
+                                  const updatedImages = currentImages.filter((img) => img !== url);
+                                  
+                                  // Update local state first
+                                  updateTemplate(index, {
+                                    images: updatedImages,
+                                  });
+                                  
+                                  // If editing an existing event, save immediately
+                                  if (isEdit && eventId) {
+                                    try {
+                                      const updatedTemplates = formData.templates.map((t, i) =>
+                                        i === index ? { ...t, images: updatedImages } : t
+                                      );
+                                      await updateEvent(eventId, { ...formData, templates: updatedTemplates });
+                                      toast.success("Image removed from template");
+                                    } catch (error: any) {
+                                      // Revert on error
+                                      updateTemplate(index, {
+                                        images: currentImages,
+                                      });
+                                      toast.error(error.message || "Failed to remove image");
+                                    }
+                                  }
+                                }}
                                 selectedUrl={template.images[0]}
                                 templates={formData.templates}
                               />
@@ -1243,22 +1333,35 @@ export default function AdminEventForm() {
               )}
             </CardContent>
           </Card>
+            </TabsContent>
+            {/* End Templates Tab */}
+          </Tabs>
+          {/* End Tabs */}
 
-          {/* Submit */}
-          <div className="flex gap-3">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => navigate("/admin/events")}
-              disabled={isSaving}
-            >
-              Cancel
-            </Button>
-            <Button type="submit" disabled={isSaving} className="flex-1">
-              <Save className="w-4 h-4 mr-2" />
-              {isSaving ? "Saving..." : isEdit ? "Update Event" : "Create Event"}
-            </Button>
-          </div>
+          {/* Submit buttons - Full width below tabs */}
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex flex-col sm:flex-row gap-3 sm:justify-end">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => navigate("/admin/events")}
+                  disabled={isSaving}
+                  className="sm:w-auto"
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  type="submit" 
+                  disabled={isSaving} 
+                  className="sm:w-auto sm:min-w-[200px]"
+                >
+                  <Save className="w-4 h-4 mr-2" />
+                  {isSaving ? "Saving..." : isEdit ? "Update Event" : "Create Event"}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Hidden file inputs */}
           <input
