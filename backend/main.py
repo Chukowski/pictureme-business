@@ -1110,6 +1110,127 @@ async def upload_photo_public(payload: PublicPhotoUpload):
 
 # ===== Get Event Photos for Admin Endpoint =====
 
+@app.get("/api/admin/fal/analytics")
+async def get_fal_analytics(
+    days: int = 7,
+    model_id: str = "fal-ai/bytedance/seedream/v4/edit",
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Get fal AI model analytics (admin endpoint with authentication)
+    Returns aggregated metrics for AI processing performance and costs
+    """
+    
+    print(f"📊 Fetching fal analytics for last {days} days")
+    print(f"👤 User: {current_user['id']}")
+    print(f"🤖 Model: {model_id}")
+    
+    try:
+        from services.fal_analytics import fal_analytics
+        
+        stats = await fal_analytics.get_aggregated_stats(
+            model_id=model_id,
+            days=days
+        )
+        
+        return stats
+        
+    except Exception as e:
+        print(f"❌ Error fetching fal analytics: {e}")
+        import traceback
+        traceback.print_exc()
+        # Return empty stats instead of error to not break the dashboard
+        return {
+            "total_requests": 0,
+            "total_success": 0,
+            "total_errors": 0,
+            "success_rate": 0,
+            "avg_duration_ms": 0,
+            "avg_prepare_duration_ms": 0,
+            "total_cost_usd": 0.0,
+            "cost_per_request": 0.0,
+            "error": str(e)
+        }
+
+@app.get("/api/admin/events/{event_id}/analytics")
+async def get_event_analytics(
+    event_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get analytics for a specific event (admin endpoint with authentication)"""
+    
+    print(f"📊 Fetching analytics for event: {event_id}")
+    print(f"👤 User: {current_user['id']}")
+    
+    couch = get_couch_service()
+    
+    try:
+        # Get event from CouchDB to verify ownership
+        event_doc = couch.events_db.get(event_id)
+        if not event_doc:
+            print(f"❌ Event not found: {event_id}")
+            raise HTTPException(status_code=404, detail="Event not found")
+        
+        # Verify user owns the event
+        event_user_id = str(event_doc.get("user_id", ""))
+        current_user_id = str(current_user["id"])
+        
+        if event_user_id != current_user_id:
+            print(f"❌ User not authorized")
+            raise HTTPException(status_code=403, detail="Not authorized for this event")
+        
+        # Get all photos for this event
+        all_photos = couch.get_photos_by_event(event_id, limit=10000)
+        
+        # Calculate analytics
+        total_photos = len(all_photos)
+        
+        # Photos in last 24 hours
+        from datetime import datetime, timedelta
+        now = datetime.now()
+        yesterday = now - timedelta(days=1)
+        yesterday_timestamp = int(yesterday.timestamp() * 1000)
+        
+        photos_last_24h = sum(
+            1 for photo in all_photos
+            if photo.get("created_at", 0) >= yesterday_timestamp
+        )
+        
+        # Most used template
+        template_counts = {}
+        for photo in all_photos:
+            template_name = photo.get("meta", {}).get("template_name") or photo.get("background_name", "Unknown")
+            template_counts[template_name] = template_counts.get(template_name, 0) + 1
+        
+        most_used_template = max(template_counts.items(), key=lambda x: x[1])[0] if template_counts else None
+        
+        # Calculate average processing time (if available)
+        processing_times = [
+            photo.get("meta", {}).get("processing_time")
+            for photo in all_photos
+            if photo.get("meta", {}).get("processing_time")
+        ]
+        avg_processing_time = sum(processing_times) / len(processing_times) if processing_times else None
+        
+        # For views, we'll use a placeholder (you can implement actual view tracking later)
+        total_views = total_photos * 3  # Rough estimate: 3 views per photo average
+        
+        return {
+            "total_photos": total_photos,
+            "total_views": total_views,
+            "photos_last_24h": photos_last_24h,
+            "most_used_template": most_used_template,
+            "avg_processing_time": avg_processing_time,
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Error fetching analytics: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Failed to fetch analytics: {str(e)}")
+
 @app.get("/api/admin/events/{event_id}/photos")
 async def get_admin_event_photos(
     event_id: str, 

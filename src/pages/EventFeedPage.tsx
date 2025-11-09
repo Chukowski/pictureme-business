@@ -6,6 +6,7 @@ import { Loader2 } from 'lucide-react';
 import { Carousel, CarouselContent, CarouselItem, type CarouselApi } from '@/components/ui/carousel';
 import { QRCodeSVG } from 'qrcode.react';
 import { BorderBeam } from '@/components/BorderBeam';
+import clsx from 'clsx';
 
 const chunkArray = <T,>(array: T[], size: number): T[][] => {
   const result: T[][] = [];
@@ -32,6 +33,8 @@ export const EventFeedPage = () => {
   const stripPhotos = useMemo(() => photos, [photos]);
   const [carouselApi, setCarouselApi] = useState<CarouselApi | null>(null);
   const stripRef = useRef<HTMLDivElement | null>(null);
+  const themeMode = config?.theme?.mode ?? 'dark';
+  const isDarkMode = themeMode === 'dark';
 
   // Apply theme when config loads
   useEffect(() => {
@@ -163,15 +166,37 @@ export const EventFeedPage = () => {
   }
 
   return (
-    <div className="h-screen bg-gradient-dark flex flex-col overflow-hidden">
+    <div
+      className={clsx(
+        'h-screen flex flex-col overflow-hidden transition-colors duration-500',
+        isDarkMode ? 'bg-gradient-dark' : 'bg-gradient-light'
+      )}
+    >
       {/* Header - Fixed height in vh */}
-      <div className="h-[8vh] min-h-[50px] max-h-[80px] flex-shrink-0 border-b border-white/10 bg-black/80 backdrop-blur-xl">
-        <div className="h-full flex flex-col items-center justify-center px-4 sm:px-6">
-          <h1 className="text-lg sm:text-xl lg:text-2xl font-semibold tracking-[0.35em] uppercase text-white/90 truncate max-w-full">
+      <div
+        className={clsx(
+          'h-[8vh] min-h-[50px] max-h-[80px] flex-shrink-0 border-b backdrop-blur-xl transition-colors duration-500',
+          isDarkMode
+            ? 'border-white/10 bg-black/80'
+            : 'border-slate-200/70 bg-white/85 shadow-[0_10px_30px_-20px_rgba(15,23,42,0.35)]'
+        )}
+      >
+        <div className="h-full flex flex-col items-center justify-center px-4 sm:px-6 text-center">
+          <h1
+            className={clsx(
+              'text-lg sm:text-xl lg:text-2xl font-semibold tracking-[0.35em] uppercase truncate max-w-full transition-colors duration-300',
+              isDarkMode ? 'text-white/90' : 'text-slate-800/95'
+            )}
+          >
             {config.title}
           </h1>
           {config.description && (
-            <p className="mt-0.5 text-[9px] sm:text-[10px] uppercase tracking-[0.5em] text-white/50 truncate max-w-full">
+            <p
+              className={clsx(
+                'mt-0.5 text-[9px] sm:text-[10px] uppercase tracking-[0.5em] truncate max-w-full transition-colors duration-300',
+                isDarkMode ? 'text-white/50' : 'text-slate-500/90'
+              )}
+            >
               {config.description}
             </p>
           )}
@@ -225,8 +250,22 @@ export const EventFeedPage = () => {
                     >
                       <div className="flex flex-col items-center justify-center h-full w-full max-w-[360px] lg:max-w-[420px] xl:max-w-[480px] 2xl:max-w-[540px]">
                         {/* Main Photo Card - Centered and proportionally larger */}
-                        <div className="relative w-full max-h-[55vh] aspect-[3/5] rounded-lg overflow-hidden border border-white/15 bg-black/85 backdrop-blur-sm shadow-[0_40px_120px_-40px_rgba(15,15,35,0.85)]">
-                          <div className="absolute inset-0 bg-gradient-to-b from-white/5 via-transparent to-black/45 pointer-events-none" />
+                        <div
+                          className={clsx(
+                            'relative w-full max-h-[55vh] aspect-[3/5] rounded-xl overflow-hidden border backdrop-blur-sm transition-colors duration-500',
+                            isDarkMode
+                              ? 'border-white/15 bg-black/85 shadow-[0_40px_120px_-40px_rgba(15,15,35,0.85)]'
+                              : 'border-slate-200 bg-white/95 shadow-[0_35px_120px_-45px_rgba(15,23,42,0.35)]'
+                          )}
+                        >
+                          <div
+                            className={clsx(
+                              'absolute inset-0 pointer-events-none transition-colors duration-500',
+                              isDarkMode
+                                ? 'bg-gradient-to-b from-white/5 via-transparent to-black/45'
+                                : 'bg-gradient-to-b from-white/60 via-transparent to-slate-900/15'
+                            )}
+                          />
                           <img
                             src={photo.processed_image_url}
                             alt={photo.background_name || 'Event photo'}
@@ -235,15 +274,48 @@ export const EventFeedPage = () => {
                         </div>
 
                         {/* QR Bar Below - Compact and responsive */}
-                        <div className="relative w-full mt-3 sm:mt-4 rounded-[1.2rem] border border-white/10 bg-white/5 backdrop-blur-md p-2.5 sm:p-3 lg:p-4 flex items-center justify-between gap-3 shadow-[0_20px_60px_-30px_rgba(0,0,0,0.75)] overflow-hidden">
+                        <div
+                          className={clsx(
+                            'relative w-full mt-3 sm:mt-4 rounded-[1.2rem] border backdrop-blur-md p-2.5 sm:p-3 lg:p-4 flex items-center justify-between gap-3 overflow-hidden transition-colors duration-500',
+                            isDarkMode
+                              ? 'border-white/10 bg-white/5 shadow-[0_20px_60px_-30px_rgba(0,0,0,0.75)]'
+                              : 'border-slate-200 bg-white/90 shadow-[0_32px_90px_-40px_rgba(15,23,42,0.3)]'
+                          )}
+                        >
                           <div className="flex-1 min-w-0">
-                            <p className="text-[8px] sm:text-[9px] uppercase tracking-[0.4em] text-white/60 mb-0.5">Share Code</p>
-                            <p className="text-sm sm:text-base lg:text-lg xl:text-xl font-mono tracking-[0.5em] text-white drop-shadow-sm truncate">
+                            <p
+                              className={clsx(
+                                'text-[8px] sm:text-[9px] uppercase tracking-[0.4em] mb-0.5 transition-colors duration-300',
+                                isDarkMode ? 'text-white/60' : 'text-slate-500'
+                              )}
+                            >
+                              Share Code
+                            </p>
+                            <p
+                              className={clsx(
+                                'text-sm sm:text-base lg:text-lg xl:text-xl font-mono tracking-[0.5em] truncate transition-colors duration-300',
+                                isDarkMode ? 'text-white drop-shadow-sm' : 'text-slate-800'
+                              )}
+                            >
                               {photo.share_code}
                             </p>
-                            <p className="text-[8px] sm:text-[9px] text-white/70 mt-1">Escanea el QR</p>
+                            <p
+                              className={clsx(
+                                'text-[8px] sm:text-[9px] mt-1 transition-colors duration-300',
+                                isDarkMode ? 'text-white/70' : 'text-slate-500'
+                              )}
+                            >
+                              Escanea el QR
+                            </p>
                           </div>
-                          <div className="bg-white p-1.5 sm:p-2 lg:p-2.5 rounded-xl shadow-2xl flex-shrink-0">
+                          <div
+                            className={clsx(
+                              'p-1.5 sm:p-2 lg:p-2.5 rounded-xl flex-shrink-0 border transition-colors duration-300',
+                              isDarkMode
+                                ? 'bg-white/95 border-white/40 shadow-2xl'
+                                : 'bg-slate-900 border-slate-800 shadow-[0_18px_40px_-24px_rgba(15,23,42,0.45)]'
+                            )}
+                          >
                             {downloadUrl ? (
                               <QRCodeSVG value={downloadUrl} size={64} level="Q" includeMargin={false} />
                             ) : (
@@ -275,18 +347,51 @@ export const EventFeedPage = () => {
 
       {/* Strip Footer - Larger fixed height, always visible */}
       {photos.length > 0 && (
-        <div className="h-[25vh] min-h-[200px] max-h-[280px] flex-shrink-0 w-full border-t border-white/10 bg-black/65 backdrop-blur-2xl">
+        <div
+          className={clsx(
+            'h-[25vh] min-h-[200px] max-h-[280px] flex-shrink-0 w-full border-t backdrop-blur-2xl transition-colors duration-500',
+            isDarkMode
+              ? 'border-white/10 bg-black/65'
+              : 'border-slate-200 bg-white/85 shadow-[0_-24px_80px_-50px_rgba(15,23,42,0.35)]'
+          )}
+        >
           <div className="h-full flex flex-col justify-center px-4 sm:px-6 py-4">
             <div className="flex items-center justify-between mb-3">
-              <span className="text-[11px] sm:text-xs uppercase tracking-[0.5em] text-white/60">Timeline</span>
-              <div className="hidden sm:flex items-center gap-1.5 text-[10px] text-white/50">
+              <span
+                className={clsx(
+                  'text-[11px] sm:text-xs uppercase tracking-[0.5em] transition-colors duration-300',
+                  isDarkMode ? 'text-white/60' : 'text-slate-500'
+                )}
+              >
+                Timeline
+              </span>
+              <div
+                className={clsx(
+                  'hidden sm:flex items-center gap-1.5 text-[10px] transition-colors duration-300',
+                  isDarkMode ? 'text-white/50' : 'text-slate-500'
+                )}
+              >
                 <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
                 Live Updating
               </div>
             </div>
             <div className="relative flex-1 min-h-0">
-              <div className="pointer-events-none absolute inset-y-0 left-0 w-12 sm:w-16 bg-gradient-to-r from-black/90 via-black/65 to-transparent z-10" />
-              <div className="pointer-events-none absolute inset-y-0 right-0 w-12 sm:w-16 bg-gradient-to-l from-black/90 via-black/65 to-transparent z-10" />
+              <div
+                className={clsx(
+                  'pointer-events-none absolute inset-y-0 left-0 w-12 sm:w-16 z-10 transition-opacity duration-300',
+                  isDarkMode
+                    ? 'bg-gradient-to-r from-black/90 via-black/65 to-transparent'
+                    : 'bg-gradient-to-r from-white via-white/70 to-transparent'
+                )}
+              />
+              <div
+                className={clsx(
+                  'pointer-events-none absolute inset-y-0 right-0 w-12 sm:w-16 z-10 transition-opacity duration-300',
+                  isDarkMode
+                    ? 'bg-gradient-to-l from-black/90 via-black/65 to-transparent'
+                    : 'bg-gradient-to-l from-white via-white/70 to-transparent'
+                )}
+              />
               <div
                 ref={stripRef}
                 className="h-full flex items-center gap-3 sm:gap-4 overflow-x-auto overflow-y-hidden scrollbar-hide"
@@ -299,7 +404,12 @@ export const EventFeedPage = () => {
                 {stripPhotos.map((photo, index) => (
                   <div
                     key={`${photo.id ?? photo.share_code ?? index}-thumb-${index}`}
-                    className="flex-shrink-0 h-full aspect-[9/16] rounded-xl overflow-hidden border border-white/10 bg-white/5 backdrop-blur md:hover:-translate-y-1 md:hover:shadow-[0_16px_40px_-24px_rgba(0,0,0,0.7)] transition-all"
+                    className={clsx(
+                      'flex-shrink-0 h-full aspect-[9/16] rounded-xl overflow-hidden border transition-all duration-300',
+                      isDarkMode
+                        ? 'border-white/10 bg-white/5 backdrop-blur md:hover:-translate-y-1 md:hover:shadow-[0_16px_40px_-24px_rgba(0,0,0,0.7)]'
+                        : 'border-slate-200 bg-white/95 shadow-[0_16px_45px_-30px_rgba(15,23,42,0.35)] md:hover:-translate-y-1 md:hover:shadow-[0_24px_60px_-38px_rgba(15,23,42,0.4)]'
+                    )}
                   >
                     <img
                       src={photo.processed_image_url}
@@ -324,7 +434,12 @@ export const EventFeedPage = () => {
       )}
 
       {photosLoading && photos.length > 0 && (
-        <div className="absolute top-[11vh] right-4 flex items-center gap-2 text-xs text-gray-400 bg-black/50 backdrop-blur-sm px-3 py-1.5 rounded-full">
+        <div
+          className={clsx(
+            'absolute top-[11vh] right-4 flex items-center gap-2 text-xs px-3 py-1.5 rounded-full backdrop-blur-sm transition-colors duration-300',
+            isDarkMode ? 'text-gray-400 bg-black/50' : 'text-slate-600 bg-white/90 shadow-[0_12px_30px_-20px_rgba(15,23,42,0.35)]'
+          )}
+        >
           <Loader2 className="w-3 h-3 animate-spin" />
           <span>Actualizando...</span>
         </div>

@@ -163,6 +163,10 @@ All colors MUST be HSL.
     background: var(--gradient-dark);
   }
 
+  .bg-gradient-light {
+    background: linear-gradient(180deg, hsl(210 60% 98%), hsl(210 52% 93%));
+  }
+
   .gradient-primary {
     background: var(--gradient-primary);
   }

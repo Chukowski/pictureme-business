@@ -12,6 +12,8 @@ import { PhotoBoothPage } from "./pages/PhotoBoothPage";
 import { EventFeedPage } from "./pages/EventFeedPage";
 import NotFound from "./pages/NotFound";
 import AdminAuth from "./pages/AdminAuth";
+import AdminRegister from "./pages/AdminRegister";
+import AdminDashboard from "./pages/AdminDashboard";
 import AdminEvents from "./pages/AdminEvents";
 import AdminEventForm from "./pages/AdminEventForm";
 import AdminEventPhotos from "./pages/AdminEventPhotos";
@@ -44,7 +46,9 @@ const App = () => (
             
             {/* Admin routes - no sidebar */}
             <Route path="/admin/auth" element={<AdminAuth />} />
-            <Route path="/admin/events" element={<AdminEvents />} />
+            <Route path="/admin/register" element={<AdminRegister />} />
+            <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/admin/events" element={<AdminDashboard />} />
             <Route path="/admin/events/create" element={<AdminEventForm />} />
             <Route path="/admin/events/edit/:eventId" element={<AdminEventForm />} />
             <Route path="/admin/events/:eventId/photos" element={<AdminEventPhotos />} />
