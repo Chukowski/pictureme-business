@@ -1,0 +1,470 @@
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Check, Sparkles, Zap, Shield, Aperture, Wand2, Layers, Smartphone, Info } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+
+export default function LandingPage() {
+  const navigate = useNavigate();
+  const [pricingTab, setPricingTab] = useState<'individual' | 'business'>('individual');
+
+  const scrollToSection = (id: string) => {
+    const element = document.getElementById(id);
+    if (element) {
+      element.scrollIntoView({ behavior: "smooth" });
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-black text-white selection:bg-indigo-500 selection:text-white font-sans">
+      {/* Navigation */}
+      <nav className="fixed top-0 w-full z-50 bg-black/80 backdrop-blur-xl border-b border-white/5">
+        <div className="container mx-auto px-6 h-20 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+              <Sparkles className="w-6 h-6 text-white" />
+            </div>
+            <span className="text-xl font-bold tracking-tight">PictureMe.now</span>
+          </div>
+          <div className="hidden md:flex items-center gap-8 text-sm font-medium text-zinc-400">
+            <button onClick={() => scrollToSection("features")} className="hover:text-white transition-colors">Features</button>
+            <button onClick={() => scrollToSection("showcase")} className="hover:text-white transition-colors">Showcase</button>
+            <button onClick={() => scrollToSection("pricing")} className="hover:text-white transition-colors">Pricing</button>
+          </div>
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" className="text-zinc-400 hover:text-white hover:bg-white/5" onClick={() => navigate("/admin/auth")}>
+              Log in
+            </Button>
+            <Button className="bg-white text-black hover:bg-zinc-200 rounded-full px-6 font-semibold" onClick={() => navigate("/admin/register")}>
+              Get Started
+            </Button>
+          </div>
+        </div>
+      </nav>
+
+      {/* Hero Section */}
+      <section className="relative pt-40 pb-20 md:pt-52 md:pb-32 overflow-hidden">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[600px] bg-indigo-600/20 rounded-[100%] blur-[120px] -z-10 opacity-50" />
+
+        <div className="container mx-auto px-6 relative z-10 text-center">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 mb-8 animate-fade-in backdrop-blur-md">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
+            </span>
+            <span className="text-sm text-zinc-300 font-medium">The Next Gen of Event Photography</span>
+          </div>
+
+          <h1 className="text-6xl md:text-8xl font-bold tracking-tight mb-8 leading-tight">
+            Creative work, <br />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400">reimagined.</span>
+          </h1>
+
+          <p className="text-xl text-zinc-400 max-w-2xl mx-auto mb-12 leading-relaxed">
+            Transform standard event photos into professional, themed masterpieces instantly using advanced generative AI.
+          </p>
+
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <Button size="lg" className="h-14 px-8 text-lg bg-white text-black hover:bg-zinc-200 rounded-full w-full sm:w-auto font-semibold shadow-xl shadow-white/5" onClick={() => navigate("/admin/register")}>
+              Start Creating
+            </Button>
+            <Button size="lg" variant="outline" className="h-14 px-8 text-lg border-white/10 bg-white/5 hover:bg-white/10 text-white rounded-full w-full sm:w-auto backdrop-blur-md" onClick={() => scrollToSection("showcase")}>
+              View Gallery
+            </Button>
+          </div>
+
+          {/* Hero Visuals - Floating Cards Effect */}
+          <div className="mt-24 relative max-w-5xl mx-auto h-[400px] hidden md:block">
+            <div className="absolute left-0 top-10 w-64 h-80 bg-zinc-900 rounded-2xl border border-white/10 overflow-hidden shadow-2xl rotate-[-6deg] hover:rotate-0 transition-all duration-500 z-10">
+              <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800&q=80" alt="Portrait" className="w-full h-full object-cover opacity-80 hover:opacity-100 transition-opacity" />
+            </div>
+            <div className="absolute right-0 top-10 w-64 h-80 bg-zinc-900 rounded-2xl border border-white/10 overflow-hidden shadow-2xl rotate-[6deg] hover:rotate-0 transition-all duration-500 z-10">
+              <img src="https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=800&q=80" alt="Portrait" className="w-full h-full object-cover opacity-80 hover:opacity-100 transition-opacity" />
+            </div>
+            <div className="absolute left-1/2 -translate-x-1/2 top-0 w-[500px] h-[350px] bg-zinc-900 rounded-2xl border border-white/10 overflow-hidden shadow-2xl z-20 hover:scale-105 transition-transform duration-500">
+              <img src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1200&q=80" alt="Abstract" className="w-full h-full object-cover" />
+              <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/90 to-transparent">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full border-2 border-white/20 overflow-hidden">
+                    <img src="https://github.com/shadcn.png" alt="User" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-white">AI Processing</p>
+                    <p className="text-xs text-zinc-400">Generating masterpiece...</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Bento Grid Section */}
+      <section id="features" className="py-32 bg-zinc-950/50">
+        <div className="container mx-auto px-6">
+          <div className="flex flex-col md:flex-row justify-between items-end mb-16">
+            <div className="max-w-2xl">
+              <h2 className="text-4xl md:text-5xl font-bold mb-6">Enhance your photos <br />with AI magic.</h2>
+              <p className="text-xl text-zinc-400">Powerful tools designed for modern event experiences.</p>
+            </div>
+            <Button variant="link" className="text-indigo-400 hover:text-indigo-300 text-lg p-0 mt-4 md:mt-0">
+              Explore all features &rarr;
+            </Button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Large Card */}
+            <div className="md:col-span-2 h-[400px] rounded-3xl bg-zinc-900 border border-white/5 overflow-hidden relative group">
+              <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/20 to-purple-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              <img src="https://images.unsplash.com/photo-1621609764180-2ca554a9d6f2?w=1200&q=80" alt="AI Art" className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform duration-700" />
+              <div className="absolute bottom-0 left-0 p-8">
+                <div className="w-12 h-12 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center mb-4 border border-white/10">
+                  <Wand2 className="w-6 h-6 text-white" />
+                </div>
+                <h3 className="text-2xl font-bold mb-2">Instant Transformation</h3>
+                <p className="text-zinc-300 max-w-md">Turn selfies into stylized characters, professional portraits, or artistic masterpieces in seconds.</p>
+              </div>
+            </div>
+
+            {/* Tall Card */}
+            <div className="md:row-span-2 h-[400px] md:h-auto rounded-3xl bg-zinc-900 border border-white/5 overflow-hidden relative group">
+              <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/80 z-10" />
+              <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=800&q=80" alt="Portrait" className="absolute inset-0 w-full h-full object-cover opacity-70 group-hover:scale-105 transition-transform duration-700" />
+              <div className="absolute bottom-0 left-0 p-8 z-20">
+                <div className="w-12 h-12 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center mb-4 border border-white/10">
+                  <Smartphone className="w-6 h-6 text-white" />
+                </div>
+                <h3 className="text-2xl font-bold mb-2">Mobile First</h3>
+                <p className="text-zinc-300">Optimized for instant sharing via QR codes and social media integration.</p>
+              </div>
+            </div>
+
+            {/* Small Card 1 */}
+            <div className="h-[300px] rounded-3xl bg-zinc-900 border border-white/5 p-8 relative overflow-hidden group hover:border-white/10 transition-colors">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-pink-500/20 blur-[50px] rounded-full -mr-10 -mt-10" />
+              <Layers className="w-10 h-10 text-pink-400 mb-6" />
+              <h3 className="text-xl font-bold mb-2">Brand Overlay</h3>
+              <p className="text-zinc-400">Automatically apply logos, frames, and watermarks to every generated image.</p>
+            </div>
+
+            {/* Small Card 2 */}
+            <div className="h-[300px] rounded-3xl bg-zinc-900 border border-white/5 p-8 relative overflow-hidden group hover:border-white/10 transition-colors">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/20 blur-[50px] rounded-full -mr-10 -mt-10" />
+              <Zap className="w-10 h-10 text-emerald-400 mb-6" />
+              <h3 className="text-xl font-bold mb-2">Lightning Fast</h3>
+              <p className="text-zinc-400">Optimized pipelines ensure guests get their photos before they leave the booth.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Pricing Section */}
+      <section id="pricing" className="py-32 relative overflow-hidden">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-indigo-900/20 rounded-full blur-[120px] -z-10" />
+
+        <div className="container mx-auto px-6">
+          <div className="text-center mb-12">
+            <h2 className="text-4xl md:text-5xl font-bold mb-6">Pick Your Plan</h2>
+            <p className="text-xl text-zinc-400 mb-8">Scale your creativity with higher limits and priority access.</p>
+
+            {/* Toggle */}
+            <div className="inline-flex items-center p-1 rounded-full bg-zinc-900 border border-white/10 relative">
+              <button
+                onClick={() => setPricingTab('individual')}
+                className={`relative z-10 px-6 py-2 rounded-full text-sm font-medium transition-all duration-300 ${pricingTab === 'individual' ? 'text-white' : 'text-zinc-400 hover:text-zinc-200'}`}
+              >
+                Individual
+              </button>
+              <button
+                onClick={() => setPricingTab('business')}
+                className={`relative z-10 px-6 py-2 rounded-full text-sm font-medium transition-all duration-300 ${pricingTab === 'business' ? 'text-white' : 'text-zinc-400 hover:text-zinc-200'}`}
+              >
+                Business
+              </button>
+              <div
+                className={`absolute top-1 bottom-1 rounded-full bg-zinc-800 transition-all duration-300 ease-in-out ${pricingTab === 'individual' ? 'left-1 w-[calc(50%-4px)]' : 'left-[calc(50%+4px)] w-[calc(50%-8px)]'}`}
+              />
+            </div>
+          </div>
+
+          {/* Pricing Cards */}
+          <div className="max-w-7xl mx-auto">
+            {pricingTab === 'individual' ? (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {/* Spark */}
+                  <div className="rounded-3xl bg-zinc-950 border border-zinc-800 p-8 flex flex-col hover:border-zinc-700 transition-all">
+                    <div className="mb-6">
+                      <h3 className="text-2xl font-bold text-white mb-2">Spark</h3>
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-4xl font-bold text-white">$9</span>
+                        <span className="text-zinc-500">/month</span>
+                      </div>
+                      <p className="text-zinc-400 text-sm mt-4">Perfect for personal use and experimentation.</p>
+                    </div>
+
+                    <Button className="w-full bg-white text-black hover:bg-zinc-200 mb-8 rounded-xl font-semibold" onClick={() => navigate("/admin/register?plan=spark")}>
+                      Get Started
+                    </Button>
+
+                    <div className="space-y-4 flex-1">
+                      <div className="text-sm font-medium text-white mb-4">Includes:</div>
+                      {[
+                        { text: "50 Tokens / month", tooltip: "~50 Images (1 Token = 1 Image)" },
+                        { text: "Base Models (Nano)" },
+                        { text: "Standard Speed" },
+                        { text: "Personal License" }
+                      ].map((item, i) => (
+                        <div key={i} className="flex items-center gap-3 text-sm text-zinc-300">
+                          <Check className="w-4 h-4 text-white shrink-0" />
+                          <span className="flex items-center gap-1">
+                            {item.text}
+                            {item.tooltip && (
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger>
+                                    <Info className="w-3 h-3 text-zinc-500 hover:text-zinc-300 transition-colors" />
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>{item.tooltip}</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            )}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Vibe - Most Popular */}
+                  <div className="rounded-3xl bg-zinc-950 border border-indigo-500/50 p-8 flex flex-col relative shadow-2xl shadow-indigo-500/10 hover:border-indigo-500 transition-all scale-[1.02] md:scale-105 z-10">
+                    <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg">
+                      MOST POPULAR
+                    </div>
+                    <div className="mb-6">
+                      <h3 className="text-2xl font-bold text-white mb-2">Vibe</h3>
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-4xl font-bold text-white">$19</span>
+                        <span className="text-zinc-500">/month</span>
+                      </div>
+                      <p className="text-zinc-400 text-sm mt-4">For creators who need more power and flexibility.</p>
+                    </div>
+
+                    <Button className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white mb-8 rounded-xl font-semibold shadow-lg shadow-indigo-500/20" onClick={() => navigate("/admin/register?plan=vibe")}>
+                      Get Started
+                    </Button>
+
+                    <div className="space-y-4 flex-1">
+                      <div className="text-sm font-medium text-white mb-4">Everything in Spark, plus:</div>
+                      {[
+                        { text: "100 Tokens / month", tooltip: "~100 Images (1 Token = 1 Image)" },
+                        { text: "Custom Backgrounds" },
+                        { text: "Priority Generation" },
+                        { text: "No Watermark" },
+                        { text: "Commercial License" }
+                      ].map((item, i) => (
+                        <div key={i} className="flex items-center gap-3 text-sm text-zinc-300">
+                          <Check className="w-4 h-4 text-indigo-400 shrink-0" />
+                          <span className="flex items-center gap-1">
+                            {item.text}
+                            {item.tooltip && (
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger>
+                                    <Info className="w-3 h-3 text-zinc-500 hover:text-zinc-300 transition-colors" />
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>{item.tooltip}</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            )}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Studio */}
+                  <div className="rounded-3xl bg-zinc-950 border border-zinc-800 p-8 flex flex-col hover:border-zinc-700 transition-all">
+                    <div className="mb-6">
+                      <h3 className="text-2xl font-bold text-white mb-2">Studio</h3>
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-4xl font-bold text-white">$39</span>
+                        <span className="text-zinc-500">/month</span>
+                      </div>
+                      <p className="text-zinc-400 text-sm mt-4">Maximum power for professionals and agencies.</p>
+                    </div>
+
+                    <Button className="w-full bg-white text-black hover:bg-zinc-200 mb-8 rounded-xl font-semibold" onClick={() => navigate("/admin/register?plan=studio")}>
+                      Get Started
+                    </Button>
+
+                    <div className="space-y-4 flex-1">
+                      <div className="text-sm font-medium text-white mb-4">Everything in Vibe, plus:</div>
+                      {[
+                        { text: "200 Tokens / month", tooltip: "~200 Images (1 Token = 1 Image)" },
+                        { text: "Faceswap Models" },
+                        { text: "Template Selling" },
+                        { text: "API Access" },
+                        { text: "Priority Support" }
+                      ].map((item, i) => (
+                        <div key={i} className="flex items-center gap-3 text-sm text-zinc-300">
+                          <Check className="w-4 h-4 text-white shrink-0" />
+                          <span className="flex items-center gap-1">
+                            {item.text}
+                            {item.tooltip && (
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger>
+                                    <Info className="w-3 h-3 text-zinc-500 hover:text-zinc-300 transition-colors" />
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>{item.tooltip}</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            )}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Business CTA */}
+                <div className="mt-12 rounded-2xl bg-zinc-950 border border-white/10 p-8 flex flex-col md:flex-row items-center justify-between gap-6 max-w-3xl mx-auto shadow-2xl">
+                  <span className="text-lg text-white font-medium">Ready to start your own business?</span>
+                  <Button
+                    onClick={() => setPricingTab('business')}
+                    className="bg-[#D9F99D] hover:bg-[#BEF264] text-black font-bold rounded-xl px-8 h-12 text-base shadow-[0_0_20px_-5px_rgba(217,249,157,0.5)] transition-all hover:scale-105"
+                  >
+                    See Business Plans
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+                {/* Event Pro */}
+                <div className="rounded-3xl bg-zinc-950 border border-purple-500/30 p-8 flex flex-col hover:border-purple-500/50 transition-all">
+                  <div className="mb-6">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="text-2xl font-bold text-white">Event Pro</h3>
+                      <span className="px-3 py-1 rounded-full bg-purple-500/10 text-purple-400 text-xs font-bold border border-purple-500/20">AGENCY</span>
+                    </div>
+                    <div className="text-3xl font-bold text-white mb-1">Custom</div>
+                    <p className="text-zinc-400 text-sm mt-4">For event operators managing multiple clients.</p>
+                  </div>
+
+                  <Button variant="outline" className="w-full border-purple-500/30 text-purple-400 hover:bg-purple-500/10 mb-8 rounded-xl font-semibold" onClick={() => navigate("/admin/register?plan=event-pro")}>
+                    Contact Sales
+                  </Button>
+
+                  <div className="space-y-4 flex-1">
+                    {[
+                      { text: "5,000 Tokens / month", tooltip: "~5,000 Images" },
+                      { text: "2 Active Events" },
+                      { text: "White-label Branding" },
+                      { text: "Lead Capture System" },
+                      { text: "BYOH Support" }
+                    ].map((item, i) => (
+                      <div key={i} className="flex items-center gap-3 text-sm text-zinc-300">
+                        <Check className="w-4 h-4 text-purple-500 shrink-0" />
+                        <span className="flex items-center gap-1">
+                          {item.text}
+                          {item.tooltip && (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger>
+                                  <Info className="w-3 h-3 text-zinc-500 hover:text-zinc-300 transition-colors" />
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>{item.tooltip}</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          )}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Masters */}
+                <div className="rounded-3xl bg-zinc-950 border border-amber-500/30 p-8 flex flex-col hover:border-amber-500/50 transition-all">
+                  <div className="mb-6">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="text-2xl font-bold text-white">Masters</h3>
+                      <span className="px-3 py-1 rounded-full bg-amber-500/10 text-amber-400 text-xs font-bold border border-amber-500/20">ENTERPRISE</span>
+                    </div>
+                    <div className="text-3xl font-bold text-white mb-1">Custom</div>
+                    <p className="text-zinc-400 text-sm mt-4">Full-scale solution for large operations.</p>
+                  </div>
+
+                  <Button variant="outline" className="w-full border-amber-500/30 text-amber-400 hover:bg-amber-500/10 mb-8 rounded-xl font-semibold" onClick={() => navigate("/admin/register?plan=masters")}>
+                    Contact Sales
+                  </Button>
+
+                  <div className="space-y-4 flex-1">
+                    {[
+                      { text: "10,000 Tokens / month", tooltip: "~10,000 Images" },
+                      { text: "Unlimited Events" },
+                      { text: "Reseller Dashboard" },
+                      { text: "Premium Models (Flux/Midjourney)" },
+                      { text: "Dedicated Support Manager" }
+                    ].map((item, i) => (
+                      <div key={i} className="flex items-center gap-3 text-sm text-zinc-300">
+                        <Check className="w-4 h-4 text-amber-500 shrink-0" />
+                        <span className="flex items-center gap-1">
+                          {item.text}
+                          {item.tooltip && (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger>
+                                  <Info className="w-3 h-3 text-zinc-500 hover:text-zinc-300 transition-colors" />
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>{item.tooltip}</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          )}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </section >
+
+      {/* Footer */}
+      < footer className="py-12 border-t border-white/5 bg-black text-zinc-500 text-sm" >
+        <div className="container mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded-lg bg-zinc-800 flex items-center justify-center">
+              <Sparkles className="w-3 h-3 text-zinc-400" />
+            </div>
+            <span className="font-semibold text-zinc-300">PictureMe.now</span>
+          </div>
+          <div className="flex gap-8">
+            <a href="#" className="hover:text-white transition-colors">Privacy</a>
+            <a href="#" className="hover:text-white transition-colors">Terms</a>
+            <a href="#" className="hover:text-white transition-colors">Twitter</a>
+            <a href="#" className="hover:text-white transition-colors">Instagram</a>
+          </div>
+          <p>© 2025 PictureMe.now. All rights reserved.</p>
+        </div>
+      </footer >
+    </div >
+  );
+}

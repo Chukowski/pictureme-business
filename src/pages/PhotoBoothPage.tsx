@@ -12,14 +12,14 @@ import ShaderBackground from '@/components/ShaderBackground';
 import { processImageWithAI, downloadImageAsBase64 } from '@/services/aiProcessor';
 import { toast } from 'sonner';
 import { Template } from '@/services/eventsApi';
-import { saveProcessedPhoto } from '@/services/localStorage';
+import { saveProcessedPhoto, getAllPhotos } from '@/services/localStorage';
 
 type AppState = 'select' | 'camera' | 'processing' | 'result' | 'custom-prompt';
 
 export const PhotoBoothPage = () => {
   const { userSlug, eventSlug } = useParams<{ userSlug: string; eventSlug: string }>();
   const { config, loading, error } = useEventConfig(userSlug!, eventSlug!);
-  
+
   const [state, setState] = useState<AppState>('select');
   const [selectedBackground, setSelectedBackground] = useState<Template | null>(null);
   const [capturedPhoto, setCapturedPhoto] = useState<string>('');
@@ -96,7 +96,7 @@ export const PhotoBoothPage = () => {
     if (config?.theme) {
       document.documentElement.style.setProperty('--brand-primary', config.theme.primaryColor || '#009999');
       document.documentElement.style.setProperty('--brand-secondary', config.theme.secondaryColor || '#ee6602');
-      
+
       // Apply theme mode (light/dark)
       const themeMode = config.theme.mode || 'dark';
       if (themeMode === 'light') {
@@ -138,7 +138,7 @@ export const PhotoBoothPage = () => {
 
   const handleBackgroundSelect = (template: Template) => {
     setSelectedBackground(template);
-    
+
     // If it's a custom prompt template, show the modal first
     if (template.isCustomPrompt) {
       setShowCustomPromptModal(true);
@@ -188,25 +188,25 @@ export const PhotoBoothPage = () => {
       const includeWatermark = includeBranding && (selectedBackground.includeWatermark ?? true);
 
       // Use custom prompt and images if this is a custom prompt template
-      const promptToUse = selectedBackground.isCustomPrompt && customPrompt 
-        ? customPrompt 
+      const promptToUse = selectedBackground.isCustomPrompt && customPrompt
+        ? customPrompt
         : selectedBackground.prompt;
-      
+
       const imagesToUse = selectedBackground.isCustomPrompt && customImages.length > 0
         ? customImages
         : (selectedBackground.images || []);
 
       // Only pass branding elements if they're explicitly set (not empty strings)
-      const tagline = includeTagline && config?.branding?.taglineText && config.branding.taglineText.trim() 
-        ? config.branding.taglineText 
+      const tagline = includeTagline && config?.branding?.taglineText && config.branding.taglineText.trim()
+        ? config.branding.taglineText
         : undefined;
-      
-      const logo = includeHeader && config?.branding?.logoPath && config.branding.logoPath.trim() 
-        ? config.branding.logoPath 
+
+      const logo = includeHeader && config?.branding?.logoPath && config.branding.logoPath.trim()
+        ? config.branding.logoPath
         : undefined;
-      
-      const footer = config?.branding?.footerPath && config.branding.footerPath.trim() 
-        ? config.branding.footerPath 
+
+      const footer = config?.branding?.footerPath && config.branding.footerPath.trim()
+        ? config.branding.footerPath
         : undefined;
 
       const result = await processImageWithAI({
@@ -289,11 +289,11 @@ export const PhotoBoothPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-dark relative">
+    <div className="min-h-screen bg-zinc-950 relative">
       {/* Only show title in select state */}
       {state === 'select' && (
-        <EventTitle 
-          eventName={config.title} 
+        <EventTitle
+          eventName={config.title}
           description={config.description}
           brandName={config.theme?.brandName || 'AI Photobooth'}
         />
@@ -311,6 +311,11 @@ export const PhotoBoothPage = () => {
           onCapture={handlePhotoCapture}
           onBack={() => setState('select')}
           selectedBackground={selectedBackground.name}
+          lastPhotoUrl={(() => {
+            const photos = getAllPhotos();
+            const eventPhotos = photos.filter(p => p.eventSlug === (config?.slug || eventSlug));
+            return eventPhotos.length > 0 ? (eventPhotos[0].processedImageUrl || eventPhotos[0].processedImageBase64) : undefined;
+          })()}
         />
       )}
 

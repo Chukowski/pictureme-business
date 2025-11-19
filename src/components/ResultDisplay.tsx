@@ -17,7 +17,7 @@ export const ResultDisplay = ({ imageUrl, shareCode, onReset }: ResultDisplayPro
   const { brandConfig } = useTheme();
   const [email, setEmail] = useState("");
   const [isSending, setIsSending] = useState(false);
-  
+
   // Always use short share code URL for QR code to avoid "Data too long" error
   // If no shareCode (storage failed), use a placeholder short URL
   const shareUrl = shareCode ? getShareUrl(shareCode) : window.location.origin;
@@ -77,7 +77,7 @@ export const ResultDisplay = ({ imageUrl, shareCode, onReset }: ResultDisplayPro
   };
 
   return (
-    <div className="min-h-screen bg-gradient-dark p-4 md:p-8 flex items-center justify-center">
+    <div className="min-h-screen bg-zinc-950 p-4 md:p-8 flex items-center justify-center">
       <div className="w-full max-w-3xl mx-auto space-y-6">
         {/* Result Image */}
         <div className="relative rounded-3xl shadow-elegant glow-primary animate-fade-in bg-black overflow-hidden">
@@ -91,18 +91,18 @@ export const ResultDisplay = ({ imageUrl, shareCode, onReset }: ResultDisplayPro
         {/* QR Code & Email Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* QR Code Card */}
-          <div className="gradient-card rounded-3xl p-6 shadow-card border border-border/50 space-y-4">
+          <div className="bg-zinc-900/50 border border-white/10 backdrop-blur-xl rounded-3xl p-6 shadow-2xl space-y-4">
             <div className="flex items-center gap-3 mb-2">
               <div className="w-10 h-10 rounded-full gradient-primary flex items-center justify-center">
                 <Share2 className="w-5 h-5 text-primary-foreground" />
               </div>
-              <h3 className="text-xl font-bold text-foreground">Scan to View</h3>
+              <h3 className="text-xl font-bold text-white">Scan to View</h3>
             </div>
-            
-            <p className="text-sm text-muted-foreground">
+
+            <p className="text-sm text-zinc-400">
               {shareCode ? "Scan this QR code to open your photo directly" : "QR code unavailable (storage offline)"}
             </p>
-            
+
             {shareCode ? (
               <div className="bg-white p-4 rounded-2xl inline-block w-full flex justify-center">
                 <QRCodeSVG
@@ -113,18 +113,18 @@ export const ResultDisplay = ({ imageUrl, shareCode, onReset }: ResultDisplayPro
                 />
               </div>
             ) : (
-              <div className="bg-muted/50 p-8 rounded-2xl flex items-center justify-center">
-                <p className="text-muted-foreground text-center">
-                  Photo saved locally.<br/>Share code unavailable.
+              <div className="bg-zinc-800/50 p-8 rounded-2xl flex items-center justify-center">
+                <p className="text-zinc-400 text-center">
+                  Photo saved locally.<br />Share code unavailable.
                 </p>
               </div>
             )}
-            
+
             <Button
               onClick={handleCopyLink}
               variant="outline"
               size="lg"
-              className="w-full rounded-xl"
+              className="w-full rounded-xl bg-zinc-900/50 border-white/10 text-white hover:bg-zinc-800/50 hover:text-white backdrop-blur-xl"
             >
               <Copy className="w-4 h-4 mr-2" />
               Copy Image Link
@@ -132,25 +132,25 @@ export const ResultDisplay = ({ imageUrl, shareCode, onReset }: ResultDisplayPro
           </div>
 
           {/* Email Card */}
-          <div className="gradient-card rounded-3xl p-6 shadow-card border border-border/50 space-y-4">
+          <div className="bg-zinc-900/50 border border-white/10 backdrop-blur-xl rounded-3xl p-6 shadow-2xl space-y-4">
             <div className="flex items-center gap-3 mb-2">
               <div className="w-10 h-10 rounded-full gradient-secondary flex items-center justify-center glow-secondary">
                 <Mail className="w-5 h-5 text-secondary-foreground" />
               </div>
-              <h3 className="text-xl font-bold text-foreground">Email Photo</h3>
+              <h3 className="text-xl font-bold text-white">Email Photo</h3>
             </div>
-            
-            <p className="text-sm text-muted-foreground">
+
+            <p className="text-sm text-zinc-400">
               Receive your photo directly in your inbox
             </p>
-            
+
             <div className="space-y-3">
               <Input
                 type="email"
                 placeholder="your@email.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="h-12 rounded-xl text-base"
+                className="h-12 rounded-xl text-base bg-zinc-950/50 border-white/10 text-white placeholder:text-zinc-600"
               />
               <Button
                 onClick={handleEmailSend}
@@ -179,7 +179,7 @@ export const ResultDisplay = ({ imageUrl, shareCode, onReset }: ResultDisplayPro
             onClick={() => toast.info("Share feature coming soon!")}
             size="lg"
             variant="outline"
-            className="rounded-2xl h-14 border-primary/30 hover:border-primary"
+            className="rounded-2xl h-14 bg-zinc-900/50 border-white/10 text-white hover:bg-zinc-800/50 backdrop-blur-xl"
           >
             <Share2 className="w-5 h-5 md:mr-2" />
             <span className="ml-2">Share</span>
@@ -188,7 +188,7 @@ export const ResultDisplay = ({ imageUrl, shareCode, onReset }: ResultDisplayPro
             onClick={onReset}
             variant="outline"
             size="lg"
-            className="rounded-2xl h-14 border-border hover:border-muted-foreground"
+            className="rounded-2xl h-14 bg-zinc-900/50 border-white/10 text-white hover:bg-zinc-800/50 backdrop-blur-xl"
           >
             <RotateCcw className="w-5 h-5 md:mr-2" />
             <span className="ml-2">Take Another</span>

@@ -71,22 +71,22 @@ interface BackgroundSelectorProps {
 
 export const BackgroundSelector = ({ onSelectBackground, templates }: BackgroundSelectorProps) => {
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  
+
   // Use provided templates or fall back to default backgrounds
   const backgroundsToShow = templates && templates.length > 0 ? templates : getDefaultBackgrounds();
   const isScrollable = backgroundsToShow.length > 3;
-  
+
   const handleSelect = (template: Template) => {
     setSelectedId(template.id);
   };
-  
+
   const handleConfirm = () => {
     const selected = backgroundsToShow.find(bg => bg.id === selectedId);
     if (selected) {
       onSelectBackground(selected);
     }
   };
-  
+
   const selectedBg = backgroundsToShow.find(bg => bg.id === selectedId);
 
   return (
@@ -103,7 +103,7 @@ export const BackgroundSelector = ({ onSelectBackground, templates }: Background
               />
               {/* Gradient overlay */}
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
-              
+
               {/* Floating particles effect */}
               <div className="absolute inset-0 opacity-20">
                 <div className="absolute top-1/4 left-1/4 w-2 h-2 rounded-full bg-primary animate-pulse" />
@@ -111,7 +111,7 @@ export const BackgroundSelector = ({ onSelectBackground, templates }: Background
                 <div className="absolute bottom-1/4 right-1/4 w-2 h-2 rounded-full bg-primary animate-pulse delay-200" />
               </div>
             </div>
-            
+
             {/* Content overlay */}
             <div className="absolute inset-0 flex flex-col justify-end p-4 sm:p-6 md:p-10">
               <div className="flex items-start gap-2 sm:gap-3 mb-3 sm:mb-4">
@@ -125,11 +125,11 @@ export const BackgroundSelector = ({ onSelectBackground, templates }: Background
                   </p>
                 </div>
               </div>
-              
+
               <Button
                 onClick={handleConfirm}
                 size="lg"
-                className="self-start mt-2 sm:mt-4 text-base sm:text-lg px-6 py-5 sm:px-8 sm:py-6 rounded-xl sm:rounded-2xl gradient-secondary hover:scale-105 transition-transform glow-secondary group w-full sm:w-auto"
+                className="self-start mt-2 sm:mt-4 text-base sm:text-lg px-6 py-5 sm:px-8 sm:py-6 rounded-xl sm:rounded-2xl bg-[#D9F99D] text-black hover:bg-[#BEF264] hover:scale-105 transition-transform shadow-[0_0_20px_-5px_rgba(217,249,157,0.5)] group w-full sm:w-auto"
               >
                 Start Photo Booth
                 <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 ml-2 group-hover:translate-x-1 transition-transform" />
@@ -160,7 +160,7 @@ export const BackgroundSelector = ({ onSelectBackground, templates }: Background
             <span>Desliza para ver más escenas</span>
           </div>
         )}
-        
+
         {/* Horizontal scrollable carousel on mobile, grid on desktop */}
         <div className="relative -mx-4 sm:-mx-6 md:mx-0">
           {isScrollable && (

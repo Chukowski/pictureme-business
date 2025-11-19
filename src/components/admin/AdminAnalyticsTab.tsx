@@ -1,16 +1,17 @@
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { getUserEvents, type User, type EventConfig } from "@/services/eventsApi";
 import {
   BarChart3,
   Camera,
-  Image,
+  Image as ImageIcon,
   TrendingUp,
   Eye,
-  Calendar,
   Activity,
+  Clock,
+  Zap
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
@@ -44,7 +45,7 @@ export default function AdminAnalyticsTab({ currentUser }: AdminAnalyticsTabProp
     try {
       setIsLoading(true);
       const token = localStorage.getItem("auth_token");
-      
+
       // Get events first
       const eventsData = await getUserEvents();
       setEvents(eventsData);
@@ -101,21 +102,23 @@ export default function AdminAnalyticsTab({ currentUser }: AdminAnalyticsTabProp
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Overall Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="border-primary/20">
+        <Card className="bg-zinc-900/50 border-white/10 backdrop-blur-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Photos</CardTitle>
-            <Camera className="h-4 w-4 text-primary" />
+            <CardTitle className="text-sm font-medium text-zinc-400">Total Photos</CardTitle>
+            <div className="p-2 rounded-lg bg-indigo-500/10">
+              <Camera className="h-4 w-4 text-indigo-400" />
+            </div>
           </CardHeader>
           <CardContent>
             {isLoading ? (
-              <Skeleton className="h-8 w-20" />
+              <Skeleton className="h-8 w-20 bg-zinc-800" />
             ) : (
               <>
-                <div className="text-2xl font-bold">{totalStats.totalPhotos.toLocaleString()}</div>
-                <p className="text-xs text-muted-foreground mt-1">
+                <div className="text-2xl font-bold text-white">{totalStats.totalPhotos.toLocaleString()}</div>
+                <p className="text-xs text-zinc-500 mt-1">
                   Across all events
                 </p>
               </>
@@ -123,18 +126,20 @@ export default function AdminAnalyticsTab({ currentUser }: AdminAnalyticsTabProp
           </CardContent>
         </Card>
 
-        <Card className="border-secondary/20">
+        <Card className="bg-zinc-900/50 border-white/10 backdrop-blur-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Views</CardTitle>
-            <Eye className="h-4 w-4 text-secondary" />
+            <CardTitle className="text-sm font-medium text-zinc-400">Total Views</CardTitle>
+            <div className="p-2 rounded-lg bg-purple-500/10">
+              <Eye className="h-4 w-4 text-purple-400" />
+            </div>
           </CardHeader>
           <CardContent>
             {isLoading ? (
-              <Skeleton className="h-8 w-20" />
+              <Skeleton className="h-8 w-20 bg-zinc-800" />
             ) : (
               <>
-                <div className="text-2xl font-bold">{totalStats.totalViews.toLocaleString()}</div>
-                <p className="text-xs text-muted-foreground mt-1">
+                <div className="text-2xl font-bold text-white">{totalStats.totalViews.toLocaleString()}</div>
+                <p className="text-xs text-zinc-500 mt-1">
                   Feed impressions
                 </p>
               </>
@@ -142,20 +147,22 @@ export default function AdminAnalyticsTab({ currentUser }: AdminAnalyticsTabProp
           </CardContent>
         </Card>
 
-        <Card className="border-green-500/20">
+        <Card className="bg-zinc-900/50 border-white/10 backdrop-blur-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Last 24 Hours</CardTitle>
-            <TrendingUp className="h-4 w-4 text-green-500" />
+            <CardTitle className="text-sm font-medium text-zinc-400">Last 24 Hours</CardTitle>
+            <div className="p-2 rounded-lg bg-emerald-500/10">
+              <TrendingUp className="h-4 w-4 text-emerald-400" />
+            </div>
           </CardHeader>
           <CardContent>
             {isLoading ? (
-              <Skeleton className="h-8 w-20" />
+              <Skeleton className="h-8 w-20 bg-zinc-800" />
             ) : (
               <>
-                <div className="text-2xl font-bold text-green-500">
+                <div className="text-2xl font-bold text-emerald-400">
                   +{totalStats.photosLast24h}
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">
+                <p className="text-xs text-zinc-500 mt-1">
                   New photos taken
                 </p>
               </>
@@ -163,20 +170,22 @@ export default function AdminAnalyticsTab({ currentUser }: AdminAnalyticsTabProp
           </CardContent>
         </Card>
 
-        <Card className="border-blue-500/20">
+        <Card className="bg-zinc-900/50 border-white/10 backdrop-blur-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Events</CardTitle>
-            <Activity className="h-4 w-4 text-blue-500" />
+            <CardTitle className="text-sm font-medium text-zinc-400">Active Events</CardTitle>
+            <div className="p-2 rounded-lg bg-amber-500/10">
+              <Activity className="h-4 w-4 text-amber-400" />
+            </div>
           </CardHeader>
           <CardContent>
             {isLoading ? (
-              <Skeleton className="h-8 w-20" />
+              <Skeleton className="h-8 w-20 bg-zinc-800" />
             ) : (
               <>
-                <div className="text-2xl font-bold text-blue-500">
+                <div className="text-2xl font-bold text-amber-400">
                   {totalStats.activeEvents}
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">
+                <p className="text-xs text-zinc-500 mt-1">
                   Of {events.length} total
                 </p>
               </>
@@ -187,96 +196,102 @@ export default function AdminAnalyticsTab({ currentUser }: AdminAnalyticsTabProp
 
       {/* Per-Event Analytics */}
       <div>
-        <h2 className="text-2xl font-bold text-white mb-4 flex items-center gap-2">
-          <BarChart3 className="w-6 h-6 text-primary" />
+        <h2 className="text-xl font-semibold text-white mb-6 flex items-center gap-2">
+          <BarChart3 className="w-5 h-5 text-indigo-400" />
           Event Performance
         </h2>
-        
+
         {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[1, 2, 3].map((i) => (
-              <Card key={i}>
-                <CardHeader>
-                  <Skeleton className="h-6 w-3/4 mb-2" />
-                  <Skeleton className="h-4 w-1/2" />
-                </CardHeader>
-                <CardContent>
-                  <Skeleton className="h-20 w-full" />
-                </CardContent>
-              </Card>
+              <div key={i} className="rounded-3xl bg-zinc-900/50 border border-white/5 p-6 h-[200px] animate-pulse" />
             ))}
           </div>
         ) : analytics.length === 0 ? (
-          <Card className="text-center py-12">
-            <CardContent>
-              <div className="flex flex-col items-center gap-4">
-                <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center">
-                  <BarChart3 className="w-8 h-8 text-primary" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-semibold mb-2">No analytics yet</h3>
-                  <p className="text-muted-foreground">
-                    Create events and start taking photos to see analytics
-                  </p>
-                </div>
+          <div className="rounded-3xl bg-zinc-900/50 border border-white/5 p-12 text-center">
+            <div className="flex flex-col items-center gap-6 max-w-md mx-auto">
+              <div className="w-20 h-20 rounded-full bg-zinc-800/50 flex items-center justify-center border border-white/5">
+                <BarChart3 className="w-10 h-10 text-zinc-500" />
               </div>
-            </CardContent>
-          </Card>
+              <div>
+                <h3 className="text-xl font-semibold text-white mb-2">No analytics yet</h3>
+                <p className="text-zinc-400">
+                  Create events and start taking photos to see analytics
+                </p>
+              </div>
+            </div>
+          </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {analytics.map((eventAnalytics) => (
-              <Card key={eventAnalytics.event_id} className="hover:border-primary/50 transition-colors">
+              <Card key={eventAnalytics.event_id} className="bg-zinc-900/50 border-white/10 hover:border-indigo-500/30 transition-all group">
                 <CardHeader>
                   <div className="flex items-start justify-between mb-2">
-                    <CardTitle className="text-lg">{eventAnalytics.event_title}</CardTitle>
-                    <Badge variant={eventAnalytics.is_active ? "default" : "secondary"}>
+                    <CardTitle className="text-lg text-white truncate pr-4" title={eventAnalytics.event_title}>
+                      {eventAnalytics.event_title}
+                    </CardTitle>
+                    <Badge
+                      variant="outline"
+                      className={eventAnalytics.is_active
+                        ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                        : "bg-zinc-500/10 text-zinc-400 border-zinc-500/20"
+                      }
+                    >
                       {eventAnalytics.is_active ? "Active" : "Inactive"}
                     </Badge>
                   </div>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-6">
                   {/* Key Metrics */}
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1">
-                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                        <Image className="w-3.5 h-3.5" />
+                      <div className="flex items-center gap-1.5 text-xs text-zinc-500">
+                        <ImageIcon className="w-3.5 h-3.5" />
                         Total Photos
                       </div>
-                      <p className="text-2xl font-bold text-primary">
-                        {eventAnalytics.total_photos}
+                      <p className="text-2xl font-bold text-white">
+                        {eventAnalytics.total_photos.toLocaleString()}
                       </p>
                     </div>
                     <div className="space-y-1">
-                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <div className="flex items-center gap-1.5 text-xs text-zinc-500">
                         <Eye className="w-3.5 h-3.5" />
                         Total Views
                       </div>
-                      <p className="text-2xl font-bold text-secondary">
-                        {eventAnalytics.total_views}
+                      <p className="text-2xl font-bold text-white">
+                        {eventAnalytics.total_views.toLocaleString()}
                       </p>
                     </div>
                   </div>
 
-                  {/* Recent Activity */}
-                  <div className="p-3 rounded-lg bg-muted/50 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-muted-foreground">Last 24h</span>
-                      <Badge variant="outline" className="text-green-500 border-green-500/50">
+                  {/* Detailed Stats */}
+                  <div className="space-y-3 pt-4 border-t border-white/5">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-zinc-500 flex items-center gap-2">
+                        <Clock className="w-3.5 h-3.5" /> Last 24h
+                      </span>
+                      <span className="text-emerald-400 font-medium">
                         +{eventAnalytics.photos_last_24h}
-                      </Badge>
+                      </span>
                     </div>
+
                     {eventAnalytics.most_used_template && (
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs text-muted-foreground">Top Template</span>
-                        <span className="text-xs font-medium truncate max-w-[150px]">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-zinc-500 flex items-center gap-2">
+                          <Zap className="w-3.5 h-3.5" /> Top Template
+                        </span>
+                        <span className="text-white font-medium truncate max-w-[120px]" title={eventAnalytics.most_used_template}>
                           {eventAnalytics.most_used_template}
                         </span>
                       </div>
                     )}
+
                     {eventAnalytics.avg_processing_time && (
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs text-muted-foreground">Avg. Process Time</span>
-                        <span className="text-xs font-medium">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-zinc-500 flex items-center gap-2">
+                          <Activity className="w-3.5 h-3.5" /> Avg. Time
+                        </span>
+                        <span className="text-white font-medium">
                           {eventAnalytics.avg_processing_time.toFixed(1)}s
                         </span>
                       </div>
@@ -291,4 +306,3 @@ export default function AdminAnalyticsTab({ currentUser }: AdminAnalyticsTabProp
     </div>
   );
 }
-

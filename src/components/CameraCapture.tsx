@@ -14,9 +14,10 @@ interface CameraCaptureProps {
   onCapture: (imageData: string) => void;
   selectedBackground: string | null;
   onBack?: () => void;
+  lastPhotoUrl?: string;
 }
 
-export const CameraCapture = ({ onCapture, selectedBackground, onBack }: CameraCaptureProps) => {
+export const CameraCapture = ({ onCapture, selectedBackground, onBack, lastPhotoUrl }: CameraCaptureProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
@@ -26,7 +27,12 @@ export const CameraCapture = ({ onCapture, selectedBackground, onBack }: CameraC
   const [selectedCameraId, setSelectedCameraId] = useState<string>("");
   const [cameraError, setCameraError] = useState<string>("");
   const [permissionStatus, setPermissionStatus] = useState<string>("checking");
-  const [showDebugInfo, setShowDebugInfo] = useState(false);
+
+  // New UI States
+  const [timer, setTimer] = useState<0 | 3 | 10>(0);
+  const [mode, setMode] = useState<'photo' | 'video'>('photo');
+  const [showControls, setShowControls] = useState(true);
+  const [fitMode, setFitMode] = useState<'cover' | 'contain'>('cover');
 
   useEffect(() => {
     checkCameraSupport();
@@ -44,25 +50,17 @@ export const CameraCapture = ({ onCapture, selectedBackground, onBack }: CameraC
   }, [selectedCameraId]);
 
   const checkCameraSupport = async () => {
-    // Check if running on HTTPS or localhost
     const isSecureContext = window.isSecureContext;
-    const protocol = window.location.protocol;
-    
-    console.log("🔒 Secure Context:", isSecureContext);
-    console.log("🌐 Protocol:", protocol);
-    console.log("🏠 Hostname:", window.location.hostname);
 
     if (!isSecureContext && window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1") {
-      setCameraError("Camera access requires HTTPS. Please access this site via HTTPS or localhost.");
+      setCameraError("Camera access requires HTTPS.");
       setPermissionStatus("failed");
-      toast.error("Camera requires HTTPS connection");
       return;
     }
 
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      setCameraError("Camera API not supported in this browser");
+      setCameraError("Camera API not supported");
       setPermissionStatus("failed");
-      toast.error("Camera not supported");
       return;
     }
 
@@ -72,16 +70,12 @@ export const CameraCapture = ({ onCapture, selectedBackground, onBack }: CameraC
 
   const enumerateCameras = async () => {
     try {
-      // Request permission first
       const tempStream = await navigator.mediaDevices.getUserMedia({ video: true });
       tempStream.getTracks().forEach(track => track.stop());
-      
-      // Now enumerate devices (labels will be available after permission)
+
       const devices = await navigator.mediaDevices.enumerateDevices();
       const videoDevices = devices.filter(device => device.kind === "videoinput");
-      
-      console.log("📷 Available cameras:", videoDevices);
-      
+
       setAvailableCameras(videoDevices);
       if (videoDevices.length > 0 && !selectedCameraId) {
         setSelectedCameraId(videoDevices[0].deviceId);
@@ -91,47 +85,34 @@ export const CameraCapture = ({ onCapture, selectedBackground, onBack }: CameraC
       console.error("Error enumerating cameras:", error);
       setCameraError(error.message || "Failed to access camera");
       setPermissionStatus("denied");
-      
-      if (error.name === "NotAllowedError") {
-        toast.error("Camera permission denied. Please allow camera access in your browser settings.");
-      } else if (error.name === "NotFoundError") {
-        toast.error("No camera found on this device.");
-      } else {
-        toast.error("Failed to access camera: " + error.message);
-      }
     }
   };
 
   const startCamera = async (deviceId?: string) => {
     try {
-      // Stop existing stream first
       if (stream) {
         stream.getTracks().forEach(track => track.stop());
       }
 
       const constraints: MediaStreamConstraints = {
-        video: deviceId 
-          ? { deviceId: { exact: deviceId }, width: { ideal: 1080 }, height: { ideal: 1920 } }
-          : { facingMode: "user", width: { ideal: 1080 }, height: { ideal: 1920 } }
+        video: deviceId
+          ? { deviceId: { exact: deviceId }, width: { ideal: 1920 }, height: { ideal: 1080 } }
+          : { facingMode: "user", width: { ideal: 1920 }, height: { ideal: 1080 } }
       };
 
-      console.log("🎥 Starting camera with constraints:", constraints);
-
       const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
-      
+
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
         setStream(mediaStream);
         setCameraError("");
         videoRef.current.onloadedmetadata = () => {
-          console.log("✅ Camera ready!");
           setIsCameraReady(true);
         };
       }
     } catch (error: any) {
       console.error("Camera access error:", error);
       setCameraError(error.message || "Failed to start camera");
-      toast.error("Camera access denied. Please enable camera permissions.");
     }
   };
 
@@ -140,36 +121,43 @@ export const CameraCapture = ({ onCapture, selectedBackground, onBack }: CameraC
       toast.error("Please select a background first");
       return;
     }
-    
-    setCountdown(3);
+
+    if (timer > 0) {
+      setCountdown(timer);
+    } else {
+      capturePhoto();
+    }
   };
 
   useEffect(() => {
     if (countdown === null) return;
-    
+
     if (countdown === 0) {
       capturePhoto();
       setCountdown(null);
       return;
     }
 
-    const timer = setTimeout(() => {
+    const timerId = setTimeout(() => {
       setCountdown(countdown - 1);
     }, 1000);
 
-    return () => clearTimeout(timer);
+    return () => clearTimeout(timerId);
   }, [countdown]);
 
   const capturePhoto = () => {
     if (videoRef.current && canvasRef.current) {
       const canvas = canvasRef.current;
       const video = videoRef.current;
-      
+
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
-      
+
       const ctx = canvas.getContext("2d");
       if (ctx) {
+        // If fitMode is 'cover', we might want to crop the capture too, 
+        // but usually capturing the full sensor is better. 
+        // For now, we capture the full sensor frame.
         ctx.drawImage(video, 0, 0);
         const imageData = canvas.toDataURL("image/jpeg", 0.95);
         onCapture(imageData);
@@ -177,143 +165,160 @@ export const CameraCapture = ({ onCapture, selectedBackground, onBack }: CameraC
     }
   };
 
+  const toggleCamera = () => {
+    if (availableCameras.length < 2) return;
+    const currentIndex = availableCameras.findIndex(c => c.deviceId === selectedCameraId);
+    const nextIndex = (currentIndex + 1) % availableCameras.length;
+    setSelectedCameraId(availableCameras[nextIndex].deviceId);
+  };
+
+  const toggleTimer = () => {
+    if (timer === 0) setTimer(3);
+    else if (timer === 3) setTimer(10);
+    else setTimer(0);
+  };
+
+  // Icons
+  const TimerIcon = () => (
+    <div className="flex flex-col items-center justify-center w-10 h-10 rounded-full bg-black/50 backdrop-blur-md text-white">
+      {timer === 0 ? <span className="text-xs font-bold">OFF</span> : <span className="text-xs font-bold">{timer}s</span>}
+    </div>
+  );
+
   return (
     <div className="relative w-full min-h-screen flex items-center justify-center bg-black overflow-hidden">
-      <div className="relative w-full max-w-3xl h-screen">
-        {/* Error Display */}
-        {cameraError && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black z-50 p-8">
-            <div className="max-w-md text-center space-y-4">
-              <div className="text-6xl mb-4">📷</div>
-              <h2 className="text-2xl font-bold text-primary">Camera Access Issue</h2>
-              <p className="text-white">{cameraError}</p>
-              <div className="text-sm text-muted-foreground space-y-2">
-                <p><strong>Common solutions:</strong></p>
-                <ul className="text-left list-disc list-inside space-y-1">
-                  <li>Access the site via HTTPS (https://...)</li>
-                  <li>Check browser camera permissions</li>
-                  <li>Ensure no other app is using the camera</li>
-                  <li>Try a different browser (Chrome/Firefox/Safari)</li>
-                </ul>
-              </div>
-              <Button onClick={checkCameraSupport} className="mt-4">
-                <RotateCcw className="w-4 h-4 mr-2" />
-                Retry Camera Access
-              </Button>
+      <div className="relative w-full max-w-3xl h-screen flex flex-col">
+
+        {/* Video Feed */}
+        <div className="absolute inset-0 z-0">
+          <video
+            ref={videoRef}
+            autoPlay
+            playsInline
+            muted
+            className={`w-full h-full transition-all duration-500 ${fitMode === 'contain' ? 'object-contain' : 'object-cover'}`}
+          />
+        </div>
+
+        <canvas ref={canvasRef} className="hidden" />
+
+        {/* Countdown Overlay */}
+        {countdown !== null && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-50">
+            <div className="text-[200px] font-bold text-primary glow-teal animate-scale-in">
+              {countdown}
             </div>
           </div>
         )}
 
-        {/* Permission Status Indicator */}
-        {!cameraError && permissionStatus !== "granted" && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black z-40">
-            <div className="text-center space-y-4">
-              <div className="text-6xl mb-4">🎥</div>
-              <h2 className="text-2xl font-bold text-primary">
-                {permissionStatus === "checking" && "Checking Camera..."}
-                {permissionStatus === "requesting" && "Requesting Camera Permission"}
-              </h2>
-              <p className="text-white">Please allow camera access when prompted</p>
+        {/* Top Controls Bar */}
+        <div className={`absolute top-0 inset-x-0 z-20 p-4 flex justify-between items-start transition-transform duration-300 ${showControls ? 'translate-y-0' : '-translate-y-full'}`}>
+          <div className="flex gap-4">
+            {/* Back Button */}
+            <button
+              onClick={onBack}
+              className="w-10 h-10 rounded-full bg-zinc-900/50 backdrop-blur-xl border border-white/10 flex items-center justify-center text-white hover:bg-zinc-800/50 transition-all"
+            >
+              <RotateCcw className="w-5 h-5" />
+            </button>
+
+            {/* Fit/Fill Toggle */}
+            <button
+              onClick={() => setFitMode(prev => prev === 'cover' ? 'contain' : 'cover')}
+              className="px-4 h-10 rounded-full bg-zinc-900/50 backdrop-blur-xl border border-white/10 flex items-center justify-center text-white text-xs font-bold hover:bg-zinc-800/50 transition-all"
+            >
+              {fitMode === 'cover' ? 'FIT' : 'FILL'}
+            </button>
+          </div>
+
+          <div className="flex gap-4">
+            {/* Timer Toggle */}
+            <button onClick={toggleTimer}>
+              <TimerIcon />
+            </button>
+          </div>
+        </div>
+
+        {/* Visibility Toggle (Always visible) */}
+        <div className="absolute top-4 right-1/2 translate-x-1/2 z-30">
+          <button
+            onClick={() => setShowControls(!showControls)}
+            className="w-8 h-8 rounded-full bg-zinc-900/30 backdrop-blur-sm flex items-center justify-center text-white/70 hover:bg-zinc-900/50 transition-all"
+          >
+            {showControls ? <div className="w-4 h-1 bg-white/50 rounded-full" /> : <div className="w-4 h-4 border-2 border-white/50 rounded-full" />}
+          </button>
+        </div>
+
+        {/* Bottom Controls Bar */}
+        <div className={`absolute bottom-0 inset-x-0 z-20 pb-8 pt-12 bg-gradient-to-t from-black/80 to-transparent transition-transform duration-300 ${showControls ? 'translate-y-0' : 'translate-y-full'}`}>
+
+          {/* Mode Slider */}
+          <div className="flex justify-center gap-8 mb-8 text-sm font-bold tracking-widest">
+            <button
+              onClick={() => setMode('video')}
+              className={`${mode === 'video' ? 'text-yellow-400 scale-110' : 'text-white/50'} transition-all duration-300`}
+            >
+              VIDEO
+            </button>
+            <button
+              onClick={() => setMode('photo')}
+              className={`${mode === 'photo' ? 'text-yellow-400 scale-110' : 'text-white/50'} transition-all duration-300`}
+            >
+              PHOTO
+            </button>
+          </div>
+
+          <div className="flex items-center justify-between px-8 max-w-md mx-auto">
+            {/* Gallery / Last Photo Preview */}
+            <div className="w-12 h-12 rounded-lg bg-zinc-800/50 border border-white/10 flex items-center justify-center overflow-hidden">
+              {lastPhotoUrl ? (
+                <img
+                  src={lastPhotoUrl}
+                  alt="Last photo"
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                selectedBackground && (
+                  <div className="w-full h-full opacity-50">
+                    <div className="w-full h-full bg-primary/20" />
+                  </div>
+                )
+              )}
             </div>
+
+            {/* Shutter Button */}
+            <button
+              onClick={handleCapture}
+              disabled={!isCameraReady || countdown !== null}
+              className="group relative w-20 h-20"
+            >
+              <div className="absolute inset-0 rounded-full border-4 border-white" />
+              <div className={`absolute inset-1.5 rounded-full transition-all duration-200 ${mode === 'photo' ? 'bg-white' : 'bg-red-500'} ${!isCameraReady ? 'opacity-50' : 'group-active:scale-90'}`} />
+            </button>
+
+            {/* Camera Switcher */}
+            <button
+              onClick={toggleCamera}
+              className="w-12 h-12 rounded-full bg-zinc-800/50 border border-white/10 flex items-center justify-center text-white hover:bg-zinc-700/50 transition-all"
+            >
+              <RotateCcw className="w-6 h-6" />
+            </button>
+          </div>
+        </div>
+
+        {/* Minimal Shutter (When controls hidden) */}
+        {!showControls && (
+          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20">
+            <button
+              onClick={handleCapture}
+              disabled={!isCameraReady || countdown !== null}
+              className="w-20 h-20 rounded-full border-4 border-white/50 flex items-center justify-center"
+            >
+              <div className="w-16 h-16 rounded-full bg-white/90" />
+            </button>
           </div>
         )}
 
-        <video
-          ref={videoRef}
-          autoPlay
-          playsInline
-          muted
-          className="w-full h-full object-cover"
-        />
-      
-      <canvas ref={canvasRef} className="hidden" />
-      
-      {countdown !== null && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="text-[200px] font-bold text-primary glow-teal animate-scale-in">
-            {countdown}
-          </div>
-        </div>
-      )}
-
-      {/* Back button / Debug Toggle */}
-      <div className="absolute top-4 inset-x-4 z-10 flex justify-between items-center pointer-events-none">
-        <button
-          onClick={onBack}
-          disabled={!onBack}
-          className="pointer-events-auto px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-sm border border-white/20 text-white text-xs uppercase tracking-[0.3em] hover:bg-black/80 transition disabled:opacity-40"
-        >
-          Go Back
-        </button>
-        <button
-          onClick={() => setShowDebugInfo(!showDebugInfo)}
-          className="pointer-events-auto p-2 rounded-full bg-black/50 backdrop-blur-sm border border-primary/30 text-white hover:bg-black/70"
-        >
-          <Info className="w-5 h-5" />
-        </button>
-      </div>
-
-      {/* Debug Info Panel */}
-      {showDebugInfo && (
-        <div className="absolute top-16 right-4 z-10 p-4 rounded-lg bg-black/90 backdrop-blur-sm border border-primary/30 text-xs text-white max-w-sm">
-          <h3 className="font-bold mb-2 text-primary">Debug Info</h3>
-          <div className="space-y-1">
-            <p>🔒 Secure Context: {window.isSecureContext ? "✅ Yes" : "❌ No"}</p>
-            <p>🌐 Protocol: {window.location.protocol}</p>
-            <p>🏠 Host: {window.location.hostname}</p>
-            <p>📷 Permission: {permissionStatus}</p>
-            <p>🎥 Camera Ready: {isCameraReady ? "✅" : "❌"}</p>
-            <p>📹 Available Cameras: {availableCameras.length}</p>
-            <p>🎬 Stream Active: {stream ? "✅" : "❌"}</p>
-            {cameraError && <p className="text-red-400">❌ Error: {cameraError}</p>}
-          </div>
-        </div>
-      )}
-
-      {/* Camera Selector */}
-      {showDebugInfo && availableCameras.length > 1 && !cameraError && (
-        <div className="absolute top-8 left-1/2 -translate-x-1/2 z-10">
-          <Select value={selectedCameraId} onValueChange={setSelectedCameraId}>
-            <SelectTrigger className="w-[280px] bg-black/50 backdrop-blur-sm border-primary/30 text-white">
-              <Video className="w-4 h-4 mr-2" />
-              <SelectValue placeholder="Select camera" />
-            </SelectTrigger>
-            <SelectContent>
-              {availableCameras.map((camera) => (
-                <SelectItem key={camera.deviceId} value={camera.deviceId}>
-                  {camera.label || `Camera ${camera.deviceId.slice(0, 8)}`}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      )}
-
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-4">
-        {selectedBackground && (
-          <div className="glass-panel px-6 py-3 rounded-2xl">
-            <p className="text-sm text-foreground font-medium">Scene ready</p>
-          </div>
-        )}
-        
-        {/* Modern capture button with ring effect */}
-        <button
-          onClick={handleCapture}
-          disabled={!isCameraReady || countdown !== null}
-          className="group relative w-24 h-24 rounded-full disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {/* Outer pulsing ring */}
-          <div className="absolute inset-0 rounded-full bg-primary/20 animate-pulse glow-primary" />
-          
-          {/* Middle ring */}
-          <div className="absolute inset-2 rounded-full border-4 border-primary/50" />
-          
-          {/* Inner button */}
-          <div className="absolute inset-4 rounded-full gradient-primary flex items-center justify-center group-hover:scale-110 transition-transform glow-primary">
-            <Camera className="w-10 h-10 text-primary-foreground" />
-          </div>
-        </button>
-      </div>
       </div>
     </div>
   );

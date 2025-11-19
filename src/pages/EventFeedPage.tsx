@@ -41,18 +41,16 @@ export const EventFeedPage = () => {
     if (config?.theme) {
       document.documentElement.style.setProperty('--brand-primary', config.theme.primaryColor || '#009999');
       document.documentElement.style.setProperty('--brand-secondary', config.theme.secondaryColor || '#ee6602');
-      
-      // Apply theme mode (light/dark)
-      const themeMode = config.theme.mode || 'dark';
-      if (themeMode === 'light') {
-        document.documentElement.classList.remove('dark');
-        document.documentElement.classList.add('light');
-      } else {
+
+      if (isDarkMode) {
         document.documentElement.classList.remove('light');
         document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+        document.documentElement.classList.add('light');
       }
     }
-  }, [config]);
+  }, [config, isDarkMode]);
 
   useEffect(() => {
     if (!carouselApi || displayPhotos.length === 0) {
@@ -67,7 +65,7 @@ export const EventFeedPage = () => {
     const handleSelect = () => {
       if (!carouselApi) return;
       const index = carouselApi.selectedScrollSnap();
-      
+
       // Loop back to middle section when reaching ends
       if (photos.length >= 5) {
         if (index < photos.length * 0.5) {
@@ -127,7 +125,7 @@ export const EventFeedPage = () => {
 
   if (configLoading) {
     return (
-      <div className="min-h-screen bg-gradient-dark flex items-center justify-center">
+      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
         <div className="text-center space-y-4">
           <Loader2 className="w-12 h-12 animate-spin mx-auto text-primary" />
           <p className="text-white text-lg">Loading event feed...</p>
@@ -138,7 +136,7 @@ export const EventFeedPage = () => {
 
   if (configError || !config) {
     return (
-      <div className="min-h-screen bg-gradient-dark flex items-center justify-center p-4">
+      <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-4">
         <div className="text-center space-y-6 max-w-md">
           <div className="w-24 h-24 rounded-full bg-red-500/20 mx-auto flex items-center justify-center">
             <span className="text-5xl">😕</span>
@@ -154,7 +152,7 @@ export const EventFeedPage = () => {
 
   if (!config.settings?.feedEnabled) {
     return (
-      <div className="min-h-screen bg-gradient-dark flex items-center justify-center p-4">
+      <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-4">
         <div className="text-center space-y-6 max-w-md">
           <h1 className="text-3xl font-bold text-white">Feed Not Available</h1>
           <p className="text-gray-400 text-lg">
@@ -168,24 +166,24 @@ export const EventFeedPage = () => {
   return (
     <div
       className={clsx(
-        'h-screen flex flex-col overflow-hidden transition-colors duration-500',
-        isDarkMode ? 'bg-gradient-dark' : 'bg-gradient-light'
+        "h-screen flex flex-col overflow-hidden transition-colors duration-500",
+        isDarkMode ? "bg-zinc-950" : "bg-slate-50"
       )}
     >
       {/* Header - Fixed height in vh */}
       <div
         className={clsx(
-          'h-[8vh] min-h-[50px] max-h-[80px] flex-shrink-0 border-b backdrop-blur-xl transition-colors duration-500',
+          "h-[8vh] min-h-[50px] max-h-[80px] flex-shrink-0 border-b backdrop-blur-xl transition-all duration-500",
           isDarkMode
-            ? 'border-white/10 bg-black/80'
-            : 'border-slate-200/70 bg-white/85 shadow-[0_10px_30px_-20px_rgba(15,23,42,0.35)]'
+            ? "border-white/10 bg-zinc-900/80"
+            : "border-slate-200 bg-white/80 shadow-sm"
         )}
       >
         <div className="h-full flex flex-col items-center justify-center px-4 sm:px-6 text-center">
           <h1
             className={clsx(
-              'text-lg sm:text-xl lg:text-2xl font-semibold tracking-[0.35em] uppercase truncate max-w-full transition-colors duration-300',
-              isDarkMode ? 'text-white/90' : 'text-slate-800/95'
+              "text-lg sm:text-xl lg:text-2xl font-semibold tracking-[0.35em] uppercase truncate max-w-full transition-colors duration-300",
+              isDarkMode ? "text-white/90" : "text-slate-900"
             )}
           >
             {config.title}
@@ -193,8 +191,8 @@ export const EventFeedPage = () => {
           {config.description && (
             <p
               className={clsx(
-                'mt-0.5 text-[9px] sm:text-[10px] uppercase tracking-[0.5em] truncate max-w-full transition-colors duration-300',
-                isDarkMode ? 'text-white/50' : 'text-slate-500/90'
+                "mt-0.5 text-[9px] sm:text-[10px] uppercase tracking-[0.5em] truncate max-w-full transition-colors duration-300",
+                isDarkMode ? "text-white/50" : "text-slate-500"
               )}
             >
               {config.description}
@@ -218,8 +216,8 @@ export const EventFeedPage = () => {
           <div className="flex items-center justify-center h-full">
             <div className="text-center">
               <div className="text-6xl mb-4">📸</div>
-              <p className="text-xl text-gray-400">No photos yet</p>
-              <p className="text-sm text-gray-500 mt-2">
+              <p className={clsx("text-xl", isDarkMode ? "text-zinc-400" : "text-slate-400")}>No photos yet</p>
+              <p className={clsx("text-sm mt-2", isDarkMode ? "text-zinc-500" : "text-slate-500")}>
                 Photos will appear here as guests take them
               </p>
             </div>
@@ -229,8 +227,8 @@ export const EventFeedPage = () => {
         {photos.length > 0 && (
           <div className="h-full w-full flex items-center justify-center">
             <Carousel
-              opts={{ 
-                align: 'center', 
+              opts={{
+                align: 'center',
                 loop: false,
                 skipSnaps: false,
                 dragFree: true,
@@ -252,18 +250,18 @@ export const EventFeedPage = () => {
                         {/* Main Photo Card - Centered and proportionally larger */}
                         <div
                           className={clsx(
-                            'relative w-full max-h-[55vh] aspect-[3/5] rounded-xl overflow-hidden border backdrop-blur-sm transition-colors duration-500',
+                            "relative w-full max-h-[55vh] aspect-[3/5] rounded-xl overflow-hidden border backdrop-blur-sm transition-all duration-500",
                             isDarkMode
-                              ? 'border-white/15 bg-black/85 shadow-[0_40px_120px_-40px_rgba(15,15,35,0.85)]'
-                              : 'border-slate-200 bg-white/95 shadow-[0_35px_120px_-45px_rgba(15,23,42,0.35)]'
+                              ? "border-white/10 bg-zinc-900/50 shadow-2xl"
+                              : "border-slate-200 bg-white/60 shadow-xl"
                           )}
                         >
                           <div
                             className={clsx(
-                              'absolute inset-0 pointer-events-none transition-colors duration-500',
+                              "absolute inset-0 pointer-events-none transition-colors duration-500",
                               isDarkMode
-                                ? 'bg-gradient-to-b from-white/5 via-transparent to-black/45'
-                                : 'bg-gradient-to-b from-white/60 via-transparent to-slate-900/15'
+                                ? "bg-gradient-to-b from-white/5 via-transparent to-black/45"
+                                : "bg-gradient-to-b from-white/40 via-transparent to-slate-900/5"
                             )}
                           />
                           <img
@@ -276,33 +274,33 @@ export const EventFeedPage = () => {
                         {/* QR Bar Below - Compact and responsive */}
                         <div
                           className={clsx(
-                            'relative w-full mt-3 sm:mt-4 rounded-[1.2rem] border backdrop-blur-md p-2.5 sm:p-3 lg:p-4 flex items-center justify-between gap-3 overflow-hidden transition-colors duration-500',
+                            "relative w-full mt-3 sm:mt-4 rounded-[1.2rem] border backdrop-blur-md p-2.5 sm:p-3 lg:p-4 flex items-center justify-between gap-3 overflow-hidden transition-all duration-500",
                             isDarkMode
-                              ? 'border-white/10 bg-white/5 shadow-[0_20px_60px_-30px_rgba(0,0,0,0.75)]'
-                              : 'border-slate-200 bg-white/90 shadow-[0_32px_90px_-40px_rgba(15,23,42,0.3)]'
+                              ? "border-white/10 bg-zinc-900/50 shadow-lg"
+                              : "border-slate-200 bg-white/80 shadow-md"
                           )}
                         >
                           <div className="flex-1 min-w-0">
                             <p
                               className={clsx(
-                                'text-[8px] sm:text-[9px] uppercase tracking-[0.4em] mb-0.5 transition-colors duration-300',
-                                isDarkMode ? 'text-white/60' : 'text-slate-500'
+                                "text-[8px] sm:text-[9px] uppercase tracking-[0.4em] mb-0.5 transition-colors duration-300",
+                                isDarkMode ? "text-white/60" : "text-slate-500"
                               )}
                             >
                               Share Code
                             </p>
                             <p
                               className={clsx(
-                                'text-sm sm:text-base lg:text-lg xl:text-xl font-mono tracking-[0.5em] truncate transition-colors duration-300',
-                                isDarkMode ? 'text-white drop-shadow-sm' : 'text-slate-800'
+                                "text-sm sm:text-base lg:text-lg xl:text-xl font-mono tracking-[0.5em] truncate drop-shadow-sm transition-colors duration-300",
+                                isDarkMode ? "text-white" : "text-slate-800"
                               )}
                             >
                               {photo.share_code}
                             </p>
                             <p
                               className={clsx(
-                                'text-[8px] sm:text-[9px] mt-1 transition-colors duration-300',
-                                isDarkMode ? 'text-white/70' : 'text-slate-500'
+                                "text-[8px] sm:text-[9px] mt-1 transition-colors duration-300",
+                                isDarkMode ? "text-white/70" : "text-slate-500"
                               )}
                             >
                               Escanea el QR
@@ -310,10 +308,10 @@ export const EventFeedPage = () => {
                           </div>
                           <div
                             className={clsx(
-                              'p-1.5 sm:p-2 lg:p-2.5 rounded-xl flex-shrink-0 border transition-colors duration-300',
+                              "p-1.5 sm:p-2 lg:p-2.5 rounded-xl flex-shrink-0 border transition-all duration-300",
                               isDarkMode
-                                ? 'bg-white/95 border-white/40 shadow-2xl'
-                                : 'bg-slate-900 border-slate-800 shadow-[0_18px_40px_-24px_rgba(15,23,42,0.45)]'
+                                ? "border-white/40 bg-white/95 shadow-xl"
+                                : "border-slate-200 bg-white shadow-sm"
                             )}
                           >
                             {downloadUrl ? (
@@ -349,26 +347,26 @@ export const EventFeedPage = () => {
       {photos.length > 0 && (
         <div
           className={clsx(
-            'h-[25vh] min-h-[200px] max-h-[280px] flex-shrink-0 w-full border-t backdrop-blur-2xl transition-colors duration-500',
+            "h-[25vh] min-h-[200px] max-h-[280px] flex-shrink-0 w-full border-t backdrop-blur-2xl transition-all duration-500",
             isDarkMode
-              ? 'border-white/10 bg-black/65'
-              : 'border-slate-200 bg-white/85 shadow-[0_-24px_80px_-50px_rgba(15,23,42,0.35)]'
+              ? "border-white/10 bg-zinc-950/90"
+              : "border-slate-200 bg-white/90 shadow-[0_-4px_20px_-4px_rgba(0,0,0,0.1)]"
           )}
         >
           <div className="h-full flex flex-col justify-center px-4 sm:px-6 py-4">
             <div className="flex items-center justify-between mb-3">
               <span
                 className={clsx(
-                  'text-[11px] sm:text-xs uppercase tracking-[0.5em] transition-colors duration-300',
-                  isDarkMode ? 'text-white/60' : 'text-slate-500'
+                  "text-[11px] sm:text-xs uppercase tracking-[0.5em] transition-colors duration-300",
+                  isDarkMode ? "text-white/60" : "text-slate-500"
                 )}
               >
                 Timeline
               </span>
               <div
                 className={clsx(
-                  'hidden sm:flex items-center gap-1.5 text-[10px] transition-colors duration-300',
-                  isDarkMode ? 'text-white/50' : 'text-slate-500'
+                  "hidden sm:flex items-center gap-1.5 text-[10px] transition-colors duration-300",
+                  isDarkMode ? "text-white/50" : "text-slate-500"
                 )}
               >
                 <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
@@ -378,18 +376,18 @@ export const EventFeedPage = () => {
             <div className="relative flex-1 min-h-0">
               <div
                 className={clsx(
-                  'pointer-events-none absolute inset-y-0 left-0 w-12 sm:w-16 z-10 transition-opacity duration-300',
+                  "pointer-events-none absolute inset-y-0 left-0 w-12 sm:w-16 z-10 transition-opacity duration-300",
                   isDarkMode
-                    ? 'bg-gradient-to-r from-black/90 via-black/65 to-transparent'
-                    : 'bg-gradient-to-r from-white via-white/70 to-transparent'
+                    ? "bg-gradient-to-r from-black/90 via-black/65 to-transparent"
+                    : "bg-gradient-to-r from-white via-white/70 to-transparent"
                 )}
               />
               <div
                 className={clsx(
-                  'pointer-events-none absolute inset-y-0 right-0 w-12 sm:w-16 z-10 transition-opacity duration-300',
+                  "pointer-events-none absolute inset-y-0 right-0 w-12 sm:w-16 z-10 transition-opacity duration-300",
                   isDarkMode
-                    ? 'bg-gradient-to-l from-black/90 via-black/65 to-transparent'
-                    : 'bg-gradient-to-l from-white via-white/70 to-transparent'
+                    ? "bg-gradient-to-l from-black/90 via-black/65 to-transparent"
+                    : "bg-gradient-to-l from-white via-white/70 to-transparent"
                 )}
               />
               <div
@@ -405,10 +403,10 @@ export const EventFeedPage = () => {
                   <div
                     key={`${photo.id ?? photo.share_code ?? index}-thumb-${index}`}
                     className={clsx(
-                      'flex-shrink-0 h-full aspect-[9/16] rounded-xl overflow-hidden border transition-all duration-300',
+                      "flex-shrink-0 h-full aspect-[9/16] rounded-xl overflow-hidden border transition-all duration-300",
                       isDarkMode
-                        ? 'border-white/10 bg-white/5 backdrop-blur md:hover:-translate-y-1 md:hover:shadow-[0_16px_40px_-24px_rgba(0,0,0,0.7)]'
-                        : 'border-slate-200 bg-white/95 shadow-[0_16px_45px_-30px_rgba(15,23,42,0.35)] md:hover:-translate-y-1 md:hover:shadow-[0_24px_60px_-38px_rgba(15,23,42,0.4)]'
+                        ? "border-white/10 bg-zinc-800/50 backdrop-blur md:hover:-translate-y-1 md:hover:shadow-[0_16px_40px_-24px_rgba(0,0,0,0.7)]"
+                        : "border-slate-200 bg-white shadow-sm md:hover:-translate-y-1 md:hover:shadow-lg"
                     )}
                   >
                     <img
@@ -436,8 +434,10 @@ export const EventFeedPage = () => {
       {photosLoading && photos.length > 0 && (
         <div
           className={clsx(
-            'absolute top-[11vh] right-4 flex items-center gap-2 text-xs px-3 py-1.5 rounded-full backdrop-blur-sm transition-colors duration-300',
-            isDarkMode ? 'text-gray-400 bg-black/50' : 'text-slate-600 bg-white/90 shadow-[0_12px_30px_-20px_rgba(15,23,42,0.35)]'
+            "absolute top-[11vh] right-4 flex items-center gap-2 text-xs px-3 py-1.5 rounded-full backdrop-blur-sm transition-colors duration-300",
+            isDarkMode
+              ? "text-gray-400 bg-black/50 border border-white/10"
+              : "text-slate-600 bg-white/90 border border-slate-200 shadow-sm"
           )}
         >
           <Loader2 className="w-3 h-3 animate-spin" />

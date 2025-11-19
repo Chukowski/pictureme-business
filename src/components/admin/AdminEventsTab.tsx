@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import {
   getUserEvents,
@@ -13,11 +13,15 @@ import {
   Calendar,
   Eye,
   EyeOff,
-  Image,
+  Image as ImageIcon,
   Pencil,
   Plus,
   Trash2,
   ExternalLink,
+  MoreHorizontal,
+  QrCode,
+  Settings,
+  Copy
 } from "lucide-react";
 import {
   AlertDialog,
@@ -31,6 +35,14 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface AdminEventsTabProps {
   currentUser: User;
@@ -94,13 +106,14 @@ export default function AdminEventsTab({ currentUser }: AdminEventsTabProps) {
 
   return (
     <>
-      {/* Create Event Button */}
-      <div className="mb-6">
+      {/* Header Actions */}
+      <div className="flex items-center justify-between mb-8">
+        <h2 className="text-xl font-semibold text-white">Your Events</h2>
         <Button
           onClick={() => navigate("/admin/events/create")}
-          size="lg"
+          className="bg-indigo-600 hover:bg-indigo-500 text-white border-0"
         >
-          <Plus className="w-5 h-5 mr-2" />
+          <Plus className="w-4 h-4 mr-2" />
           Create New Event
         </Button>
       </div>
@@ -109,71 +122,67 @@ export default function AdminEventsTab({ currentUser }: AdminEventsTabProps) {
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[1, 2, 3].map((i) => (
-            <Card key={i}>
-              <CardHeader>
-                <Skeleton className="h-6 w-3/4 mb-2" />
-                <Skeleton className="h-4 w-1/2" />
-              </CardHeader>
-              <CardContent>
-                <Skeleton className="h-20 w-full" />
-              </CardContent>
-            </Card>
+            <div key={i} className="rounded-3xl bg-zinc-900/50 border border-white/5 p-6 h-[300px] animate-pulse" />
           ))}
         </div>
       ) : events.length === 0 ? (
-        <Card className="text-center py-12">
-          <CardContent>
-            <div className="flex flex-col items-center gap-4">
-              <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center">
-                <Calendar className="w-8 h-8 text-primary" />
-              </div>
-              <div>
-                <h3 className="text-xl font-semibold mb-2">No events yet</h3>
-                <p className="text-muted-foreground mb-4">
-                  Create your first event to get started
-                </p>
-                <Button onClick={() => navigate("/admin/events/create")}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Create Event
-                </Button>
-              </div>
+        <div className="rounded-3xl bg-zinc-900/50 border border-white/5 p-12 text-center">
+          <div className="flex flex-col items-center gap-6 max-w-md mx-auto">
+            <div className="w-20 h-20 rounded-full bg-zinc-800/50 flex items-center justify-center border border-white/5">
+              <Calendar className="w-10 h-10 text-zinc-500" />
             </div>
-          </CardContent>
-        </Card>
+            <div>
+              <h3 className="text-xl font-semibold text-white mb-2">No events yet</h3>
+              <p className="text-zinc-400 mb-6">
+                Create your first event to start capturing photos and engaging with your audience.
+              </p>
+              <Button
+                onClick={() => navigate("/admin/events/create")}
+                className="bg-indigo-600 hover:bg-indigo-500 text-white"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Create Event
+              </Button>
+            </div>
+          </div>
+        </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {events.map((event) => (
-            <Card key={event._id} className="hover:border-primary/50 transition-colors">
-              <CardHeader>
-                <div className="flex items-start justify-between mb-2">
-                  <CardTitle className="text-xl">{event.title}</CardTitle>
-                  <Badge variant={event.is_active ? "default" : "secondary"}>
-                    {event.is_active ? (
-                      <>
-                        <Eye className="w-3 h-3 mr-1" />
-                        Active
-                      </>
-                    ) : (
-                      <>
-                        <EyeOff className="w-3 h-3 mr-1" />
-                        Inactive
-                      </>
-                    )}
+            <div
+              key={event._id}
+              className="group relative rounded-3xl bg-zinc-900/50 backdrop-blur-sm border border-white/10 hover:border-indigo-500/30 transition-all hover:-translate-y-1 overflow-hidden flex flex-col"
+            >
+              {/* Card Header */}
+              <div className="p-6 pb-4">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex-1 mr-4">
+                    <h3 className="text-lg font-bold text-white mb-1 line-clamp-1" title={event.title}>
+                      {event.title}
+                    </h3>
+                    <p className="text-sm text-zinc-400 line-clamp-1">
+                      {event.description || "No description"}
+                    </p>
+                  </div>
+                  <Badge
+                    variant="outline"
+                    className={event.is_active
+                      ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                      : "bg-zinc-500/10 text-zinc-400 border-zinc-500/20"
+                    }
+                  >
+                    {event.is_active ? "Active" : "Inactive"}
                   </Badge>
                 </div>
-                <CardDescription>
-                  {event.description || "No description"}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {/* Stats */}
-                <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                  <div className="flex items-center gap-1">
-                    <Image className="w-4 h-4" />
+
+                {/* Stats Grid */}
+                <div className="grid grid-cols-2 gap-4 py-4 border-t border-white/5 border-b mb-4">
+                  <div className="flex items-center gap-2 text-sm text-zinc-400">
+                    <ImageIcon className="w-4 h-4 text-indigo-400" />
                     <span>{event.templates?.length || 0} templates</span>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <Calendar className="w-4 h-4" />
+                  <div className="flex items-center gap-2 text-sm text-zinc-400">
+                    <Calendar className="w-4 h-4 text-indigo-400" />
                     <span>
                       {event.start_date
                         ? new Date(event.start_date).toLocaleDateString()
@@ -182,85 +191,129 @@ export default function AdminEventsTab({ currentUser }: AdminEventsTabProps) {
                   </div>
                 </div>
 
-                {/* Event URL */}
-                <div className="p-3 rounded-lg bg-muted/50 space-y-2">
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-1">Event URL:</p>
-                    <code className="text-xs text-primary break-all">
-                      /{currentUser?.slug}/{event.slug}
-                    </code>
+                {/* Quick Links */}
+                <div className="space-y-2 mb-2">
+                  <div className="flex items-center justify-between text-xs p-2 rounded-lg bg-black/40 border border-white/5">
+                    <span className="text-zinc-500">Event URL</span>
+                    <div className="flex items-center gap-2">
+                      <code className="text-xs text-indigo-400 max-w-[120px] truncate">
+                        /{currentUser?.slug}/{event.slug}
+                      </code>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => {
+                            const url = `${window.location.origin}/${currentUser?.slug}/${event.slug}`;
+                            navigator.clipboard.writeText(url);
+                            toast.success("Event URL copied to clipboard");
+                          }}
+                          className="text-zinc-400 hover:text-white transition-colors p-1 hover:bg-white/10 rounded"
+                          title="Copy Link"
+                        >
+                          <Copy className="w-3 h-3" />
+                        </button>
+                        <button
+                          onClick={() => handleViewEvent(event)}
+                          className="text-zinc-400 hover:text-white transition-colors p-1 hover:bg-white/10 rounded"
+                          title="Open Link"
+                        >
+                          <ExternalLink className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-1">Feed URL:</p>
-                    <code className="text-xs text-primary break-all">
-                      /{currentUser?.slug}/{event.slug}/feed
-                    </code>
+                  <div className="flex items-center justify-between text-xs p-2 rounded-lg bg-black/40 border border-white/5">
+                    <span className="text-zinc-500">Feed URL</span>
+                    <div className="flex items-center gap-2">
+                      <code className="text-xs text-indigo-400 max-w-[120px] truncate">
+                        /{currentUser?.slug}/{event.slug}/feed
+                      </code>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => {
+                            const url = `${window.location.origin}/${currentUser?.slug}/${event.slug}/feed`;
+                            navigator.clipboard.writeText(url);
+                            toast.success("Feed URL copied to clipboard");
+                          }}
+                          className="text-zinc-400 hover:text-white transition-colors p-1 hover:bg-white/10 rounded"
+                          title="Copy Link"
+                        >
+                          <Copy className="w-3 h-3" />
+                        </button>
+                        <button
+                          onClick={() => handleViewFeed(event)}
+                          className="text-zinc-400 hover:text-white transition-colors p-1 hover:bg-white/10 rounded"
+                          title="Open Link"
+                        >
+                          <ExternalLink className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
+              </div>
 
-                {/* Actions */}
-                <div className="grid grid-cols-3 gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleViewEvent(event)}
-                  >
-                    <ExternalLink className="w-4 h-4 mr-1" />
-                    Event
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleViewFeed(event)}
-                  >
-                    <ExternalLink className="w-4 h-4 mr-1" />
-                    Feed
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => navigate(`/admin/events/edit/${event._id}`)}
-                  >
-                    <Pencil className="w-4 h-4 mr-1" />
-                    Edit
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => navigate(`/admin/events/${event._id}/photos`)}
-                  >
-                    <Image className="w-4 h-4 mr-1" />
-                    Photos
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleDeleteClick(event)}
-                    className="col-span-2"
-                  >
-                    <Trash2 className="w-4 h-4 mr-1" />
-                    Delete
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+              {/* Card Footer / Actions */}
+              <div className="mt-auto p-4 bg-white/5 border-t border-white/5 grid grid-cols-2 gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => navigate(`/admin/events/edit/${event._id}`)}
+                  className="text-zinc-300 hover:text-white hover:bg-white/10"
+                >
+                  <Settings className="w-4 h-4 mr-2" />
+                  Edit
+                </Button>
+
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-zinc-300 hover:text-white hover:bg-white/10"
+                    >
+                      <MoreHorizontal className="w-4 h-4 mr-2" />
+                      More
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="bg-zinc-900 border-white/10 text-zinc-200">
+                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                    <DropdownMenuItem onClick={() => handleViewEvent(event)} className="focus:bg-white/10 focus:text-white cursor-pointer">
+                      <ExternalLink className="w-4 h-4 mr-2" /> View Event
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleViewFeed(event)} className="focus:bg-white/10 focus:text-white cursor-pointer">
+                      <ImageIcon className="w-4 h-4 mr-2" /> View Feed
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate(`/admin/events/${event._id}/photos`)} className="focus:bg-white/10 focus:text-white cursor-pointer">
+                      <ImageIcon className="w-4 h-4 mr-2" /> Manage Photos
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator className="bg-white/10" />
+                    <DropdownMenuItem
+                      onClick={() => handleDeleteClick(event)}
+                      className="text-red-400 focus:text-red-300 focus:bg-red-500/10 cursor-pointer"
+                    >
+                      <Trash2 className="w-4 h-4 mr-2" /> Delete Event
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </div>
           ))}
         </div>
       )}
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
+        <AlertDialogContent className="bg-zinc-900 border-white/10 text-white">
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Event?</AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogDescription className="text-zinc-400">
               Are you sure you want to delete "{eventToDelete?.title}"? This action
               cannot be undone and will delete all associated photos.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteConfirm} className="bg-destructive">
+            <AlertDialogCancel className="bg-transparent border-white/10 text-white hover:bg-white/5 hover:text-white">Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteConfirm} className="bg-red-600 hover:bg-red-700 text-white border-0">
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -269,4 +322,3 @@ export default function AdminEventsTab({ currentUser }: AdminEventsTabProps) {
     </>
   );
 }
-

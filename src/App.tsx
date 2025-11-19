@@ -7,6 +7,7 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
 import { SidebarProvider, SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import Index from "./pages/Index";
+import LandingPage from "./pages/LandingPage";
 import { SharePage } from "./pages/SharePage";
 import { PhotoBoothPage } from "./pages/PhotoBoothPage";
 import { EventFeedPage } from "./pages/EventFeedPage";
@@ -38,12 +39,12 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
-            {/* Root redirects to admin auth */}
-            <Route path="/" element={<Navigate to="/admin/auth" replace />} />
-            
+            {/* Root shows Landing Page */}
+            <Route path="/" element={<LandingPage />} />
+
             {/* Share page - no sidebar, clean display */}
             <Route path="/share/:shareCode" element={<SharePage />} />
-            
+
             {/* Admin routes - no sidebar */}
             <Route path="/admin/auth" element={<AdminAuth />} />
             <Route path="/admin/register" element={<AdminRegister />} />
@@ -52,14 +53,14 @@ const App = () => (
             <Route path="/admin/events/create" element={<AdminEventForm />} />
             <Route path="/admin/events/edit/:eventId" element={<AdminEventForm />} />
             <Route path="/admin/events/:eventId/photos" element={<AdminEventPhotos />} />
-            
+
             {/* Dynamic event routes - no sidebar */}
             <Route path="/:userSlug/:eventSlug" element={<PhotoBoothPage />} />
             <Route path="/:userSlug/:eventSlug/feed" element={<EventFeedPage />} />
-            
+
             {/* Legacy Index page (if needed) */}
             <Route path="/legacy" element={<Index />} />
-            
+
             {/* 404 */}
             <Route path="*" element={<NotFound />} />
           </Routes>

@@ -3,10 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { loginUser } from "@/services/eventsApi";
-import { Camera, Sparkles } from "lucide-react";
+import { Sparkles, ArrowRight, Lock, User } from "lucide-react";
 
 export default function AdminAuth() {
   const navigate = useNavigate();
@@ -34,29 +33,28 @@ export default function AdminAuth() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-dark flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen bg-black text-white flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Background Effects */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-indigo-900/20 rounded-full blur-[100px] -z-10" />
+      <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-white/5 via-black/0 to-black/0 -z-10" />
+
+      <div className="w-full max-w-md relative z-10">
         {/* Header */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/20 mb-4">
-            <Camera className="w-8 h-8 text-primary" />
+        <div className="text-center mb-10">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 shadow-lg shadow-indigo-500/20 mb-6">
+            <Sparkles className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-3xl font-bold text-white mb-2">Akitá AI Photo Booth</h1>
-          <p className="text-muted-foreground">Admin Dashboard</p>
+          <h1 className="text-3xl font-bold tracking-tight mb-2">Welcome back</h1>
+          <p className="text-zinc-400">Sign in to manage your events</p>
         </div>
 
         {/* Login Card */}
-        <Card>
-          <form onSubmit={handleLogin}>
-            <CardHeader>
-              <CardTitle>Welcome back</CardTitle>
-              <CardDescription>
-                Sign in to manage your photo booth events
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="login-username">Username</Label>
+        <div className="rounded-3xl bg-zinc-900/50 backdrop-blur-xl border border-white/10 p-8 shadow-2xl">
+          <form onSubmit={handleLogin} className="space-y-6">
+            <div className="space-y-2">
+              <Label htmlFor="login-username" className="text-zinc-300">Username</Label>
+              <div className="relative">
+                <User className="absolute left-3 top-3 w-5 h-5 text-zinc-500" />
                 <Input
                   id="login-username"
                   type="text"
@@ -67,10 +65,18 @@ export default function AdminAuth() {
                   }
                   required
                   disabled={isLoading}
+                  className="bg-black/50 border-white/10 text-white pl-10 h-12 focus:border-indigo-500 focus:ring-indigo-500/20"
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="login-password">Password</Label>
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="login-password" className="text-zinc-300">Password</Label>
+                <a href="#" className="text-xs text-indigo-400 hover:text-indigo-300">Forgot password?</a>
+              </div>
+              <div className="relative">
+                <Lock className="absolute left-3 top-3 w-5 h-5 text-zinc-500" />
                 <Input
                   id="login-password"
                   type="password"
@@ -81,26 +87,34 @@ export default function AdminAuth() {
                   }
                   required
                   disabled={isLoading}
+                  className="bg-black/50 border-white/10 text-white pl-10 h-12 focus:border-indigo-500 focus:ring-indigo-500/20"
                 />
               </div>
-            </CardContent>
-            <CardFooter>
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={isLoading}
-              >
-                {isLoading ? "Signing in..." : "Sign in"}
-              </Button>
-            </CardFooter>
+            </div>
+
+            <Button
+              type="submit"
+              className="w-full h-12 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl transition-all hover:scale-[1.02]"
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                "Signing in..."
+              ) : (
+                <span className="flex items-center gap-2">
+                  Sign in <ArrowRight className="w-4 h-4" />
+                </span>
+              )}
+            </Button>
           </form>
-        </Card>
+        </div>
 
         {/* Footer */}
-        <div className="mt-6 text-center">
-          <p className="text-sm text-muted-foreground flex items-center justify-center gap-2">
-            <Sparkles className="w-4 h-4" />
-            Powered by AI & Akitá (akitapr.com)
+        <div className="mt-8 text-center">
+          <p className="text-sm text-zinc-500">
+            Don't have an account?{" "}
+            <button onClick={() => navigate("/admin/register")} className="text-indigo-400 hover:text-indigo-300 font-medium transition-colors">
+              Start free trial
+            </button>
           </p>
         </div>
       </div>
