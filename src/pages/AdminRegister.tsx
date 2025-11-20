@@ -66,7 +66,9 @@ export default function AdminRegister() {
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 shadow-lg shadow-indigo-500/20 mb-6">
             <Sparkles className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-3xl font-bold tracking-tight mb-2">Create Account</h1>
+          <h1 className="text-3xl font-bold tracking-tight mb-2">
+            {["event-pro", "masters"].includes(plan || "") ? "Application Required" : "Create Account"}
+          </h1>
           <p className="text-zinc-400">
             {plan ? (
               <span className="flex items-center justify-center gap-2">
@@ -80,76 +82,59 @@ export default function AdminRegister() {
 
         {/* Register Card */}
         <div className="rounded-3xl bg-zinc-900/50 backdrop-blur-xl border border-white/10 p-8 shadow-2xl">
-          <form onSubmit={handleRegister} className="space-y-5">
-
-            <div className="space-y-2">
-              <Label htmlFor="register-fullname" className="text-zinc-300">Full Name</Label>
-              <div className="relative">
-                <User className="absolute left-3 top-3 w-5 h-5 text-zinc-500" />
-                <Input
-                  id="register-fullname"
-                  type="text"
-                  placeholder="John Doe"
-                  value={registerData.fullName}
-                  onChange={(e) =>
-                    setRegisterData({ ...registerData, fullName: e.target.value })
-                  }
-                  disabled={isLoading}
-                  className="bg-black/50 border-white/10 text-white pl-10 h-12 focus:border-indigo-500 focus:ring-indigo-500/20"
-                />
+          {["event-pro", "masters"].includes(plan || "") ? (
+            <div className="text-center space-y-6">
+              <div className="p-4 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-200 text-sm">
+                <p>
+                  Business tiers ({plan?.replace("-", " ")}) require a manual application process to ensure quality and hardware compatibility.
+                </p>
               </div>
+              <Button
+                onClick={() => navigate(`/apply?tier=${plan}`)}
+                className="w-full h-12 bg-white text-black hover:bg-zinc-200 font-semibold rounded-xl transition-all hover:scale-[1.02]"
+              >
+                Apply as Partner <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={() => navigate("/admin/register")}
+                className="text-zinc-400 hover:text-white"
+              >
+                Register for Individual Plan
+              </Button>
             </div>
+          ) : (
+            <form onSubmit={handleRegister} className="space-y-5">
 
-            <div className="space-y-2">
-              <Label htmlFor="register-username" className="text-zinc-300">Username</Label>
-              <div className="relative">
-                <User className="absolute left-3 top-3 w-5 h-5 text-zinc-500" />
-                <Input
-                  id="register-username"
-                  type="text"
-                  placeholder="Choose a username"
-                  value={registerData.username}
-                  onChange={(e) =>
-                    setRegisterData({ ...registerData, username: e.target.value })
-                  }
-                  required
-                  disabled={isLoading}
-                  className="bg-black/50 border-white/10 text-white pl-10 h-12 focus:border-indigo-500 focus:ring-indigo-500/20"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="register-email" className="text-zinc-300">Email</Label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-3 w-5 h-5 text-zinc-500" />
-                <Input
-                  id="register-email"
-                  type="email"
-                  placeholder="your.email@example.com"
-                  value={registerData.email}
-                  onChange={(e) =>
-                    setRegisterData({ ...registerData, email: e.target.value })
-                  }
-                  required
-                  disabled={isLoading}
-                  className="bg-black/50 border-white/10 text-white pl-10 h-12 focus:border-indigo-500 focus:ring-indigo-500/20"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="register-password" className="text-zinc-300">Password</Label>
+                <Label htmlFor="register-fullname" className="text-zinc-300">Full Name</Label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-3 w-5 h-5 text-zinc-500" />
+                  <User className="absolute left-3 top-3 w-5 h-5 text-zinc-500" />
                   <Input
-                    id="register-password"
-                    type="password"
-                    placeholder="******"
-                    value={registerData.password}
+                    id="register-fullname"
+                    type="text"
+                    placeholder="John Doe"
+                    value={registerData.fullName}
                     onChange={(e) =>
-                      setRegisterData({ ...registerData, password: e.target.value })
+                      setRegisterData({ ...registerData, fullName: e.target.value })
+                    }
+                    disabled={isLoading}
+                    className="bg-black/50 border-white/10 text-white pl-10 h-12 focus:border-indigo-500 focus:ring-indigo-500/20"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="register-username" className="text-zinc-300">Username</Label>
+                <div className="relative">
+                  <User className="absolute left-3 top-3 w-5 h-5 text-zinc-500" />
+                  <Input
+                    id="register-username"
+                    type="text"
+                    placeholder="Choose a username"
+                    value={registerData.username}
+                    onChange={(e) =>
+                      setRegisterData({ ...registerData, username: e.target.value })
                     }
                     required
                     disabled={isLoading}
@@ -157,20 +142,18 @@ export default function AdminRegister() {
                   />
                 </div>
               </div>
+
               <div className="space-y-2">
-                <Label htmlFor="register-confirm-password" className="text-zinc-300">Confirm</Label>
+                <Label htmlFor="register-email" className="text-zinc-300">Email</Label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-3 w-5 h-5 text-zinc-500" />
+                  <Mail className="absolute left-3 top-3 w-5 h-5 text-zinc-500" />
                   <Input
-                    id="register-confirm-password"
-                    type="password"
-                    placeholder="******"
-                    value={registerData.confirmPassword}
+                    id="register-email"
+                    type="email"
+                    placeholder="your.email@example.com"
+                    value={registerData.email}
                     onChange={(e) =>
-                      setRegisterData({
-                        ...registerData,
-                        confirmPassword: e.target.value,
-                      })
+                      setRegisterData({ ...registerData, email: e.target.value })
                     }
                     required
                     disabled={isLoading}
@@ -178,22 +161,64 @@ export default function AdminRegister() {
                   />
                 </div>
               </div>
-            </div>
 
-            <Button
-              type="submit"
-              className="w-full h-12 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl transition-all hover:scale-[1.02] mt-2"
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                "Creating account..."
-              ) : (
-                <span className="flex items-center gap-2">
-                  Create Account <ArrowRight className="w-4 h-4" />
-                </span>
-              )}
-            </Button>
-          </form>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="register-password" className="text-zinc-300">Password</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-3 w-5 h-5 text-zinc-500" />
+                    <Input
+                      id="register-password"
+                      type="password"
+                      placeholder="******"
+                      value={registerData.password}
+                      onChange={(e) =>
+                        setRegisterData({ ...registerData, password: e.target.value })
+                      }
+                      required
+                      disabled={isLoading}
+                      className="bg-black/50 border-white/10 text-white pl-10 h-12 focus:border-indigo-500 focus:ring-indigo-500/20"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="register-confirm-password" className="text-zinc-300">Confirm</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-3 w-5 h-5 text-zinc-500" />
+                    <Input
+                      id="register-confirm-password"
+                      type="password"
+                      placeholder="******"
+                      value={registerData.confirmPassword}
+                      onChange={(e) =>
+                        setRegisterData({
+                          ...registerData,
+                          confirmPassword: e.target.value,
+                        })
+                      }
+                      required
+                      disabled={isLoading}
+                      className="bg-black/50 border-white/10 text-white pl-10 h-12 focus:border-indigo-500 focus:ring-indigo-500/20"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <Button
+                type="submit"
+                className="w-full h-12 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl transition-all hover:scale-[1.02] mt-2"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  "Creating account..."
+                ) : (
+                  <span className="flex items-center gap-2">
+                    Create Account <ArrowRight className="w-4 h-4" />
+                  </span>
+                )}
+              </Button>
+            </form>
+          )}
         </div>
 
         {/* Footer */}

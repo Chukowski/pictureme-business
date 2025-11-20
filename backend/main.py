@@ -95,6 +95,17 @@ class UserCreate(BaseModel):
     email: EmailStr
     password: str
     full_name: Optional[str] = None
+    role: Optional[str] = "individual"
+
+class EnterpriseApplicationCreate(BaseModel):
+    full_name: str
+    company_name: Optional[str] = None
+    email: EmailStr
+    location: Optional[str] = None
+    event_types: List[str] = []
+    monthly_events: Optional[str] = None
+    hardware: List[str] = []
+    tier: str
 
 class UserLogin(BaseModel):
     username: str
@@ -189,7 +200,7 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
     async with db_pool.acquire() as conn:
         # Try to fetch user by id (supports both UUID and legacy int)
         user = await conn.fetchrow(
-            "SELECT id, username, email, full_name, slug FROM users WHERE id::text = $1 AND is_active = TRUE",
+            "SELECT id, username, email, full_name, slug, role FROM users WHERE id::text = $1 AND is_active = TRUE",
             str(user_id)
         )
     
@@ -242,11 +253,11 @@ async def register(user: UserCreate):
         hashed_pw = hash_password(user.password)
         new_user = await conn.fetchrow(
             """
-            INSERT INTO users (username, email, password_hash, full_name, slug)
-            VALUES ($1, $2, $3, $4, $5)
-            RETURNING id, username, email, full_name, slug
+            INSERT INTO users (username, email, password_hash, full_name, slug, role)
+            VALUES ($1, $2, $3, $4, $5, $6)
+            RETURNING id, username, email, full_name, slug, role
             """,
-            user.username, user.email, hashed_pw, user.full_name, slug
+            user.username, user.email, hashed_pw, user.full_name, slug, user.role or 'individual'
         )
     
     # Create token
@@ -265,7 +276,7 @@ async def register(user: UserCreate):
 async def login(credentials: UserLogin):
     async with db_pool.acquire() as conn:
         user = await conn.fetchrow(
-            "SELECT id, username, email, full_name, slug, password_hash FROM users WHERE username = $1 AND is_active = TRUE",
+            "SELECT id, username, email, full_name, slug, role, password_hash FROM users WHERE username = $1 AND is_active = TRUE",
             credentials.username
         )
     
@@ -292,6 +303,41 @@ async def login(credentials: UserLogin):
 @app.get("/api/auth/me")
 async def get_me(current_user: dict = Depends(get_current_user)):
     return current_user
+
+@app.post("/api/enterprise/applications")
+async def submit_application(application: EnterpriseApplicationCreate):
+    async with db_pool.acquire() as conn:
+        # Check if email already has an application
+        existing = await conn.fetchrow(
+            "SELECT id FROM enterprise_applications WHERE email = $1 AND status = 'pending'",
+            application.email
+        )
+        if existing:
+            raise HTTPException(status_code=400, detail="An application with this email is already pending")
+        
+        # Insert application
+        new_app = await conn.fetchrow(
+            """
+            INSERT INTO enterprise_applications 
+            (full_name, company_name, email, location, event_types, monthly_events, hardware, tier)
+            VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7::jsonb, $8)
+            RETURNING id
+            """,
+            application.full_name,
+            application.company_name,
+            application.email,
+            application.location,
+            json.dumps(application.event_types),
+            application.monthly_events,
+            json.dumps(application.hardware),
+            application.tier
+        )
+        
+        # If user exists with this email, update their role to business_pending? 
+        # Or just leave it as is until admin approves.
+        # For now, we just store the application.
+        
+    return {"message": "Application submitted successfully", "id": new_app["id"]}
 
 # ===== Media Library Endpoints =====
 

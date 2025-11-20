@@ -20,6 +20,7 @@ export interface User {
   email: string;
   full_name?: string;
   slug: string;
+  role?: 'individual' | 'business_pending' | 'business_eventpro' | 'business_masters' | 'superadmin';
 }
 
 export interface WatermarkConfig {
@@ -102,7 +103,7 @@ export interface PhotoFeed {
  */
 export async function getEventConfig(userSlug: string, eventSlug: string): Promise<EventConfig> {
   const response = await fetch(`${API_URL}/api/events/${userSlug}/${eventSlug}`);
-  
+
   if (!response.ok) {
     if (response.status === 404) {
       throw new Error('Event not found');
@@ -122,7 +123,7 @@ export async function getEventConfig(userSlug: string, eventSlug: string): Promi
  */
 export async function getEventPhotos(userSlug: string, eventSlug: string, limit: number = 20, offset: number = 0): Promise<PhotoFeed[]> {
   const response = await fetch(`${API_URL}/api/events/${userSlug}/${eventSlug}/photos?limit=${limit}&offset=${offset}`);
-  
+
   if (!response.ok) {
     throw new Error(`Failed to load photos: ${response.statusText}`);
   }
@@ -150,18 +151,18 @@ export async function loginUser(username: string, password: string): Promise<{ t
     },
     body: JSON.stringify({ username, password }),
   });
-  
+
   if (!response.ok) {
     const error = await response.json().catch(() => ({ detail: 'Login failed' }));
     throw new Error(error.detail || 'Invalid credentials');
   }
-  
+
   const data = await response.json();
-  
+
   // Store token in localStorage
   localStorage.setItem('auth_token', data.access_token);
   localStorage.setItem('current_user', JSON.stringify(data.user));
-  
+
   return {
     token: data.access_token,
     user: data.user,
@@ -189,18 +190,18 @@ export async function registerUser(
       full_name: fullName,
     }),
   });
-  
+
   if (!response.ok) {
     const error = await response.json().catch(() => ({ detail: 'Registration failed' }));
     throw new Error(error.detail || 'Registration failed');
   }
-  
+
   const data = await response.json();
-  
+
   // Store token in localStorage
   localStorage.setItem('auth_token', data.access_token);
   localStorage.setItem('current_user', JSON.stringify(data.user));
-  
+
   return {
     token: data.access_token,
     user: data.user,
@@ -213,7 +214,7 @@ export async function registerUser(
 export function getCurrentUser(): User | null {
   const userStr = localStorage.getItem('current_user');
   if (!userStr) return null;
-  
+
   try {
     return JSON.parse(userStr);
   } catch {
@@ -250,16 +251,16 @@ export async function createEvent(eventData: {
   is_active?: boolean;
 }): Promise<EventConfig> {
   const token = getAuthToken();
-  
+
   console.log('🔐 Creating event...');
   console.log('   Token exists:', !!token);
   console.log('   API URL:', API_URL);
   console.log('   Full URL:', `${API_URL}/api/events`);
-  
+
   if (!token) {
     throw new Error('Not authenticated - please login again');
   }
-  
+
   const response = await fetch(`${API_URL}/api/events`, {
     method: 'POST',
     headers: {
@@ -268,18 +269,18 @@ export async function createEvent(eventData: {
     },
     body: JSON.stringify(eventData),
   });
-  
+
   console.log('   Response status:', response.status);
-  
+
   if (!response.ok) {
     const error = await response.json().catch(() => ({ detail: 'Failed to create event' }));
     console.error('   Error:', error);
     throw new Error(error.detail || 'Failed to create event');
   }
-  
+
   const result = await response.json();
   console.log('✅ Event created:', result._id);
-  
+
   return result;
 }
 
@@ -291,17 +292,17 @@ export async function getUserEvents(): Promise<EventConfig[]> {
   if (!token) {
     throw new Error('Not authenticated');
   }
-  
+
   const response = await fetch(`${API_URL}/api/events`, {
     headers: {
       'Authorization': `Bearer ${token}`,
     },
   });
-  
+
   if (!response.ok) {
     throw new Error(`Failed to load events: ${response.statusText}`);
   }
-  
+
   return await response.json();
 }
 
@@ -313,7 +314,7 @@ export async function updateEvent(eventId: string, eventData: Partial<EventConfi
   if (!token) {
     throw new Error('Not authenticated');
   }
-  
+
   const response = await fetch(`${API_URL}/api/events/${eventId}`, {
     method: 'PUT',
     headers: {
@@ -322,12 +323,12 @@ export async function updateEvent(eventId: string, eventData: Partial<EventConfi
     },
     body: JSON.stringify(eventData),
   });
-  
+
   if (!response.ok) {
     const error = await response.json().catch(() => ({ detail: 'Failed to update event' }));
     throw new Error(error.detail || 'Failed to update event');
   }
-  
+
   return await response.json();
 }
 
@@ -339,14 +340,14 @@ export async function deleteEvent(eventId: string): Promise<void> {
   if (!token) {
     throw new Error('Not authenticated');
   }
-  
+
   const response = await fetch(`${API_URL}/api/events/${eventId}`, {
     method: 'DELETE',
     headers: {
       'Authorization': `Bearer ${token}`,
     },
   });
-  
+
   if (!response.ok) {
     const error = await response.json().catch(() => ({ detail: 'Failed to delete event' }));
     throw new Error(error.detail || 'Failed to delete event');
@@ -369,7 +370,7 @@ export async function uploadPhotoToEvent(
   if (!token) {
     throw new Error('Not authenticated');
   }
-  
+
   const response = await fetch(`${API_URL}/api/photos/upload`, {
     method: 'POST',
     headers: {
@@ -386,12 +387,12 @@ export async function uploadPhotoToEvent(
       meta,
     }),
   });
-  
+
   if (!response.ok) {
     const error = await response.json().catch(() => ({ detail: 'Upload failed' }));
     throw new Error(error.detail || 'Failed to upload photo');
   }
-  
+
   return await response.json();
 }
 

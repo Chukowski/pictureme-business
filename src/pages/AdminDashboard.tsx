@@ -1,19 +1,19 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { getCurrentUser, logoutUser } from "@/services/eventsApi";
-import { LayoutDashboard, FolderKanban, BarChart3, LogOut, User, Sparkles } from "lucide-react";
-import { DarkModeToggle } from "@/components/DarkModeToggle";
-import AdminEventsTab from "@/components/admin/AdminEventsTab";
-import AdminAnalyticsTab from "@/components/admin/AdminAnalyticsTab";
+import { LogOut, User, Sparkles, Clock, ShieldAlert } from "lucide-react";
+import IndividualDashboard from "@/components/dashboard/IndividualDashboard";
+import BusinessDashboard from "@/components/dashboard/BusinessDashboard";
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const currentUser = useMemo(() => getCurrentUser(), []);
-  const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "events");
+
+  // Default to individual if no role specified (backward compatibility)
+  const userRole = currentUser?.role || 'individual';
 
   useEffect(() => {
     if (!currentUser) {
@@ -21,18 +21,6 @@ export default function AdminDashboard() {
       return;
     }
   }, [currentUser, navigate]);
-
-  useEffect(() => {
-    const tab = searchParams.get("tab");
-    if (tab && ["events", "analytics"].includes(tab)) {
-      setActiveTab(tab);
-    }
-  }, [searchParams]);
-
-  const handleTabChange = (value: string) => {
-    setActiveTab(value);
-    setSearchParams({ tab: value });
-  };
 
   const handleLogout = () => {
     logoutUser();
@@ -42,6 +30,35 @@ export default function AdminDashboard() {
 
   if (!currentUser) {
     return null;
+  }
+
+  // Pending Business Application View
+  if (userRole === 'business_pending') {
+    return (
+      <div className="min-h-screen bg-black text-white flex items-center justify-center p-4 relative overflow-hidden">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-indigo-900/20 rounded-full blur-[100px] -z-10" />
+
+        <div className="max-w-md w-full bg-zinc-900/50 backdrop-blur-xl border border-white/10 rounded-3xl p-8 text-center shadow-2xl">
+          <div className="w-20 h-20 bg-yellow-500/10 rounded-full flex items-center justify-center mx-auto mb-6">
+            <Clock className="w-10 h-10 text-yellow-400" />
+          </div>
+          <h2 className="text-2xl font-bold mb-4">Application Under Review</h2>
+          <p className="text-zinc-400 mb-8">
+            Your application for a Business tier is currently being reviewed by our team. You will receive an email update at <span className="text-white">{currentUser.email}</span> once approved.
+          </p>
+          <div className="flex flex-col gap-3">
+            <Button
+              variant="outline"
+              onClick={handleLogout}
+              className="w-full border-white/10 hover:bg-white/5 text-white"
+            >
+              <LogOut className="w-4 h-4 mr-2" />
+              Logout
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -56,12 +73,16 @@ export default function AdminDashboard() {
           <div>
             <div className="flex items-center gap-3 mb-2">
               <div className="p-2 rounded-xl bg-indigo-500/10 border border-indigo-500/20">
-                <LayoutDashboard className="w-6 h-6 text-indigo-400" />
+                <Sparkles className="w-6 h-6 text-indigo-400" />
               </div>
-              <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
+              <h1 className="text-3xl font-bold tracking-tight">
+                {userRole === 'individual' ? 'My Studio' : 'Business Dashboard'}
+              </h1>
             </div>
             <p className="text-zinc-400 ml-1">
-              Manage your photo booth events and view performance
+              {userRole === 'individual'
+                ? 'Manage your personal photo booth and templates'
+                : 'Manage your events, analytics, and business settings'}
             </p>
           </div>
 
@@ -74,7 +95,9 @@ export default function AdminDashboard() {
                 <span className="text-sm font-medium text-white leading-none">
                   {currentUser?.full_name || currentUser?.username}
                 </span>
-                <span className="text-xs text-zinc-500 leading-none mt-1">Administrator</span>
+                <span className="text-xs text-zinc-500 leading-none mt-1 capitalize">
+                  {userRole.replace('_', ' ')}
+                </span>
               </div>
             </div>
 
@@ -89,33 +112,12 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* Tabs Navigation */}
-        <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full space-y-8">
-          <TabsList className="inline-flex h-auto p-1 bg-zinc-900/50 backdrop-blur-xl border border-white/10 rounded-2xl">
-            <TabsTrigger
-              value="events"
-              className="flex items-center gap-2 px-6 py-3 rounded-xl data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-zinc-400 transition-all"
-            >
-              <FolderKanban className="w-4 h-4" />
-              <span>Events Management</span>
-            </TabsTrigger>
-            <TabsTrigger
-              value="analytics"
-              className="flex items-center gap-2 px-6 py-3 rounded-xl data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-zinc-400 transition-all"
-            >
-              <BarChart3 className="w-4 h-4" />
-              <span>Analytics</span>
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="events" className="mt-0 focus-visible:outline-none">
-            <AdminEventsTab currentUser={currentUser} />
-          </TabsContent>
-
-          <TabsContent value="analytics" className="mt-0 focus-visible:outline-none">
-            <AdminAnalyticsTab currentUser={currentUser} />
-          </TabsContent>
-        </Tabs>
+        {/* Dashboard Content based on Role */}
+        {userRole === 'individual' ? (
+          <IndividualDashboard currentUser={currentUser} />
+        ) : (
+          <BusinessDashboard currentUser={currentUser} />
+        )}
       </div>
     </div>
   );

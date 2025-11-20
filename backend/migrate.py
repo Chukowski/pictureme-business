@@ -32,12 +32,27 @@ async def run_migrations():
     try:
         print("\n📦 Creating tables...")
         
-        # Read migration SQL
-        with open('server/migrations/001_multiuser_schema.sql', 'r') as f:
-            migration_sql = f.read()
-        
-        # Split by statement (simple approach)
-        statements = [s.strip() for s in migration_sql.split(';') if s.strip()]
+        # Read migration SQL files
+        migrations = [
+            'server/migrations/001_multiuser_schema.sql',
+            'server/migrations/002_add_roles_and_applications.sql'
+        ]
+
+        for migration_file in migrations:
+            print(f"\n📄 Running migration: {migration_file}")
+            if not os.path.exists(migration_file):
+                # Try looking in parent directory if running from backend
+                if os.path.exists(f"../{migration_file}"):
+                    migration_file = f"../{migration_file}"
+                else:
+                    print(f"   ⚠️ File not found: {migration_file}")
+                    continue
+
+            with open(migration_file, 'r') as f:
+                migration_sql = f.read()
+            
+            # Split by statement (simple approach)
+            statements = [s.strip() for s in migration_sql.split(';') if s.strip()]
         
         for i, statement in enumerate(statements, 1):
             if not statement:
