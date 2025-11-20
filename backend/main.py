@@ -463,9 +463,15 @@ async def get_prompt_suggestions_by_category(category: str):
 @app.get("/api/events")
 async def get_user_events(current_user: dict = Depends(get_current_user)):
     """Get all events for the current user (from CouchDB)"""
-    couch = get_couch_service()
-    events = couch.get_events_by_user(str(current_user["id"]))
-    return events
+    try:
+        couch = get_couch_service()
+        events = couch.get_events_by_user(str(current_user["id"]))
+        # Ensure we always return a list, even if empty
+        return events if events is not None else []
+    except Exception as e:
+        print(f"⚠️ Error fetching events from CouchDB: {e}")
+        # Return empty list instead of 500 error
+        return []
 
 @app.post("/api/events")
 async def create_event(event: EventCreate, current_user: dict = Depends(get_current_user)):
@@ -1163,7 +1169,19 @@ async def get_event_analytics(
     print(f"📊 Fetching analytics for event: {event_id}")
     print(f"👤 User: {current_user['id']}")
     
-    couch = get_couch_service()
+    try:
+        couch = get_couch_service()
+    except Exception as e:
+        print(f"⚠️ Error connecting to CouchDB: {e}")
+        # Return empty analytics instead of 500 error
+        return {
+            "total_photos": 0,
+            "total_views": 0,
+            "photos_last_24h": 0,
+            "most_used_template": None,
+            "avg_processing_time": None,
+            "error": "Unable to connect to CouchDB"
+        }
     
     try:
         # Get event from CouchDB to verify ownership
@@ -1244,7 +1262,12 @@ async def get_admin_event_photos(
     print(f"📸 Fetching photos for event: {event_id}")
     print(f"👤 User: {current_user['id']}")
     
-    couch = get_couch_service()
+    try:
+        couch = get_couch_service()
+    except Exception as e:
+        print(f"⚠️ Error connecting to CouchDB: {e}")
+        # Return empty photos list instead of 500 error
+        return []
     
     # Get event from CouchDB to verify ownership
     try:
