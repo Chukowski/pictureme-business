@@ -55,6 +55,7 @@ app.add_middleware(
     allow_origins=[
         "https://photo.akitapr.com",
         "https://photoapi.akitapr.com", 
+        "https://pictureme.now",
         "http://localhost:8080",
         "http://localhost:3000"
     ],
