@@ -209,6 +209,25 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
     
     return dict(user)
 
+async def require_superadmin(current_user: dict = Depends(get_current_user)):
+    if current_user.get("role") != "superadmin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Super Admin access required"
+        )
+    return current_user
+
+# ===== Admin Models =====
+class UserUpdateAdmin(BaseModel):
+    role: Optional[str] = None
+    is_active: Optional[bool] = None
+    full_name: Optional[str] = None
+    # Add token adjustment fields if needed later
+
+class ApplicationUpdateAdmin(BaseModel):
+    status: str # approved, rejected, pending
+    notes: Optional[str] = None
+
 # ===== Routes =====
 
 @app.get("/")
@@ -1517,6 +1536,252 @@ async def upload_template_image(
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
+
+# ===== Admin API Endpoints =====
+
+@app.get("/api/admin/stats")
+async def get_admin_stats(current_user: dict = Depends(require_superadmin)):
+    """Get global system statistics"""
+    async with db_pool.acquire() as conn:
+        # User stats
+        total_users = await conn.fetchval("SELECT COUNT(*) FROM users")
+        active_users = await conn.fetchval("SELECT COUNT(*) FROM users WHERE is_active = TRUE")
+        
+        # Application stats
+        pending_apps = await conn.fetchval("SELECT COUNT(*) FROM enterprise_applications WHERE status = 'pending'")
+        
+        # Photo stats (PostgreSQL)
+        total_photos = await conn.fetchval("SELECT COUNT(*) FROM processed_photos")
+        photos_today = await conn.fetchval("SELECT COUNT(*) FROM processed_photos WHERE created_at >= $1", int((datetime.now() - timedelta(days=1)).timestamp() * 1000))
+
+    # CouchDB stats (Events)
+    couch = get_couch_service()
+    # This is expensive in CouchDB without a view, but for now we can just count from Postgres sync
+    async with db_pool.acquire() as conn:
+        total_events = await conn.fetchval("SELECT COUNT(*) FROM events")
+        active_events = await conn.fetchval("SELECT COUNT(*) FROM events WHERE is_active = TRUE")
+
+    return {
+        "users": {
+            "total": total_users,
+            "active": active_users,
+            "new_today": 0 # Placeholder
+        },
+        "events": {
+            "total": total_events,
+            "active": active_events
+        },
+        "photos": {
+            "total": total_photos,
+            "today": photos_today
+        },
+        "revenue": {
+            "total": 12500.00, # Mock
+            "growth": 15.5 # Mock
+        },
+        "system": {
+            "status": "healthy",
+            "cpu_usage": 45, # Mock
+            "memory_usage": 60 # Mock
+        },
+        "pending_applications": pending_apps
+    }
+
+@app.get("/api/admin/users")
+async def get_admin_users(
+    limit: int = 50, 
+    offset: int = 0, 
+    search: Optional[str] = None,
+    current_user: dict = Depends(require_superadmin)
+):
+    """List all users with pagination and search"""
+    async with db_pool.acquire() as conn:
+        if search:
+            query = """
+                SELECT id, username, email, full_name, role, is_active, created_at, last_login
+                FROM users
+                WHERE username ILIKE $1 OR email ILIKE $1 OR full_name ILIKE $1
+                ORDER BY created_at DESC
+                LIMIT $2 OFFSET $3
+            """
+            users = await conn.fetch(query, f"%{search}%", limit, offset)
+            total = await conn.fetchval(
+                "SELECT COUNT(*) FROM users WHERE username ILIKE $1 OR email ILIKE $1 OR full_name ILIKE $1",
+                f"%{search}%"
+            )
+        else:
+            query = """
+                SELECT id, username, email, full_name, role, is_active, created_at, last_login
+                FROM users
+                ORDER BY created_at DESC
+                LIMIT $1 OFFSET $2
+            """
+            users = await conn.fetch(query, limit, offset)
+            total = await conn.fetchval("SELECT COUNT(*) FROM users")
+            
+    return {
+        "users": [dict(u) for u in users],
+        "total": total,
+        "limit": limit,
+        "offset": offset
+    }
+
+@app.get("/api/admin/users/{user_id}")
+async def get_admin_user_details(user_id: str, current_user: dict = Depends(require_superadmin)):
+    """Get detailed user info"""
+    async with db_pool.acquire() as conn:
+        user = await conn.fetchrow(
+            "SELECT id, username, email, full_name, role, is_active, created_at, last_login FROM users WHERE id::text = $1",
+            user_id
+        )
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+            
+        # Get user's events count
+        events_count = await conn.fetchval("SELECT COUNT(*) FROM events WHERE user_id = $1", user["id"])
+        
+        # Get user's photos count
+        photos_count = await conn.fetchval("SELECT COUNT(*) FROM processed_photos WHERE user_id = $1", user["id"])
+        
+    return {
+        **dict(user),
+        "stats": {
+            "events": events_count,
+            "photos": photos_count,
+            "tokens": 150 # Mock
+        }
+    }
+
+@app.put("/api/admin/users/{user_id}")
+async def update_admin_user(
+    user_id: str, 
+    update: UserUpdateAdmin, 
+    current_user: dict = Depends(require_superadmin)
+):
+    """Update user role or status"""
+    async with db_pool.acquire() as conn:
+        # Build update query dynamically
+        fields = []
+        values = []
+        idx = 1
+        
+        if update.role is not None:
+            fields.append(f"role = ${idx}")
+            values.append(update.role)
+            idx += 1
+            
+        if update.is_active is not None:
+            fields.append(f"is_active = ${idx}")
+            values.append(update.is_active)
+            idx += 1
+            
+        if update.full_name is not None:
+            fields.append(f"full_name = ${idx}")
+            values.append(update.full_name)
+            idx += 1
+            
+        if not fields:
+            raise HTTPException(status_code=400, detail="No fields to update")
+            
+        values.append(user_id)
+        query = f"UPDATE users SET {', '.join(fields)} WHERE id::text = ${idx} RETURNING id, username, role, is_active"
+        
+        updated_user = await conn.fetchrow(query, *values)
+        
+        if not updated_user:
+            raise HTTPException(status_code=404, detail="User not found")
+            
+    return dict(updated_user)
+
+@app.get("/api/admin/applications")
+async def get_admin_applications(
+    status: Optional[str] = None,
+    limit: int = 50,
+    offset: int = 0,
+    current_user: dict = Depends(require_superadmin)
+):
+    """List enterprise applications"""
+    async with db_pool.acquire() as conn:
+        if status:
+            query = """
+                SELECT * FROM enterprise_applications
+                WHERE status = $1
+                ORDER BY created_at DESC
+                LIMIT $2 OFFSET $3
+            """
+            apps = await conn.fetch(query, status, limit, offset)
+            total = await conn.fetchval("SELECT COUNT(*) FROM enterprise_applications WHERE status = $1", status)
+        else:
+            query = """
+                SELECT * FROM enterprise_applications
+                ORDER BY created_at DESC
+                LIMIT $1 OFFSET $2
+            """
+            apps = await conn.fetch(query, limit, offset)
+            total = await conn.fetchval("SELECT COUNT(*) FROM enterprise_applications")
+            
+    return {
+        "applications": [dict(a) for a in apps],
+        "total": total
+    }
+
+@app.put("/api/admin/applications/{app_id}")
+async def update_application_status(
+    app_id: int,
+    update: ApplicationUpdateAdmin,
+    current_user: dict = Depends(require_superadmin)
+):
+    """Approve or reject an application"""
+    async with db_pool.acquire() as conn:
+        app = await conn.fetchrow("SELECT * FROM enterprise_applications WHERE id = $1", app_id)
+        if not app:
+            raise HTTPException(status_code=404, detail="Application not found")
+            
+        updated_app = await conn.fetchrow(
+            "UPDATE enterprise_applications SET status = $1, updated_at = NOW() RETURNING *",
+            update.status
+        )
+        
+        # If approved, we might want to auto-create a user or upgrade their role
+        # For now, we just update the status
+        
+    return dict(updated_app)
+
+@app.get("/api/admin/events")
+async def get_admin_events(
+    limit: int = 50,
+    offset: int = 0,
+    current_user: dict = Depends(require_superadmin)
+):
+    """List all global events (from Postgres sync)"""
+    async with db_pool.acquire() as conn:
+        events = await conn.fetch("""
+            SELECT e.*, u.username as owner_username 
+            FROM events e
+            JOIN users u ON e.user_id = u.id
+            ORDER BY e.created_at DESC
+            LIMIT $1 OFFSET $2
+        """, limit, offset)
+        
+        total = await conn.fetchval("SELECT COUNT(*) FROM events")
+        
+    return {
+        "events": [dict(e) for e in events],
+        "total": total
+    }
+
+@app.get("/api/admin/models")
+async def get_admin_models(current_user: dict = Depends(require_superadmin)):
+    """Get available AI models configuration"""
+    # Mock data for now, eventually this could come from DB or Config
+    return {
+        "models": [
+            {"id": "fal-ai/flux-realism", "name": "Flux Realism", "provider": "FAL.ai", "cost_per_gen": 4, "is_active": True},
+            {"id": "google/veo-2", "name": "Google Veo 2", "provider": "Google", "cost_per_gen": 15, "is_active": True},
+            {"id": "midjourney-v6", "name": "Midjourney v6", "provider": "Midjourney", "cost_per_gen": 8, "is_active": True},
+            {"id": "runway-gen3", "name": "Runway Gen-3", "provider": "Runway", "cost_per_gen": 12, "is_active": True},
+        ]
+    }
 
 if __name__ == "__main__":
     import uvicorn

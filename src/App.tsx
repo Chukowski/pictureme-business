@@ -19,6 +19,17 @@ import AdminDashboard from "./pages/AdminDashboard";
 import AdminEvents from "./pages/AdminEvents";
 import AdminEventForm from "./pages/AdminEventForm";
 import AdminEventPhotos from "./pages/AdminEventPhotos";
+import SuperAdminLayout from "./components/super-admin/SuperAdminLayout";
+import SuperAdminOverview from "./components/super-admin/SuperAdminOverview";
+import SuperAdminUsers from "./components/super-admin/SuperAdminUsers";
+import SuperAdminApplications from "./components/super-admin/SuperAdminApplications";
+import SuperAdminBilling from "./components/super-admin/SuperAdminBilling";
+import SuperAdminEvents from "./components/super-admin/SuperAdminEvents";
+import SuperAdminAIModels from "./components/super-admin/SuperAdminAIModels";
+import SuperAdminMarketplace from "./components/super-admin/SuperAdminMarketplace";
+import SuperAdminAnalytics from "./components/super-admin/SuperAdminAnalytics";
+import SuperAdminSettings from "./components/super-admin/SuperAdminSettings";
+import SuperAdminDevTools from "./components/super-admin/SuperAdminDevTools";
 
 const queryClient = new QueryClient();
 
@@ -48,6 +59,23 @@ const App = () => (
 
             {/* Admin routes - no sidebar */}
             <Route path="/apply" element={<ApplyPage />} />
+
+            {/* Super Admin Routes */}
+            <Route path="/super-admin" element={<SuperAdminLayout />}>
+              <Route index element={<SuperAdminOverview />} />
+              <Route path="users" element={<SuperAdminUsers />} />
+              <Route path="applications" element={<SuperAdminApplications />} />
+              <Route path="billing" element={<SuperAdminBilling />} />
+              <Route path="events" element={<SuperAdminEvents />} />
+              <Route path="models" element={<SuperAdminAIModels />} />
+              <Route path="marketplace" element={<SuperAdminMarketplace />} />
+              <Route path="analytics" element={<SuperAdminAnalytics />} />
+              <Route path="settings" element={<SuperAdminSettings />} />
+              <Route path="devtools" element={<SuperAdminDevTools />} />
+              <Route path="*" element={<SuperAdminOverview />} />
+            </Route>
+
+            {/* Admin Routes */}
             <Route path="/admin/auth" element={<AdminAuth />} />
             <Route path="/admin/register" element={<AdminRegister />} />
             <Route path="/admin" element={<AdminDashboard />} />

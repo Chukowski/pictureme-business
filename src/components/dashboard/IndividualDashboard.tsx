@@ -3,7 +3,8 @@ import { User } from "@/services/eventsApi";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { LayoutDashboard, Camera, Image as ImageIcon, CreditCard, HelpCircle, Zap, Plus } from "lucide-react";
+import { LayoutDashboard, Camera, Image as ImageIcon, CreditCard, HelpCircle, Zap, Plus, Palette } from "lucide-react";
+import StudioTab from "./StudioTab";
 
 interface IndividualDashboardProps {
     currentUser: User;
@@ -23,6 +24,13 @@ export default function IndividualDashboard({ currentUser }: IndividualDashboard
                     >
                         <LayoutDashboard className="w-4 h-4" />
                         <span>Overview</span>
+                    </TabsTrigger>
+                    <TabsTrigger
+                        value="create"
+                        className="flex items-center gap-2 px-4 py-2 sm:px-6 sm:py-3 rounded-xl data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-zinc-400 transition-all"
+                    >
+                        <Palette className="w-4 h-4" />
+                        <span>Create</span>
                     </TabsTrigger>
                     <TabsTrigger
                         value="my-booth"
@@ -53,6 +61,11 @@ export default function IndividualDashboard({ currentUser }: IndividualDashboard
                         <span>Support</span>
                     </TabsTrigger>
                 </TabsList>
+
+                {/* Create Tab */}
+                <TabsContent value="create" className="space-y-6 focus-visible:outline-none">
+                    <StudioTab />
+                </TabsContent>
 
                 {/* Overview Tab */}
                 <TabsContent value="overview" className="space-y-6 focus-visible:outline-none">
