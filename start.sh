@@ -12,6 +12,15 @@ echo "  - BASE_URL: ${VITE_BASE_URL:-not set}"
 echo "  - API_URL: ${VITE_API_URL:-not set}"
 echo ""
 
+# Run database migrations first
+echo "📦 Running database migrations..."
+if node server/migrate.js; then
+  echo "✅ Database migrations completed"
+else
+  echo "⚠️  Migration failed or already up to date"
+fi
+echo ""
+
 # Start backend in background with environment variables
 echo "🚀 Starting backend server..."
 node server/index.js &
