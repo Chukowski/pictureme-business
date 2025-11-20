@@ -12,11 +12,11 @@ from couchdb3 import Server
 
 class CouchDBService:
     def __init__(self):
-        self.url = os.getenv("COUCHDB_URL", "https://couch.akitapr.com")
-        self.user = os.getenv("COUCHDB_USER", "maia94")
-        self.password = os.getenv("COUCHDB_PASSWORD", "hhncu6l62zvmbdaj")
-        self.events_db_name = os.getenv("COUCHDB_DB_EVENTS", "photobooth_events")
-        self.photos_db_name = os.getenv("COUCHDB_DB_PHOTOS", "photobooth_photos")
+        self.url = os.getenv("COUCHDB_URL", "https://couch.pictureme.now")
+        self.user = os.getenv("COUCHDB_USER", "akitapr")
+        self.password = os.getenv("COUCHDB_PASSWORD", "hqq1dcnaccib3rfc")
+        self.events_db_name = os.getenv("COUCHDB_DB_EVENTS", "pictureme_events")
+        self.photos_db_name = os.getenv("COUCHDB_DB_PHOTOS", "pictureme_photos")
         
         # Connect to CouchDB
         self.server = Server(
