@@ -8,12 +8,14 @@ COPY package*.json ./
 # Install dependencies
 RUN npm ci --only=production
 
-# Copy auth server and env
+# Copy auth server
 COPY auth-server-simple.js .
-COPY .env .
 
 # Expose port
 EXPOSE 3002
+
+# Environment variables will be provided by Dokploy
+# Required: DATABASE_URL, BETTER_AUTH_SECRET, AUTH_PORT
 
 # Start auth server
 CMD ["node", "auth-server-simple.js"]
