@@ -13,14 +13,25 @@ const bcrypt = require("bcrypt");
 
 const { Pool } = pkg;
 
-dotenv.config();
+// Try to load .env file (for local development), but don't fail if it doesn't exist
+try {
+  dotenv.config();
+} catch (e) {
+  console.log("ℹ️  No .env file found, using environment variables from container");
+}
 
 const DATABASE_URL = process.env.DATABASE_URL || process.env.VITE_POSTGRES_URL;
 const BETTER_AUTH_SECRET = process.env.BETTER_AUTH_SECRET || "mVyJT9MMrurtQZiXtkVS45fO6m01CHZGq9jmbOXHGQ4=";
 const PORT = process.env.AUTH_PORT || 3002;
 
+console.log("🔍 Environment check:");
+console.log("  DATABASE_URL:", DATABASE_URL ? "✅ Set" : "❌ Missing");
+console.log("  BETTER_AUTH_SECRET:", BETTER_AUTH_SECRET ? "✅ Set" : "❌ Missing");
+console.log("  AUTH_PORT:", PORT);
+
 if (!DATABASE_URL) {
-  console.error("❌ DATABASE_URL not found");
+  console.error("❌ DATABASE_URL not found in environment variables");
+  console.error("   Please set DATABASE_URL in Dokploy environment variables");
   process.exit(1);
 }
 
