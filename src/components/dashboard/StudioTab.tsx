@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogTrigger, DialogClose } from "@/components/ui/dialog";
+import { ENV } from "@/config/env";
 
 // Mock Models Data
 const MODELS = [
@@ -104,7 +105,7 @@ export default function StudioTab({ currentUser }: StudioTabProps) {
         formData.append('file', file);
 
         try {
-            const response = await fetch('/api/generate/upload', {
+            const response = await fetch(`${ENV.API_URL}/api/generate/upload`, {
                 method: 'POST',
                 body: formData,
             });
@@ -149,7 +150,7 @@ export default function StudioTab({ currentUser }: StudioTabProps) {
         setIsGenerating(true);
 
         try {
-            let endpoint = activeMode === 'video' ? "/api/generate/video" : "/api/generate/image";
+            let endpoint = activeMode === 'video' ? `${ENV.API_URL}/api/generate/video` : `${ENV.API_URL}/api/generate/image`;
 
             const body: any = {
                 prompt,
@@ -172,7 +173,7 @@ export default function StudioTab({ currentUser }: StudioTabProps) {
                 }
                 body.source_face_url = sourceFaceUrl;
                 body.target_image_url = targetImageUrl;
-                endpoint = "/api/generate/face-swap";
+                endpoint = `${ENV.API_URL}/api/generate/face-swap`;
                 delete body.prompt;
             }
 
