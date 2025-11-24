@@ -1,8 +1,9 @@
 import { createAuthClient } from "better-auth/react";
 import { adminClient } from "better-auth/client/plugins";
+import { ENV } from "@/config/env";
 
 export const authClient = createAuthClient({
-  baseURL: import.meta.env.VITE_AUTH_URL || "http://localhost:3002",
+  baseURL: ENV.AUTH_URL || "http://localhost:3002",
   
   plugins: [
     adminClient(), // Enable admin plugin for roles

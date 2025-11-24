@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { getCurrentUser, logoutUser, updateUser } from "@/services/eventsApi";
 import { LogOut, User, Sparkles, Clock, ShieldAlert, Edit2, Loader2, Upload, X } from "lucide-react";
+import { ENV } from "@/config/env";
 import IndividualDashboard from "@/components/dashboard/IndividualDashboard";
 import BusinessDashboard from "@/components/dashboard/BusinessDashboard";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -95,7 +96,7 @@ export default function AdminDashboard() {
           headers['Authorization'] = `Bearer ${token}`;
         }
         
-        const uploadResponse = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/users/me/avatar`, {
+        const uploadResponse = await fetch(`${ENV.API_URL || ''}/api/users/me/avatar`, {
           method: 'POST',
           headers,
           credentials: 'include',

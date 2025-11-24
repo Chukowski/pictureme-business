@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { authClient } from "@/lib/auth-client";
 import { Sparkles, ArrowRight, Lock, User } from "lucide-react";
+import { ENV } from "@/config/env";
 
 export default function AdminAuth() {
   const navigate = useNavigate();
@@ -31,7 +32,7 @@ export default function AdminAuth() {
         // For now, try to find user by username in the old users table
         // This is a temporary solution until Better Auth supports username login
         try {
-          const response = await fetch(`${import.meta.env.VITE_API_URL}/api/users/email-by-username/${loginData.username}`);
+          const response = await fetch(`${ENV.API_URL}/api/users/email-by-username/${loginData.username}`);
           if (response.ok) {
             const data = await response.json();
             emailToUse = data.email;
@@ -48,7 +49,7 @@ export default function AdminAuth() {
       }
 
       // Call our custom auth server directly
-      const authUrl = import.meta.env.VITE_AUTH_URL || 'http://localhost:3002';
+      const authUrl = ENV.AUTH_URL || 'http://localhost:3002';
       const response = await fetch(`${authUrl}/api/auth/sign-in/email`, {
         method: 'POST',
         headers: {

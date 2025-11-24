@@ -4,9 +4,11 @@
  * Last updated: 2025-11-02 13:00 - Fixed proxy routing
  */
 
+import { ENV } from "@/config/env";
+
 // Use empty string to use Vite proxy (configured in vite.config.ts)
 // This will route /api/* to http://localhost:3001/api/*
-const API_URL = import.meta.env.VITE_API_URL || '';
+const API_URL = ENV.API_URL || '';
 
 // Verify API_URL is correct
 if (API_URL && API_URL.includes('localhost:3001')) {
