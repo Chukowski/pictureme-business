@@ -14,61 +14,63 @@ export default function IndividualDashboard({ currentUser }: IndividualDashboard
     const [activeTab, setActiveTab] = useState("overview");
 
     return (
-        <div className="space-y-8">
+        <div className="h-full flex flex-col">
             {/* Tabs Navigation */}
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full space-y-8">
-                <TabsList className="inline-flex h-auto p-1 bg-zinc-900/50 backdrop-blur-xl border border-white/10 rounded-2xl overflow-x-auto max-w-full">
-                    <TabsTrigger
-                        value="overview"
-                        className="flex items-center gap-2 px-4 py-2 sm:px-6 sm:py-3 rounded-xl data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-zinc-400 transition-all"
-                    >
-                        <LayoutDashboard className="w-4 h-4" />
-                        <span>Overview</span>
-                    </TabsTrigger>
-                    <TabsTrigger
-                        value="create"
-                        className="flex items-center gap-2 px-4 py-2 sm:px-6 sm:py-3 rounded-xl data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-zinc-400 transition-all"
-                    >
-                        <Palette className="w-4 h-4" />
-                        <span>Create</span>
-                    </TabsTrigger>
-                    <TabsTrigger
-                        value="my-booth"
-                        className="flex items-center gap-2 px-4 py-2 sm:px-6 sm:py-3 rounded-xl data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-zinc-400 transition-all"
-                    >
-                        <Camera className="w-4 h-4" />
-                        <span>My Booth</span>
-                    </TabsTrigger>
-                    <TabsTrigger
-                        value="templates"
-                        className="flex items-center gap-2 px-4 py-2 sm:px-6 sm:py-3 rounded-xl data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-zinc-400 transition-all"
-                    >
-                        <ImageIcon className="w-4 h-4" />
-                        <span>Templates</span>
-                    </TabsTrigger>
-                    <TabsTrigger
-                        value="billing"
-                        className="flex items-center gap-2 px-4 py-2 sm:px-6 sm:py-3 rounded-xl data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-zinc-400 transition-all"
-                    >
-                        <CreditCard className="w-4 h-4" />
-                        <span>Billing</span>
-                    </TabsTrigger>
-                    <TabsTrigger
-                        value="support"
-                        className="flex items-center gap-2 px-4 py-2 sm:px-6 sm:py-3 rounded-xl data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-zinc-400 transition-all"
-                    >
-                        <HelpCircle className="w-4 h-4" />
-                        <span>Support</span>
-                    </TabsTrigger>
-                </TabsList>
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
+                <div className="shrink-0 mb-6">
+                    <TabsList className="inline-flex h-auto p-1 bg-zinc-900/50 backdrop-blur-xl border border-white/10 rounded-2xl overflow-x-auto max-w-full">
+                        <TabsTrigger
+                            value="overview"
+                            className="flex items-center gap-2 px-4 py-2 sm:px-6 sm:py-3 rounded-xl data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-zinc-400 transition-all"
+                        >
+                            <LayoutDashboard className="w-4 h-4" />
+                            <span>Overview</span>
+                        </TabsTrigger>
+                        <TabsTrigger
+                            value="create"
+                            className="flex items-center gap-2 px-4 py-2 sm:px-6 sm:py-3 rounded-xl data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-zinc-400 transition-all"
+                        >
+                            <Palette className="w-4 h-4" />
+                            <span>Create</span>
+                        </TabsTrigger>
+                        <TabsTrigger
+                            value="my-booth"
+                            className="flex items-center gap-2 px-4 py-2 sm:px-6 sm:py-3 rounded-xl data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-zinc-400 transition-all"
+                        >
+                            <Camera className="w-4 h-4" />
+                            <span>My Booth</span>
+                        </TabsTrigger>
+                        <TabsTrigger
+                            value="templates"
+                            className="flex items-center gap-2 px-4 py-2 sm:px-6 sm:py-3 rounded-xl data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-zinc-400 transition-all"
+                        >
+                            <ImageIcon className="w-4 h-4" />
+                            <span>Templates</span>
+                        </TabsTrigger>
+                        <TabsTrigger
+                            value="billing"
+                            className="flex items-center gap-2 px-4 py-2 sm:px-6 sm:py-3 rounded-xl data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-zinc-400 transition-all"
+                        >
+                            <CreditCard className="w-4 h-4" />
+                            <span>Billing</span>
+                        </TabsTrigger>
+                        <TabsTrigger
+                            value="support"
+                            className="flex items-center gap-2 px-4 py-2 sm:px-6 sm:py-3 rounded-xl data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-zinc-400 transition-all"
+                        >
+                            <HelpCircle className="w-4 h-4" />
+                            <span>Support</span>
+                        </TabsTrigger>
+                    </TabsList>
+                </div>
 
-                {/* Create Tab */}
-                <TabsContent value="create" className="space-y-6 focus-visible:outline-none">
-                    <StudioTab />
+                {/* Create Tab - Full Height, No Scroll here (handled inside) */}
+                <TabsContent value="create" className="flex-1 min-h-0 focus-visible:outline-none mt-0 data-[state=inactive]:hidden">
+                    <StudioTab currentUser={currentUser} />
                 </TabsContent>
 
-                {/* Overview Tab */}
-                <TabsContent value="overview" className="space-y-6 focus-visible:outline-none">
+                {/* Overview Tab - Scrollable */}
+                <TabsContent value="overview" className="flex-1 min-h-0 overflow-y-auto focus-visible:outline-none mt-0 space-y-6 data-[state=inactive]:hidden">
                     {/* Stats Cards */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <Card className="bg-zinc-900/50 border-white/10 backdrop-blur-sm">

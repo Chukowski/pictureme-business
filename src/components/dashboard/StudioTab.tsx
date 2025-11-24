@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
+import { Video, ImageIcon, RefreshCw, Wand2, Sparkles, MonitorPlay, Upload, ImagePlus, Layers, Loader2, Zap, ChevronRight, Ratio, Plus, Minus, Settings2, PenTool, Edit2, X, Download, Trash2, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -10,56 +11,209 @@ import {
     SelectContent,
     SelectItem,
     SelectTrigger,
-    SelectValue
+    SelectValue,
 } from "@/components/ui/select";
-import {
-    Wand2,
-    Image as ImageIcon,
-    Video,
-    PenTool,
-    Settings2,
-    Sparkles,
-    Zap,
-    ChevronRight,
-    Ratio,
-    MonitorPlay,
-    Plus,
-    Minus,
-    ImagePlus,
-    Layers
-} from "lucide-react";
 import { toast } from "sonner";
+import { Dialog, DialogContent, DialogTrigger, DialogClose } from "@/components/ui/dialog";
 
 // Mock Models Data
 const MODELS = [
+    // Video Models
+    { id: "kling-pro", name: "Kling Video v2.5 Pro", type: "video", badge: "Pro", icon: Video },
+    { id: "wan-v2", name: "Wan v2.2 Video", type: "video", badge: "New", icon: MonitorPlay },
+    { id: "google-video", name: "Google Gemini Video", type: "video", badge: "Beta", icon: Zap },
+
+    // Image Models
+    { id: "seedream-t2i", name: "Seedream v4 (Text-to-Image)", type: "image", badge: "Unlimited", icon: ImageIcon },
+    { id: "seedream-edit", name: "Seedream v4 (Edit)", type: "image", badge: "Pro", icon: Wand2 },
+    { id: "nano-banana", name: "Nano Banana (Imagen 3)", type: "image", badge: "Google", icon: Sparkles },
+    { id: "nano-banana-pro", name: "Nano Banana Pro", type: "image", badge: "Google Pro", icon: Sparkles },
     { id: "flux-realism", name: "Flux Realism", type: "image", badge: "Unlimited", icon: ImageIcon },
-    { id: "google-veo", name: "Google Veo 3.1", type: "video", badge: "Pro", icon: Video },
-    { id: "midjourney-v6", name: "Midjourney v6", type: "image", badge: "Unlimited", icon: Wand2 },
-    { id: "runway-gen3", name: "Runway Gen-3", type: "video", badge: "Pro", icon: MonitorPlay },
 ];
 
-export default function StudioTab() {
+interface HistoryItem {
+    url: string;
+    type: 'image' | 'video';
+    timestamp: number;
+    prompt?: string;
+    model?: string;
+}
+
+interface StudioTabProps {
+    currentUser?: { id: number };
+}
+
+export default function StudioTab({ currentUser }: StudioTabProps) {
     const [activeMode, setActiveMode] = useState<"video" | "image" | "face-swap">("video");
-    const [selectedModel, setSelectedModel] = useState(MODELS[1].id);
+    const [selectedModel, setSelectedModel] = useState(MODELS[0].id);
     const [prompt, setPrompt] = useState("");
     const [isGenerating, setIsGenerating] = useState(false);
-    const [imageCount, setImageCount] = useState(1);
 
-    const handleGenerate = () => {
-        if (!prompt) {
+    // History & Persistence
+    const [history, setHistory] = useState<HistoryItem[]>([]);
+    const [selectedHistoryItem, setSelectedHistoryItem] = useState<HistoryItem | null>(null);
+
+    // Load history from localStorage on mount (user-specific)
+    useEffect(() => {
+        if (!currentUser) return;
+        const savedHistory = localStorage.getItem(`studio_history_${currentUser.id}`);
+        if (savedHistory) {
+            try {
+                setHistory(JSON.parse(savedHistory));
+            } catch (e) {
+                console.error("Failed to parse history", e);
+            }
+        } else {
+            setHistory([]); // Reset if no history for this user
+        }
+    }, [currentUser?.id]);
+
+    // Save history to localStorage whenever it changes
+    useEffect(() => {
+        if (!currentUser) return;
+        localStorage.setItem(`studio_history_${currentUser.id}`, JSON.stringify(history));
+    }, [history, currentUser?.id]);
+
+    const [imageCount, setImageCount] = useState(1);
+    const [startImageUrl, setStartImageUrl] = useState<string | null>(null);
+    const [endImageUrl, setEndImageUrl] = useState<string | null>(null);
+    const [sourceFaceUrl, setSourceFaceUrl] = useState<string | null>(null);
+    const [targetImageUrl, setTargetImageUrl] = useState<string | null>(null);
+    const [isUploading, setIsUploading] = useState(false);
+
+    const fileInputRefStart = useRef<HTMLInputElement>(null);
+    const fileInputRefEnd = useRef<HTMLInputElement>(null);
+    const fileInputRefSource = useRef<HTMLInputElement>(null);
+    const fileInputRefTarget = useRef<HTMLInputElement>(null);
+
+    const handleUpload = async (file: File, type: 'start' | 'end' | 'source' | 'target') => {
+        setIsUploading(true);
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+            const response = await fetch('/api/generate/upload', {
+                method: 'POST',
+                body: formData,
+            });
+
+            if (!response.ok) throw new Error('Upload failed');
+
+            const data = await response.json();
+
+            if (type === 'start') setStartImageUrl(data.url);
+            else if (type === 'end') setEndImageUrl(data.url);
+            else if (type === 'source') setSourceFaceUrl(data.url);
+            else if (type === 'target') setTargetImageUrl(data.url);
+
+            toast.success("Image uploaded successfully");
+        } catch (error) {
+            console.error(error);
+            toast.error("Failed to upload image");
+        } finally {
+            setIsUploading(false);
+        }
+    };
+
+    const onFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'start' | 'end' | 'source' | 'target') => {
+        if (e.target.files && e.target.files[0]) {
+            handleUpload(e.target.files[0], type);
+        }
+    };
+
+    // Reset selected model when mode changes
+    useEffect(() => {
+        const firstModel = MODELS.find(m => m.type === activeMode || (activeMode === 'face-swap' && m.type === 'image'));
+        if (firstModel) {
+            setSelectedModel(firstModel.id);
+        }
+    }, [activeMode]);
+
+    const handleGenerate = async () => {
+        if (!prompt && activeMode !== 'face-swap') {
             toast.error("Please enter a prompt first");
             return;
         }
         setIsGenerating(true);
-        // Simulate generation
-        setTimeout(() => {
+
+        try {
+            let endpoint = activeMode === 'video' ? "/api/generate/video" : "/api/generate/image";
+
+            const body: any = {
+                prompt,
+                model_id: selectedModel,
+            };
+
+            if (activeMode === 'image') {
+                body.num_images = imageCount;
+                body.image_size = "landscape_4_3";
+            } else if (activeMode === 'video') {
+                body.duration = "5";
+                body.aspect_ratio = "16:9";
+                if (startImageUrl) body.start_image_url = startImageUrl;
+                if (endImageUrl) body.end_image_url = endImageUrl;
+            } else if (activeMode === 'face-swap') {
+                if (!sourceFaceUrl || !targetImageUrl) {
+                    toast.error("Please upload both source face and target image for face swap.");
+                    setIsGenerating(false);
+                    return;
+                }
+                body.source_face_url = sourceFaceUrl;
+                body.target_image_url = targetImageUrl;
+                endpoint = "/api/generate/face-swap";
+                delete body.prompt;
+            }
+
+            const response = await fetch(endpoint, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(body),
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.detail || "Generation failed");
+            }
+
+            const data = await response.json();
+            const newItem: HistoryItem = {
+                url: data.image_url || data.video_url,
+                type: data.image_url ? 'image' : 'video',
+                timestamp: Date.now(),
+                prompt: prompt,
+                model: selectedModel
+            };
+
+            setHistory(prev => [newItem, ...prev]);
+            toast.success("Generation successful!");
+
+        } catch (error) {
+            console.error(error);
+            toast.error(error instanceof Error ? error.message : "Failed to generate");
+        } finally {
             setIsGenerating(false);
-            toast.success("Generation started! Check the queue.");
-        }, 2000);
+        }
     };
 
+    const deleteHistoryItem = (timestamp: number) => {
+        setHistory(prev => prev.filter(item => item.timestamp !== timestamp));
+        if (selectedHistoryItem?.timestamp === timestamp) {
+            setSelectedHistoryItem(null);
+        }
+        toast.success("Item deleted");
+    };
+
+    // Helper to get selected model details
+    const selectedModelData = MODELS.find(m => m.id === selectedModel);
+
     return (
-        <div className="flex h-[calc(100vh-12rem)] gap-6">
+        <div className="flex h-full gap-6">
+            {/* Hidden File Inputs */}
+            <input type="file" ref={fileInputRefStart} className="hidden" accept="image/*" onChange={(e) => onFileChange(e, 'start')} />
+            <input type="file" ref={fileInputRefEnd} className="hidden" accept="image/*" onChange={(e) => onFileChange(e, 'end')} />
+            <input type="file" ref={fileInputRefSource} className="hidden" accept="image/*" onChange={(e) => onFileChange(e, 'source')} />
+            <input type="file" ref={fileInputRefTarget} className="hidden" accept="image/*" onChange={(e) => onFileChange(e, 'target')} />
+
             {/* Left Control Panel */}
             <div className="w-96 flex flex-col gap-4 shrink-0">
                 {/* Mode Tabs */}
@@ -132,19 +286,39 @@ export default function StudioTab() {
                     {/* Video Specific: Start/End Frames (Placed in whitespace) */}
                     {activeMode === 'video' && (
                         <div className="grid grid-cols-2 gap-3">
-                            <div className="aspect-square rounded-xl border border-dashed border-white/20 bg-white/5 hover:bg-white/10 transition-colors flex flex-col items-center justify-center cursor-pointer group">
-                                <div className="w-8 h-8 rounded-lg bg-zinc-900 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
-                                    <ImagePlus className="w-4 h-4 text-zinc-400" />
-                                </div>
-                                <span className="text-xs font-medium text-zinc-300">Start frame</span>
-                                <span className="text-[10px] text-zinc-500">Optional</span>
+                            <div
+                                onClick={() => fileInputRefStart.current?.click()}
+                                className="aspect-square rounded-xl border border-dashed border-white/20 bg-white/5 hover:bg-white/10 transition-colors flex flex-col items-center justify-center cursor-pointer group relative overflow-hidden"
+                            >
+                                {startImageUrl ? (
+                                    <img src={startImageUrl} alt="Start frame" className="w-full h-full object-cover" />
+                                ) : (
+                                    <>
+                                        <div className="w-8 h-8 rounded-lg bg-zinc-900 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                                            <ImagePlus className="w-4 h-4 text-zinc-400" />
+                                        </div>
+                                        <span className="text-xs font-medium text-zinc-300">Start frame</span>
+                                        <span className="text-[10px] text-zinc-500">Optional</span>
+                                    </>
+                                )}
+                                {isUploading && <div className="absolute inset-0 bg-black/50 flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin text-white" /></div>}
                             </div>
-                            <div className="aspect-square rounded-xl border border-dashed border-white/20 bg-white/5 hover:bg-white/10 transition-colors flex flex-col items-center justify-center cursor-pointer group">
-                                <div className="w-8 h-8 rounded-lg bg-zinc-900 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
-                                    <ImagePlus className="w-4 h-4 text-zinc-400" />
-                                </div>
-                                <span className="text-xs font-medium text-zinc-300">End frame</span>
-                                <span className="text-[10px] text-zinc-500">Optional</span>
+                            <div
+                                onClick={() => fileInputRefEnd.current?.click()}
+                                className="aspect-square rounded-xl border border-dashed border-white/20 bg-white/5 hover:bg-white/10 transition-colors flex flex-col items-center justify-center cursor-pointer group relative overflow-hidden"
+                            >
+                                {endImageUrl ? (
+                                    <img src={endImageUrl} alt="End frame" className="w-full h-full object-cover" />
+                                ) : (
+                                    <>
+                                        <div className="w-8 h-8 rounded-lg bg-zinc-900 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                                            <ImagePlus className="w-4 h-4 text-zinc-400" />
+                                        </div>
+                                        <span className="text-xs font-medium text-zinc-300">End frame</span>
+                                        <span className="text-[10px] text-zinc-500">Optional</span>
+                                    </>
+                                )}
+                                {isUploading && <div className="absolute inset-0 bg-black/50 flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin text-white" /></div>}
                             </div>
                         </div>
                     )}
@@ -240,14 +414,14 @@ export default function StudioTab() {
 
                         {activeMode === 'image' && (
                             <div className="space-y-4">
-                                {/* Model Selector (Compact) */}
+                                {/* Model Selector (Fixed) */}
                                 <div className="space-y-1.5">
                                     <Label className="text-xs text-zinc-500">MODEL</Label>
                                     <Select value={selectedModel} onValueChange={setSelectedModel}>
                                         <SelectTrigger className="bg-black/20 border-white/10 h-10">
                                             <div className="flex items-center gap-2">
-                                                <div className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center text-[10px] text-black font-bold">G</div>
-                                                <span className="text-sm">Nano Banana</span>
+                                                {selectedModelData?.icon && <selectedModelData.icon className="w-4 h-4 text-zinc-400" />}
+                                                <span className="text-sm">{selectedModelData?.name || "Select Model"}</span>
                                             </div>
                                         </SelectTrigger>
                                         <SelectContent className="bg-zinc-900 border-white/10">
@@ -326,31 +500,122 @@ export default function StudioTab() {
                 </div>
             </div>
 
-            {/* Right Preview Area */}
-            <div className="flex-1 bg-black rounded-xl border border-white/10 overflow-hidden relative group">
-                {/* Empty State / Placeholder */}
-                <div className="absolute inset-0 flex flex-col items-center justify-center text-zinc-500">
-                    <div className="w-24 h-24 rounded-full bg-zinc-900/50 flex items-center justify-center mb-4 border border-white/5">
-                        <Sparkles className="w-10 h-10 opacity-20" />
+            {/* Right Area: History Grid */}
+            <div className="flex-1 bg-black rounded-xl border border-white/10 overflow-hidden relative group min-h-0 flex flex-col">
+                <div className="p-4 border-b border-white/10 flex justify-between items-center bg-zinc-900/50 backdrop-blur-sm z-10">
+                    <h3 className="text-sm font-medium text-zinc-300 flex items-center gap-2">
+                        <Layers className="w-4 h-4" /> History
+                    </h3>
+                    <div className="flex gap-2">
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-400 hover:text-white" onClick={() => setHistory([])}>
+                            <Trash2 className="w-4 h-4" />
+                        </Button>
                     </div>
-                    <p className="text-lg font-medium">Ready to create</p>
-                    <p className="text-sm opacity-60">Configure your settings and hit generate</p>
                 </div>
 
-                {/* Toolbar Overlay (Top Right) */}
-                <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Button size="icon" variant="secondary" className="rounded-full bg-black/50 backdrop-blur border border-white/10 text-white hover:bg-white/20">
-                        <Settings2 className="w-4 h-4" />
-                    </Button>
-                </div>
-
-                {/* Playback Controls Overlay (Bottom) */}
-                <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
-                    {/* Placeholder for timeline/controls */}
+                <div className="flex-1 overflow-y-auto p-4">
+                    {history.length === 0 ? (
+                        <div className="h-full flex flex-col items-center justify-center text-zinc-500">
+                            <div className="w-24 h-24 rounded-full bg-zinc-900/50 flex items-center justify-center mb-4 border border-white/5">
+                                <Sparkles className="w-10 h-10 opacity-20" />
+                            </div>
+                            <p className="text-lg font-medium">Ready to create</p>
+                            <p className="text-sm opacity-60">Your generations will appear here</p>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                            {history.map((item) => (
+                                <div
+                                    key={item.timestamp}
+                                    className="aspect-square rounded-lg border border-white/10 overflow-hidden cursor-pointer hover:border-white/30 transition-all relative group bg-zinc-900"
+                                    onClick={() => setSelectedHistoryItem(item)}
+                                >
+                                    {item.type === 'image' ? (
+                                        <img src={item.url} alt="Generated" className="w-full h-full object-cover" />
+                                    ) : (
+                                        <video src={item.url} className="w-full h-full object-cover" />
+                                    )}
+                                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                        <MonitorPlay className="w-8 h-8 text-white drop-shadow-lg" />
+                                    </div>
+                                    <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/90 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <p className="text-[10px] text-white/80 truncate">{new Date(item.timestamp).toLocaleTimeString()}</p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
             </div>
+
+            {/* Detail Modal */}
+            <Dialog open={!!selectedHistoryItem} onOpenChange={(open) => !open && setSelectedHistoryItem(null)}>
+                <DialogContent className="bg-zinc-950 border-white/10 max-w-4xl w-full p-0 overflow-hidden flex flex-col md:flex-row h-[80vh] md:h-[600px]">
+                    {selectedHistoryItem && (
+                        <>
+                            {/* Preview Side */}
+                            <div className="flex-1 bg-black flex items-center justify-center relative p-4">
+                                {selectedHistoryItem.type === 'image' ? (
+                                    <img src={selectedHistoryItem.url} alt="Detail" className="max-w-full max-h-full object-contain" />
+                                ) : (
+                                    <video src={selectedHistoryItem.url} controls autoPlay loop className="max-w-full max-h-full object-contain" />
+                                )}
+                            </div>
+
+                            {/* Info Side */}
+                            <div className="w-full md:w-80 bg-zinc-900 p-6 flex flex-col border-l border-white/10">
+                                <div className="flex justify-between items-start mb-6">
+                                    <div>
+                                        <h3 className="font-medium text-white">Generation Details</h3>
+                                        <p className="text-xs text-zinc-500">{new Date(selectedHistoryItem.timestamp).toLocaleString()}</p>
+                                    </div>
+                                    <DialogClose asChild>
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-400 hover:text-white -mt-2 -mr-2">
+                                            <X className="w-4 h-4" />
+                                        </Button>
+                                    </DialogClose>
+                                </div>
+
+                                <div className="space-y-4 flex-1 overflow-y-auto">
+                                    <div className="space-y-2">
+                                        <Label className="text-xs text-zinc-500">PROMPT</Label>
+                                        <div className="p-3 bg-black/20 rounded-lg border border-white/5 text-sm text-zinc-300 leading-relaxed max-h-32 overflow-y-auto">
+                                            {selectedHistoryItem.prompt || "No prompt"}
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label className="text-xs text-zinc-500">MODEL</Label>
+                                        <div className="flex items-center gap-2 p-2 bg-black/20 rounded-lg border border-white/5">
+                                            <Badge variant="outline" className="bg-indigo-500/10 text-indigo-400 border-indigo-500/20">
+                                                {MODELS.find(m => m.id === selectedHistoryItem.model)?.name || selectedHistoryItem.model || "Unknown"}
+                                            </Badge>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="mt-6 space-y-3 pt-6 border-t border-white/10">
+                                    <Button className="w-full bg-white text-black hover:bg-zinc-200" onClick={() => window.open(selectedHistoryItem.url, '_blank')}>
+                                        <Download className="w-4 h-4 mr-2" /> Download
+                                    </Button>
+                                    <div className="flex gap-2">
+                                        <Button variant="outline" className="flex-1 border-white/10 hover:bg-white/5 text-zinc-300" onClick={() => {
+                                            setPrompt(selectedHistoryItem.prompt || "");
+                                            setSelectedHistoryItem(null);
+                                            toast.success("Prompt copied to input");
+                                        }}>
+                                            <Copy className="w-4 h-4 mr-2" /> Use Prompt
+                                        </Button>
+                                        <Button variant="outline" className="flex-1 border-red-500/20 hover:bg-red-500/10 text-red-400 hover:text-red-300" onClick={() => deleteHistoryItem(selectedHistoryItem.timestamp)}>
+                                            <Trash2 className="w-4 h-4 mr-2" /> Delete
+                                        </Button>
+                                    </div>
+                                </div>
+                            </div>
+                        </>
+                    )}
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }
-
-import { Edit2 } from "lucide-react";

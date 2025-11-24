@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { registerUser } from "@/services/eventsApi";
+import { authClient } from "@/lib/auth-client";
 import { Sparkles, ArrowRight, Lock, User, Mail, Check } from "lucide-react";
 
 export default function AdminRegister() {
@@ -31,25 +31,37 @@ export default function AdminRegister() {
       return;
     }
 
-    if (registerData.password.length < 6) {
-      toast.error("Password must be at least 6 characters");
+    if (registerData.password.length < 8) {
+      toast.error("Password must be at least 8 characters");
       return;
     }
 
     setIsLoading(true);
 
     try {
-      const { user } = await registerUser(
-        registerData.username,
-        registerData.email,
-        registerData.password,
-        registerData.fullName
+      await authClient.signUp.email(
+        {
+          email: registerData.email,
+          password: registerData.password,
+          name: registerData.fullName || registerData.username,
+        },
+        {
+          onSuccess: (ctx) => {
+            const user = ctx.data.user;
+            toast.success(`Account created! Welcome, ${user.name || user.email}!`);
+            
+            // For now, all users go to admin/events
+            // TODO: Create separate dashboards for different roles
+            navigate("/admin/events");
+          },
+          onError: (ctx) => {
+            toast.error(ctx.error.message || "Registration failed");
+            setIsLoading(false);
+          },
+        }
       );
-      toast.success(`Account created! Welcome, ${user.full_name || user.username}!`);
-      navigate("/admin/events");
     } catch (error: any) {
       toast.error(error.message || "Registration failed");
-    } finally {
       setIsLoading(false);
     }
   };

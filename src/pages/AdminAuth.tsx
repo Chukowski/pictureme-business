@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { loginUser } from "@/services/eventsApi";
+import { authClient } from "@/lib/auth-client";
 import { Sparkles, ArrowRight, Lock, User } from "lucide-react";
 
 export default function AdminAuth() {
@@ -22,12 +22,67 @@ export default function AdminAuth() {
     setIsLoading(true);
 
     try {
-      const { user } = await loginUser(loginData.username, loginData.password);
-      toast.success(`Welcome back, ${user.full_name || user.username}!`);
-      navigate("/admin/events");
+      // Check if input is email or username
+      const isEmail = loginData.username.includes('@');
+      let emailToUse = loginData.username;
+      
+      // If it's a username, we need to fetch the email from the backend
+      if (!isEmail) {
+        // For now, try to find user by username in the old users table
+        // This is a temporary solution until Better Auth supports username login
+        try {
+          const response = await fetch(`${import.meta.env.VITE_API_URL}/api/users/email-by-username/${loginData.username}`);
+          if (response.ok) {
+            const data = await response.json();
+            emailToUse = data.email;
+          } else {
+            toast.error("Username not found. Please use your email to login.");
+            setIsLoading(false);
+            return;
+          }
+        } catch (error) {
+          toast.error("Error finding user. Please use your email to login.");
+          setIsLoading(false);
+          return;
+        }
+      }
+
+      // Call our custom auth server directly
+      const authUrl = import.meta.env.VITE_AUTH_URL || 'http://localhost:3002';
+      const response = await fetch(`${authUrl}/api/auth/sign-in/email`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include', // Important for cookies
+        body: JSON.stringify({
+          email: emailToUse,
+          password: loginData.password,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        toast.error(error.message || "Login failed");
+        setIsLoading(false);
+        return;
+      }
+
+      const data = await response.json();
+      const user = data.user;
+      const token = data.token;
+      
+      toast.success(`Welcome back, ${user.name || user.email}!`);
+      
+      // Store user data and token in localStorage
+      localStorage.setItem('user', JSON.stringify(user));
+      localStorage.setItem('auth_token', token); // Store token for API calls
+      
+      // Redirect to admin dashboard
+      navigate("/admin");
+      setIsLoading(false);
     } catch (error: any) {
       toast.error(error.message || "Login failed");
-    } finally {
       setIsLoading(false);
     }
   };
@@ -52,13 +107,13 @@ export default function AdminAuth() {
         <div className="rounded-3xl bg-zinc-900/50 backdrop-blur-xl border border-white/10 p-8 shadow-2xl">
           <form onSubmit={handleLogin} className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="login-username" className="text-zinc-300">Username</Label>
+              <Label htmlFor="login-username" className="text-zinc-300">Email or Username</Label>
               <div className="relative">
                 <User className="absolute left-3 top-3 w-5 h-5 text-zinc-500" />
                 <Input
                   id="login-username"
                   type="text"
-                  placeholder="Enter your username"
+                  placeholder="Enter your email or username"
                   value={loginData.username}
                   onChange={(e) =>
                     setLoginData({ ...loginData, username: e.target.value })

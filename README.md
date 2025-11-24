@@ -19,26 +19,42 @@ A responsive Photo Booth web application designed for iPad use that allows users
 
 ## Tech Stack
 
-- **Frontend**: React + TypeScript
-- **Styling**: Tailwind CSS
-- **AI Integration**: fal.ai (Gemini or SeedDream models)
+- **Frontend**: React + TypeScript + Vite
+- **Backend**: FastAPI (Python)
+- **Auth Server**: Express.js (Node.js) - Better Auth
+- **Database**: PostgreSQL + CouchDB
+- **Storage**: MinIO (S3-compatible)
+- **Styling**: Tailwind CSS + shadcn/ui
+- **AI Integration**: fal.ai (Flux Dev, SeedDream, Gemini models)
 - **Camera**: MediaDevices API
 - **QR Codes**: qrcode.react
-- **Build Tool**: Vite
+- **Authentication**: Better Auth (JWT + Sessions)
 
 ## 🚀 Quick Start
 
 ### Easy Setup (Recommended)
 
 ```bash
-# Run the setup script
-./setup-demo.sh
+# 1. Install dependencies
+npm install
 
-# Start the development server
-npm run dev
+# 2. Setup environment variables
+cp env.example .env
+# Edit .env and add your configuration
+
+# 3. Run database migrations (if needed)
+npm run migrate:better-auth
+
+# 4. Start all services (Frontend + Backend + Auth)
+npm run dev:full
 ```
 
 Then open **http://localhost:8080** in your browser.
+
+**Services:**
+- Frontend: http://localhost:8080
+- Backend API: http://localhost:3001
+- Auth Server: http://localhost:3002
 
 ### Manual Setup
 
@@ -118,16 +134,42 @@ src/
     └── backgrounds/           # Background images
 ```
 
+## Authentication System
+
+✅ **Better Auth Implementation**:
+- Login with email or username
+- Secure password hashing (bcrypt)
+- JWT tokens with role-based access
+- HTTP-only cookies for security
+- Persistent sessions (7 days)
+- User roles: individual, business, superadmin
+- 6 users successfully migrated
+
+**Login:**
+```
+URL: http://localhost:8080/admin/auth
+Email: demo@photobooth.app
+Password: [your password]
+```
+
+**Documentation:**
+- `docs/BETTER_AUTH_FINAL.md` - Complete implementation guide
+- `docs/MIGRATION_SUCCESS.md` - Migration summary
+- `docs/FINAL_SETUP.md` - Setup and troubleshooting
+
 ## Current Implementation
 
-✅ **Demo Features (Local Storage)**:
+✅ **Production Features**:
 - AI-powered background compositing via fal.ai
 - Camera capture with permission handling
-- Local browser storage (no backend required)
+- User authentication and authorization
+- Event management dashboard
+- Template library system
 - QR code generation for sharing
 - Shareable photo links
 - Download functionality
-- Debug tools for troubleshooting
+- Analytics per event
+- Dark/Light mode support
 
 ## Future Enhancements
 

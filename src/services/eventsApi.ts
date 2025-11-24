@@ -21,6 +21,8 @@ export interface User {
   full_name?: string;
   slug: string;
   role?: 'individual' | 'business_pending' | 'business_eventpro' | 'business_masters' | 'superadmin';
+  birth_date?: string;
+  avatar_url?: string;
 }
 
 export interface WatermarkConfig {
@@ -212,6 +214,17 @@ export async function registerUser(
  * Get current user
  */
 export function getCurrentUser(): User | null {
+  // Try Better Auth user first
+  const betterAuthUser = localStorage.getItem('user');
+  if (betterAuthUser) {
+    try {
+      return JSON.parse(betterAuthUser);
+    } catch (e) {
+      console.error('Failed to parse Better Auth user', e);
+    }
+  }
+
+  // Fallback to old auth
   const userStr = localStorage.getItem('current_user');
   if (!userStr) return null;
 
@@ -396,3 +409,30 @@ export async function uploadPhotoToEvent(
   return await response.json();
 }
 
+export const updateUser = async (data: Partial<User> & { password?: string }): Promise<User> => {
+  // Try to get token from localStorage (old auth) or use credentials for Better Auth
+  const token = getAuthToken();
+  
+  const headers: HeadersInit = {
+    'Content-Type': 'application/json',
+  };
+  
+  // Add Authorization header if token exists (old auth)
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  
+  const response = await fetch(`${API_URL}/api/users/me`, {
+    method: 'PUT',
+    headers,
+    credentials: 'include', // Important for Better Auth cookies
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.detail || 'Failed to update profile');
+  }
+
+  return response.json();
+};

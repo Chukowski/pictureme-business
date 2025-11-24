@@ -4,12 +4,12 @@ Multiuser, multi-event platform with live feeds
 Uses CouchDB for events/photos, PostgreSQL for users, MinIO for images
 """
 
-from fastapi import FastAPI, Depends, HTTPException, status, File, UploadFile
+from fastapi import FastAPI, Depends, HTTPException, status, File, UploadFile, Request, Cookie
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, EmailStr
 from typing import List, Optional, Dict, Any
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 import asyncpg
 import boto3
 from jose import JWTError, jwt
@@ -24,11 +24,14 @@ import io
 # Import CouchDB service
 from couchdb_service import get_couch_service
 
-load_dotenv()
+# Load .env from parent directory (project root)
+load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
 
 # ===== Configuration =====
 DATABASE_URL = os.getenv("DATABASE_URL") or os.getenv("VITE_POSTGRES_URL")
 SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-change-in-production")
+BETTER_AUTH_SECRET = os.getenv("BETTER_AUTH_SECRET", "mVyJT9MMrurtQZiXtkVS45fO6m01CHZGq9jmbOXHGQ4=")
+print(f"🔑 BETTER_AUTH_SECRET loaded: {BETTER_AUTH_SECRET[:20]}...")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 24 hours
 
@@ -44,7 +47,7 @@ FAL_MODEL = os.getenv("VITE_FAL_MODEL", "fal-ai/bytedance/seedream/v4/edit")
 # Password hashing (using bcrypt directly instead of passlib for compatibility)
 
 # Security
-security = HTTPBearer()
+security = HTTPBearer(auto_error=False)  # auto_error=False makes it optional
 
 # FastAPI app
 app = FastAPI(title="AI Photo Booth API", version="2.0.0")
@@ -63,6 +66,10 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
+
+# Import and include routers
+from routers import generate
+app.include_router(generate.router)
 
 # ===== Database Connection =====
 db_pool: Optional[asyncpg.Pool] = None
@@ -181,26 +188,60 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
-async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
+async def get_current_user(
+    request: Request,
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)
+):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
-    try:
-        token = credentials.credentials
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        user_id = payload.get("sub")  # Can be UUID string or int
-        if user_id is None:
-            raise credentials_exception
-    except JWTError as e:
-        print(f"JWT Error: {e}")
+    
+    user_id = None
+    
+    # Debug: Print all cookies
+    print(f"🍪 Cookies received: {list(request.cookies.keys())}")
+    
+    # Try Better Auth cookie first (try different cookie names)
+    cookie_names = ['better_auth_token', 'better-auth.session_token', 'session_token']
+    better_auth_cookie = None
+    
+    for cookie_name in cookie_names:
+        better_auth_cookie = request.cookies.get(cookie_name)
+        if better_auth_cookie:
+            print(f"✅ Found auth cookie: {cookie_name}")
+            break
+    
+    if better_auth_cookie:
+        try:
+            # Decode Better Auth JWT using BETTER_AUTH_SECRET
+            payload = jwt.decode(better_auth_cookie, BETTER_AUTH_SECRET, algorithms=["HS256"])
+            user_id = payload.get("userId") or payload.get("sub")  # Try both keys
+            print(f"✅ Better Auth session validated for user: {user_id}")
+            print(f"🔑 JWT payload: {payload}")
+        except JWTError as e:
+            print(f"⚠️  Better Auth JWT Error: {e}")
+            print(f"🔑 Secret used: {BETTER_AUTH_SECRET[:10]}...")
+    
+    # Fallback to Authorization header (old auth)
+    if not user_id and credentials:
+        try:
+            token = credentials.credentials
+            payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+            user_id = payload.get("sub")
+            print(f"✅ Legacy auth validated for user: {user_id}")
+        except JWTError as e:
+            print(f"⚠️  Legacy JWT Error: {e}")
+    
+    if not user_id:
+        print(f"❌ No valid authentication found")
         raise credentials_exception
     
     async with db_pool.acquire() as conn:
         # Try to fetch user by id (supports both UUID and legacy int)
         user = await conn.fetchrow(
-            "SELECT id, username, email, full_name, slug, role FROM users WHERE id::text = $1 AND is_active = TRUE",
+            "SELECT id, username, email, full_name, slug, role, birth_date, avatar_url FROM users WHERE id::text = $1 AND is_active = TRUE",
             str(user_id)
         )
     
@@ -295,7 +336,7 @@ async def register(user: UserCreate):
 async def login(credentials: UserLogin):
     async with db_pool.acquire() as conn:
         user = await conn.fetchrow(
-            "SELECT id, username, email, full_name, slug, role, password_hash FROM users WHERE username = $1 AND is_active = TRUE",
+            "SELECT id, username, email, full_name, slug, role, password_hash, birth_date, avatar_url FROM users WHERE username = $1 AND is_active = TRUE",
             credentials.username
         )
     
@@ -319,9 +360,160 @@ async def login(credentials: UserLogin):
         "user": user_dict
     }
 
+class UserUpdate(BaseModel):
+    full_name: Optional[str] = None
+    email: Optional[EmailStr] = None
+    birth_date: Optional[str] = None  # Accept string, will convert to date if needed
+    avatar_url: Optional[str] = None
+    password: Optional[str] = None
+    
+    class Config:
+        # Allow empty strings to be treated as None
+        json_encoders = {
+            date: lambda v: v.isoformat() if v else None
+        }
+
 @app.get("/api/auth/me")
 async def get_me(current_user: dict = Depends(get_current_user)):
     return current_user
+
+@app.put("/api/users/me")
+async def update_me(user_update: UserUpdate, current_user: dict = Depends(get_current_user)):
+    """Update current user profile"""
+    print(f"📝 Update request for user {current_user['email']}: {user_update.model_dump()}")
+    async with db_pool.acquire() as conn:
+        # Check email uniqueness if changing email
+        if user_update.email and user_update.email != current_user["email"]:
+            existing = await conn.fetchrow(
+                "SELECT id FROM users WHERE email = $1 AND id != $2",
+                user_update.email,
+                current_user["id"]
+            )
+            if existing:
+                raise HTTPException(status_code=400, detail="Email already registered")
+
+        # Build update query
+        update_fields = []
+        values = []
+        idx = 1
+        
+        if user_update.full_name is not None and user_update.full_name.strip():
+            update_fields.append(f"full_name = ${idx}")
+            values.append(user_update.full_name)
+            idx += 1
+            
+        if user_update.email is not None and user_update.email.strip():
+            update_fields.append(f"email = ${idx}")
+            values.append(user_update.email)
+            idx += 1
+
+        if user_update.birth_date is not None and user_update.birth_date.strip():
+            # Convert string to date if needed
+            birth_date_value = user_update.birth_date
+            if isinstance(birth_date_value, str):
+                from datetime import datetime as dt
+                birth_date_value = dt.strptime(birth_date_value, "%Y-%m-%d").date()
+            update_fields.append(f"birth_date = ${idx}")
+            values.append(birth_date_value)
+            idx += 1
+
+        if user_update.avatar_url is not None and user_update.avatar_url.strip():
+            update_fields.append(f"avatar_url = ${idx}")
+            values.append(user_update.avatar_url)
+            idx += 1
+
+        if user_update.password is not None and user_update.password.strip():
+            # Hash the new password
+            hashed_password = hash_password(user_update.password)
+            update_fields.append(f"password_hash = ${idx}")
+            values.append(hashed_password)
+            idx += 1
+            
+        if not update_fields:
+            return current_user
+
+        values.append(current_user["id"])
+        query = f"""
+            UPDATE users 
+            SET {', '.join(update_fields)} 
+            WHERE id = ${idx}
+            RETURNING id, username, email, full_name, slug, role, birth_date, avatar_url
+        """
+        
+        updated_user = await conn.fetchrow(query, *values)
+        return dict(updated_user)
+
+@app.post("/api/users/me/avatar")
+async def upload_avatar(
+    file: UploadFile = File(...),
+    current_user: dict = Depends(get_current_user)
+):
+    """Upload user avatar"""
+    try:
+        import io
+        import uuid
+        
+        # Get MinIO client
+        minio_client = get_minio_client()
+        
+        # Read file content
+        file_content = await file.read()
+        
+        # Validate file size (max 5MB)
+        if len(file_content) > 5 * 1024 * 1024:
+            raise HTTPException(status_code=400, detail="File too large. Maximum size is 5MB")
+        
+        # Validate file type
+        allowed_types = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
+        if file.content_type not in allowed_types:
+            raise HTTPException(status_code=400, detail="Invalid file type. Only images are allowed")
+        
+        # Generate unique filename
+        file_ext = file.filename.split('.')[-1] if '.' in file.filename else 'jpg'
+        unique_filename = f"avatar_{int(datetime.now().timestamp() * 1000)}_{uuid.uuid4().hex[:7]}.{file_ext}"
+        object_name = f"users/{current_user['slug']}/avatar/{unique_filename}"
+        
+        # Upload to MinIO
+        minio_client.put_object(
+            Bucket=MINIO_BUCKET,
+            Key=object_name,
+            Body=io.BytesIO(file_content),
+            ContentType=file.content_type
+        )
+        
+        avatar_url = f"{MINIO_SERVER_URL}/{MINIO_BUCKET}/{object_name}"
+        
+        # Update user's avatar_url in database
+        async with db_pool.acquire() as conn:
+            await conn.execute(
+                "UPDATE users SET avatar_url = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2",
+                avatar_url,
+                current_user["id"]
+            )
+        
+        print(f"✅ Avatar uploaded for user {current_user['email']}: {avatar_url}")
+        
+        return {
+            "avatar_url": avatar_url,
+            "message": "Avatar uploaded successfully"
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Error uploading avatar: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to upload avatar: {str(e)}")
+
+@app.get("/api/users/email-by-username/{username}")
+async def get_email_by_username(username: str):
+    """Get user email by username - for Better Auth login compatibility"""
+    async with db_pool.acquire() as conn:
+        user = await conn.fetchrow(
+            "SELECT email FROM users WHERE username = $1 AND is_active = TRUE",
+            username
+        )
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        return {"email": user["email"]}
 
 @app.post("/api/enterprise/applications")
 async def submit_application(application: EnterpriseApplicationCreate):
