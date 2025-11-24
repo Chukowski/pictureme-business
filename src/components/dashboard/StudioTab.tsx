@@ -49,6 +49,18 @@ export default function StudioTab({ currentUser }: StudioTabProps) {
     const [prompt, setPrompt] = useState("");
     const [isGenerating, setIsGenerating] = useState(false);
 
+    // Auto-select first model of the active mode when mode changes
+    useEffect(() => {
+        const firstModelOfMode = MODELS.find(m => m.type === activeMode);
+        if (firstModelOfMode && selectedModel !== firstModelOfMode.id) {
+            // Check if current model is compatible with active mode
+            const currentModel = MODELS.find(m => m.id === selectedModel);
+            if (!currentModel || currentModel.type !== activeMode) {
+                setSelectedModel(firstModelOfMode.id);
+            }
+        }
+    }, [activeMode]);
+
     // History & Persistence
     const [history, setHistory] = useState<HistoryItem[]>([]);
     const [selectedHistoryItem, setSelectedHistoryItem] = useState<HistoryItem | null>(null);
