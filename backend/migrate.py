@@ -32,42 +32,56 @@ async def run_migrations():
     try:
         print("\n📦 Creating tables...")
         
-        # Read migration SQL files
-        migrations = [
-            'server/migrations/001_multiuser_schema.sql',
-            'server/migrations/002_add_roles_and_applications.sql'
+        # Read migration SQL files - check multiple locations
+        migration_paths = [
+            '../server/migrations/001_multiuser_schema.sql',
+            '../server/migrations/002_add_roles_and_applications.sql',
+            'migrations/003_add_billing_and_tokens.sql',
+            'migrations/004_add_profile_fields.sql',
         ]
 
-        for migration_file in migrations:
+        for migration_file in migration_paths:
             print(f"\n📄 Running migration: {migration_file}")
-            if not os.path.exists(migration_file):
-                # Try looking in parent directory if running from backend
-                if os.path.exists(f"../{migration_file}"):
-                    migration_file = f"../{migration_file}"
-                else:
-                    print(f"   ⚠️ File not found: {migration_file}")
-                    continue
+            
+            # Try multiple locations
+            possible_paths = [
+                migration_file,
+                f"../{migration_file}",
+                migration_file.replace('../', '')
+            ]
+            
+            found_path = None
+            for path in possible_paths:
+                if os.path.exists(path):
+                    found_path = path
+                    break
+            
+            if not found_path:
+                print(f"   ⚠️  File not found, skipping...")
+                continue
 
-            with open(migration_file, 'r') as f:
+            print(f"   ✅ Found at: {found_path}")
+            
+            with open(found_path, 'r') as f:
                 migration_sql = f.read()
             
             # Split by statement (simple approach)
             statements = [s.strip() for s in migration_sql.split(';') if s.strip()]
-        
-        for i, statement in enumerate(statements, 1):
-            if not statement:
-                continue
             
-            try:
-                print(f"   Executing statement {i}/{len(statements)}...")
-                await conn.execute(statement)
-            except Exception as e:
-                # Skip if table already exists
-                if 'already exists' in str(e).lower():
-                    print(f"   ⚠️  Skipped (already exists)")
-                else:
-                    print(f"   ❌ Error: {e}")
-                    # Continue with other statements
+            for i, statement in enumerate(statements, 1):
+                if not statement:
+                    continue
+                
+                try:
+                    print(f"   Executing statement {i}/{len(statements)}...")
+                    await conn.execute(statement)
+                except Exception as e:
+                    # Skip if table already exists
+                    if 'already exists' in str(e).lower():
+                        print(f"   ⚠️  Skipped (already exists)")
+                    else:
+                        print(f"   ❌ Error: {e}")
+                        # Continue with other statements
         
         print("\n✅ Migration completed successfully!")
         
