@@ -68,8 +68,13 @@ app.add_middleware(
 )
 
 # Import and include routers
-from routers import generate
-app.include_router(generate.router)
+try:
+    from routers import generate
+    app.include_router(generate.router)
+    print("✅ Generate router included successfully")
+except Exception as e:
+    print(f"⚠️  Warning: Could not include generate router: {e}")
+    print("   Image generation endpoints will not be available")
 
 # ===== Database Connection =====
 db_pool: Optional[asyncpg.Pool] = None

@@ -3,7 +3,13 @@ from pydantic import BaseModel
 import fal_client
 import os
 from typing import Optional
-import google.generativeai as genai
+try:
+    import google.generativeai as genai
+    GOOGLE_AVAILABLE = True
+except ImportError:
+    print("⚠️  google-generativeai not available")
+    GOOGLE_AVAILABLE = False
+    genai = None
 import boto3
 import uuid
 import io
@@ -16,7 +22,7 @@ router = APIRouter(
 
 # Configure Google Gemini
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
-if GOOGLE_API_KEY:
+if GOOGLE_API_KEY and GOOGLE_AVAILABLE and genai:
     genai.configure(api_key=GOOGLE_API_KEY)
 
 # MinIO / S3 Configuration
