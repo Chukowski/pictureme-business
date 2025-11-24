@@ -155,10 +155,12 @@ async def generate_image(request: GenerateImageRequest):
             fal_model_id = "fal-ai/bytedance/seedream/v4/edit"
         elif request.model_id == "seedream-t2i":
             fal_model_id = "fal-ai/bytedance/seedream/v4/text-to-image"
+        elif request.model_id == "flux-realism":
+            fal_model_id = "fal-ai/flux-realism"
         elif "nano-banana" in request.model_id:
              # Explicit fallback mapping for Google models to FAL Flux
              # This prevents the 404 error when passing "nano-banana" to FAL
-             fal_model_id = "fal-ai/flux/dev" 
+             fal_model_id = "fal-ai/flux/dev"
         
         arguments = {
             "prompt": request.prompt,
@@ -212,6 +214,8 @@ async def generate_video(request: GenerateVideoRequest):
             fal_model_id = "fal-ai/kling-video/v2.5-turbo/pro/image-to-video"
         elif request.model_id == "wan-v2":
             fal_model_id = "fal-ai/wan/v2.2-a14b/video-to-video"
+        elif request.model_id == "google-video":
+            fal_model_id = "fal-ai/google/gemini-2-5/video"
             
         arguments = {
             "prompt": request.prompt,
