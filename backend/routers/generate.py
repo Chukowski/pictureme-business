@@ -20,6 +20,14 @@ router = APIRouter(
     tags=["generate"]
 )
 
+# Configure FAL Client
+FAL_KEY = os.getenv("FAL_KEY") or os.getenv("VITE_FAL_KEY")
+if FAL_KEY:
+    os.environ["FAL_KEY"] = FAL_KEY
+    print(f"✅ FAL_KEY configured: {FAL_KEY[:10]}...")
+else:
+    print("⚠️  FAL_KEY not found in environment variables")
+
 # Configure Google Gemini
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 if GOOGLE_API_KEY and GOOGLE_AVAILABLE and genai:
