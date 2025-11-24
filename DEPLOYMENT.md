@@ -1,298 +1,216 @@
-# 🚀 Guía de Deployment - AI Photobooth
+# 🚀 Deployment Guide - PictureMe.now
 
-## 📦 Opción 1: Docker (Recomendado)
+## Prerequisites
 
-### Prerequisitos
-- Docker y Docker Compose instalados
-- Archivo `.env` configurado con tus credenciales
+- Docker & Docker Compose installed
+- Domain configured with DNS records:
+  - `pictureme.now` → Your server IP
+  - `api.pictureme.now` → Your server IP
+  - `auth.pictureme.now` → Your server IP
+- SSL certificates (Let's Encrypt recommended)
 
-### Pasos
+## Environment Variables
 
-#### 1. Crear archivo `.env` en la raíz del proyecto
+Create a `.env` file in production with:
 
 ```bash
-# FAL AI
-VITE_FAL_KEY=tu_fal_api_key_aqui
+# API URLs
+VITE_API_URL=https://api.pictureme.now
+VITE_AUTH_URL=https://auth.pictureme.now
+BETTER_AUTH_URL=https://auth.pictureme.now
 
-# PostgreSQL
-VITE_POSTGRES_URL=postgresql://photouser:Mc4tnqjb.@209.126.5.246:5432/photodb
+# Database
+DATABASE_URL=postgresql://photouser:PASSWORD@5.161.255.18:5432/photodb
 
-# MinIO
-VITE_MINIO_ENDPOINT=storage.akitapr.com
+# Better Auth
+BETTER_AUTH_SECRET=mVyJT9MMrurtQZiXtkVS45fO6m01CHZGq9jmbOXHGQ4=
+AUTH_PORT=3002
+
+# S3/MinIO
+VITE_MINIO_ENDPOINT=s3.amazonaws.com
 VITE_MINIO_PORT=443
 VITE_MINIO_USE_SSL=true
-VITE_MINIO_ACCESS_KEY=VDVlK2645nIGwYgG6InN
-VITE_MINIO_SECRET_KEY=bMvjHpmeVK3dVEO71Wlr0Ez2rALmVSThwnkdkSmb
-VITE_MINIO_BUCKET=photobooth
-VITE_MINIO_SERVER_URL=https://storage.akitapr.com
+VITE_MINIO_ACCESS_KEY=YOUR_ACCESS_KEY
+VITE_MINIO_SECRET_KEY=YOUR_SECRET_KEY
+VITE_MINIO_BUCKET=pictureme.now
+VITE_MINIO_SERVER_URL=https://s3.amazonaws.com
 
-# App
-VITE_BASE_URL=https://photo.akitapr.com
+# Stripe
+STRIPE_SECRET_KEY=sk_live_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+VITE_STRIPE_PUBLISHABLE_KEY=pk_live_...
+
+# Fal.ai
+FAL_KEY=your-fal-admin-key
+VITE_FAL_KEY=your-fal-api-key
+
+# CouchDB
+VITE_COUCHDB_URL=http://your-couchdb:5984
+VITE_COUCHDB_USER=admin
+VITE_COUCHDB_PASSWORD=password
 ```
 
-#### 2. Build y Run con Docker Compose
+## Deployment Steps
+
+### 1. DNS Configuration
+
+Add A records in your DNS provider:
+
+```
+pictureme.now       A    YOUR_SERVER_IP
+api.pictureme.now   A    YOUR_SERVER_IP
+auth.pictureme.now  A    YOUR_SERVER_IP
+```
+
+### 2. SSL Certificates (Certbot)
 
 ```bash
-# Build la imagen
-docker-compose build
+# Install Certbot
+sudo apt install certbot python3-certbot-nginx
 
-# Iniciar el contenedor
-docker-compose up -d
-
-# Ver logs
-docker-compose logs -f
+# Get certificates
+sudo certbot --nginx -d pictureme.now -d www.pictureme.now
+sudo certbot --nginx -d api.pictureme.now
+sudo certbot --nginx -d auth.pictureme.now
 ```
 
-#### 3. Verificar que está corriendo
+### 3. Build and Deploy with Docker
 
 ```bash
-# Frontend
-curl http://localhost:8080
+# Pull latest code
+git pull origin saas
 
-# Backend
-curl http://localhost:3001/health
+# Build and start services
+docker-compose -f docker-compose.prod.yml up -d --build
+
+# Check logs
+docker-compose -f docker-compose.prod.yml logs -f
 ```
 
-### Detener el servicio
+### 4. Setup Nginx
 
 ```bash
-docker-compose down
-```
+# Copy nginx config
+sudo cp nginx.conf /etc/nginx/sites-available/pictureme.now
+sudo ln -s /etc/nginx/sites-available/pictureme.now /etc/nginx/sites-enabled/
 
----
-
-## 🌐 Opción 2: Deploy Manual
-
-### Frontend (Vite Build)
-
-```bash
-# 1. Build del frontend
-npm run build
-
-# 2. Los archivos estarán en dist/
-# Sube esta carpeta a tu servidor web (Nginx, Apache, etc.)
-```
-
-### Backend (Node.js)
-
-```bash
-# 1. En tu servidor, clona el repo
-git clone <tu-repo>
-cd ai-photo-booth-hub
-
-# 2. Instala dependencias
-npm install
-
-# 3. Crea .env con las variables de producción
-
-# 4. Inicia el backend con PM2
-npm install -g pm2
-pm2 start server/index.js --name photobooth-api
-
-# 5. Guarda la configuración de PM2
-pm2 save
-pm2 startup
-```
-
----
-
-## 🔧 Configuración de Nginx (Servidor Web)
-
-Crea el archivo `/etc/nginx/sites-available/photo.akitapr.com`:
-
-```nginx
-server {
-    listen 80;
-    server_name photo.akitapr.com;
-
-    # Redirigir HTTP a HTTPS
-    return 301 https://$server_name$request_uri;
-}
-
-server {
-    listen 443 ssl http2;
-    server_name photo.akitapr.com;
-
-    # SSL certificates (usa Let's Encrypt)
-    ssl_certificate /etc/letsencrypt/live/photo.akitapr.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/photo.akitapr.com/privkey.pem;
-
-    # Frontend - archivos estáticos
-    root /var/www/photo.akitapr.com/dist;
-    index index.html;
-
-    # Configuración para SPA
-    location / {
-        try_files $uri $uri/ /index.html;
-    }
-
-    # Backend API - proxy a Node.js
-    location /api {
-        proxy_pass http://localhost:3001;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_cache_bypass $http_upgrade;
-    }
-
-    # Cache para assets estáticos
-    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
-        expires 1y;
-        add_header Cache-Control "public, immutable";
-    }
-
-    # Security headers
-    add_header X-Frame-Options "SAMEORIGIN" always;
-    add_header X-Content-Type-Options "nosniff" always;
-    add_header X-XSS-Protection "1; mode=block" always;
-    
-    # Camera permission
-    add_header Permissions-Policy "camera=(self)" always;
-}
-```
-
-Activar el sitio:
-
-```bash
-sudo ln -s /etc/nginx/sites-available/photo.akitapr.com /etc/nginx/sites-enabled/
+# Test and reload
 sudo nginx -t
 sudo systemctl reload nginx
 ```
 
----
-
-## 🔐 SSL Certificate (Let's Encrypt)
+### 5. Run Database Migrations
 
 ```bash
-# Instalar certbot
-sudo apt install certbot python3-certbot-nginx
+# Enter backend container
+docker exec -it <backend-container-id> bash
 
-# Obtener certificado
-sudo certbot --nginx -d photo.akitapr.com
+# Run migrations
+cd /app
+python -c "
+import asyncio
+import asyncpg
+import os
 
-# Auto-renovación (ya configurado automáticamente)
-sudo certbot renew --dry-run
+async def run_migrations():
+    conn = await asyncpg.connect(os.getenv('DATABASE_URL'))
+    
+    # Run migration 003
+    with open('migrations/003_add_billing_and_tokens.sql', 'r') as f:
+        await conn.execute(f.read())
+    
+    # Run migration 004
+    with open('migrations/004_add_profile_fields.sql', 'r') as f:
+        await conn.execute(f.read())
+    
+    await conn.close()
+    print('✅ Migrations completed')
+
+asyncio.run(run_migrations())
+"
 ```
 
----
+## Verification
 
-## 📊 Monitoreo
-
-### Ver logs del backend
+### Check Services
 
 ```bash
-# Con PM2
-pm2 logs photobooth-api
+# Check if services are running
+docker-compose -f docker-compose.prod.yml ps
 
-# Con Docker
-docker-compose logs -f photobooth
+# Test endpoints
+curl https://api.pictureme.now/health
+curl https://auth.pictureme.now/health
+curl https://pictureme.now
 ```
 
-### Verificar servicios
+### Test Login
+
+1. Go to `https://pictureme.now/admin/auth`
+2. Login with your credentials
+3. Check browser console for errors
+
+## Troubleshooting
+
+### CORS Errors
+
+If you see CORS errors, check:
+- Nginx CORS headers are configured
+- `auth-server-simple.js` has correct origins
+- Cookies are being sent with `credentials: 'include'`
+
+### Auth Server Not Responding
 
 ```bash
-# Frontend
-curl https://photo.akitapr.com
+# Check auth server logs
+docker-compose -f docker-compose.prod.yml logs auth
 
-# Backend
-curl https://photo.akitapr.com/api/photos
-
-# Health check
-curl http://localhost:3001/health
+# Restart auth server
+docker-compose -f docker-compose.prod.yml restart auth
 ```
 
----
-
-## 🔄 Actualizar la App
-
-### Con Docker
+### Database Connection Issues
 
 ```bash
-# 1. Pull los cambios
-git pull
-
-# 2. Rebuild y restart
-docker-compose down
-docker-compose build
-docker-compose up -d
+# Test database connection
+docker exec -it <backend-container-id> bash
+python -c "import asyncpg; import asyncio; asyncio.run(asyncpg.connect('$DATABASE_URL'))"
 ```
 
-### Manual
+## Monitoring
 
 ```bash
-# Frontend
-npm run build
-# Sube dist/ a tu servidor
+# View all logs
+docker-compose -f docker-compose.prod.yml logs -f
 
-# Backend
-pm2 restart photobooth-api
+# View specific service logs
+docker-compose -f docker-compose.prod.yml logs -f auth
+docker-compose -f docker-compose.prod.yml logs -f backend
+docker-compose -f docker-compose.prod.yml logs -f frontend
 ```
 
----
-
-## 🐛 Troubleshooting
-
-### El frontend no carga
-
-- Verifica que Nginx esté corriendo: `sudo systemctl status nginx`
-- Revisa logs: `sudo tail -f /var/log/nginx/error.log`
-- Verifica que los archivos estén en `/var/www/photo.akitapr.com/dist`
-
-### El backend no responde
-
-- Verifica que Node esté corriendo: `pm2 status` o `docker-compose ps`
-- Revisa logs: `pm2 logs photobooth-api` o `docker-compose logs`
-- Verifica puerto 3001: `netstat -tulpn | grep 3001`
-
-### Error 403 en MinIO
+## Updating
 
 ```bash
-npm run setup-minio
+# Pull latest changes
+git pull origin saas
+
+# Rebuild and restart
+docker-compose -f docker-compose.prod.yml up -d --build
+
+# Remove old images
+docker image prune -f
 ```
 
-### PostgreSQL no conecta
-
-- Verifica que el servidor PostgreSQL esté accesible
-- Verifica la connection string en `.env`
-- Prueba la conexión: `psql postgresql://photouser:Mc4tnqjb.@209.126.5.246:5432/photodb`
-
----
-
-## 📈 Escalabilidad
-
-Para producción con mucho tráfico:
-
-1. **Load Balancer**: Usa múltiples instancias del backend
-2. **CDN**: Sirve los assets estáticos vía CloudFlare
-3. **Redis**: Cachea las queries frecuentes
-4. **Horizontal Scaling**: Múltiples containers con Docker Swarm o Kubernetes
-
----
-
-## 🔑 Variables de Entorno Importantes
-
-Asegúrate de configurar estas variables en producción:
+## Rollback
 
 ```bash
-NODE_ENV=production
-VITE_BASE_URL=https://photo.akitapr.com
-VITE_FAL_KEY=<tu_key_produccion>
+# Stop services
+docker-compose -f docker-compose.prod.yml down
+
+# Checkout previous commit
+git checkout <previous-commit-hash>
+
+# Rebuild
+docker-compose -f docker-compose.prod.yml up -d --build
 ```
-
----
-
-## 📞 Soporte
-
-Si encuentras problemas:
-
-1. Revisa los logs primero
-2. Verifica que todos los servicios estén corriendo
-3. Prueba la conectividad a PostgreSQL y MinIO
-4. Verifica que el DNS apunte correctamente a tu servidor
-
-¡Listo para producción! 🎉
-

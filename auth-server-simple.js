@@ -36,6 +36,8 @@ app.use(cors({
   origin: [
     "http://localhost:8080",
     "http://localhost:5173",
+    "https://pictureme.now",
+    "https://api.pictureme.now",
     process.env.VITE_BASE_URL,
   ].filter(Boolean),
   credentials: true,

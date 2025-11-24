@@ -1,0 +1,20 @@
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install dependencies
+RUN npm ci --only=production
+
+# Copy auth server and env
+COPY auth-server-simple.js .
+COPY .env .
+
+# Expose port
+EXPOSE 3002
+
+# Start auth server
+CMD ["node", "auth-server-simple.js"]
+

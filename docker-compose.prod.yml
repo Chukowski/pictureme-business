@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  # Frontend
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - VITE_API_URL=https://api.pictureme.now
+      - VITE_AUTH_URL=https://auth.pictureme.now
+    networks:
+      - pictureme-network
+
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET}
+      - VITE_MINIO_ENDPOINT=${VITE_MINIO_ENDPOINT}
+      - VITE_MINIO_ACCESS_KEY=${VITE_MINIO_ACCESS_KEY}
+      - VITE_MINIO_SECRET_KEY=${VITE_MINIO_SECRET_KEY}
+      - VITE_MINIO_BUCKET=${VITE_MINIO_BUCKET}
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+    networks:
+      - pictureme-network
+
+  # Auth Server
+  auth:
+    build:
+      context: .
+      dockerfile: Dockerfile.auth
+    ports:
+      - "3002:3002"
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET}
+      - AUTH_PORT=3002
+      - NODE_ENV=production
+    networks:
+      - pictureme-network
+
+networks:
+  pictureme-network:
+    driver: bridge
+
