@@ -23,11 +23,14 @@ router = APIRouter(prefix="/api/admin/enterprise", tags=["Enterprise Pricing"])
 
 class CustomPricingCreate(BaseModel):
     user_id: int
-    model_id: str
-    model_type: str  # 'image', 'video', 'face-swap'
+    ai_model_id: str  # Renamed to avoid Pydantic conflict
+    ai_model_type: str  # 'image', 'video', 'face-swap'
     token_cost: int
     price_per_token: Optional[float] = None
     notes: Optional[str] = None
+    
+    class Config:
+        protected_namespaces = ()
 
 
 class CustomPricingUpdate(BaseModel):
@@ -63,10 +66,13 @@ class BulkPricingCreate(BaseModel):
 
 
 class ModelInfo(BaseModel):
-    model_id: str
-    model_type: str
+    ai_model_id: str
+    ai_model_type: str
     default_cost: int
     description: str
+    
+    class Config:
+        protected_namespaces = ()
 
 
 # ============================================================================
@@ -208,7 +214,7 @@ async def create_custom_pricing(user_id: int, pricing: CustomPricingCreate, admi
                     is_active = TRUE,
                     updated_at = CURRENT_TIMESTAMP
                 RETURNING *
-            """, user_id, pricing.model_id, pricing.model_type, 
+            """, user_id, pricing.ai_model_id, pricing.ai_model_type, 
                 pricing.token_cost, pricing.price_per_token, pricing.notes, admin_id)
             
             return {"success": True, "pricing": dict(row)}
@@ -312,7 +318,7 @@ async def create_bulk_pricing(user_id: int, pricing_list: List[CustomPricingCrea
                         is_active = TRUE,
                         updated_at = CURRENT_TIMESTAMP
                     RETURNING *
-                """, user_id, pricing.model_id, pricing.model_type,
+                """, user_id, pricing.ai_model_id, pricing.ai_model_type,
                     pricing.token_cost, pricing.price_per_token, pricing.notes, admin_id)
                 results.append(dict(row))
         

@@ -212,8 +212,8 @@ export default function SuperAdminUsers() {
                 .filter(p => p.has_custom_pricing && p.custom_cost !== null)
                 .map(p => ({
                     user_id: selectedUser.user_id,
-                    model_id: p.model_id,
-                    model_type: p.model_type,
+                    ai_model_id: p.model_id,
+                    ai_model_type: p.model_type,
                     token_cost: p.custom_cost || p.effective_cost,
                     price_per_token: p.price_per_token,
                     notes: p.notes
