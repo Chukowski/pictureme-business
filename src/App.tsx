@@ -30,6 +30,8 @@ import SuperAdminMarketplace from "./components/super-admin/SuperAdminMarketplac
 import SuperAdminAnalytics from "./components/super-admin/SuperAdminAnalytics";
 import SuperAdminSettings from "./components/super-admin/SuperAdminSettings";
 import SuperAdminDevTools from "./components/super-admin/SuperAdminDevTools";
+import PublicProfile from "./pages/PublicProfile";
+import AccountSettings from "./pages/AccountSettings";
 
 const queryClient = new QueryClient();
 
@@ -83,6 +85,10 @@ const App = () => (
             <Route path="/admin/events/create" element={<AdminEventForm />} />
             <Route path="/admin/events/edit/:eventId" element={<AdminEventForm />} />
             <Route path="/admin/events/:eventId/photos" element={<AdminEventPhotos />} />
+            <Route path="/admin/settings" element={<AccountSettings />} />
+
+            {/* Public Profile */}
+            <Route path="/profile/:username" element={<PublicProfile />} />
 
             {/* Dynamic event routes - no sidebar */}
             <Route path="/:userSlug/:eventSlug" element={<PhotoBoothPage />} />

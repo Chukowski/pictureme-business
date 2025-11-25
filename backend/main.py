@@ -374,16 +374,15 @@ async def login(credentials: UserLogin):
 
 class UserUpdate(BaseModel):
     full_name: Optional[str] = None
-    email: Optional[EmailStr] = None
-    birth_date: Optional[str] = None  # Accept string, will convert to date if needed
-    avatar_url: Optional[str] = None
     email: Optional[str] = None
     password: Optional[str] = None
-    birth_date: Optional[str] = None
+    birth_date: Optional[str] = None  # Accept string, will convert to date
     avatar_url: Optional[str] = None
     cover_image_url: Optional[str] = None
     bio: Optional[str] = None
     social_links: Optional[Dict[str, str]] = None
+    publish_to_explore: Optional[bool] = None
+    is_public: Optional[bool] = None
 
 @app.get("/api/auth/me")
 async def get_me(current_user: dict = Depends(get_current_user)):
@@ -453,6 +452,16 @@ async def update_me(user_update: UserUpdate, current_user: dict = Depends(get_cu
             values.append(json.dumps(user_update.social_links))
             idx += 1
 
+        if user_update.publish_to_explore is not None:
+            update_fields.append(f"publish_to_explore = ${idx}")
+            values.append(user_update.publish_to_explore)
+            idx += 1
+
+        if user_update.is_public is not None:
+            update_fields.append(f"is_public = ${idx}")
+            values.append(user_update.is_public)
+            idx += 1
+
         if user_update.password is not None and user_update.password.strip():
             # Hash the new password
             hashed_password = hash_password(user_update.password)
@@ -466,9 +475,9 @@ async def update_me(user_update: UserUpdate, current_user: dict = Depends(get_cu
         values.append(current_user["id"])
         query = f"""
             UPDATE users 
-            SET {', '.join(update_fields)} 
+            SET {', '.join(update_fields)}, updated_at = CURRENT_TIMESTAMP
             WHERE id = ${idx}
-            RETURNING id, username, email, full_name, slug, role, birth_date, avatar_url, cover_image_url, bio, social_links
+            RETURNING id, username, email, full_name, slug, role, birth_date, avatar_url, cover_image_url, bio, social_links, publish_to_explore, is_public
         """
         
         updated_user = await conn.fetchrow(query, *values)
@@ -614,6 +623,191 @@ async def get_email_by_username(username: str):
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
         return {"email": user["email"]}
+
+
+@app.get("/api/users/profile/{username}")
+async def get_public_profile(username: str):
+    """Get public profile by username or slug"""
+    async with db_pool.acquire() as conn:
+        # Try to find user by username or slug
+        user = await conn.fetchrow(
+            """
+            SELECT 
+                id, username, slug, name, full_name, email, avatar_url, 
+                cover_image_url, bio, social_links, is_public, created_at
+            FROM users 
+            WHERE (username = $1 OR slug = $1) AND is_active = TRUE
+            """,
+            username
+        )
+        
+        if not user:
+            raise HTTPException(status_code=404, detail="Profile not found")
+        
+        # Check if profile is public
+        if not user.get("is_public", True):
+            raise HTTPException(status_code=404, detail="This profile is private")
+        
+        # Get user stats
+        stats = await conn.fetchrow(
+            """
+            SELECT 
+                COUNT(*) FILTER (WHERE is_published = TRUE) as posts,
+                COALESCE(SUM(likes) FILTER (WHERE is_published = TRUE), 0) as likes,
+                COALESCE(SUM(views) FILTER (WHERE is_published = TRUE), 0) as views
+            FROM user_creations 
+            WHERE user_id = $1
+            """,
+            user["id"]
+        )
+        
+        # Get published creations
+        creations = await conn.fetch(
+            """
+            SELECT 
+                id, url, thumbnail_url, type, prompt, model, 
+                likes, views, is_published, created_at
+            FROM user_creations 
+            WHERE user_id = $1 AND is_published = TRUE
+            ORDER BY created_at DESC
+            LIMIT 50
+            """,
+            user["id"]
+        )
+        
+        # Build response
+        profile = {
+            "id": user["id"],
+            "username": user["username"],
+            "slug": user["slug"],
+            "name": user["name"] or user["full_name"],
+            "full_name": user["full_name"],
+            "avatar_url": user["avatar_url"],
+            "cover_image_url": user["cover_image_url"],
+            "bio": user["bio"],
+            "social_links": user["social_links"] or {},
+            "is_public": user["is_public"],
+            "created_at": user["created_at"].isoformat() if user["created_at"] else None,
+            "stats": {
+                "likes": int(stats["likes"]) if stats else 0,
+                "posts": int(stats["posts"]) if stats else 0,
+                "views": int(stats["views"]) if stats else 0
+            }
+        }
+        
+        return {
+            "profile": profile,
+            "creations": [dict(c) for c in creations]
+        }
+
+
+@app.post("/api/users/me/creations")
+async def publish_creation(
+    url: str,
+    type: str,  # 'image' or 'video'
+    prompt: Optional[str] = None,
+    model: Optional[str] = None,
+    thumbnail_url: Optional[str] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """Publish a creation to user's public profile"""
+    async with db_pool.acquire() as conn:
+        # Check if user has publish_to_explore enabled
+        user = await conn.fetchrow(
+            "SELECT publish_to_explore FROM users WHERE id = $1",
+            current_user["id"]
+        )
+        
+        is_published = user.get("publish_to_explore", True) if user else True
+        
+        creation = await conn.fetchrow(
+            """
+            INSERT INTO user_creations (user_id, url, thumbnail_url, type, prompt, model, is_published)
+            VALUES ($1, $2, $3, $4, $5, $6, $7)
+            RETURNING id, url, type, is_published, created_at
+            """,
+            current_user["id"], url, thumbnail_url, type, prompt, model, is_published
+        )
+        
+        return dict(creation)
+
+
+@app.get("/api/users/me/creations")
+async def get_my_creations(
+    limit: int = 50,
+    offset: int = 0,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get current user's creations"""
+    async with db_pool.acquire() as conn:
+        creations = await conn.fetch(
+            """
+            SELECT id, url, thumbnail_url, type, prompt, model, likes, views, is_published, created_at
+            FROM user_creations 
+            WHERE user_id = $1
+            ORDER BY created_at DESC
+            LIMIT $2 OFFSET $3
+            """,
+            current_user["id"], limit, offset
+        )
+        
+        return [dict(c) for c in creations]
+
+
+@app.put("/api/users/me/creations/{creation_id}/publish")
+async def toggle_creation_publish(
+    creation_id: int,
+    is_published: bool,
+    current_user: dict = Depends(get_current_user)
+):
+    """Toggle publish status of a creation"""
+    async with db_pool.acquire() as conn:
+        result = await conn.fetchrow(
+            """
+            UPDATE user_creations 
+            SET is_published = $1, updated_at = CURRENT_TIMESTAMP
+            WHERE id = $2 AND user_id = $3
+            RETURNING id, is_published
+            """,
+            is_published, creation_id, current_user["id"]
+        )
+        
+        if not result:
+            raise HTTPException(status_code=404, detail="Creation not found")
+        
+        return dict(result)
+
+
+@app.delete("/api/users/me/creations/{creation_id}")
+async def delete_creation(
+    creation_id: int,
+    current_user: dict = Depends(get_current_user)
+):
+    """Delete a creation"""
+    async with db_pool.acquire() as conn:
+        result = await conn.execute(
+            "DELETE FROM user_creations WHERE id = $1 AND user_id = $2",
+            creation_id, current_user["id"]
+        )
+        
+        if result == "DELETE 0":
+            raise HTTPException(status_code=404, detail="Creation not found")
+        
+        return {"success": True}
+
+
+@app.delete("/api/users/me")
+async def delete_account(current_user: dict = Depends(get_current_user)):
+    """Delete current user's account"""
+    async with db_pool.acquire() as conn:
+        # Soft delete - mark as inactive
+        await conn.execute(
+            "UPDATE users SET is_active = FALSE, updated_at = CURRENT_TIMESTAMP WHERE id = $1",
+            current_user["id"]
+        )
+        
+        return {"success": True, "message": "Account deleted"}
+
 
 @app.post("/api/enterprise/applications")
 async def submit_application(application: EnterpriseApplicationCreate):
