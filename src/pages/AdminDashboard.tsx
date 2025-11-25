@@ -20,6 +20,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Progress } from "@/components/ui/progress";
+import { Switch } from "@/components/ui/switch";
+import { Globe, Lock } from "lucide-react";
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
@@ -34,6 +36,8 @@ export default function AdminDashboard() {
   const [isUpdating, setIsUpdating] = useState(false);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string>('');
+  const [coverFile, setCoverFile] = useState<File | null>(null);
+  const [coverPreview, setCoverPreview] = useState<string>('');
   const [editForm, setEditForm] = useState<{
     full_name: string;
     email: string;
@@ -48,6 +52,8 @@ export default function AdminDashboard() {
       tiktok?: string;
     };
     password?: string;
+    is_public?: boolean;
+    publish_to_explore?: boolean;
   }>({
     full_name: '',
     email: '',
@@ -72,12 +78,16 @@ export default function AdminDashboard() {
     navigate("/admin/auth");
   };
 
-  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = (
+    e: React.ChangeEvent<HTMLInputElement>, 
+    type: 'avatar' | 'cover'
+  ) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Validate file size (5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error("File too large. Maximum size is 5MB");
+      // Validate file size (5MB for avatar, 10MB for cover)
+      const maxSize = type === 'avatar' ? 5 * 1024 * 1024 : 10 * 1024 * 1024;
+      if (file.size > maxSize) {
+        toast.error(`File too large. Maximum size is ${type === 'avatar' ? '5MB' : '10MB'}`);
         return;
       }
 
@@ -87,51 +97,74 @@ export default function AdminDashboard() {
         return;
       }
 
-      setAvatarFile(file);
+      if (type === 'avatar') {
+        setAvatarFile(file);
+      } else {
+        setCoverFile(file);
+      }
 
       // Create preview
       const reader = new FileReader();
       reader.onloadend = () => {
-        setAvatarPreview(reader.result as string);
+        if (type === 'avatar') {
+          setAvatarPreview(reader.result as string);
+        } else {
+          setCoverPreview(reader.result as string);
+        }
       };
       reader.readAsDataURL(file);
     }
+  };
+
+  const uploadImage = async (file: File, type: 'avatar' | 'cover'): Promise<string> => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const token = localStorage.getItem('auth_token');
+    const headers: HeadersInit = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const endpoint = type === 'avatar' 
+      ? `${ENV.API_URL || ''}/api/users/me/avatar`
+      : `${ENV.API_URL || ''}/api/users/me/cover`;
+
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers,
+      credentials: 'include',
+      body: formData,
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to upload ${type}`);
+    }
+
+    const data = await response.json();
+    return type === 'avatar' ? data.avatar_url : data.cover_url;
   };
 
   const handleUpdateProfile = async () => {
     setIsUpdating(true);
     try {
       let avatarUrl = editForm.avatar_url;
+      let coverUrl = editForm.cover_image_url;
 
       // Upload avatar if file selected
       if (avatarFile) {
-        const formData = new FormData();
-        formData.append('file', avatarFile);
-
-        const token = localStorage.getItem('auth_token');
-        const headers: HeadersInit = {};
-        if (token) {
-          headers['Authorization'] = `Bearer ${token}`;
-        }
-
-        const uploadResponse = await fetch(`${ENV.API_URL || ''}/api/users/me/avatar`, {
-          method: 'POST',
-          headers,
-          credentials: 'include',
-          body: formData,
-        });
-
-        if (!uploadResponse.ok) {
-          throw new Error('Failed to upload avatar');
-        }
-
-        const uploadData = await uploadResponse.json();
-        avatarUrl = uploadData.avatar_url;
+        avatarUrl = await uploadImage(avatarFile, 'avatar');
         toast.success("Avatar uploaded successfully");
       }
 
-      // Update profile with avatar URL
-      const updateData = { ...editForm, avatar_url: avatarUrl };
+      // Upload cover if file selected
+      if (coverFile) {
+        coverUrl = await uploadImage(coverFile, 'cover');
+        toast.success("Cover image uploaded successfully");
+      }
+
+      // Update profile with new URLs
+      const updateData = { ...editForm, avatar_url: avatarUrl, cover_image_url: coverUrl };
       const updatedUser = await updateUser(updateData);
 
       // Merge current user with updated data
@@ -149,6 +182,8 @@ export default function AdminDashboard() {
       setIsEditingProfile(false);
       setAvatarFile(null);
       setAvatarPreview('');
+      setCoverFile(null);
+      setCoverPreview('');
 
       // Force reload to reflect changes
       window.location.reload();
@@ -293,7 +328,9 @@ export default function AdminDashboard() {
                       cover_image_url: currentUser?.cover_image_url || '',
                       bio: currentUser?.bio || '',
                       social_links: currentUser?.social_links || {},
-                      password: ''
+                      password: '',
+                      is_public: currentUser?.is_public ?? true,
+                      publish_to_explore: currentUser?.publish_to_explore ?? true
                     });
                     setIsEditingProfile(true);
                   }}
@@ -344,10 +381,10 @@ export default function AdminDashboard() {
 
           <div className="max-h-[85vh] overflow-y-auto">
             {/* Cover Image Area */}
-            <div className="relative h-32 bg-gradient-to-r from-indigo-500 to-purple-500">
-              {editForm.cover_image_url ? (
+            <div className="relative h-32 bg-gradient-to-r from-indigo-500 to-purple-500 group">
+              {(coverPreview || editForm.cover_image_url) ? (
                 <img
-                  src={editForm.cover_image_url}
+                  src={coverPreview || editForm.cover_image_url}
                   alt="Cover"
                   className="w-full h-full object-cover"
                 />
@@ -355,26 +392,18 @@ export default function AdminDashboard() {
                 <div className="w-full h-full bg-gradient-to-r from-indigo-500 to-purple-500" />
               )}
 
-              <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity bg-black/30">
-                <div className="relative">
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    className="bg-white text-black hover:bg-white/90"
-                  >
-                    Change Cover
-                  </Button>
-                  <input
-                    type="url"
-                    className="absolute inset-0 opacity-0 cursor-pointer"
-                    onChange={(e) => {
-                      // Simple prompt for URL for now, or file upload logic if we had it
-                      const url = prompt("Enter cover image URL:", editForm.cover_image_url);
-                      if (url !== null) setEditForm({ ...editForm, cover_image_url: url });
-                    }}
-                  />
+              <label className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40 cursor-pointer">
+                <div className="flex items-center gap-2 px-4 py-2 bg-white/90 rounded-lg text-black text-sm font-medium hover:bg-white transition-colors">
+                  <Upload className="w-4 h-4" />
+                  Change Cover
                 </div>
-              </div>
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => handleImageChange(e, 'cover')}
+                />
+              </label>
             </div>
 
             <div className="px-6 pb-6">
@@ -387,15 +416,15 @@ export default function AdminDashboard() {
                     className="w-full h-full object-cover"
                   />
                 </div>
-                <button
-                  onClick={() => {
-                    const url = prompt("Enter avatar URL:", editForm.avatar_url);
-                    if (url !== null) setEditForm({ ...editForm, avatar_url: url });
-                  }}
-                  className="absolute bottom-0 right-0 p-1.5 bg-white rounded-full text-black hover:bg-gray-200 transition-colors shadow-lg"
-                >
+                <label className="absolute bottom-0 right-0 p-1.5 bg-white rounded-full text-black hover:bg-gray-200 transition-colors shadow-lg cursor-pointer">
                   <Camera className="w-4 h-4" />
-                </button>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => handleImageChange(e, 'avatar')}
+                  />
+                </label>
               </div>
 
               <div className="space-y-4">
@@ -514,6 +543,49 @@ export default function AdminDashboard() {
                     onChange={(e) => setEditForm({ ...editForm, password: e.target.value })}
                     className="bg-black/50 border-white/10"
                   />
+                </div>
+
+                {/* Privacy Settings */}
+                <div className="space-y-4 pt-4 border-t border-white/10">
+                  <h3 className="text-sm font-medium text-zinc-300">Privacy Settings</h3>
+                  
+                  <div className="flex items-center justify-between p-3 rounded-lg bg-black/30 border border-white/5">
+                    <div className="flex items-center gap-3">
+                      {editForm.is_public ? (
+                        <Globe className="w-5 h-5 text-emerald-400" />
+                      ) : (
+                        <Lock className="w-5 h-5 text-zinc-400" />
+                      )}
+                      <div>
+                        <p className="text-sm font-medium">Public Profile</p>
+                        <p className="text-xs text-zinc-500">
+                          {editForm.is_public 
+                            ? "Anyone can view your profile" 
+                            : "Only you can see your profile"}
+                        </p>
+                      </div>
+                    </div>
+                    <Switch
+                      checked={editForm.is_public}
+                      onCheckedChange={(checked) => setEditForm({ ...editForm, is_public: checked })}
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between p-3 rounded-lg bg-black/30 border border-white/5">
+                    <div className="flex items-center gap-3">
+                      <Sparkles className="w-5 h-5 text-indigo-400" />
+                      <div>
+                        <p className="text-sm font-medium">Publish to Explore</p>
+                        <p className="text-xs text-zinc-500">
+                          Auto-publish your creations to the public feed
+                        </p>
+                      </div>
+                    </div>
+                    <Switch
+                      checked={editForm.publish_to_explore}
+                      onCheckedChange={(checked) => setEditForm({ ...editForm, publish_to_explore: checked })}
+                    />
+                  </div>
                 </div>
               </div>
             </div>

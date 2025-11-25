@@ -612,6 +612,68 @@ async def upload_avatar(
         print(f"❌ Error uploading avatar: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to upload avatar: {str(e)}")
 
+
+@app.post("/api/users/me/cover")
+async def upload_cover(
+    file: UploadFile = File(...),
+    current_user: dict = Depends(get_current_user)
+):
+    """Upload user cover image"""
+    try:
+        import io
+        import uuid
+        
+        # Get MinIO client
+        minio_client = get_minio_client()
+        
+        # Read file content
+        file_content = await file.read()
+        
+        # Validate file size (max 10MB for cover)
+        if len(file_content) > 10 * 1024 * 1024:
+            raise HTTPException(status_code=400, detail="File too large. Maximum size is 10MB")
+        
+        # Validate file type
+        allowed_types = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
+        if file.content_type not in allowed_types:
+            raise HTTPException(status_code=400, detail="Invalid file type. Only images are allowed")
+        
+        # Generate unique filename
+        file_ext = file.filename.split('.')[-1] if '.' in file.filename else 'jpg'
+        unique_filename = f"cover_{int(datetime.now().timestamp() * 1000)}_{uuid.uuid4().hex[:7]}.{file_ext}"
+        object_name = f"users/{current_user['slug']}/cover/{unique_filename}"
+        
+        # Upload to MinIO/S3
+        minio_client.put_object(
+            Bucket=MINIO_BUCKET,
+            Key=object_name,
+            Body=io.BytesIO(file_content),
+            ContentType=file.content_type
+        )
+        
+        cover_url = f"{MINIO_SERVER_URL}/{MINIO_BUCKET}/{object_name}"
+        
+        # Update user's cover_image_url in database
+        async with db_pool.acquire() as conn:
+            await conn.execute(
+                "UPDATE users SET cover_image_url = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2",
+                cover_url,
+                current_user["id"]
+            )
+        
+        print(f"✅ Cover uploaded for user {current_user['email']}: {cover_url}")
+        
+        return {
+            "cover_url": cover_url,
+            "message": "Cover image uploaded successfully"
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Error uploading cover: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to upload cover: {str(e)}")
+
+
 @app.get("/api/users/email-by-username/{username}")
 async def get_email_by_username(username: str):
     """Get user email by username - for Better Auth login compatibility"""
@@ -633,7 +695,7 @@ async def get_public_profile(username: str):
         user = await conn.fetchrow(
             """
             SELECT 
-                id, username, slug, name, full_name, email, avatar_url, 
+                id, username, slug, full_name, email, avatar_url, 
                 cover_image_url, bio, social_links, is_public, created_at
             FROM users 
             WHERE (username = $1 OR slug = $1) AND is_active = TRUE
@@ -680,7 +742,7 @@ async def get_public_profile(username: str):
             "id": user["id"],
             "username": user["username"],
             "slug": user["slug"],
-            "name": user["name"] or user["full_name"],
+            "name": user["full_name"],
             "full_name": user["full_name"],
             "avatar_url": user["avatar_url"],
             "cover_image_url": user["cover_image_url"],
