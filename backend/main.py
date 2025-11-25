@@ -76,6 +76,13 @@ except Exception as e:
     print(f"⚠️  Warning: Could not include generate router: {e}")
     print("   Image generation endpoints will not be available")
 
+try:
+    from routers import enterprise_pricing
+    app.include_router(enterprise_pricing.router)
+    print("✅ Enterprise pricing router included successfully")
+except Exception as e:
+    print(f"⚠️  Warning: Could not include enterprise pricing router: {e}")
+
 # ===== Database Connection =====
 db_pool: Optional[asyncpg.Pool] = None
 
@@ -370,13 +377,13 @@ class UserUpdate(BaseModel):
     email: Optional[EmailStr] = None
     birth_date: Optional[str] = None  # Accept string, will convert to date if needed
     avatar_url: Optional[str] = None
+    email: Optional[str] = None
     password: Optional[str] = None
-    
-    class Config:
-        # Allow empty strings to be treated as None
-        json_encoders = {
-            date: lambda v: v.isoformat() if v else None
-        }
+    birth_date: Optional[str] = None
+    avatar_url: Optional[str] = None
+    cover_image_url: Optional[str] = None
+    bio: Optional[str] = None
+    social_links: Optional[Dict[str, str]] = None
 
 @app.get("/api/auth/me")
 async def get_me(current_user: dict = Depends(get_current_user)):
@@ -412,19 +419,38 @@ async def update_me(user_update: UserUpdate, current_user: dict = Depends(get_cu
             values.append(user_update.email)
             idx += 1
 
-        if user_update.birth_date is not None and user_update.birth_date.strip():
+        if user_update.birth_date is not None:
             # Convert string to date if needed
             birth_date_value = user_update.birth_date
-            if isinstance(birth_date_value, str):
+            if isinstance(birth_date_value, str) and birth_date_value.strip():
                 from datetime import datetime as dt
                 birth_date_value = dt.strptime(birth_date_value, "%Y-%m-%d").date()
-            update_fields.append(f"birth_date = ${idx}")
-            values.append(birth_date_value)
-            idx += 1
+                update_fields.append(f"birth_date = ${idx}")
+                values.append(birth_date_value)
+                idx += 1
+            elif birth_date_value is None or (isinstance(birth_date_value, str) and not birth_date_value.strip()):
+                 # Handle clearing birth_date if needed, or just ignore empty string
+                 pass
 
-        if user_update.avatar_url is not None and user_update.avatar_url.strip():
+        if user_update.avatar_url is not None:
             update_fields.append(f"avatar_url = ${idx}")
             values.append(user_update.avatar_url)
+            idx += 1
+
+        if user_update.cover_image_url is not None:
+            update_fields.append(f"cover_image_url = ${idx}")
+            values.append(user_update.cover_image_url)
+            idx += 1
+
+        if user_update.bio is not None:
+            update_fields.append(f"bio = ${idx}")
+            values.append(user_update.bio)
+            idx += 1
+
+        if user_update.social_links is not None:
+            import json
+            update_fields.append(f"social_links = ${idx}")
+            values.append(json.dumps(user_update.social_links))
             idx += 1
 
         if user_update.password is not None and user_update.password.strip():
@@ -442,10 +468,79 @@ async def update_me(user_update: UserUpdate, current_user: dict = Depends(get_cu
             UPDATE users 
             SET {', '.join(update_fields)} 
             WHERE id = ${idx}
-            RETURNING id, username, email, full_name, slug, role, birth_date, avatar_url
+            RETURNING id, username, email, full_name, slug, role, birth_date, avatar_url, cover_image_url, bio, social_links
         """
         
         updated_user = await conn.fetchrow(query, *values)
+        
+        # --- Sync with Better Auth Tables ---
+        try:
+            # Update "user" table
+            ba_update_fields = []
+            ba_values = []
+            ba_idx = 1
+            
+            if user_update.full_name is not None and user_update.full_name.strip():
+                ba_update_fields.append(f"name = ${ba_idx}")
+                ba_values.append(user_update.full_name)
+                ba_idx += 1
+                
+            if user_update.email is not None and user_update.email.strip():
+                ba_update_fields.append(f"email = ${ba_idx}")
+                ba_values.append(user_update.email)
+                ba_idx += 1
+
+            if user_update.avatar_url is not None:
+                ba_update_fields.append(f"image = ${ba_idx}")
+                ba_values.append(user_update.avatar_url)
+                ba_idx += 1
+
+            if user_update.cover_image_url is not None:
+                ba_update_fields.append(f'"coverImage" = ${ba_idx}')
+                ba_values.append(user_update.cover_image_url)
+                ba_idx += 1
+            
+            if user_update.bio is not None:
+                ba_update_fields.append(f"bio = ${ba_idx}")
+                ba_values.append(user_update.bio)
+                ba_idx += 1
+
+            if user_update.social_links is not None:
+                import json
+                ba_update_fields.append(f'"socialLinks" = ${ba_idx}')
+                ba_values.append(json.dumps(user_update.social_links))
+                ba_idx += 1
+                
+            if ba_update_fields:
+                ba_update_fields.append(f'"updatedAt" = NOW()')
+                ba_values.append(str(current_user["id"])) # ID is last arg
+                
+                await conn.execute(
+                    f"""
+                    UPDATE "user" 
+                    SET {', '.join(ba_update_fields)} 
+                    WHERE id = ${ba_idx}
+                    """,
+                    *ba_values
+                )
+
+            # Update "account" table (password)
+            if user_update.password is not None and user_update.password.strip():
+                # We already hashed it above
+                await conn.execute(
+                    """
+                    UPDATE account 
+                    SET password = $1, "updatedAt" = NOW()
+                    WHERE "userId" = $2 AND "providerId" = 'credential'
+                    """,
+                    hashed_password,
+                    str(current_user["id"])
+                )
+                
+        except Exception as e:
+            print(f"Warning: Failed to sync with Better Auth tables: {e}")
+            # Don't fail the request, just log the error
+            
         return dict(updated_user)
 
 @app.post("/api/users/me/avatar")

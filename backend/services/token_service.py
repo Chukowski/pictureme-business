@@ -106,8 +106,8 @@ class TokenService:
         photo_id: Optional[str] = None
     ) -> Dict:
         """Deduct tokens for an AI generation"""
-        # Get cost for this model
-        cost = await self.get_model_cost(model_name)
+        # Get cost for this model (checks custom pricing first)
+        cost = await self.get_model_cost(model_name, user_id)
         
         metadata = {
             "model": model_name,
@@ -323,9 +323,23 @@ class TokenService:
     # AI MODEL COSTS
     # ========================================================================
     
-    async def get_model_cost(self, model_name: str) -> int:
-        """Get token cost for a specific AI model"""
+    async def get_model_cost(self, model_name: str, user_id: int = None) -> int:
+        """Get token cost for a specific AI model, checking custom pricing first"""
         async with self.db_pool.acquire() as conn:
+            # First check for custom pricing if user_id provided
+            if user_id:
+                custom_cost = await conn.fetchval(
+                    """
+                    SELECT token_cost
+                    FROM custom_user_pricing
+                    WHERE user_id = $1 AND model_id = $2 AND is_active = TRUE
+                    """,
+                    user_id, model_name
+                )
+                if custom_cost is not None:
+                    return custom_cost
+            
+            # Fall back to default pricing
             result = await conn.fetchval(
                 """
                 SELECT cost_per_generation
