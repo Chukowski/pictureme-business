@@ -380,9 +380,12 @@ class UserUpdate(BaseModel):
     avatar_url: Optional[str] = None
     cover_image_url: Optional[str] = None
     bio: Optional[str] = None
-    social_links: Optional[Dict[str, str]] = None
+    social_links: Optional[Dict[str, Optional[str]]] = None  # Allow None values in dict
     publish_to_explore: Optional[bool] = None
     is_public: Optional[bool] = None
+    
+    class Config:
+        extra = 'ignore'  # Ignore extra fields not in the model
 
 @app.get("/api/auth/me")
 async def get_me(current_user: dict = Depends(get_current_user)):

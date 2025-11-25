@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { ENV } from "@/config/env";
 import { getCurrentUser } from "@/services/eventsApi";
+import { toast } from "sonner";
 
 interface UserProfile {
   id: number;
@@ -180,7 +181,7 @@ export default function PublicProfile() {
                   variant="outline"
                   size="sm"
                   onClick={() => navigate('/admin?edit=profile')}
-                  className="border-white/20 hover:bg-white/10"
+                  className="border-white/30 bg-white/10 text-white hover:bg-white/20"
                 >
                   <Edit2 className="w-4 h-4 mr-1" />
                   Edit
@@ -214,9 +215,9 @@ export default function PublicProfile() {
             size="sm"
             onClick={() => {
               navigator.clipboard.writeText(window.location.href);
-              // toast.success("Profile link copied!");
+              toast.success("Profile link copied!");
             }}
-            className="border-white/20 hover:bg-white/10 self-start md:self-auto"
+            className="border-white/30 bg-white/10 text-white hover:bg-white/20 self-start md:self-auto"
           >
             <Share2 className="w-4 h-4 mr-2" />
             Share

@@ -163,8 +163,33 @@ export default function AdminDashboard() {
         toast.success("Cover image uploaded successfully");
       }
 
-      // Update profile with new URLs
-      const updateData = { ...editForm, avatar_url: avatarUrl, cover_image_url: coverUrl };
+      // Update profile with new URLs - clean up empty values
+      const updateData: Record<string, any> = {};
+      
+      if (editForm.full_name?.trim()) updateData.full_name = editForm.full_name.trim();
+      if (editForm.email?.trim()) updateData.email = editForm.email.trim();
+      if (editForm.bio !== undefined) updateData.bio = editForm.bio || '';
+      if (editForm.birth_date?.trim()) updateData.birth_date = editForm.birth_date;
+      if (editForm.password?.trim()) updateData.password = editForm.password;
+      if (avatarUrl) updateData.avatar_url = avatarUrl;
+      if (coverUrl) updateData.cover_image_url = coverUrl;
+      if (editForm.is_public !== undefined) updateData.is_public = editForm.is_public;
+      if (editForm.publish_to_explore !== undefined) updateData.publish_to_explore = editForm.publish_to_explore;
+      
+      // Clean social links - only include non-empty values
+      if (editForm.social_links) {
+        const cleanedSocialLinks: Record<string, string> = {};
+        Object.entries(editForm.social_links).forEach(([key, value]) => {
+          if (value?.trim()) {
+            cleanedSocialLinks[key] = value.trim();
+          }
+        });
+        if (Object.keys(cleanedSocialLinks).length > 0) {
+          updateData.social_links = cleanedSocialLinks;
+        }
+      }
+
+      console.log('📤 Sending update data:', updateData);
       const updatedUser = await updateUser(updateData);
 
       // Merge current user with updated data
