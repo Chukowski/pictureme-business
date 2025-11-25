@@ -64,6 +64,10 @@ export default function AdminDashboard() {
 
   // Default to individual if no role specified (backward compatibility)
   const userRole = currentUser?.role || 'individual';
+  const isSuperAdmin = userRole === 'superadmin';
+  
+  // Dashboard view mode for superadmin (can switch between studio and business)
+  const [dashboardMode, setDashboardMode] = useState<'studio' | 'business'>('studio');
 
   useEffect(() => {
     if (!currentUser) {
@@ -267,13 +271,41 @@ export default function AdminDashboard() {
                 <Sparkles className="w-5 h-5 text-indigo-400" />
               </div>
               <h1 className="text-2xl font-bold tracking-tight">
-                {userRole === 'individual' ? 'My Studio' : 'Business Dashboard'}
+                {(isSuperAdmin ? dashboardMode === 'business' : userRole.startsWith('business')) 
+                  ? 'Business Dashboard' 
+                  : 'My Studio'}
               </h1>
+              
+              {/* SuperAdmin Dashboard Switcher */}
+              {isSuperAdmin && (
+                <div className="flex items-center gap-2 ml-4 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20">
+                  <button
+                    onClick={() => setDashboardMode('studio')}
+                    className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
+                      dashboardMode === 'studio' 
+                        ? 'bg-white text-black' 
+                        : 'text-amber-400 hover:text-amber-300'
+                    }`}
+                  >
+                    Studio
+                  </button>
+                  <button
+                    onClick={() => setDashboardMode('business')}
+                    className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
+                      dashboardMode === 'business' 
+                        ? 'bg-white text-black' 
+                        : 'text-amber-400 hover:text-amber-300'
+                    }`}
+                  >
+                    Business
+                  </button>
+                </div>
+              )}
             </div>
             <p className="text-sm text-zinc-400 ml-1">
-              {userRole === 'individual'
-                ? 'Manage your personal photo booth and templates'
-                : 'Manage your events, analytics, and business settings'}
+              {(isSuperAdmin ? dashboardMode === 'business' : userRole.startsWith('business'))
+                ? 'Manage your events, analytics, and business settings'
+                : 'Create AI-powered images and videos'}
             </p>
           </div>
 
@@ -389,7 +421,7 @@ export default function AdminDashboard() {
 
         {/* Dashboard Content */}
         <div className="flex-1 min-h-0">
-          {userRole.startsWith('business') ? (
+          {(isSuperAdmin ? dashboardMode === 'business' : userRole.startsWith('business')) ? (
             <BusinessDashboard currentUser={currentUser} />
           ) : (
             <IndividualDashboard currentUser={currentUser} />
