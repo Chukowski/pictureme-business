@@ -35,7 +35,9 @@ build/
 develop-eggs/
 eggs/
 .eggs/
-lib/
+# Python lib directories (not src/lib/)
+**/python/lib/
+**/venv/lib/
 lib64/
 parts/
 sdist/
