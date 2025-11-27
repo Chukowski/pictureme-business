@@ -1,9 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense, lazy } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Check, Sparkles, Zap, Shield, Aperture, Wand2, Layers, Smartphone, Info, User, LogOut } from "lucide-react";
 import { logoutUser } from "@/services/eventsApi";
+
+const Akito3DScene = lazy(() => import("@/components/Akito3DScene"));
 import {
   Tooltip,
   TooltipContent,
@@ -91,6 +93,7 @@ export default function LandingPage() {
             <button onClick={() => scrollToSection("features")} className="hover:text-white transition-colors">Features</button>
             <button onClick={() => scrollToSection("showcase")} className="hover:text-white transition-colors">Showcase</button>
             <button onClick={() => scrollToSection("pricing")} className="hover:text-white transition-colors">Pricing</button>
+            <button onClick={() => scrollToSection("about-akita")} className="hover:text-white transition-colors text-indigo-400">About Akitá</button>
           </div>
           <div className="flex items-center gap-4">
             {currentUser ? (
@@ -152,12 +155,12 @@ export default function LandingPage() {
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[600px] bg-indigo-600/20 rounded-[100%] blur-[120px] -z-10 opacity-50" />
 
         <div className="container mx-auto px-6 relative z-10 text-center">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 mb-8 animate-fade-in backdrop-blur-md">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 mb-8 animate-fade-in backdrop-blur-md hover:bg-white/10 transition-colors cursor-pointer" onClick={() => window.open('https://akitapr.com', '_blank')}>
             <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
             </span>
-            <span className="text-sm text-zinc-300 font-medium">The Next Gen of Event Photography</span>
+            <span className="text-sm text-zinc-300 font-medium">Part of Akitá Smart Spaces</span>
           </div>
 
           <h1 className="text-6xl md:text-8xl font-bold tracking-tight mb-8 leading-tight">
@@ -592,16 +595,98 @@ export default function LandingPage() {
             )}
           </div>
         </div>
-      </section >
+      </section>
+
+      {/* About Akitá Section */}
+      <section id="about-akita" className="py-24 bg-zinc-900/30 relative overflow-hidden border-t border-white/5">
+        <div className="container mx-auto px-6">
+          <div className="flex flex-col md:flex-row items-center gap-16">
+            <div className="flex-1 relative order-2 md:order-1">
+              {/* 3D Akito Model */}
+              <div className="relative z-10 w-full max-w-md mx-auto group h-[400px] md:h-[500px]">
+                <div className="absolute inset-0 bg-indigo-500/20 blur-[100px] rounded-full -z-10" />
+                <Suspense fallback={
+                   <div className="w-full h-full flex items-center justify-center">
+                     <div className="w-16 h-16 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+                   </div>
+                }>
+                  <Akito3DScene />
+                </Suspense>
+              </div>
+            </div>
+            
+            <div className="flex-1 space-y-8 order-1 md:order-2">
+              <div>
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-sm font-medium mb-6">
+                  <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
+                  Powered by Akitá
+                </div>
+                
+                <h2 className="text-4xl md:text-5xl font-bold mb-6">
+                  Smart Spaces, <br/>
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400">Intelligently Connected.</span>
+                </h2>
+                
+                <p className="text-lg text-zinc-400 leading-relaxed">
+                  PictureMe is a flagship initiative of <a href="https://akitapr.com" target="_blank" rel="noopener noreferrer" className="text-white hover:text-indigo-400 transition-colors font-semibold underline decoration-indigo-500/30 underline-offset-4">Akitá</a>'s "Smart Spaces" program. 
+                </p>
+                <p className="text-lg text-zinc-400 leading-relaxed mt-4">
+                  We're moving beyond IoT to integrate true Artificial Intelligence into physical environments. Our mission is to create spaces that don't just function, but interact, adapt, and enhance the human experience.
+                </p>
+              </div>
+              
+              <div className="bg-white/5 p-6 rounded-2xl border border-white/10 backdrop-blur-sm hover:bg-white/10 transition-colors cursor-default">
+                <div className="flex items-start gap-5">
+                  <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center shrink-0 shadow-lg shadow-indigo-500/20">
+                     <Sparkles className="w-7 h-7 text-white" />
+                  </div>
+                  <div>
+                    <h4 className="text-xl font-bold text-white mb-2">Meet Akito</h4>
+                    <p className="text-zinc-400 leading-relaxed">
+                      More than just a mascot, Akito is the AI soul of our platform. He guides users, optimizes workflows, and brings a friendly face to advanced technology.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex gap-4">
+                <Button 
+                  className="bg-white text-black hover:bg-zinc-200 rounded-xl px-8 font-semibold"
+                  onClick={() => window.open('https://akitapr.com', '_blank')}
+                >
+                  Visit Akitá
+                </Button>
+                <Button 
+                  variant="outline" 
+                  className="bg-transparent border border-white/20 text-white hover:bg-white/10 hover:text-white hover:border-white/30 rounded-xl px-8"
+                  onClick={() => scrollToSection('features')}
+                >
+                  Explore Features
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* Footer */}
-      < footer className="py-12 border-t border-white/5 bg-black text-zinc-500 text-sm" >
+      <footer className="py-12 border-t border-white/5 bg-black text-zinc-500 text-sm">
         <div className="container mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-lg bg-zinc-800 flex items-center justify-center">
+            <img 
+              src="/assets/akita-logo.png" 
+              alt="Akitá" 
+              className="h-8 w-auto mr-2 opacity-80 hover:opacity-100 transition-opacity"
+              onError={(e) => {
+                e.currentTarget.style.display = 'none';
+                e.currentTarget.nextElementSibling?.classList.remove('hidden');
+              }}
+            />
+            <div className="w-6 h-6 rounded-lg bg-zinc-800 flex items-center justify-center hidden">
               <Sparkles className="w-3 h-3 text-zinc-400" />
             </div>
             <span className="font-semibold text-zinc-300">PictureMe.now</span>
+            <span className="text-zinc-600 text-xs ml-2 border-l border-zinc-800 pl-2">by Akitá</span>
           </div>
           <div className="flex gap-8">
             <a href="#" className="hover:text-white transition-colors">Privacy</a>
