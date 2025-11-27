@@ -2,12 +2,14 @@ import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { User } from "@/services/eventsApi";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FolderKanban, BarChart3, Coins, CreditCard, ShoppingBag, Palette } from "lucide-react";
+import { FolderKanban, BarChart3, Coins, CreditCard, ShoppingBag, Palette, BookOpen } from "lucide-react";
 import AdminEventsTab from "@/components/admin/AdminEventsTab";
 import AdminAnalyticsTab from "@/components/admin/AdminAnalyticsTab";
 import TokensTab from "./TokensTab";
 import BillingTab from "./BillingTab";
 import MarketplaceTab from "./MarketplaceTab";
+import AlbumsTab from "./AlbumsTab";
+import { hasFeature } from "@/lib/planFeatures";
 
 interface BusinessDashboardProps {
     currentUser: User;
@@ -22,6 +24,7 @@ const pathToTab: Record<string, string> = {
     '/admin/tokens': 'tokens',
     '/admin/marketplace': 'marketplace',
     '/admin/analytics': 'analytics',
+    '/admin/albums': 'albums',
 };
 
 export default function BusinessDashboard({ currentUser, initialTab }: BusinessDashboardProps) {
@@ -45,6 +48,9 @@ export default function BusinessDashboard({ currentUser, initialTab }: BusinessD
         }
     }, [location.pathname, initialTab, activeTab]);
     
+    // Check if user has album tracking feature
+    const hasAlbumTracking = hasFeature(currentUser?.role, 'albumTracking');
+
     // Update URL when tab changes (optional - for bookmarkable URLs)
     const handleTabChange = (tab: string) => {
         setActiveTab(tab);
@@ -55,6 +61,7 @@ export default function BusinessDashboard({ currentUser, initialTab }: BusinessD
             'tokens': '/admin/tokens',
             'marketplace': '/admin/marketplace',
             'analytics': '/admin/analytics',
+            'albums': '/admin/albums',
         };
         if (pathForTab[tab] && location.pathname !== pathForTab[tab]) {
             navigate(pathForTab[tab], { replace: true });
@@ -101,6 +108,15 @@ export default function BusinessDashboard({ currentUser, initialTab }: BusinessD
                         <ShoppingBag className="w-4 h-4" />
                         <span>Marketplace</span>
                     </TabsTrigger>
+                    {hasAlbumTracking && (
+                        <TabsTrigger
+                            value="albums"
+                            className="flex items-center gap-2 px-4 py-2 sm:px-6 sm:py-3 rounded-xl data-[state=active]:bg-cyan-600 data-[state=active]:text-white text-zinc-400 transition-all"
+                        >
+                            <BookOpen className="w-4 h-4" />
+                            <span>Albums</span>
+                        </TabsTrigger>
+                    )}
                 </TabsList>
 
                 {/* Events Tab */}
@@ -127,6 +143,13 @@ export default function BusinessDashboard({ currentUser, initialTab }: BusinessD
                 <TabsContent value="marketplace" className="mt-0 focus-visible:outline-none">
                     <MarketplaceTab currentUser={currentUser} />
                 </TabsContent>
+
+                {/* Albums Tab (Event Pro+ only) */}
+                {hasAlbumTracking && (
+                    <TabsContent value="albums" className="mt-0 focus-visible:outline-none">
+                        <AlbumsTab currentUser={currentUser} />
+                    </TabsContent>
+                )}
             </Tabs>
         </div>
     );

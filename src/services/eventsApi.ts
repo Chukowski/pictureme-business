@@ -57,6 +57,47 @@ export interface WatermarkConfig {
   opacity: number; // 0-1
 }
 
+// Album Tracking Types
+export interface AlbumStation {
+  id: string;
+  name: string;
+  description: string;
+  type: 'registration' | 'booth' | 'playground' | 'viewer';
+  qrCode?: string;
+  order: number;
+}
+
+export interface AlbumRules {
+  maxPhotosPerAlbum: number;
+  allowReEntry: boolean;
+  requireStaffApproval: boolean;
+  printReady: boolean;
+}
+
+export interface BadgeIntegration {
+  autoGenerateBadge: boolean;
+  badgeLayout: 'portrait' | 'landscape' | 'square';
+  includeQR: boolean;
+  includeName: boolean;
+  includeDateTime: boolean;
+  customFields?: string[];
+}
+
+export interface AlbumTrackingConfig {
+  enabled: boolean;
+  albumType: 'individual' | 'group';
+  stations: AlbumStation[];
+  rules: AlbumRules;
+  badgeIntegration: BadgeIntegration;
+}
+
+export interface SharingOverrides {
+  enabled: boolean;
+  defaultAspectRatio: 'auto' | '1:1' | '3:2' | '4:5' | '16:9' | '9:16';
+  availableRatios: string[];
+  shareTemplateId?: string; // ID of template/frame to apply on export
+}
+
 export interface EventConfig {
   _id: string;  // CouchDB document ID (was: id: number)
   _rev?: string;  // CouchDB revision
@@ -94,7 +135,13 @@ export interface EventConfig {
     moderationEnabled?: boolean;
     maxPhotosPerSession?: number;
   };
+  // Album Tracking (Business: Event Pro+)
+  albumTracking?: AlbumTrackingConfig;
+  // Sharing Overrides (Business: Event Pro+)
+  sharingOverrides?: SharingOverrides;
 }
+
+export type AspectRatio = 'auto' | '1:1' | '4:5' | '3:2' | '16:9' | '9:16';
 
 export interface Template {
   id: string;
@@ -111,6 +158,9 @@ export interface Template {
   includeTagline?: boolean; // Show tagline
   includeWatermark?: boolean; // Show watermark
   isCustomPrompt?: boolean; // Special template that allows user to write custom prompts
+  
+  // Aspect Ratio for generated images
+  aspectRatio?: AspectRatio;
   
   // Pipeline Configuration
   pipelineConfig?: {

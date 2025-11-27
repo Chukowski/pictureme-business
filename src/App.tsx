@@ -32,6 +32,7 @@ import SuperAdminSettings from "./components/super-admin/SuperAdminSettings";
 import SuperAdminDevTools from "./components/super-admin/SuperAdminDevTools";
 import PublicProfile from "./pages/PublicProfile";
 import AccountSettings from "./pages/AccountSettings";
+import AlbumFeedPage from "./pages/AlbumFeedPage";
 
 // CopilotKit imports (self-hosted, no cloud required)
 import { CopilotKit } from "@copilotkit/react-core";
@@ -128,6 +129,7 @@ const App = () => (
             <Route path="/admin/marketplace" element={<AdminDashboard />} />
             <Route path="/admin/analytics" element={<AdminDashboard />} />
             <Route path="/admin/studio" element={<AdminDashboard />} />
+            <Route path="/admin/albums" element={<AdminDashboard />} />
             {/* Catch-all for unknown admin routes - show 404 */}
             <Route path="/admin/*" element={<NotFound />} />
 
@@ -137,6 +139,7 @@ const App = () => (
             {/* Dynamic event routes - no sidebar */}
             <Route path="/:userSlug/:eventSlug" element={<PhotoBoothPage />} />
             <Route path="/:userSlug/:eventSlug/feed" element={<EventFeedPage />} />
+            <Route path="/:userSlug/:eventSlug/album/:albumId" element={<AlbumFeedPage />} />
 
             {/* Legacy Index page (if needed) */}
             <Route path="/legacy" element={<Index />} />

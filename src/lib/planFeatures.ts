@@ -28,6 +28,13 @@ export interface PlanFeatures {
   marketplacePublishing: boolean;
   customPipelines: boolean;
   revenueShare: boolean;
+  // Album & Station Features (Business Only)
+  albumTracking: boolean;      // Multi-station album workflow (Event Pro+)
+  stationFlow: boolean;        // Station-based event flow (Event Pro+)
+  sharingOverride: boolean;    // Custom aspect ratios & frames for sharing (Event Pro+)
+  teamAccess: boolean;         // Business team members access
+  maxTeamMembers: number;      // Max team members (Starter=1, Pro=3, Masters=custom)
+  hardwareSupport: boolean;    // Hardware integration options (Masters only)
 }
 
 // Feature definitions per plan
@@ -51,6 +58,12 @@ const PLAN_FEATURES: Record<UserRole, PlanFeatures> = {
     marketplacePublishing: false,
     customPipelines: false,
     revenueShare: false,
+    albumTracking: false,
+    stationFlow: false,
+    sharingOverride: false,
+    teamAccess: false,
+    maxTeamMembers: 0,
+    hardwareSupport: false,
   },
   business_pending: {
     maxActiveEvents: 0,
@@ -71,6 +84,12 @@ const PLAN_FEATURES: Record<UserRole, PlanFeatures> = {
     marketplacePublishing: false,
     customPipelines: false,
     revenueShare: false,
+    albumTracking: false,
+    stationFlow: false,
+    sharingOverride: false,
+    teamAccess: false,
+    maxTeamMembers: 0,
+    hardwareSupport: false,
   },
   business_starter: {
     maxActiveEvents: 1,
@@ -91,6 +110,12 @@ const PLAN_FEATURES: Record<UserRole, PlanFeatures> = {
     marketplacePublishing: false,
     customPipelines: false,
     revenueShare: false,
+    albumTracking: false,
+    stationFlow: false,
+    sharingOverride: false,
+    teamAccess: true,
+    maxTeamMembers: 1,
+    hardwareSupport: false,
   },
   business_eventpro: {
     maxActiveEvents: 2,
@@ -111,6 +136,12 @@ const PLAN_FEATURES: Record<UserRole, PlanFeatures> = {
     marketplacePublishing: false,
     customPipelines: false,
     revenueShare: false,
+    albumTracking: true,
+    stationFlow: true,
+    sharingOverride: true,
+    teamAccess: true,
+    maxTeamMembers: 3,
+    hardwareSupport: false,
   },
   business_masters: {
     maxActiveEvents: 3,
@@ -131,6 +162,12 @@ const PLAN_FEATURES: Record<UserRole, PlanFeatures> = {
     marketplacePublishing: true,
     customPipelines: true,
     revenueShare: true,
+    albumTracking: true,
+    stationFlow: true,
+    sharingOverride: true,
+    teamAccess: true,
+    maxTeamMembers: 10, // Custom, can be increased
+    hardwareSupport: true,
   },
   superadmin: {
     maxActiveEvents: 999,
@@ -151,6 +188,12 @@ const PLAN_FEATURES: Record<UserRole, PlanFeatures> = {
     marketplacePublishing: true,
     customPipelines: true,
     revenueShare: true,
+    albumTracking: true,
+    stationFlow: true,
+    sharingOverride: true,
+    teamAccess: true,
+    maxTeamMembers: 999,
+    hardwareSupport: true,
   },
 };
 

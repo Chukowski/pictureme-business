@@ -1,7 +1,7 @@
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { useEventConfig } from '@/hooks/useEventConfig';
 import { Loader2 } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { CameraCapture } from '@/components/CameraCapture';
 import { BackgroundSelector } from '@/components/BackgroundSelector';
 import { ProcessingLoader } from '@/components/ProcessingLoader';
@@ -14,12 +14,34 @@ import { toast } from 'sonner';
 import { Template } from '@/services/eventsApi';
 import { saveProcessedPhoto, getAllPhotos } from '@/services/localStorage';
 import { EventNotFound } from '@/components/EventNotFound';
+import { ScanBadgePrompt, AlbumProgress, AlbumResultActions } from '@/components/album';
 
-type AppState = 'select' | 'camera' | 'processing' | 'result' | 'custom-prompt';
+type AppState = 'select' | 'camera' | 'processing' | 'result' | 'custom-prompt' | 'scan-badge';
+
+// Mock album data - will be replaced with real API calls
+interface AlbumData {
+  id: string;
+  visitorName?: string;
+  visitorNumber?: number;
+  currentPhotos: number;
+  maxPhotos: number;
+  currentStation?: string;
+}
 
 export const PhotoBoothPage = () => {
   const { userSlug, eventSlug } = useParams<{ userSlug: string; eventSlug: string }>();
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const { config, loading, error } = useEventConfig(userSlug!, eventSlug!);
+
+  // Album Tracking
+  const albumId = searchParams.get('album');
+  const isAlbumMode = useMemo(() => {
+    return config?.albumTracking?.enabled === true;
+  }, [config]);
+  
+  // Mock album data - in production, this would come from an API
+  const [albumData, setAlbumData] = useState<AlbumData | null>(null);
 
   const [state, setState] = useState<AppState>('select');
   const [selectedBackground, setSelectedBackground] = useState<Template | null>(null);
@@ -30,6 +52,24 @@ export const PhotoBoothPage = () => {
   const [showCustomPromptModal, setShowCustomPromptModal] = useState(false);
   const [customPrompt, setCustomPrompt] = useState<string>('');
   const [customImages, setCustomImages] = useState<string[]>([]);
+
+  // Initialize album mode
+  useEffect(() => {
+    if (isAlbumMode && !albumId) {
+      // Album tracking enabled but no album ID - show scan badge prompt
+      setState('scan-badge');
+    } else if (isAlbumMode && albumId) {
+      // Load album data (mock for now)
+      setAlbumData({
+        id: albumId,
+        visitorNumber: Math.floor(Math.random() * 1000) + 1,
+        currentPhotos: 0,
+        maxPhotos: config?.albumTracking?.rules?.maxPhotosPerAlbum || 5,
+        currentStation: 'Photo Booth',
+      });
+      setState('select');
+    }
+  }, [isAlbumMode, albumId, config]);
 
   // Fire celebratory confetti when the AI result is ready
   useEffect(() => {
@@ -263,6 +303,14 @@ export const PhotoBoothPage = () => {
         toast.warning(warningMessage);
       }
 
+      // Update album data if in album mode
+      if (isAlbumMode && albumData) {
+        setAlbumData({
+          ...albumData,
+          currentPhotos: albumData.currentPhotos + 1,
+        });
+      }
+
       setState("result");
     } catch (error) {
       console.error("Processing error:", error);
@@ -282,15 +330,59 @@ export const PhotoBoothPage = () => {
     setShareCode('');
   };
 
+  // Album-specific handlers
+  const handleViewAlbum = () => {
+    if (albumId && userSlug && eventSlug) {
+      navigate(`/${userSlug}/${eventSlug}/album/${albumId}`);
+    }
+  };
+
+  const canTakeMorePhotos = useMemo(() => {
+    if (!isAlbumMode || !albumData) return true;
+    return albumData.currentPhotos < albumData.maxPhotos;
+  }, [isAlbumMode, albumData]);
+
   return (
     <div className="min-h-screen bg-zinc-950 relative">
+      {/* Scan Badge Prompt - Album Mode without album ID */}
+      {state === 'scan-badge' && (
+        <ScanBadgePrompt
+          eventName={config.title}
+          brandName={config.theme?.brandName || 'PictureMe.Now'}
+          primaryColor={config.theme?.primaryColor}
+          onManualEntry={() => {
+            const code = prompt('Enter your album code:');
+            if (code) {
+              navigate(`/${userSlug}/${eventSlug}?album=${code}`);
+            }
+          }}
+        />
+      )}
+
+      {/* Album Progress Bar - shown in album mode */}
+      {isAlbumMode && albumData && state !== 'scan-badge' && state !== 'processing' && (
+        <div className="fixed top-4 left-4 right-4 z-50">
+          <AlbumProgress
+            albumId={albumData.id}
+            visitorName={albumData.visitorName}
+            visitorNumber={albumData.visitorNumber}
+            currentPhotos={albumData.currentPhotos}
+            maxPhotos={albumData.maxPhotos}
+            currentStation={albumData.currentStation}
+            primaryColor={config.theme?.primaryColor}
+          />
+        </div>
+      )}
+
       {/* Only show title in select state */}
       {state === 'select' && (
-        <EventTitle
-          eventName={config.title}
-          description={config.description}
-          brandName={config.theme?.brandName || 'AI Photobooth'}
-        />
+        <div className={isAlbumMode && albumData ? 'pt-24' : ''}>
+          <EventTitle
+            eventName={config.title}
+            description={config.description}
+            brandName={config.theme?.brandName || 'AI Photobooth'}
+          />
+        </div>
       )}
 
       {state === 'select' && (
@@ -317,12 +409,35 @@ export const PhotoBoothPage = () => {
         <ProcessingLoader status={processingStatus} />
       )}
 
+      {/* Result Display - different for album mode */}
       {state === 'result' && processedPhoto && (
-        <ResultDisplay
-          imageUrl={processedPhoto}
-          shareCode={shareCode}
-          onReset={handleReset}
-        />
+        isAlbumMode && albumData ? (
+          <div className="min-h-screen flex flex-col items-center justify-center p-6">
+            <div className="max-w-md w-full">
+              <img 
+                src={processedPhoto} 
+                alt="Your photo" 
+                className="w-full rounded-2xl shadow-2xl mb-6"
+              />
+              <AlbumResultActions
+                albumId={albumData.id}
+                currentPhotos={albumData.currentPhotos}
+                maxPhotos={albumData.maxPhotos}
+                shareCode={shareCode}
+                onTakeAnother={handleReset}
+                onViewAlbum={handleViewAlbum}
+                canTakeMore={canTakeMorePhotos}
+                primaryColor={config.theme?.primaryColor}
+              />
+            </div>
+          </div>
+        ) : (
+          <ResultDisplay
+            imageUrl={processedPhoto}
+            shareCode={shareCode}
+            onReset={handleReset}
+          />
+        )
       )}
 
       {/* Custom Prompt Modal */}

@@ -14,13 +14,18 @@ import {
   getCurrentUser,
   type EventConfig,
   type Template,
+  type AlbumStation,
+  type AlbumTrackingConfig,
+  type SharingOverrides,
+  type AspectRatio,
 } from "@/services/eventsApi";
 import { 
   ArrowLeft, Plus, Save, Trash2, Image as ImageIcon, Upload, Download, FileJson, 
   Settings, Palette, Layers, Copy, ExternalLink, Lock, Zap, Users, CreditCard, 
   QrCode, Eye, EyeOff, Printer, Video, Sparkles, Mail, MessageSquare, 
   BadgeCheck, LayoutGrid, Moon, Sun, PartyPopper, Building2, Baby, Gift,
-  Info, ChevronRight, Crown, Library, Loader2
+  Info, ChevronRight, Crown, Library, Loader2, MapPin, Camera, Gamepad2, 
+  MonitorPlay, GripVertical, BookOpen, Ratio
 } from "lucide-react";
 import {
   Dialog,
@@ -153,6 +158,35 @@ export default function AdminEventForm() {
       emailTemplate: "",
       emailAfterBuy: true,
       groupPhotosIntoAlbums: false,
+    },
+    
+    // Album Tracking (Business: Event Pro+)
+    albumTracking: {
+      enabled: false,
+      albumType: "individual" as "individual" | "group",
+      stations: [] as AlbumStation[],
+      rules: {
+        maxPhotosPerAlbum: 5,
+        allowReEntry: false,
+        requireStaffApproval: false,
+        printReady: false,
+      },
+      badgeIntegration: {
+        autoGenerateBadge: false,
+        badgeLayout: "portrait" as "portrait" | "landscape" | "square",
+        includeQR: true,
+        includeName: true,
+        includeDateTime: true,
+        customFields: [] as string[],
+      },
+    },
+    
+    // Sharing Overrides (Business: Event Pro+)
+    sharingOverrides: {
+      enabled: false,
+      defaultAspectRatio: "auto" as AspectRatio,
+      availableRatios: ["1:1", "4:5", "9:16", "16:9"] as string[],
+      shareTemplateId: "",
     },
     
     // Legacy settings (kept for compatibility)
@@ -1174,6 +1208,360 @@ export default function AdminEventForm() {
                       </div>
                     </div>
                   </CardContent>
+                </Card>
+              )}
+
+              {/* Album Tracking Section (Event Pro+ only) */}
+              {hasFeature(currentUser?.role, 'albumTracking') && (
+                <Card className="bg-zinc-900/50 border-white/10 backdrop-blur-sm">
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <CardTitle className="text-white flex items-center gap-2">
+                          <BookOpen className="w-5 h-5 text-cyan-400" />
+                          Album Tracking Mode
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+                            Pro
+                          </span>
+                        </CardTitle>
+                        <CardDescription className="text-zinc-400">
+                          Multi-station album workflow for guided experiences
+                        </CardDescription>
+                      </div>
+                      <Switch
+                        checked={formData.albumTracking.enabled}
+                        onCheckedChange={(checked) => setFormData({
+                          ...formData,
+                          albumTracking: { ...formData.albumTracking, enabled: checked }
+                        })}
+                        className="data-[state=checked]:bg-cyan-600"
+                      />
+                    </div>
+                  </CardHeader>
+                  
+                  {formData.albumTracking.enabled && (
+                    <CardContent className="space-y-6">
+                      {/* Album Type */}
+                      <div className="space-y-3">
+                        <Label className="text-zinc-300">Album Type</Label>
+                        <div className="grid grid-cols-2 gap-3">
+                          <button
+                            type="button"
+                            onClick={() => setFormData({
+                              ...formData,
+                              albumTracking: { ...formData.albumTracking, albumType: 'individual' }
+                            })}
+                            className={`p-4 rounded-xl border text-left transition-all ${
+                              formData.albumTracking.albumType === 'individual'
+                                ? 'border-cyan-500 bg-cyan-500/10 ring-1 ring-cyan-500'
+                                : 'border-white/10 bg-black/20 hover:border-white/20'
+                            }`}
+                          >
+                            <Users className="w-5 h-5 text-cyan-400 mb-2" />
+                            <div className="font-medium text-white">Individual</div>
+                            <p className="text-xs text-zinc-400 mt-1">One badge per person, personal album</p>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setFormData({
+                              ...formData,
+                              albumTracking: { ...formData.albumTracking, albumType: 'group' }
+                            })}
+                            className={`p-4 rounded-xl border text-left transition-all ${
+                              formData.albumTracking.albumType === 'group'
+                                ? 'border-cyan-500 bg-cyan-500/10 ring-1 ring-cyan-500'
+                                : 'border-white/10 bg-black/20 hover:border-white/20'
+                            }`}
+                          >
+                            <Users className="w-5 h-5 text-purple-400 mb-2" />
+                            <div className="font-medium text-white">Group</div>
+                            <p className="text-xs text-zinc-400 mt-1">One badge for group, shared album</p>
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Stations Setup */}
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <Label className="text-zinc-300">Stations Setup</Label>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              const newStation: AlbumStation = {
+                                id: crypto.randomUUID(),
+                                name: `Station ${formData.albumTracking.stations.length + 1}`,
+                                description: '',
+                                type: formData.albumTracking.stations.length === 0 ? 'registration' : 'booth',
+                                order: formData.albumTracking.stations.length,
+                              };
+                              setFormData({
+                                ...formData,
+                                albumTracking: {
+                                  ...formData.albumTracking,
+                                  stations: [...formData.albumTracking.stations, newStation]
+                                }
+                              });
+                            }}
+                            className="border-cyan-500/30 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300"
+                          >
+                            <Plus className="w-4 h-4 mr-1" />
+                            Add Station
+                          </Button>
+                        </div>
+                        
+                        {formData.albumTracking.stations.length === 0 ? (
+                          <div className="text-center py-8 text-zinc-500 border-2 border-dashed border-white/10 rounded-xl">
+                            <MapPin className="w-10 h-10 mx-auto mb-2 opacity-50" />
+                            <p>No stations configured. Add your first station to start.</p>
+                          </div>
+                        ) : (
+                          <div className="space-y-3">
+                            {formData.albumTracking.stations.map((station, index) => (
+                              <div 
+                                key={station.id}
+                                className="p-4 rounded-xl bg-black/30 border border-white/10 space-y-3"
+                              >
+                                <div className="flex items-center gap-3">
+                                  <GripVertical className="w-4 h-4 text-zinc-500 cursor-grab" />
+                                  <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-3">
+                                    <Input
+                                      value={station.name}
+                                      onChange={(e) => {
+                                        const updated = [...formData.albumTracking.stations];
+                                        updated[index] = { ...station, name: e.target.value };
+                                        setFormData({
+                                          ...formData,
+                                          albumTracking: { ...formData.albumTracking, stations: updated }
+                                        });
+                                      }}
+                                      placeholder="Station name"
+                                      className="bg-black/40 border-white/10 text-white"
+                                    />
+                                    <select
+                                      value={station.type}
+                                      onChange={(e) => {
+                                        const updated = [...formData.albumTracking.stations];
+                                        updated[index] = { ...station, type: e.target.value as AlbumStation['type'] };
+                                        setFormData({
+                                          ...formData,
+                                          albumTracking: { ...formData.albumTracking, stations: updated }
+                                        });
+                                      }}
+                                      className="h-10 px-3 rounded-lg bg-black/40 border border-white/10 text-white text-sm"
+                                    >
+                                      <option value="registration">📝 Registration</option>
+                                      <option value="booth">📷 Photo Booth</option>
+                                      <option value="playground">🎮 Playground</option>
+                                      <option value="viewer">🖥️ Album Viewer</option>
+                                    </select>
+                                    <Input
+                                      value={station.description}
+                                      onChange={(e) => {
+                                        const updated = [...formData.albumTracking.stations];
+                                        updated[index] = { ...station, description: e.target.value };
+                                        setFormData({
+                                          ...formData,
+                                          albumTracking: { ...formData.albumTracking, stations: updated }
+                                        });
+                                      }}
+                                      placeholder="Description (optional)"
+                                      className="bg-black/40 border-white/10 text-white"
+                                    />
+                                  </div>
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => {
+                                      // Generate QR code (placeholder - will be implemented with backend)
+                                      toast.success(`QR code generated for ${station.name}`);
+                                    }}
+                                    className="border-white/10 text-zinc-300 hover:text-white"
+                                  >
+                                    <QrCode className="w-4 h-4" />
+                                  </Button>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => {
+                                      const updated = formData.albumTracking.stations.filter((_, i) => i !== index);
+                                      setFormData({
+                                        ...formData,
+                                        albumTracking: { ...formData.albumTracking, stations: updated }
+                                      });
+                                    }}
+                                    className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Album Rules */}
+                      <div className="space-y-3">
+                        <Label className="text-zinc-300">Album Rules</Label>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label className="text-zinc-400 text-xs">Max Photos per Album</Label>
+                            <Input
+                              type="number"
+                              min={1}
+                              max={50}
+                              value={formData.albumTracking.rules.maxPhotosPerAlbum}
+                              onChange={(e) => setFormData({
+                                ...formData,
+                                albumTracking: {
+                                  ...formData.albumTracking,
+                                  rules: { ...formData.albumTracking.rules, maxPhotosPerAlbum: parseInt(e.target.value) || 5 }
+                                }
+                              })}
+                              className="bg-black/40 border-white/10 text-white"
+                            />
+                          </div>
+                          <div className="grid grid-cols-3 gap-2">
+                            <div className="flex items-center justify-between p-3 rounded-lg bg-black/30 border border-white/5">
+                              <span className="text-xs text-zinc-300">Re-entry</span>
+                              <Switch
+                                checked={formData.albumTracking.rules.allowReEntry}
+                                onCheckedChange={(checked) => setFormData({
+                                  ...formData,
+                                  albumTracking: {
+                                    ...formData.albumTracking,
+                                    rules: { ...formData.albumTracking.rules, allowReEntry: checked }
+                                  }
+                                })}
+                                className="data-[state=checked]:bg-cyan-600"
+                              />
+                            </div>
+                            <div className="flex items-center justify-between p-3 rounded-lg bg-black/30 border border-white/5">
+                              <span className="text-xs text-zinc-300">Staff Approval</span>
+                              <Switch
+                                checked={formData.albumTracking.rules.requireStaffApproval}
+                                onCheckedChange={(checked) => setFormData({
+                                  ...formData,
+                                  albumTracking: {
+                                    ...formData.albumTracking,
+                                    rules: { ...formData.albumTracking.rules, requireStaffApproval: checked }
+                                  }
+                                })}
+                                className="data-[state=checked]:bg-cyan-600"
+                              />
+                            </div>
+                            <div className="flex items-center justify-between p-3 rounded-lg bg-black/30 border border-white/5">
+                              <span className="text-xs text-zinc-300">Print Ready</span>
+                              <Switch
+                                checked={formData.albumTracking.rules.printReady}
+                                onCheckedChange={(checked) => setFormData({
+                                  ...formData,
+                                  albumTracking: {
+                                    ...formData.albumTracking,
+                                    rules: { ...formData.albumTracking.rules, printReady: checked }
+                                  }
+                                })}
+                                className="data-[state=checked]:bg-cyan-600"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Badge Integration */}
+                      <div className="space-y-3 p-4 rounded-xl bg-amber-500/5 border border-amber-500/20">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <BadgeCheck className="w-4 h-4 text-amber-400" />
+                            <Label className="text-zinc-300">Auto-Generate Badge on Registration</Label>
+                          </div>
+                          <Switch
+                            checked={formData.albumTracking.badgeIntegration.autoGenerateBadge}
+                            onCheckedChange={(checked) => setFormData({
+                              ...formData,
+                              albumTracking: {
+                                ...formData.albumTracking,
+                                badgeIntegration: { ...formData.albumTracking.badgeIntegration, autoGenerateBadge: checked }
+                              }
+                            })}
+                            className="data-[state=checked]:bg-amber-600"
+                          />
+                        </div>
+                        
+                        {formData.albumTracking.badgeIntegration.autoGenerateBadge && (
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
+                            <div className="space-y-2">
+                              <Label className="text-zinc-400 text-xs">Layout</Label>
+                              <select
+                                value={formData.albumTracking.badgeIntegration.badgeLayout}
+                                onChange={(e) => setFormData({
+                                  ...formData,
+                                  albumTracking: {
+                                    ...formData.albumTracking,
+                                    badgeIntegration: { 
+                                      ...formData.albumTracking.badgeIntegration, 
+                                      badgeLayout: e.target.value as 'portrait' | 'landscape' | 'square' 
+                                    }
+                                  }
+                                })}
+                                className="w-full h-9 px-3 rounded-lg bg-black/40 border border-white/10 text-white text-sm"
+                              >
+                                <option value="portrait">Portrait</option>
+                                <option value="landscape">Landscape</option>
+                                <option value="square">Square</option>
+                              </select>
+                            </div>
+                            <div className="flex items-center justify-between p-3 rounded-lg bg-black/30 border border-white/5">
+                              <span className="text-xs text-zinc-300">QR Code</span>
+                              <Switch
+                                checked={formData.albumTracking.badgeIntegration.includeQR}
+                                onCheckedChange={(checked) => setFormData({
+                                  ...formData,
+                                  albumTracking: {
+                                    ...formData.albumTracking,
+                                    badgeIntegration: { ...formData.albumTracking.badgeIntegration, includeQR: checked }
+                                  }
+                                })}
+                                className="data-[state=checked]:bg-amber-600"
+                              />
+                            </div>
+                            <div className="flex items-center justify-between p-3 rounded-lg bg-black/30 border border-white/5">
+                              <span className="text-xs text-zinc-300">Name</span>
+                              <Switch
+                                checked={formData.albumTracking.badgeIntegration.includeName}
+                                onCheckedChange={(checked) => setFormData({
+                                  ...formData,
+                                  albumTracking: {
+                                    ...formData.albumTracking,
+                                    badgeIntegration: { ...formData.albumTracking.badgeIntegration, includeName: checked }
+                                  }
+                                })}
+                                className="data-[state=checked]:bg-amber-600"
+                              />
+                            </div>
+                            <div className="flex items-center justify-between p-3 rounded-lg bg-black/30 border border-white/5">
+                              <span className="text-xs text-zinc-300">Date/Time</span>
+                              <Switch
+                                checked={formData.albumTracking.badgeIntegration.includeDateTime}
+                                onCheckedChange={(checked) => setFormData({
+                                  ...formData,
+                                  albumTracking: {
+                                    ...formData.albumTracking,
+                                    badgeIntegration: { ...formData.albumTracking.badgeIntegration, includeDateTime: checked }
+                                  }
+                                })}
+                                className="data-[state=checked]:bg-amber-600"
+                              />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  )}
                 </Card>
               )}
             </TabsContent>
@@ -2427,7 +2815,7 @@ export default function AdminEventForm() {
                                   </div>
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                   {/* Base Image Model */}
                                   <div className="space-y-2">
                                     <Label className="text-zinc-400 text-xs">Base Image Model</Label>
@@ -2445,6 +2833,28 @@ export default function AdminEventForm() {
                                       <option value="nano-banana">Nano Banana / Imagen 3 — 1 token</option>
                                       <option value="nano-banana-pro">Nano Banana Pro — 4 tokens (High quality)</option>
                                       <option value="flux-realism">Flux Realism — 2 tokens</option>
+                                    </select>
+                                  </div>
+
+                                  {/* Aspect Ratio */}
+                                  <div className="space-y-2">
+                                    <Label className="text-zinc-400 text-xs flex items-center gap-1">
+                                      <Ratio className="w-3 h-3" />
+                                      Aspect Ratio
+                                    </Label>
+                                    <select
+                                      value={template.aspectRatio || 'auto'}
+                                      onChange={(e) => updateTemplate(index, {
+                                        aspectRatio: e.target.value as AspectRatio
+                                      })}
+                                      className="w-full h-10 px-3 rounded-lg bg-black/40 border border-white/10 text-white text-sm"
+                                    >
+                                      <option value="auto">Auto (Model Default)</option>
+                                      <option value="1:1">1:1 — Square</option>
+                                      <option value="4:5">4:5 — Portrait (Instagram)</option>
+                                      <option value="3:2">3:2 — Classic Photo</option>
+                                      <option value="16:9">16:9 — Landscape (Video)</option>
+                                      <option value="9:16">9:16 — Stories/Reels</option>
                                     </select>
                                   </div>
 
