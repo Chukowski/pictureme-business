@@ -467,14 +467,17 @@ export function AkitoWidget({ className, defaultOpen = false }: AkitoWidgetProps
       <Button
         onClick={toggleOpen}
         className={cn(
-          "fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg",
-          "bg-gradient-to-br from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700",
-          "text-white z-50 transition-all duration-300 hover:scale-110",
+          "fixed bottom-6 right-6 h-16 w-16 shadow-lg p-0 bg-transparent hover:bg-transparent",
+          "text-white z-50 transition-all duration-300 hover:scale-110 hover:rotate-3",
           hasUnread && "animate-pulse",
           className
         )}
       >
-        <Bot className="h-6 w-6" />
+        <img 
+          src="/assets/akito-2d.png" 
+          alt="Akito" 
+          className="w-full h-full object-contain drop-shadow-xl"
+        />
         {hasUnread && (
           <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-red-500 animate-ping" />
         )}
@@ -499,8 +502,12 @@ export function AkitoWidget({ className, defaultOpen = false }: AkitoWidgetProps
       {/* Header */}
       <div className="p-3 border-b border-white/10 flex items-center justify-between flex-shrink-0">
         <div className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center">
-            <Bot className="h-4 w-4 text-white" />
+          <div className="h-10 w-10 flex items-center justify-center">
+            <img 
+              src="/assets/akito-2d.png" 
+              alt="Akito" 
+              className="w-full h-full object-contain drop-shadow-md"
+            />
           </div>
           <div>
             <h3 className="text-sm font-semibold text-white">Akito</h3>
@@ -581,8 +588,12 @@ export function AkitoWidget({ className, defaultOpen = false }: AkitoWidgetProps
                 )}
               >
                 {message.role === "assistant" && (
-                  <div className="h-6 w-6 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center flex-shrink-0 mt-1">
-                    <Sparkles className="h-3 w-3 text-white" />
+                  <div className="h-8 w-8 flex items-center justify-center flex-shrink-0 mt-1">
+                    <img 
+                      src="/assets/akito-2d.png" 
+                      alt="Akito" 
+                      className="w-full h-full object-contain drop-shadow-sm"
+                    />
                   </div>
                 )}
                 <div className="max-w-[85%] space-y-2">
@@ -616,8 +627,12 @@ export function AkitoWidget({ className, defaultOpen = false }: AkitoWidgetProps
             
             {isLoading && (
               <div className="flex gap-2 justify-start">
-                <div className="h-6 w-6 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center flex-shrink-0 mt-1">
-                  <Sparkles className="h-3 w-3 text-white" />
+                <div className="h-8 w-8 flex items-center justify-center flex-shrink-0 mt-1">
+                  <img 
+                    src="/assets/akito-2d.png" 
+                    alt="Akito" 
+                    className="w-full h-full object-contain drop-shadow-sm"
+                  />
                 </div>
                 <div className="bg-zinc-800 rounded-2xl rounded-bl-md px-4 py-2">
                   <Loader2 className="h-4 w-4 animate-spin text-zinc-400" />
