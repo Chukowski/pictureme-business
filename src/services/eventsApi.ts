@@ -23,7 +23,7 @@ export interface User {
   full_name?: string;
   name?: string;
   slug: string;
-  role?: 'individual' | 'business_pending' | 'business_eventpro' | 'business_masters' | 'superadmin';
+  role?: 'individual' | 'business_pending' | 'business_starter' | 'business_eventpro' | 'business_masters' | 'superadmin';
   birth_date?: string;
   avatar_url?: string;
   cover_image_url?: string;
@@ -39,6 +39,12 @@ export interface User {
   tokens_remaining?: number;
   tokens_total?: number;
   subscription_tier?: string;
+  // Business plan fields
+  plan_id?: string;
+  plan_name?: string;
+  plan_started_at?: string;
+  plan_renewal_date?: string;
+  max_concurrent_events?: number;
 }
 
 export interface WatermarkConfig {
@@ -94,7 +100,8 @@ export interface Template {
   id: string;
   name: string;
   description: string;
-  images: string[];
+  images: string[]; // Background images
+  elementImages?: string[]; // Element/prop images for mixing (Seedream, Imagen)
   prompt: string;
   active: boolean;
   // Individual branding controls per template
@@ -104,6 +111,26 @@ export interface Template {
   includeTagline?: boolean; // Show tagline
   includeWatermark?: boolean; // Show watermark
   isCustomPrompt?: boolean; // Special template that allows user to write custom prompts
+  
+  // Pipeline Configuration
+  pipelineConfig?: {
+    imageModel?: string; // e.g., 'seedream-t2i', 'nano-banana', 'flux-realism'
+    faceswapEnabled?: boolean;
+    faceswapModel?: string;
+    videoEnabled?: boolean;
+    videoModel?: string; // e.g., 'wan-v2', 'kling-pro', 'veo-3.1'
+    badgeEnabled?: boolean;
+  };
+  
+  // Access & Monetization Overrides
+  overrideEventSettings?: boolean;
+  accessOverrides?: {
+    leadCaptureRequired?: boolean;
+    requirePayment?: boolean;
+    hardWatermark?: boolean;
+    disableDownloads?: boolean;
+    allowFreePreview?: boolean;
+  };
 }
 
 export interface PhotoFeed {
@@ -259,11 +286,23 @@ export function getAuthToken(): string | null {
 }
 
 /**
- * Logout user
+ * Logout user - clears ALL auth-related data from localStorage
  */
 export function logoutUser(): void {
+  // Clear all auth-related keys
   localStorage.removeItem('auth_token');
   localStorage.removeItem('current_user');
+  localStorage.removeItem('user'); // Better Auth user data
+  localStorage.removeItem('better-auth.session_token');
+  
+  // Dispatch storage event for same-tab listeners (like AkitoWidget)
+  window.dispatchEvent(new StorageEvent('storage', {
+    key: 'user',
+    oldValue: null,
+    newValue: null,
+  }));
+  
+  console.log('🚪 User logged out - all auth data cleared');
 }
 
 /**

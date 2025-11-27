@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LayoutDashboard, Camera, Image as ImageIcon, CreditCard, HelpCircle, Zap, Plus, Palette } from "lucide-react";
 import StudioTab from "./StudioTab";
+import BillingTab from "./BillingTab";
 
 interface IndividualDashboardProps {
     currentUser: User;
@@ -185,38 +186,7 @@ export default function IndividualDashboard({ currentUser }: IndividualDashboard
 
                 {/* Billing Tab */}
                 <TabsContent value="billing" className="focus-visible:outline-none">
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                        <Card className="bg-zinc-900/50 border-white/10">
-                            <CardHeader>
-                                <CardTitle className="text-white">Current Plan</CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-6">
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <h3 className="text-2xl font-bold text-white">Spark</h3>
-                                        <p className="text-zinc-400">Individual Plan</p>
-                                    </div>
-                                    <span className="px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 text-sm font-medium">
-                                        Active
-                                    </span>
-                                </div>
-                                <div className="space-y-2">
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-zinc-400">Monthly Tokens</span>
-                                        <span className="text-white">200</span>
-                                    </div>
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-zinc-400">Price</span>
-                                        <span className="text-white">$9.99/mo</span>
-                                    </div>
-                                </div>
-                                <div className="flex gap-3 pt-4">
-                                    <Button className="flex-1 bg-white text-black hover:bg-zinc-200">Upgrade Plan</Button>
-                                    <Button variant="outline" className="flex-1 border-white/10 text-white hover:bg-white/5">Manage Subscription</Button>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    </div>
+                    <BillingTab currentUser={currentUser} />
                 </TabsContent>
 
                 {/* Support Tab */}

@@ -6,6 +6,7 @@ import { Loader2 } from 'lucide-react';
 import { Carousel, CarouselContent, CarouselItem, type CarouselApi } from '@/components/ui/carousel';
 import { QRCodeSVG } from 'qrcode.react';
 import { BorderBeam } from '@/components/BorderBeam';
+import { EventNotFound, FeedNotAvailable } from '@/components/EventNotFound';
 import clsx from 'clsx';
 
 const chunkArray = <T,>(array: T[], size: number): T[][] => {
@@ -136,31 +137,15 @@ export const EventFeedPage = () => {
 
   if (configError || !config) {
     return (
-      <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-4">
-        <div className="text-center space-y-6 max-w-md">
-          <div className="w-24 h-24 rounded-full bg-red-500/20 mx-auto flex items-center justify-center">
-            <span className="text-5xl">😕</span>
-          </div>
-          <h1 className="text-3xl font-bold text-white">Event Not Found</h1>
-          <p className="text-gray-400 text-lg">
-            {configError || "This event doesn't exist or is no longer active."}
-          </p>
-        </div>
-      </div>
+      <EventNotFound 
+        message={configError || "Este evento no existe o ya no está activo."}
+        eventSlug={eventSlug}
+      />
     );
   }
 
   if (!config.settings?.feedEnabled) {
-    return (
-      <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-4">
-        <div className="text-center space-y-6 max-w-md">
-          <h1 className="text-3xl font-bold text-white">Feed Not Available</h1>
-          <p className="text-gray-400 text-lg">
-            The live photo feed is not enabled for this event.
-          </p>
-        </div>
-      </div>
-    );
+    return <FeedNotAvailable />;
   }
 
   return (

@@ -33,6 +33,11 @@ import SuperAdminDevTools from "./components/super-admin/SuperAdminDevTools";
 import PublicProfile from "./pages/PublicProfile";
 import AccountSettings from "./pages/AccountSettings";
 
+// CopilotKit imports (self-hosted, no cloud required)
+import { CopilotKit } from "@copilotkit/react-core";
+import { AkitoCopilotActions } from "./components/AkitoCopilotActions";
+import { AkitoWidget } from "./components/AkitoWidget";
+
 const queryClient = new QueryClient();
 
 const FloatingSidebarToggle = () => {
@@ -45,6 +50,26 @@ const FloatingSidebarToggle = () => {
   );
 };
 
+// Get user info for CopilotKit context
+const getUserProperties = () => {
+  try {
+    const userStr = localStorage.getItem("user");
+    if (userStr) {
+      const user = JSON.parse(userStr);
+      return {
+        user_id: user.id,
+        user_role: user.role || "guest",
+        user_name: user.full_name || user.username || "Guest",
+      };
+    }
+  } catch {
+    // Ignore parse errors
+  }
+  return { user_id: null, user_role: "guest", user_name: "Guest" };
+};
+
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider>
@@ -52,6 +77,16 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
+          {/* CopilotKit Provider - Self-hosted, connects to our FastAPI backend */}
+          <CopilotKit
+            runtimeUrl={`${API_URL}/copilotkit`}
+            properties={getUserProperties()}
+          >
+            {/* Register frontend actions for Akito */}
+            <AkitoCopilotActions />
+            {/* Custom Akito Widget with our branding */}
+            <AkitoWidget />
+          </CopilotKit>
           <Routes>
             {/* Root shows Landing Page */}
             <Route path="/" element={<LandingPage />} />
@@ -86,6 +121,13 @@ const App = () => (
             <Route path="/admin/events/edit/:eventId" element={<AdminEventForm />} />
             <Route path="/admin/events/:eventId/photos" element={<AdminEventPhotos />} />
             <Route path="/admin/settings" element={<AccountSettings />} />
+            <Route path="/admin/billing" element={<AdminDashboard />} />
+            <Route path="/admin/tokens" element={<AdminDashboard />} />
+            <Route path="/admin/marketplace" element={<AdminDashboard />} />
+            <Route path="/admin/analytics" element={<AdminDashboard />} />
+            <Route path="/admin/studio" element={<AdminDashboard />} />
+            {/* Catch-all for unknown admin routes - show 404 */}
+            <Route path="/admin/*" element={<NotFound />} />
 
             {/* Public Profile */}
             <Route path="/profile/:username" element={<PublicProfile />} />
@@ -105,5 +147,7 @@ const App = () => (
     </ThemeProvider>
   </QueryClientProvider>
 );
+
+// Note: AkitoWidget uses our custom branding with CopilotKit backend actions
 
 export default App;

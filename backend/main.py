@@ -83,6 +83,57 @@ try:
 except Exception as e:
     print(f"⚠️  Warning: Could not include enterprise pricing router: {e}")
 
+try:
+    from routers import tokens
+    app.include_router(tokens.router)
+    print("✅ Tokens router included successfully")
+except Exception as e:
+    print(f"⚠️  Warning: Could not include tokens router: {e}")
+
+try:
+    from routers import billing
+    app.include_router(billing.router)
+    print("✅ Billing router included successfully")
+except Exception as e:
+    print(f"⚠️  Warning: Could not include billing router: {e}")
+
+try:
+    from routers import marketplace
+    app.include_router(marketplace.router)
+    print("✅ Marketplace router included successfully")
+except Exception as e:
+    print(f"⚠️  Warning: Could not include marketplace router: {e}")
+
+try:
+    from routers import prompt_helper
+    app.include_router(prompt_helper.router)
+    print("✅ Prompt helper router included successfully")
+except Exception as e:
+    print(f"⚠️  Warning: Could not include prompt helper router: {e}")
+    import traceback
+    traceback.print_exc()
+
+# Akito AI Assistant Router
+try:
+    from routers import akito
+    app.include_router(akito.router)
+    print("✅ Akito assistant router included successfully")
+except Exception as e:
+    print(f"⚠️  Warning: Could not include Akito router: {e}")
+    import traceback
+    traceback.print_exc()
+
+# CopilotKit Integration
+try:
+    from routers.copilotkit_endpoint import sdk
+    from copilotkit.integrations.fastapi import add_fastapi_endpoint
+    add_fastapi_endpoint(app, sdk, "/copilotkit")
+    print("✅ CopilotKit endpoint added at /copilotkit")
+except Exception as e:
+    print(f"⚠️  Warning: Could not add CopilotKit endpoint: {e}")
+    import traceback
+    traceback.print_exc()
+
 # ===== Database Connection =====
 db_pool: Optional[asyncpg.Pool] = None
 
@@ -91,6 +142,16 @@ async def startup():
     global db_pool
     db_pool = await asyncpg.create_pool(DATABASE_URL, min_size=2, max_size=10)
     print("✅ Database pool created")
+    
+    # Connect routers to db_pool
+    try:
+        from routers import tokens, billing, marketplace
+        tokens.set_db_pool(db_pool)
+        billing.set_db_pool(db_pool)
+        marketplace.set_db_pool(db_pool)
+        print("✅ Routers connected to database pool")
+    except Exception as e:
+        print(f"⚠️  Warning: Could not connect routers to db_pool: {e}")
 
 @app.on_event("shutdown")
 async def shutdown():
@@ -252,8 +313,20 @@ async def get_current_user(
     
     async with db_pool.acquire() as conn:
         # Try to fetch user by id (supports both UUID and legacy int)
+        # Include plan details for business users
         user = await conn.fetchrow(
-            "SELECT id, username, email, full_name, slug, role, birth_date, avatar_url FROM users WHERE id::text = $1 AND is_active = TRUE",
+            """
+            SELECT 
+                u.id, u.username, u.email, u.full_name, u.slug, u.role, 
+                u.birth_date, u.avatar_url, u.tokens_remaining, u.plan_id,
+                u.plan_started_at, u.plan_renewal_date,
+                bp.name as plan_name,
+                bp.included_tokens as tokens_total,
+                bp.max_concurrent_events
+            FROM users u
+            LEFT JOIN business_plans bp ON u.plan_id = bp.slug
+            WHERE u.id::text = $1 AND u.is_active = TRUE
+            """,
             str(user_id)
         )
     
@@ -679,10 +752,10 @@ async def upload_cover(
 
 @app.get("/api/users/email-by-username/{username}")
 async def get_email_by_username(username: str):
-    """Get user email by username - for Better Auth login compatibility"""
+    """Get user email by username - for Better Auth login compatibility (case-insensitive)"""
     async with db_pool.acquire() as conn:
         user = await conn.fetchrow(
-            "SELECT email FROM users WHERE username = $1 AND is_active = TRUE",
+            "SELECT email FROM users WHERE LOWER(username) = LOWER($1) AND is_active = TRUE",
             username
         )
         if not user:
@@ -692,16 +765,16 @@ async def get_email_by_username(username: str):
 
 @app.get("/api/users/profile/{username}")
 async def get_public_profile(username: str):
-    """Get public profile by username or slug"""
+    """Get public profile by username or slug (case-insensitive)"""
     async with db_pool.acquire() as conn:
-        # Try to find user by username or slug
+        # Try to find user by username or slug (case-insensitive)
         user = await conn.fetchrow(
             """
             SELECT 
                 id, username, slug, full_name, email, avatar_url, 
                 cover_image_url, bio, social_links, is_public, created_at
             FROM users 
-            WHERE (username = $1 OR slug = $1) AND is_active = TRUE
+            WHERE (LOWER(username) = LOWER($1) OR LOWER(slug) = LOWER($1)) AND is_active = TRUE
             """,
             username
         )

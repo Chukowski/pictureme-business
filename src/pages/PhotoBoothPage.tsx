@@ -13,6 +13,7 @@ import { processImageWithAI, downloadImageAsBase64 } from '@/services/aiProcesso
 import { toast } from 'sonner';
 import { Template } from '@/services/eventsApi';
 import { saveProcessedPhoto, getAllPhotos } from '@/services/localStorage';
+import { EventNotFound } from '@/components/EventNotFound';
 
 type AppState = 'select' | 'camera' | 'processing' | 'result' | 'custom-prompt';
 
@@ -122,17 +123,10 @@ export const PhotoBoothPage = () => {
 
   if (error || !config) {
     return (
-      <div className="min-h-screen bg-gradient-dark flex items-center justify-center p-4">
-        <div className="text-center space-y-6 max-w-md">
-          <div className="w-24 h-24 rounded-full bg-red-500/20 mx-auto flex items-center justify-center">
-            <span className="text-5xl">😕</span>
-          </div>
-          <h1 className="text-3xl font-bold text-white">Event Not Found</h1>
-          <p className="text-gray-400 text-lg">
-            {error || "This event doesn't exist or is no longer active."}
-          </p>
-        </div>
-      </div>
+      <EventNotFound 
+        message={error || "Este evento no existe o ya no está activo."}
+        eventSlug={eventSlug}
+      />
     );
   }
 

@@ -2,12 +2,36 @@ export interface Template {
   id: string;
   name: string;
   description: string;
-  images: string[]; // Array of image URLs/base64
+  images: string[]; // Background images
+  elementImages?: string[]; // Element/prop images for mixing (Seedream, Imagen)
   prompt: string;
   active: boolean;
   includeBranding?: boolean;
   includeHeader?: boolean;
+  includeTagline?: boolean;
+  includeWatermark?: boolean;
+  isCustomPrompt?: boolean;
   campaignText?: string; // Text overlay on the AI image (e.g., "Need extra hands?")
+  
+  // Pipeline Configuration
+  pipelineConfig?: {
+    imageModel?: string;
+    faceswapEnabled?: boolean;
+    faceswapModel?: string;
+    videoEnabled?: boolean;
+    videoModel?: string;
+    badgeEnabled?: boolean;
+  };
+  
+  // Access & Monetization Overrides
+  overrideEventSettings?: boolean;
+  accessOverrides?: {
+    leadCaptureRequired?: boolean;
+    requirePayment?: boolean;
+    hardWatermark?: boolean;
+    disableDownloads?: boolean;
+    allowFreePreview?: boolean;
+  };
 }
 
 export interface EventConfig {

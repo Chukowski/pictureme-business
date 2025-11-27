@@ -48,12 +48,27 @@ interface AdminEventsTabProps {
   currentUser: User;
 }
 
+// Plan limits for event count
+const PLAN_LIMITS: Record<string, number> = {
+  'event_starter': 1,
+  'event_pro': 2,
+  'masters': 3,
+  'free': 1,
+  'individual': 1
+};
+
 export default function AdminEventsTab({ currentUser }: AdminEventsTabProps) {
   const navigate = useNavigate();
   const [events, setEvents] = useState<EventConfig[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [eventToDelete, setEventToDelete] = useState<EventConfig | null>(null);
+
+  // Calculate active events and limit
+  const activeEventsCount = events.filter(e => e.is_active).length;
+  const planId = currentUser?.subscription_tier || currentUser?.role || 'free';
+  const maxEvents = PLAN_LIMITS[planId] || 1;
+  const canCreateEvent = activeEventsCount < maxEvents;
 
   useEffect(() => {
     loadEvents();
@@ -108,14 +123,42 @@ export default function AdminEventsTab({ currentUser }: AdminEventsTabProps) {
     <>
       {/* Header Actions */}
       <div className="flex items-center justify-between mb-8">
-        <h2 className="text-xl font-semibold text-white">Your Events</h2>
-        <Button
-          onClick={() => navigate("/admin/events/create")}
-          className="bg-indigo-600 hover:bg-indigo-500 text-white border-0"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Create New Event
-        </Button>
+        <div className="flex items-center gap-4">
+          <h2 className="text-xl font-semibold text-white">Your Events</h2>
+          
+          {/* Active Events Indicator */}
+          <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm ${
+            activeEventsCount >= maxEvents 
+              ? 'bg-amber-500/10 border border-amber-500/20' 
+              : 'bg-zinc-800/50 border border-white/10'
+          }`}>
+            <span className={activeEventsCount >= maxEvents ? 'text-amber-400' : 'text-zinc-400'}>
+              Active:
+            </span>
+            <span className={`font-mono font-bold ${
+              activeEventsCount >= maxEvents ? 'text-amber-400' : 'text-white'
+            }`}>
+              {activeEventsCount} / {maxEvents}
+            </span>
+          </div>
+        </div>
+        
+        <div className="flex items-center gap-3">
+          {!canCreateEvent && (
+            <span className="text-xs text-amber-400">
+              Upgrade to add more events
+            </span>
+          )}
+          <Button
+            onClick={() => navigate("/admin/events/create")}
+            className="bg-indigo-600 hover:bg-indigo-500 text-white border-0"
+            disabled={!canCreateEvent}
+            title={!canCreateEvent ? `You've reached your limit of ${maxEvents} active events` : undefined}
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Create New Event
+          </Button>
+        </div>
       </div>
 
       {/* Events List */}

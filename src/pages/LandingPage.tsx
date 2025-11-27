@@ -1,18 +1,73 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Check, Sparkles, Zap, Shield, Aperture, Wand2, Layers, Smartphone, Info } from "lucide-react";
+import { Check, Sparkles, Zap, Shield, Aperture, Wand2, Layers, Smartphone, Info, User, LogOut } from "lucide-react";
+import { logoutUser } from "@/services/eventsApi";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export default function LandingPage() {
   const navigate = useNavigate();
   const [pricingTab, setPricingTab] = useState<'individual' | 'business'>('individual');
+  const [currentUser, setCurrentUser] = useState<any>(null);
+
+  // Check for logged-in user
+  useEffect(() => {
+    const checkUser = () => {
+      try {
+        const userStr = localStorage.getItem('user');
+        const authToken = localStorage.getItem('auth_token');
+        
+        // Only set user if both user data AND auth token exist
+        if (userStr && authToken) {
+          const user = JSON.parse(userStr);
+          if (user && (user.id || user.email)) {
+            setCurrentUser(user);
+            return;
+          }
+        }
+        // If either is missing, clear the user
+        setCurrentUser(null);
+      } catch {
+        setCurrentUser(null);
+      }
+    };
+    checkUser();
+    
+    // Also listen for storage changes (in case user logs in/out in another tab)
+    window.addEventListener('storage', checkUser);
+    
+    // Check periodically as backup (every 500ms)
+    const interval = setInterval(checkUser, 500);
+    
+    return () => {
+      window.removeEventListener('storage', checkUser);
+      clearInterval(interval);
+    };
+  }, []);
+
+  const handleLogout = () => {
+    logoutUser();
+    setCurrentUser(null);
+  };
+
+  const getInitials = (name: string) => {
+    return name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'U';
+  };
 
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id);
@@ -38,12 +93,56 @@ export default function LandingPage() {
             <button onClick={() => scrollToSection("pricing")} className="hover:text-white transition-colors">Pricing</button>
           </div>
           <div className="flex items-center gap-4">
-            <Button variant="ghost" className="text-zinc-400 hover:text-white hover:bg-white/5" onClick={() => navigate("/admin/auth")}>
-              Log in
-            </Button>
-            <Button className="bg-white text-black hover:bg-zinc-200 rounded-full px-6 font-semibold" onClick={() => navigate("/admin/register")}>
-              Get Started
-            </Button>
+            {currentUser ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="flex items-center gap-2 text-zinc-300 hover:text-white hover:bg-white/5">
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={currentUser.avatar_url} />
+                      <AvatarFallback className="bg-indigo-600 text-white text-xs">
+                        {getInitials(currentUser.full_name || currentUser.username)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="hidden sm:inline">{currentUser.full_name || currentUser.username}</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48 bg-zinc-900 border-white/10">
+                  <DropdownMenuLabel className="text-zinc-400">Mi cuenta</DropdownMenuLabel>
+                  <DropdownMenuSeparator className="bg-white/10" />
+                  <DropdownMenuItem 
+                    className="text-zinc-300 hover:text-white hover:bg-white/5 cursor-pointer"
+                    onClick={() => navigate("/admin")}
+                  >
+                    <User className="h-4 w-4 mr-2" />
+                    Dashboard
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    className="text-zinc-300 hover:text-white hover:bg-white/5 cursor-pointer"
+                    onClick={() => navigate("/admin/settings")}
+                  >
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    Configuración
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator className="bg-white/10" />
+                  <DropdownMenuItem 
+                    className="text-red-400 hover:text-red-300 hover:bg-red-500/10 cursor-pointer"
+                    onClick={handleLogout}
+                  >
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Cerrar sesión
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <>
+                <Button variant="ghost" className="text-zinc-400 hover:text-white hover:bg-white/5" onClick={() => navigate("/admin/auth")}>
+                  Log in
+                </Button>
+                <Button className="bg-white text-black hover:bg-zinc-200 rounded-full px-6 font-semibold" onClick={() => navigate("/admin/register")}>
+                  Get Started
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </nav>
@@ -351,29 +450,76 @@ export default function LandingPage() {
                 </div>
               </>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-                {/* Event Pro */}
-                <div className="rounded-3xl bg-zinc-950 border border-purple-500/30 p-8 flex flex-col hover:border-purple-500/50 transition-all">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto">
+                {/* Event Starter */}
+                <div className="rounded-3xl bg-zinc-950 border border-blue-500/30 p-8 flex flex-col hover:border-blue-500/50 transition-all">
                   <div className="mb-6">
                     <div className="flex items-center justify-between mb-2">
-                      <h3 className="text-2xl font-bold text-white">Event Pro</h3>
-                      <span className="px-3 py-1 rounded-full bg-purple-500/10 text-purple-400 text-xs font-bold border border-purple-500/20">AGENCY</span>
+                      <h3 className="text-2xl font-bold text-white">Event Starter</h3>
                     </div>
-                    <div className="text-3xl font-bold text-white mb-1">Custom</div>
-                    <p className="text-zinc-400 text-sm mt-4">For event operators managing multiple clients.</p>
+                    <div className="text-3xl font-bold text-white mb-1">$400<span className="text-lg font-normal text-zinc-400">/month</span></div>
+                    <p className="text-zinc-400 text-sm mt-4">Perfect for getting started with events.</p>
                   </div>
 
-                  <Button variant="outline" className="w-full border-purple-500/30 text-purple-400 hover:bg-purple-500/10 mb-8 rounded-xl font-semibold" onClick={() => navigate("/admin/register?plan=event-pro")}>
-                    Contact Sales
+                  <Button variant="outline" className="w-full border-blue-500/30 text-blue-400 hover:bg-blue-500/10 mb-8 rounded-xl font-semibold" onClick={() => navigate("/admin/register?plan=event-starter")}>
+                    Select Plan
                   </Button>
 
                   <div className="space-y-4 flex-1">
                     {[
-                      { text: "5,000 Tokens / month", tooltip: "~5,000 Images" },
-                      { text: "2 Active Events" },
-                      { text: "White-label Branding" },
-                      { text: "Lead Capture System" },
-                      { text: "BYOH Support" }
+                      { text: "1,000 tokens/month", tooltip: "~1,000 Images" },
+                      { text: "1 active event" },
+                      { text: "Basic analytics" },
+                      { text: "BYOH (Bring Your Own Hardware)" },
+                      { text: "Email support" }
+                    ].map((item, i) => (
+                      <div key={i} className="flex items-center gap-3 text-sm text-zinc-300">
+                        <Check className="w-4 h-4 text-blue-500 shrink-0" />
+                        <span className="flex items-center gap-1">
+                          {item.text}
+                          {item.tooltip && (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger>
+                                  <Info className="w-3 h-3 text-zinc-500 hover:text-zinc-300 transition-colors" />
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>{item.tooltip}</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          )}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Event Pro */}
+                <div className="rounded-3xl bg-zinc-950 border border-purple-500/30 p-8 flex flex-col hover:border-purple-500/50 transition-all relative">
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                    <span className="px-4 py-1 rounded-full bg-purple-500 text-white text-xs font-bold">POPULAR</span>
+                  </div>
+                  <div className="mb-6">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="text-2xl font-bold text-white">Event Pro</h3>
+                    </div>
+                    <div className="text-3xl font-bold text-white mb-1">$1,500<span className="text-lg font-normal text-zinc-400">/month</span></div>
+                    <p className="text-zinc-400 text-sm mt-4">For professional event operators.</p>
+                  </div>
+
+                  <Button className="w-full bg-purple-600 hover:bg-purple-700 text-white mb-8 rounded-xl font-semibold" onClick={() => navigate("/admin/register?plan=event-pro")}>
+                    Select Plan
+                  </Button>
+
+                  <div className="space-y-4 flex-1">
+                    {[
+                      { text: "5,000 tokens/month", tooltip: "~5,000 Images" },
+                      { text: "Up to 2 active events" },
+                      { text: "Advanced analytics" },
+                      { text: "BYOH (Bring Your Own Hardware)" },
+                      { text: "Lead capture & branded feeds" },
+                      { text: "Priority support" }
                     ].map((item, i) => (
                       <div key={i} className="flex items-center gap-3 text-sm text-zinc-300">
                         <Check className="w-4 h-4 text-purple-500 shrink-0" />
@@ -402,10 +548,10 @@ export default function LandingPage() {
                   <div className="mb-6">
                     <div className="flex items-center justify-between mb-2">
                       <h3 className="text-2xl font-bold text-white">Masters</h3>
-                      <span className="px-3 py-1 rounded-full bg-amber-500/10 text-amber-400 text-xs font-bold border border-amber-500/20">ENTERPRISE</span>
+                      <span className="px-3 py-1 rounded-full bg-amber-500/10 text-amber-400 text-xs font-bold border border-amber-500/20">PREMIUM</span>
                     </div>
-                    <div className="text-3xl font-bold text-white mb-1">Custom</div>
-                    <p className="text-zinc-400 text-sm mt-4">Full-scale solution for large operations.</p>
+                    <div className="text-3xl font-bold text-white mb-1">From $3,000<span className="text-lg font-normal text-zinc-400">/month</span></div>
+                    <p className="text-zinc-400 text-sm mt-4">Full-scale enterprise solution.</p>
                   </div>
 
                   <Button variant="outline" className="w-full border-amber-500/30 text-amber-400 hover:bg-amber-500/10 mb-8 rounded-xl font-semibold" onClick={() => navigate("/admin/register?plan=masters")}>
@@ -414,11 +560,12 @@ export default function LandingPage() {
 
                   <div className="space-y-4 flex-1">
                     {[
-                      { text: "10,000 Tokens / month", tooltip: "~10,000 Images" },
-                      { text: "Unlimited Events" },
-                      { text: "Reseller Dashboard" },
-                      { text: "Premium Models (Flux/Midjourney)" },
-                      { text: "Dedicated Support Manager" }
+                      { text: "10,000 tokens/month", tooltip: "~10,000 Images" },
+                      { text: "Up to 3 active events" },
+                      { text: "Premium templates & LoRA models" },
+                      { text: "Revenue-share & hardware options" },
+                      { text: "Print module" },
+                      { text: "Dedicated account manager" }
                     ].map((item, i) => (
                       <div key={i} className="flex items-center gap-3 text-sm text-zinc-300">
                         <Check className="w-4 h-4 text-amber-500 shrink-0" />

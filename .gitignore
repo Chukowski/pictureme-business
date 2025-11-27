@@ -22,3 +22,73 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Python
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Environment files
+.env
+.env.local
+.env.production
+.env.development
+.env*.local
+backend/.env
+
+# Temporary files
+tmp/
+temp/
+.cache/
+*.tmp
+*.temp
+
+# Coverage
+coverage/
+htmlcov/
+.coverage
+.coverage.*
+
+# Test artifacts
+.pytest_cache/
+.mypy_cache/
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# OS files
+Thumbs.db
+ehthumbs.db
+
+# IDE
+*.swp
+*.swo
+*~
+
+# Docker
+docker-compose.override.yml
+
+# Guides and specs (keep in docs/)
+Guide_*.md
+SPECS_*.md
+*_BRANDING.md
+!docs/**

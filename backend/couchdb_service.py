@@ -17,6 +17,7 @@ class CouchDBService:
         self.password = os.getenv("COUCHDB_PASSWORD", "hqq1dcnaccib3rfc")
         self.events_db_name = os.getenv("COUCHDB_DB_EVENTS", "pictureme_events")
         self.photos_db_name = os.getenv("COUCHDB_DB_PHOTOS", "pictureme_photos")
+        self.templates_db_name = os.getenv("COUCHDB_DB_TEMPLATES", "pictureme_templates")
         
         # Connect to CouchDB
         self.server = Server(
@@ -30,31 +31,47 @@ class CouchDBService:
         self._init_databases()
         self._ensure_indexes()
     
+    def _create_database_if_not_exists(self, db_name: str):
+        """Create a database using REST API if it doesn't exist"""
+        # Check if database exists
+        check_url = f"{self.url}/{db_name}"
+        response = requests.head(check_url, auth=self.auth)
+        
+        if response.status_code == 404:
+            # Database doesn't exist, create it
+            print(f"📦 Creating CouchDB database: {db_name}")
+            create_response = requests.put(check_url, auth=self.auth)
+            if create_response.status_code in [201, 202]:
+                print(f"✅ Created CouchDB database: {db_name}")
+            else:
+                print(f"⚠️ Failed to create database {db_name}: {create_response.status_code} - {create_response.text}")
+        elif response.status_code == 200:
+            print(f"✅ CouchDB database exists: {db_name}")
+        else:
+            print(f"⚠️ Unexpected response checking database {db_name}: {response.status_code}")
+
     def _init_databases(self):
         """Create databases if they don't exist"""
         try:
-            # Events database
-            try:
-                self.events_db = self.server[self.events_db_name]
-                print(f"✅ Connected to CouchDB database: {self.events_db_name}")
-            except KeyError:
-                # Database doesn't exist, create it
-                self.server.create(self.events_db_name)
-                self.events_db = self.server[self.events_db_name]
-                print(f"✅ Created CouchDB database: {self.events_db_name}")
+            # Ensure databases exist using REST API first
+            self._create_database_if_not_exists(self.events_db_name)
+            self._create_database_if_not_exists(self.photos_db_name)
+            self._create_database_if_not_exists(self.templates_db_name)
             
-            # Photos database
-            try:
-                self.photos_db = self.server[self.photos_db_name]
-                print(f"✅ Connected to CouchDB database: {self.photos_db_name}")
-            except KeyError:
-                # Database doesn't exist, create it
-                self.server.create(self.photos_db_name)
-                self.photos_db = self.server[self.photos_db_name]
-                print(f"✅ Created CouchDB database: {self.photos_db_name}")
+            # Now connect to them
+            self.events_db = self.server[self.events_db_name]
+            print(f"✅ Connected to CouchDB database: {self.events_db_name}")
+            
+            self.photos_db = self.server[self.photos_db_name]
+            print(f"✅ Connected to CouchDB database: {self.photos_db_name}")
+            
+            self.templates_db = self.server[self.templates_db_name]
+            print(f"✅ Connected to CouchDB database: {self.templates_db_name}")
             
         except Exception as e:
             print(f"❌ Error initializing CouchDB: {e}")
+            import traceback
+            traceback.print_exc()
             raise
     
     def _ensure_indexes(self):
@@ -72,6 +89,13 @@ class CouchDBService:
             self._create_index(self.photos_db_name, ["type", "event_slug"], "idx_photos_event_slug")
             self._create_index(self.photos_db_name, ["type", "share_code"], "idx_photos_share")
             self._create_index(self.photos_db_name, ["type", "event_id", "created_at"], "idx_photos_event_created")
+            
+            # Templates indexes
+            self._create_index(self.templates_db_name, ["type", "creator_id"], "idx_templates_creator")
+            self._create_index(self.templates_db_name, ["type", "template_type"], "idx_templates_type")
+            self._create_index(self.templates_db_name, ["type", "is_public"], "idx_templates_public")
+            self._create_index(self.templates_db_name, ["type", "category"], "idx_templates_category")
+            self._create_index(self.templates_db_name, ["type", "created_at"], "idx_templates_created")
         except Exception as e:
             print(f"⚠️ Warning creating CouchDB indexes: {e}")
 
@@ -325,6 +349,150 @@ class CouchDBService:
         try:
             doc = self.photos_db[photo_id]
             self.photos_db.delete(doc)
+            return True
+        except:
+            return False
+
+    # ==================== MARKETPLACE TEMPLATES ====================
+    
+    def create_template(self, template_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Create a new marketplace template in CouchDB"""
+        import uuid
+        
+        template_data["created_at"] = datetime.utcnow().isoformat()
+        template_data["updated_at"] = datetime.utcnow().isoformat()
+        template_data["type"] = "template"
+        template_data.setdefault("downloads", 0)
+        template_data.setdefault("rating", 5.0)
+        template_data.setdefault("rating_count", 0)
+        template_data.setdefault("is_public", True)
+        template_data.setdefault("is_exportable", True)
+        
+        # Generate a unique ID if not provided
+        if "_id" not in template_data:
+            template_data["_id"] = str(uuid.uuid4())
+        
+        try:
+            result = self.templates_db.create(template_data)
+            if isinstance(result, tuple):
+                doc_id = result[0]
+                doc_rev = result[-1]
+            elif isinstance(result, dict):
+                doc_id = result.get("id", template_data["_id"])
+                doc_rev = result.get("rev")
+            else:
+                doc_id = template_data["_id"]
+                doc_rev = None
+            
+            template_data["_id"] = doc_id
+            if doc_rev:
+                template_data["_rev"] = doc_rev
+            return template_data
+        except Exception as e:
+            print(f"Error creating template: {e}")
+            raise
+    
+    def get_template_by_id(self, template_id: str) -> Optional[Dict[str, Any]]:
+        """Get a template by its CouchDB _id"""
+        try:
+            return self.templates_db[template_id]
+        except:
+            return None
+    
+    def get_templates_by_creator(self, creator_id: str) -> List[Dict[str, Any]]:
+        """Get all templates created by a user"""
+        selector = {
+            "type": "template",
+            "creator_id": creator_id
+        }
+        return self._find_documents(
+            self.templates_db_name,
+            selector,
+            limit=500,
+            sort=[{"created_at": "desc"}]
+        )
+    
+    def get_public_templates(
+        self, 
+        template_type: Optional[str] = None,
+        category: Optional[str] = None,
+        limit: int = 50,
+        skip: int = 0
+    ) -> List[Dict[str, Any]]:
+        """Get public marketplace templates"""
+        selector: Dict[str, Any] = {
+            "type": "template"
+        }
+        
+        # Only add is_public filter if explicitly needed
+        # Some templates might not have this field
+        
+        if template_type:
+            selector["template_type"] = template_type
+        
+        if category and category != "All":
+            selector["category"] = category
+        
+        # Don't use sort by downloads as it requires an index
+        # Sort in Python instead
+        docs = self._find_documents(
+            self.templates_db_name,
+            selector,
+            limit=limit,
+            skip=skip
+        )
+        
+        # Filter out non-public templates and sort by downloads
+        public_docs = [d for d in docs if d.get("is_public", True)]
+        public_docs.sort(key=lambda x: x.get("downloads", 0), reverse=True)
+        
+        return public_docs
+    
+    def get_templates_by_ids(self, template_ids: List[str]) -> List[Dict[str, Any]]:
+        """Get multiple templates by their IDs"""
+        templates = []
+        for tid in template_ids:
+            template = self.get_template_by_id(tid)
+            if template:
+                templates.append(template)
+        return templates
+    
+    def update_template(self, template_id: str, template_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Update an existing template"""
+        existing = self.templates_db[template_id]
+        
+        # Preserve _id and _rev
+        template_data["_id"] = existing["_id"]
+        template_data["_rev"] = existing["_rev"]
+        template_data["updated_at"] = datetime.utcnow().isoformat()
+        template_data["type"] = "template"
+        template_data["creator_id"] = existing.get("creator_id")
+        template_data["created_at"] = existing.get("created_at")
+        
+        result = self.templates_db.save(template_data)
+        if isinstance(result, tuple) and len(result) >= 2:
+            template_data["_rev"] = result[-1]
+        elif isinstance(result, dict) and "_rev" in result:
+            template_data["_rev"] = result["_rev"]
+        
+        return template_data
+    
+    def delete_template(self, template_id: str) -> bool:
+        """Delete a template"""
+        try:
+            doc = self.templates_db[template_id]
+            self.templates_db.delete(doc["_id"], rev=doc.get("_rev"))
+            return True
+        except Exception as e:
+            print(f"⚠️ Error deleting template {template_id}: {e}")
+            return False
+    
+    def increment_template_downloads(self, template_id: str) -> bool:
+        """Increment download count for a template"""
+        try:
+            doc = self.templates_db[template_id]
+            doc["downloads"] = doc.get("downloads", 0) + 1
+            self.templates_db.save(doc)
             return True
         except:
             return False

@@ -4,6 +4,7 @@ import { getPhotoByShareCode } from "@/services/localStorage";
 import { Download, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { PhotoNotFound } from "@/components/EventNotFound";
 
 export const SharePage = () => {
   const { shareCode } = useParams<{ shareCode: string }>();
@@ -85,33 +86,7 @@ export const SharePage = () => {
   }
 
   if (error || !photo) {
-    return (
-      <div className="min-h-screen bg-gradient-dark flex items-center justify-center p-4">
-        <div className="text-center space-y-6 max-w-md">
-          <div className="w-24 h-24 rounded-full bg-red-500/20 mx-auto flex items-center justify-center">
-            <span className="text-5xl">😕</span>
-          </div>
-          <h1 className="text-3xl font-bold text-white">Photo Not Found</h1>
-          <p className="text-gray-400 text-lg">
-            This photo may have been removed or the link is incorrect.
-          </p>
-          {shareCode && (
-            <div className="glass-panel px-4 py-3 rounded-xl">
-              <p className="text-sm text-gray-500">Share Code:</p>
-              <p className="font-mono font-bold text-white text-lg">{shareCode}</p>
-            </div>
-          )}
-          <div className="text-center space-y-2 pt-4">
-            <p className="text-sm text-gray-400">
-              Powered by Akitá — akitapr.com
-            </p>
-            <p className="text-xs text-gray-500">
-              Experiencias de marca impulsadas por inteligencia artificial.
-            </p>
-          </div>
-        </div>
-      </div>
-    );
+    return <PhotoNotFound shareCode={shareCode} />;
   }
 
   const imageUrl = photo.processedImageUrl || photo.processedImageBase64;

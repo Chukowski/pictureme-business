@@ -1,21 +1,70 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { User } from "@/services/eventsApi";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FolderKanban, BarChart3, Coins, CreditCard, ShoppingBag } from "lucide-react";
+import { FolderKanban, BarChart3, Coins, CreditCard, ShoppingBag, Palette } from "lucide-react";
 import AdminEventsTab from "@/components/admin/AdminEventsTab";
 import AdminAnalyticsTab from "@/components/admin/AdminAnalyticsTab";
+import TokensTab from "./TokensTab";
+import BillingTab from "./BillingTab";
+import MarketplaceTab from "./MarketplaceTab";
 
 interface BusinessDashboardProps {
     currentUser: User;
+    initialTab?: string;
 }
 
-export default function BusinessDashboard({ currentUser }: BusinessDashboardProps) {
-    const [activeTab, setActiveTab] = useState("events");
+// Map URL paths to tab values
+const pathToTab: Record<string, string> = {
+    '/admin': 'events',
+    '/admin/events': 'events',
+    '/admin/billing': 'billing',
+    '/admin/tokens': 'tokens',
+    '/admin/marketplace': 'marketplace',
+    '/admin/analytics': 'analytics',
+};
+
+export default function BusinessDashboard({ currentUser, initialTab }: BusinessDashboardProps) {
+    const location = useLocation();
+    const navigate = useNavigate();
+    
+    // Determine initial tab from URL or prop
+    const getTabFromPath = () => {
+        const path = location.pathname;
+        return pathToTab[path] || initialTab || "events";
+    };
+    
+    const [activeTab, setActiveTab] = useState(getTabFromPath);
+    
+    // Sync tab with URL changes
+    useEffect(() => {
+        const path = location.pathname;
+        const tabFromPath = pathToTab[path] || initialTab || "events";
+        if (tabFromPath !== activeTab) {
+            setActiveTab(tabFromPath);
+        }
+    }, [location.pathname, initialTab, activeTab]);
+    
+    // Update URL when tab changes (optional - for bookmarkable URLs)
+    const handleTabChange = (tab: string) => {
+        setActiveTab(tab);
+        // Optionally update URL
+        const pathForTab: Record<string, string> = {
+            'events': '/admin/events',
+            'billing': '/admin/billing',
+            'tokens': '/admin/tokens',
+            'marketplace': '/admin/marketplace',
+            'analytics': '/admin/analytics',
+        };
+        if (pathForTab[tab] && location.pathname !== pathForTab[tab]) {
+            navigate(pathForTab[tab], { replace: true });
+        }
+    };
 
     return (
         <div className="space-y-8">
             {/* Tabs Navigation */}
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full space-y-8">
+            <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full space-y-8">
                 <TabsList className="inline-flex h-auto p-1 bg-zinc-900/50 backdrop-blur-xl border border-white/10 rounded-2xl overflow-x-auto max-w-full">
                     <TabsTrigger
                         value="events"
@@ -66,35 +115,17 @@ export default function BusinessDashboard({ currentUser }: BusinessDashboardProp
 
                 {/* Tokens Tab */}
                 <TabsContent value="tokens" className="mt-0 focus-visible:outline-none">
-                    <div className="flex items-center justify-center h-64 bg-zinc-900/30 rounded-3xl border border-white/5 border-dashed">
-                        <div className="text-center">
-                            <Coins className="w-12 h-12 text-zinc-600 mx-auto mb-4" />
-                            <h3 className="text-xl font-semibold text-white mb-2">Token Management</h3>
-                            <p className="text-zinc-400">Coming soon: Purchase and track your token usage.</p>
-                        </div>
-                    </div>
+                    <TokensTab currentUser={currentUser} />
                 </TabsContent>
 
                 {/* Billing Tab */}
                 <TabsContent value="billing" className="mt-0 focus-visible:outline-none">
-                    <div className="flex items-center justify-center h-64 bg-zinc-900/30 rounded-3xl border border-white/5 border-dashed">
-                        <div className="text-center">
-                            <CreditCard className="w-12 h-12 text-zinc-600 mx-auto mb-4" />
-                            <h3 className="text-xl font-semibold text-white mb-2">Billing & Subscription</h3>
-                            <p className="text-zinc-400">Coming soon: Manage your plan and invoices.</p>
-                        </div>
-                    </div>
+                    <BillingTab currentUser={currentUser} />
                 </TabsContent>
 
                 {/* Marketplace Tab */}
                 <TabsContent value="marketplace" className="mt-0 focus-visible:outline-none">
-                    <div className="flex items-center justify-center h-64 bg-zinc-900/30 rounded-3xl border border-white/5 border-dashed">
-                        <div className="text-center">
-                            <ShoppingBag className="w-12 h-12 text-zinc-600 mx-auto mb-4" />
-                            <h3 className="text-xl font-semibold text-white mb-2">Template Marketplace</h3>
-                            <p className="text-zinc-400">Coming soon: Buy and sell premium templates.</p>
-                        </div>
-                    </div>
+                    <MarketplaceTab currentUser={currentUser} />
                 </TabsContent>
             </Tabs>
         </div>

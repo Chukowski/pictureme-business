@@ -356,11 +356,11 @@ export default function AdminDashboard() {
                 <div className="px-2 py-3 mb-2">
                   <div className="flex items-center justify-between text-xs mb-2">
                     <span className="text-zinc-400">
-                      {Math.round(((currentUser?.tokens_remaining || 0) / (currentUser?.tokens_total || 1000)) * 100)}% credits used
+                      {(currentUser?.tokens_remaining || 0).toLocaleString()} tokens disponibles
                     </span>
                   </div>
                   <Progress 
-                    value={((currentUser?.tokens_remaining || 0) / (currentUser?.tokens_total || 1000)) * 100} 
+                    value={Math.min(100, ((currentUser?.tokens_remaining || 0) / (currentUser?.tokens_total || currentUser?.tokens_remaining || 1000)) * 100)} 
                     className="h-1.5 bg-zinc-800"
                   />
                 </div>

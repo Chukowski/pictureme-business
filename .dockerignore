@@ -20,3 +20,57 @@ coverage
 tmp
 temp
 
+# Python virtual environments
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+htmlcov/
+.coverage
+
+# Development files
+*.md
+!README.md
+!docs/README.md
+docs/
+Guide_*.md
+SPECS_*.md
+*_BRANDING.md
+
+# Test files
+tests/
+test/
+*.test.js
+*.test.ts
+*.spec.js
+*.spec.ts
+
+# Git
+.gitignore
+.gitattributes
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+
+# Docker development
+docker-compose.override.yml
+docker-compose.dev.yml
+Dockerfile.dev
+
+# IDE
+.editorconfig
+.prettierrc
+.eslintrc*
+tsconfig*.json
+*.code-workspace
+
+# Scripts not needed in production
+scripts/
+!scripts/docker-build.sh
+
