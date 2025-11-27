@@ -25,13 +25,23 @@ declare global {
  * Get environment variable with runtime override support
  */
 function getEnv(key: keyof EnvConfig): string {
+  let value = '';
+  
   // Try runtime config first (from config.js)
   if (window.ENV && window.ENV[key]) {
-    return window.ENV[key] as string;
+    value = window.ENV[key] as string;
+  } else {
+    // Fallback to build-time env
+    value = import.meta.env[key] || '';
+  }
+
+  // Auto-upgrade http to https for non-localhost APIs to prevent Mixed Content errors
+  if (key === 'VITE_API_URL' && value && value.startsWith('http://') && !value.includes('localhost') && !value.includes('127.0.0.1')) {
+    console.warn('🔒 Upgrading API URL to HTTPS automatically');
+    return value.replace('http://', 'https://');
   }
   
-  // Fallback to build-time env
-  return import.meta.env[key] || '';
+  return value;
 }
 
 // Export environment variables
