@@ -1283,7 +1283,12 @@ export default function AdminEventForm() {
                       {/* Stations Setup */}
                       <div className="space-y-3">
                         <div className="flex items-center justify-between">
-                          <Label className="text-zinc-300">Stations Setup</Label>
+                          <div>
+                            <Label className="text-zinc-300">Event Stations</Label>
+                            <p className="text-xs text-zinc-500 mt-1">
+                              Define the stations visitors will pass through. Each station scans the visitor's badge QR.
+                            </p>
+                          </div>
                           <Button
                             type="button"
                             variant="outline"
@@ -1370,18 +1375,6 @@ export default function AdminEventForm() {
                                       className="bg-black/40 border-white/10 text-white"
                                     />
                                   </div>
-                                  <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => {
-                                      // Generate QR code (placeholder - will be implemented with backend)
-                                      toast.success(`QR code generated for ${station.name}`);
-                                    }}
-                                    className="border-white/10 text-zinc-300 hover:text-white"
-                                  >
-                                    <QrCode className="w-4 h-4" />
-                                  </Button>
                                   <Button
                                     type="button"
                                     variant="ghost"

@@ -36,9 +36,6 @@ export const PhotoBoothPage = () => {
 
   // Album Tracking
   const albumId = searchParams.get('album');
-  const isAlbumMode = useMemo(() => {
-    return config?.albumTracking?.enabled === true;
-  }, [config]);
   
   // Mock album data - in production, this would come from an API
   const [albumData, setAlbumData] = useState<AlbumData | null>(null);
@@ -52,6 +49,16 @@ export const PhotoBoothPage = () => {
   const [showCustomPromptModal, setShowCustomPromptModal] = useState(false);
   const [customPrompt, setCustomPrompt] = useState<string>('');
   const [customImages, setCustomImages] = useState<string[]>([]);
+
+  // Memoized values - MUST be before any conditional returns
+  const isAlbumMode = useMemo(() => {
+    return config?.albumTracking?.enabled === true;
+  }, [config]);
+
+  const canTakeMorePhotos = useMemo(() => {
+    if (!isAlbumMode || !albumData) return true;
+    return albumData.currentPhotos < albumData.maxPhotos;
+  }, [isAlbumMode, albumData]);
 
   // Initialize album mode
   useEffect(() => {
@@ -336,11 +343,6 @@ export const PhotoBoothPage = () => {
       navigate(`/${userSlug}/${eventSlug}/album/${albumId}`);
     }
   };
-
-  const canTakeMorePhotos = useMemo(() => {
-    if (!isAlbumMode || !albumData) return true;
-    return albumData.currentPhotos < albumData.maxPhotos;
-  }, [isAlbumMode, albumData]);
 
   return (
     <div className="min-h-screen bg-zinc-950 relative">
