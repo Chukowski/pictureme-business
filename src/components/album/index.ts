@@ -7,4 +7,5 @@
 export { ScanBadgePrompt } from './ScanBadgePrompt';
 export { AlbumProgress } from './AlbumProgress';
 export { AlbumResultActions } from './AlbumResultActions';
+export { ScanAlbumQR } from './ScanAlbumQR';
 

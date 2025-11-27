@@ -33,6 +33,7 @@ import SuperAdminDevTools from "./components/super-admin/SuperAdminDevTools";
 import PublicProfile from "./pages/PublicProfile";
 import AccountSettings from "./pages/AccountSettings";
 import AlbumFeedPage from "./pages/AlbumFeedPage";
+import StaffDashboard from "./pages/StaffDashboard";
 
 // CopilotKit imports (self-hosted, no cloud required)
 import { CopilotKit } from "@copilotkit/react-core";
@@ -140,6 +141,7 @@ const App = () => (
             <Route path="/:userSlug/:eventSlug" element={<PhotoBoothPage />} />
             <Route path="/:userSlug/:eventSlug/feed" element={<EventFeedPage />} />
             <Route path="/:userSlug/:eventSlug/album/:albumId" element={<AlbumFeedPage />} />
+            <Route path="/:userSlug/:eventSlug/staff" element={<StaffDashboard />} />
 
             {/* Legacy Index page (if needed) */}
             <Route path="/legacy" element={<Index />} />

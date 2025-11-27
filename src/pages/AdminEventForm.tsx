@@ -1294,11 +1294,14 @@ export default function AdminEventForm() {
                             variant="outline"
                             size="sm"
                             onClick={() => {
+                              const isFirstStation = formData.albumTracking.stations.length === 0;
+                              const stationType = isFirstStation ? 'registration' : 'booth';
                               const newStation: AlbumStation = {
                                 id: crypto.randomUUID(),
-                                name: `Station ${formData.albumTracking.stations.length + 1}`,
-                                description: '',
-                                type: formData.albumTracking.stations.length === 0 ? 'registration' : 'booth',
+                                name: isFirstStation ? 'Registration' : `Station ${formData.albumTracking.stations.length + 1}`,
+                                description: isFirstStation ? 'Badge creation and check-in' : '',
+                                type: stationType,
+                                requiresScanner: !isFirstStation, // Registration creates badge, others scan it
                                 order: formData.albumTracking.stations.length,
                               };
                               setFormData({
@@ -1348,7 +1351,10 @@ export default function AdminEventForm() {
                                       value={station.type}
                                       onChange={(e) => {
                                         const updated = [...formData.albumTracking.stations];
-                                        updated[index] = { ...station, type: e.target.value as AlbumStation['type'] };
+                                        // Auto-set requiresScanner based on type
+                                        const stationType = e.target.value as AlbumStation['type'];
+                                        const requiresScanner = stationType !== 'registration'; // Registration creates badge, others scan it
+                                        updated[index] = { ...station, type: stationType, requiresScanner };
                                         setFormData({
                                           ...formData,
                                           albumTracking: { ...formData.albumTracking, stations: updated }
@@ -1356,10 +1362,10 @@ export default function AdminEventForm() {
                                       }}
                                       className="h-10 px-3 rounded-lg bg-black/40 border border-white/10 text-white text-sm"
                                     >
-                                      <option value="registration">📝 Registration</option>
-                                      <option value="booth">📷 Photo Booth</option>
-                                      <option value="playground">🎮 Playground</option>
-                                      <option value="viewer">🖥️ Album Viewer</option>
+                                      <option value="registration">📝 Registration (Creates Badge)</option>
+                                      <option value="booth">📷 Photo Booth (Scans Badge)</option>
+                                      <option value="playground">🎮 Playground (Scans Badge)</option>
+                                      <option value="viewer">🖥️ Album Viewer (Scans Badge)</option>
                                     </select>
                                     <Input
                                       value={station.description}

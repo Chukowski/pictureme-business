@@ -63,7 +63,7 @@ export interface AlbumStation {
   name: string;
   description: string;
   type: 'registration' | 'booth' | 'playground' | 'viewer';
-  qrCode?: string;
+  requiresScanner: boolean;  // true if this station must scan badge QR
   order: number;
 }
 

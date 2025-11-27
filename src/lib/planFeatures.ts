@@ -31,6 +31,8 @@ export interface PlanFeatures {
   // Album & Station Features (Business Only)
   albumTracking: boolean;      // Multi-station album workflow (Event Pro+)
   stationFlow: boolean;        // Station-based event flow (Event Pro+)
+  multiStationFlow: boolean;   // Multi-station event flow with badge scanning (Event Pro+)
+  badgeQRTracking: boolean;    // Badge QR tracking for albums (Event Pro+)
   sharingOverride: boolean;    // Custom aspect ratios & frames for sharing (Event Pro+)
   teamAccess: boolean;         // Business team members access
   maxTeamMembers: number;      // Max team members (Starter=1, Pro=3, Masters=custom)
@@ -60,6 +62,8 @@ const PLAN_FEATURES: Record<UserRole, PlanFeatures> = {
     revenueShare: false,
     albumTracking: false,
     stationFlow: false,
+    multiStationFlow: false,
+    badgeQRTracking: false,
     sharingOverride: false,
     teamAccess: false,
     maxTeamMembers: 0,
@@ -86,6 +90,8 @@ const PLAN_FEATURES: Record<UserRole, PlanFeatures> = {
     revenueShare: false,
     albumTracking: false,
     stationFlow: false,
+    multiStationFlow: false,
+    badgeQRTracking: false,
     sharingOverride: false,
     teamAccess: false,
     maxTeamMembers: 0,
@@ -112,6 +118,8 @@ const PLAN_FEATURES: Record<UserRole, PlanFeatures> = {
     revenueShare: false,
     albumTracking: false,
     stationFlow: false,
+    multiStationFlow: false,
+    badgeQRTracking: false,
     sharingOverride: false,
     teamAccess: true,
     maxTeamMembers: 1,
@@ -138,6 +146,8 @@ const PLAN_FEATURES: Record<UserRole, PlanFeatures> = {
     revenueShare: false,
     albumTracking: true,
     stationFlow: true,
+    multiStationFlow: true,
+    badgeQRTracking: true,
     sharingOverride: true,
     teamAccess: true,
     maxTeamMembers: 3,
@@ -164,6 +174,8 @@ const PLAN_FEATURES: Record<UserRole, PlanFeatures> = {
     revenueShare: true,
     albumTracking: true,
     stationFlow: true,
+    multiStationFlow: true,
+    badgeQRTracking: true,
     sharingOverride: true,
     teamAccess: true,
     maxTeamMembers: 10, // Custom, can be increased
@@ -190,6 +202,8 @@ const PLAN_FEATURES: Record<UserRole, PlanFeatures> = {
     revenueShare: true,
     albumTracking: true,
     stationFlow: true,
+    multiStationFlow: true,
+    badgeQRTracking: true,
     sharingOverride: true,
     teamAccess: true,
     maxTeamMembers: 999,
