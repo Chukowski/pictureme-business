@@ -28,6 +28,7 @@ import {
   RotateCcw,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ENV } from "@/config/env";
 
 // Akito components
 import { AkitoMarkdown } from "./akito/AkitoMarkdown";
@@ -46,7 +47,7 @@ try {
   // CopilotKit not available, will use direct API calls
 }
 
-const API_URL = import.meta.env.VITE_API_URL || "";
+const API_URL = ENV.API_URL || "";
 
 interface Message {
   id: string;

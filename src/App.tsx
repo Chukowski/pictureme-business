@@ -50,6 +50,8 @@ const FloatingSidebarToggle = () => {
   );
 };
 
+import { ENV } from "@/config/env";
+
 // Get user info for CopilotKit context
 const getUserProperties = () => {
   try {
@@ -68,7 +70,7 @@ const getUserProperties = () => {
   return { user_id: null, user_role: "guest", user_name: "Guest" };
 };
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
+const API_URL = ENV.API_URL || (import.meta.env.DEV ? "http://localhost:3001" : "");
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
