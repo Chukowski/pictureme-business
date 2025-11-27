@@ -6,7 +6,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install dependencies
-RUN npm ci --only=production
+RUN npm ci --only=production --legacy-peer-deps
 
 # Copy auth server
 COPY auth-server-simple.js .
