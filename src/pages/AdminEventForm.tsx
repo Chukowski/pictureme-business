@@ -1355,49 +1355,83 @@ export default function AdminEventForm() {
                               className="bg-black/40 border-white/10 text-white"
                             />
                           </div>
-                          <div className="grid grid-cols-3 gap-2">
-                            <div className="flex items-center justify-between p-3 rounded-lg bg-black/30 border border-white/5">
-                              <span className="text-xs text-zinc-300">Re-entry</span>
-                              <Switch
-                                checked={formData.albumTracking.rules.allowReEntry}
-                                onCheckedChange={(checked) => setFormData({
-                                  ...formData,
-                                  albumTracking: {
-                                    ...formData.albumTracking,
-                                    rules: { ...formData.albumTracking.rules, allowReEntry: checked }
-                                  }
-                                })}
-                                className="data-[state=checked]:bg-cyan-600"
-                              />
+                          {/* Basic Rules */}
+                          <div className="flex items-center justify-between p-3 rounded-lg bg-black/30 border border-white/5">
+                            <div>
+                              <span className="text-sm text-zinc-300">Allow Re-entry</span>
+                              <p className="text-xs text-zinc-500">Visitors can scan badge again to add more photos</p>
                             </div>
-                            <div className="flex items-center justify-between p-3 rounded-lg bg-black/30 border border-white/5">
-                              <span className="text-xs text-zinc-300">Staff Approval</span>
-                              <Switch
-                                checked={formData.albumTracking.rules.requireStaffApproval}
-                                onCheckedChange={(checked) => setFormData({
-                                  ...formData,
-                                  albumTracking: {
-                                    ...formData.albumTracking,
-                                    rules: { ...formData.albumTracking.rules, requireStaffApproval: checked }
-                                  }
-                                })}
-                                className="data-[state=checked]:bg-cyan-600"
-                              />
+                            <Switch
+                              checked={formData.albumTracking.rules.allowReEntry}
+                              onCheckedChange={(checked) => setFormData({
+                                ...formData,
+                                albumTracking: {
+                                  ...formData.albumTracking,
+                                  rules: { ...formData.albumTracking.rules, allowReEntry: checked }
+                                }
+                              })}
+                              className="data-[state=checked]:bg-cyan-600"
+                            />
+                          </div>
+                          
+                          {/* Access Control Section */}
+                          <div className="mt-4 p-4 rounded-xl bg-amber-500/5 border border-amber-500/20">
+                            <h5 className="text-sm font-medium text-amber-400 mb-3 flex items-center gap-2">
+                              <Lock className="w-4 h-4" />
+                              Album Access Control
+                            </h5>
+                            <p className="text-xs text-zinc-500 mb-4">
+                              Control when visitors can view and download their photos
+                            </p>
+                            
+                            <div className="space-y-3">
+                              {/* Payment Required */}
+                              <div className="flex items-center justify-between p-3 rounded-lg bg-black/30 border border-amber-500/20">
+                                <div>
+                                  <span className="text-sm text-white font-medium">💳 Require Payment</span>
+                                  <p className="text-xs text-zinc-400">Album is locked until staff marks as paid</p>
+                                </div>
+                                <Switch
+                                  checked={formData.albumTracking.rules.printReady}
+                                  onCheckedChange={(checked) => setFormData({
+                                    ...formData,
+                                    albumTracking: {
+                                      ...formData.albumTracking,
+                                      rules: { ...formData.albumTracking.rules, printReady: checked }
+                                    }
+                                  })}
+                                  className="data-[state=checked]:bg-amber-600"
+                                />
+                              </div>
+                              
+                              {/* Staff Approval */}
+                              <div className="flex items-center justify-between p-3 rounded-lg bg-black/30 border border-purple-500/20">
+                                <div>
+                                  <span className="text-sm text-white font-medium">👤 Staff Approval</span>
+                                  <p className="text-xs text-zinc-400">Staff must approve album before visitor can view</p>
+                                </div>
+                                <Switch
+                                  checked={formData.albumTracking.rules.requireStaffApproval}
+                                  onCheckedChange={(checked) => setFormData({
+                                    ...formData,
+                                    albumTracking: {
+                                      ...formData.albumTracking,
+                                      rules: { ...formData.albumTracking.rules, requireStaffApproval: checked }
+                                    }
+                                  })}
+                                  className="data-[state=checked]:bg-purple-600"
+                                />
+                              </div>
                             </div>
-                            <div className="flex items-center justify-between p-3 rounded-lg bg-black/30 border border-white/5">
-                              <span className="text-xs text-zinc-300">Print Ready</span>
-                              <Switch
-                                checked={formData.albumTracking.rules.printReady}
-                                onCheckedChange={(checked) => setFormData({
-                                  ...formData,
-                                  albumTracking: {
-                                    ...formData.albumTracking,
-                                    rules: { ...formData.albumTracking.rules, printReady: checked }
-                                  }
-                                })}
-                                className="data-[state=checked]:bg-cyan-600"
-                              />
-                            </div>
+                            
+                            {(formData.albumTracking.rules.printReady || formData.albumTracking.rules.requireStaffApproval) && (
+                              <div className="mt-3 p-3 rounded-lg bg-zinc-800/50 border border-white/5">
+                                <p className="text-xs text-zinc-400">
+                                  <strong className="text-zinc-300">How it works:</strong> When enabled, visitors will see a "locked" screen when they open their album link. 
+                                  Staff can unlock albums from the <span className="text-cyan-400">Staff Dashboard</span>.
+                                </p>
+                              </div>
+                            )}
                           </div>
                         </div>
                       </div>
