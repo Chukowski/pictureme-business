@@ -4,8 +4,9 @@
  */
 
 import type { Template } from './eventsApi';
+import { ENV } from '../config/env';
 
-const API_URL = import.meta.env.VITE_API_URL || '';
+const API_URL = ENV.API_URL || '';
 
 /**
  * Upload an image file to MinIO and return the public URL

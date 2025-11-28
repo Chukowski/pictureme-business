@@ -347,12 +347,15 @@ async def get_marketplace_templates(
     # Get user's owned template IDs from PostgreSQL
     owned_ids = set()
     if user_id and db_pool:
-        async with db_pool.acquire() as conn:
-            owned = await conn.fetch(
-                "SELECT template_id FROM user_library WHERE user_id = $1",
-                int(user_id)
-            )
-            owned_ids = {str(o["template_id"]) for o in owned}
+        try:
+            async with db_pool.acquire() as conn:
+                owned = await conn.fetch(
+                    "SELECT template_id FROM user_library WHERE user_id = $1",
+                    str(user_id)
+                )
+                owned_ids = {str(o["template_id"]) for o in owned}
+        except Exception as e:
+            print(f"⚠️ Error fetching owned templates: {e}")
     
     # Filter by search if provided
     if search:
@@ -439,7 +442,7 @@ async def get_template_detail(request: Request, template_id: str):
 async def get_my_library(request: Request):
     """Get user's template library"""
     user = await get_current_user_from_request(request)
-    user_id = int(user["id"])
+    user_id = str(user["id"])  # Support both UUID and integer IDs
     
     if not db_pool:
         return []
