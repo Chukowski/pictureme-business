@@ -185,7 +185,7 @@ async def list_event_albums(event_id: int, request: Request):
         if not event:
             raise HTTPException(status_code=404, detail="Event not found")
         
-        has_access = event["user_id"] == user["id"]
+        has_access = str(event["user_id"]) == str(user["id"])
         
         # Check organization membership
         if not has_access and event["organization_id"]:

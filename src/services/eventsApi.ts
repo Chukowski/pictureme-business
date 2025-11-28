@@ -617,6 +617,7 @@ export interface Album {
   owner_name?: string;
   owner_email?: string;
   created_at: string;
+  photo_count?: number;
 }
 
 export interface AlbumPhoto {

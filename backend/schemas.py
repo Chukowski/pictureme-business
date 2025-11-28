@@ -61,7 +61,8 @@ class Album(AlbumBase):
     status: str
     payment_status: str
     created_at: datetime
-    updated_at: datetime
+    updated_at: Optional[datetime] = None
+    photo_count: Optional[int] = 0
 
     class Config:
         from_attributes = True

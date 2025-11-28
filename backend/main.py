@@ -20,6 +20,13 @@ from dotenv import load_dotenv
 import base64
 import uuid
 import io
+import logging
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 
 # Import CouchDB service
 from couchdb_service import get_couch_service
