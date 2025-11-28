@@ -52,19 +52,26 @@ security = HTTPBearer(auto_error=False)  # auto_error=False makes it optional
 # FastAPI app
 app = FastAPI(title="AI Photo Booth API", version="2.0.0")
 
-# CORS
+# CORS - Allow all pictureme.now subdomains and localhost
+CORS_ORIGINS = [
+    "https://pictureme.now",
+    "https://www.pictureme.now",
+    "https://api.pictureme.now",
+    "https://auth.pictureme.now",
+    "https://photo.akitapr.com",
+    "https://photoapi.akitapr.com",
+    "http://localhost:8080",
+    "http://localhost:3000",
+    "http://localhost:5173",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "https://photo.akitapr.com",
-        "https://photoapi.akitapr.com", 
-        "https://pictureme.now",
-        "http://localhost:8080",
-        "http://localhost:3000"
-    ],
+    allow_origins=CORS_ORIGINS,
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
 
 # Import and include routers

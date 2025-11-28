@@ -22,6 +22,26 @@ declare global {
 }
 
 /**
+ * Upgrade HTTP to HTTPS for production URLs
+ */
+function enforceHttps(url: string): string {
+  if (!url) return url;
+  
+  // Skip localhost and local IPs
+  if (url.includes('localhost') || url.includes('127.0.0.1')) {
+    return url;
+  }
+  
+  // Upgrade http to https for production
+  if (url.startsWith('http://')) {
+    console.warn('🔒 Upgrading URL to HTTPS:', url);
+    return url.replace('http://', 'https://');
+  }
+  
+  return url;
+}
+
+/**
  * Get environment variable with runtime override support
  */
 function getEnv(key: keyof EnvConfig): string {
@@ -35,10 +55,10 @@ function getEnv(key: keyof EnvConfig): string {
     value = import.meta.env[key] || '';
   }
 
-  // Auto-upgrade http to https for non-localhost APIs to prevent Mixed Content errors
-  if (key === 'VITE_API_URL' && value && value.startsWith('http://') && !value.includes('localhost') && !value.includes('127.0.0.1')) {
-    console.warn('🔒 Upgrading API URL to HTTPS automatically');
-    return value.replace('http://', 'https://');
+  // Auto-upgrade http to https for URL-type configs to prevent Mixed Content errors
+  const urlKeys: (keyof EnvConfig)[] = ['VITE_API_URL', 'VITE_AUTH_URL', 'VITE_BASE_URL', 'VITE_MINIO_SERVER_URL', 'VITE_COUCHDB_URL'];
+  if (urlKeys.includes(key)) {
+    return enforceHttps(value);
   }
   
   return value;
