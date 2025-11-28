@@ -110,12 +110,20 @@ export default function AlbumsTab({ currentUser }: AlbumsTabProps) {
   };
 
   const handleOpenStaffDashboard = (event: EventWithAlbums) => {
-    navigate(`/${currentUser.slug}/${event.slug}/staff`);
+    // Open staff tools in the same page (scroll to tools section)
+    toast.info('Staff tools are in the right panel');
   };
 
   const handleViewAlbums = (event: EventWithAlbums) => {
-    // Navigate to album list for this event
-    navigate(`/admin/events/${event._id}/albums`);
+    // Open the viewer page for this event
+    const url = `${window.location.origin}/${currentUser.slug}/${event.slug}/viewer`;
+    window.open(url, '_blank');
+  };
+
+  const handleOpenRegistrationQR = (event: EventWithAlbums) => {
+    const url = `${window.location.origin}/${currentUser.slug}/${event.slug}/registration`;
+    navigator.clipboard.writeText(url);
+    toast.success('Registration URL copied! You can also see the QR in Settings tab →');
   };
 
   if (isLoading) {
@@ -290,8 +298,9 @@ export default function AlbumsTab({ currentUser }: AlbumsTabProps) {
             {/* Quick Actions */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <button
-                onClick={() => handleGenerateQR(selectedEvent, 'Registration')}
+                onClick={() => handleOpenRegistrationQR(selectedEvent)}
                 className="h-auto py-4 flex flex-col items-center gap-2 rounded-xl bg-zinc-900/50 border border-white/10 text-zinc-300 hover:text-white hover:bg-zinc-800/50 hover:border-cyan-500/30 transition-all"
+                title="Copy registration URL"
               >
                 <QrCode className="w-6 h-6 text-cyan-400" />
                 <span className="text-xs">Registration QR</span>
@@ -299,20 +308,26 @@ export default function AlbumsTab({ currentUser }: AlbumsTabProps) {
               <button
                 onClick={() => handleViewAlbums(selectedEvent)}
                 className="h-auto py-4 flex flex-col items-center gap-2 rounded-xl bg-zinc-900/50 border border-white/10 text-zinc-300 hover:text-white hover:bg-zinc-800/50 hover:border-purple-500/30 transition-all"
+                title="Open album viewer page"
               >
                 <BookOpen className="w-6 h-6 text-purple-400" />
                 <span className="text-xs">View Albums</span>
               </button>
               <button
-                onClick={() => handleOpenStaffDashboard(selectedEvent)}
+                onClick={() => {
+                  const url = `${window.location.origin}/${currentUser.slug}/${selectedEvent.slug}/booth`;
+                  window.open(url, '_blank');
+                }}
                 className="h-auto py-4 flex flex-col items-center gap-2 rounded-xl bg-zinc-900/50 border border-white/10 text-zinc-300 hover:text-white hover:bg-zinc-800/50 hover:border-green-500/30 transition-all"
+                title="Open photo booth"
               >
                 <Users className="w-6 h-6 text-green-400" />
-                <span className="text-xs">Staff Tools</span>
+                <span className="text-xs">Open Booth</span>
               </button>
               <button
-                onClick={() => navigate(`/admin/events/${selectedEvent._id}/edit`)}
+                onClick={() => navigate(`/admin/events/edit/${selectedEvent._id}`)}
                 className="h-auto py-4 flex flex-col items-center gap-2 rounded-xl bg-zinc-900/50 border border-white/10 text-zinc-300 hover:text-white hover:bg-zinc-800/50 hover:border-amber-500/30 transition-all"
+                title="Edit event settings"
               >
                 <Settings className="w-6 h-6 text-amber-400" />
                 <span className="text-xs">Edit Event</span>
