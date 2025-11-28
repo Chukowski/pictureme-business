@@ -273,6 +273,7 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
         backgroundPrompt: selectedTemplate.prompt || 'Create a professional photo',
         backgroundImageUrls: selectedTemplate.images || [],
         includeBranding: false,
+        aspectRatio: selectedTemplate.aspectRatio || '9:16',
         onProgress: (status) => {
           if (status === 'queued') {
             setProcessingStatus('queued');
@@ -334,6 +335,7 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
         backgroundPrompt: badgeConfig.aiPipeline.prompt || 'Create a professional portrait photo',
         backgroundImageUrls: badgeConfig.aiPipeline.referenceImages || [],
         includeBranding: false,
+        aspectRatio: badgeConfig.layout === 'landscape' ? '16:9' : badgeConfig.layout === 'square' ? '1:1' : '9:16',
         onProgress: (status) => {
           console.log('Badge processing status:', status);
         },
@@ -1010,7 +1012,7 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="aspect-[9/16] max-h-[500px] rounded-xl bg-zinc-800 flex items-center justify-center overflow-hidden">
+                <div className={`${selectedTemplate?.aspectRatio === '16:9' ? 'aspect-[16/9]' : selectedTemplate?.aspectRatio === '1:1' ? 'aspect-square' : selectedTemplate?.aspectRatio === '4:5' ? 'aspect-[4/5]' : selectedTemplate?.aspectRatio === '3:2' ? 'aspect-[3/2]' : 'aspect-[9/16]'} max-h-[500px] rounded-xl bg-zinc-800 flex items-center justify-center overflow-hidden`}>
                   {processedResult ? (
                     <div className="relative w-full h-full">
                       <img

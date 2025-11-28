@@ -45,6 +45,8 @@ if (FAL_KEY) {
 
 import type { WatermarkConfig } from './imageOverlay';
 
+export type AspectRatio = 'auto' | '1:1' | '4:5' | '3:2' | '16:9' | '9:16';
+
 export interface ProcessImageOptions {
   userPhotoBase64: string;
   backgroundPrompt: string;
@@ -58,7 +60,27 @@ export interface ProcessImageOptions {
   footerUrl?: string; // Custom footer URL
   headerBackgroundColor?: string; // Header background color
   watermark?: WatermarkConfig; // Watermark configuration
+  aspectRatio?: AspectRatio; // Output aspect ratio
   onProgress?: (status: string, logs?: string[]) => void;
+}
+
+/**
+ * Get image dimensions based on aspect ratio
+ */
+function getImageDimensions(aspectRatio: AspectRatio = '9:16'): { width: number; height: number } {
+  switch (aspectRatio) {
+    case '1:1':
+      return { width: 1080, height: 1080 };
+    case '4:5':
+      return { width: 1080, height: 1350 };
+    case '3:2':
+      return { width: 1620, height: 1080 };
+    case '16:9':
+      return { width: 1920, height: 1080 };
+    case '9:16':
+    default:
+      return { width: 1080, height: 1920 };
+  }
 }
 
 export interface ProcessImageResult {
@@ -82,6 +104,7 @@ export async function processImageWithAI(
     includeBranding = true,
     includeHeader = false,
     campaignText,
+    aspectRatio = '9:16',
     onProgress,
   } = options;
 
@@ -122,6 +145,10 @@ export async function processImageWithAI(
     let result;
     
     if (isSeedream) {
+      // Get dimensions based on aspect ratio
+      const dimensions = getImageDimensions(aspectRatio);
+      console.log(`📐 Using aspect ratio: ${aspectRatio} (${dimensions.width}x${dimensions.height})`);
+      
       // Seedream v4 Edit model - send both images
       result = await fal.subscribe(FAL_MODEL, {
         input: {
@@ -129,10 +156,7 @@ export async function processImageWithAI(
           image_urls: imageUrls, // User photo + background to combine
           num_images: 1,
           output_format: "jpeg",
-          image_size: {
-            width: 1080,  // 9:16 portrait ratio (Instagram/Story format)
-            height: 1920,
-          },
+          image_size: dimensions,
         },
         logs: true,
         onQueueUpdate: (update) => {
