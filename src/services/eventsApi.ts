@@ -721,6 +721,18 @@ export async function addAlbumPhoto(code: string, photoId: string, stationType: 
   return response.json();
 }
 
+export async function deleteAlbumPhoto(albumCode: string, photoId: string): Promise<void> {
+  const response = await fetch(`${getApiUrl()}/api/albums/${albumCode}/photos/${photoId}`, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' }
+  });
+  
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ detail: 'Failed to delete photo' }));
+    throw new Error(error.detail || 'Failed to delete photo');
+  }
+}
+
 export async function getEventAlbums(eventId: number): Promise<Album[]> {
   const token = getAuthToken();
   const response = await fetch(`${getApiUrl()}/api/albums/event/${eventId}`, {

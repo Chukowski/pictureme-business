@@ -5,8 +5,18 @@
  * Replaces the standard result actions with album-specific options.
  */
 
-import { BookOpen, Camera, ArrowRight, Share2, Download } from "lucide-react";
+import { useState } from "react";
+import { BookOpen, Camera, ArrowRight, Share2, Download, Settings, Trash2, X, KeyRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { toast } from "sonner";
 
 interface AlbumResultActionsProps {
   albumId: string;
@@ -17,9 +27,11 @@ interface AlbumResultActionsProps {
   onViewAlbum: () => void;
   onShare?: () => void;
   onDownload?: () => void;
+  onDeletePhoto?: () => void; // New: callback to delete current photo
   canTakeMore: boolean;
   primaryColor?: string;
   className?: string;
+  staffPin?: string; // Staff PIN for authentication
 }
 
 export function AlbumResultActions({
@@ -31,11 +43,56 @@ export function AlbumResultActions({
   onViewAlbum,
   onShare,
   onDownload,
+  onDeletePhoto,
   canTakeMore,
   primaryColor = "#06B6D4",
   className = "",
+  staffPin,
 }: AlbumResultActionsProps) {
   const isComplete = currentPhotos >= maxPhotos;
+  
+  // Staff options state
+  const [showStaffDialog, setShowStaffDialog] = useState(false);
+  const [pinInput, setPinInput] = useState("");
+  const [isStaffAuthenticated, setIsStaffAuthenticated] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  
+  // Check if staff PIN is configured
+  const hasStaffPin = !!staffPin;
+  
+  const handlePinSubmit = () => {
+    if (pinInput === staffPin) {
+      setIsStaffAuthenticated(true);
+      setPinInput("");
+      toast.success("Staff access granted");
+    } else {
+      toast.error("Incorrect PIN");
+      setPinInput("");
+    }
+  };
+  
+  const handleDeletePhoto = async () => {
+    if (!onDeletePhoto) return;
+    
+    setIsDeleting(true);
+    try {
+      await onDeletePhoto();
+      toast.success("Photo deleted. You can try again!");
+      setShowStaffDialog(false);
+      setIsStaffAuthenticated(false);
+      // The parent component should handle navigation back to camera
+    } catch (error) {
+      toast.error("Failed to delete photo");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+  
+  const handleCloseDialog = () => {
+    setShowStaffDialog(false);
+    setIsStaffAuthenticated(false);
+    setPinInput("");
+  };
 
   return (
     <div className={`space-y-4 ${className}`}>
@@ -139,6 +196,110 @@ export function AlbumResultActions({
           Share code: <span className="font-mono text-zinc-400">{shareCode}</span>
         </p>
       )}
+      
+      {/* Staff Options Button - Only show if PIN is configured and delete callback exists */}
+      {hasStaffPin && onDeletePhoto && (
+        <div className="pt-4 border-t border-white/10">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowStaffDialog(true)}
+            className="w-full text-zinc-500 hover:text-zinc-300 hover:bg-white/5"
+          >
+            <Settings className="w-4 h-4 mr-2" />
+            Staff Options
+          </Button>
+        </div>
+      )}
+      
+      {/* Staff Options Dialog */}
+      <Dialog open={showStaffDialog} onOpenChange={handleCloseDialog}>
+        <DialogContent className="bg-zinc-900 border-white/10 max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-white flex items-center gap-2">
+              <Settings className="w-5 h-5 text-amber-400" />
+              Staff Options
+            </DialogTitle>
+            <DialogDescription className="text-zinc-400">
+              {isStaffAuthenticated 
+                ? "Choose an action for this photo"
+                : "Enter staff PIN to access options"
+              }
+            </DialogDescription>
+          </DialogHeader>
+          
+          {!isStaffAuthenticated ? (
+            // PIN Entry
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <label className="text-sm text-zinc-400">Staff PIN</label>
+                <Input
+                  type="password"
+                  value={pinInput}
+                  onChange={(e) => setPinInput(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handlePinSubmit()}
+                  placeholder="Enter PIN"
+                  className="bg-zinc-800 border-white/10 text-white text-center text-2xl tracking-widest"
+                  autoFocus
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={handleCloseDialog}
+                  className="flex-1 border-white/10 text-zinc-300"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handlePinSubmit}
+                  className="flex-1 bg-amber-600 hover:bg-amber-500 text-white"
+                >
+                  <KeyRound className="w-4 h-4 mr-2" />
+                  Verify
+                </Button>
+              </div>
+            </div>
+          ) : (
+            // Staff Actions
+            <div className="space-y-4 py-4">
+              <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20">
+                <h4 className="text-red-400 font-medium mb-2 flex items-center gap-2">
+                  <Trash2 className="w-4 h-4" />
+                  Delete This Photo
+                </h4>
+                <p className="text-zinc-400 text-sm mb-4">
+                  Remove this photo from the album and let the visitor try again. 
+                  This cannot be undone.
+                </p>
+                <Button
+                  onClick={handleDeletePhoto}
+                  disabled={isDeleting}
+                  className="w-full bg-red-600 hover:bg-red-500 text-white"
+                >
+                  {isDeleting ? (
+                    <>Deleting...</>
+                  ) : (
+                    <>
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      Delete & Try Again
+                    </>
+                  )}
+                </Button>
+              </div>
+              
+              <Button
+                variant="outline"
+                onClick={handleCloseDialog}
+                className="w-full border-white/10 text-zinc-300"
+              >
+                <X className="w-4 h-4 mr-2" />
+                Cancel
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

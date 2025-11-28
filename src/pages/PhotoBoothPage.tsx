@@ -11,7 +11,7 @@ import { CustomPromptModal } from '@/components/CustomPromptModal';
 import ShaderBackground from '@/components/ShaderBackground';
 import { processImageWithAI, downloadImageAsBase64 } from '@/services/aiProcessor';
 import { toast } from 'sonner';
-import { Template, getAlbum, addAlbumPhoto, getAlbumPhotos } from '@/services/eventsApi';
+import { Template, getAlbum, addAlbumPhoto, getAlbumPhotos, deleteAlbumPhoto } from '@/services/eventsApi';
 import { saveProcessedPhoto, getAllPhotos } from '@/services/localStorage';
 import { EventNotFound } from '@/components/EventNotFound';
 import { ScanBadgePrompt, AlbumProgress, AlbumResultActions, ScanAlbumQR, RegistrationBadgeFlow } from '@/components/album';
@@ -445,6 +445,29 @@ export const PhotoBoothPage = () => {
     }
   };
 
+  // Handle staff delete photo (for retakes)
+  const handleDeleteCurrentPhoto = async () => {
+    if (!albumData || !shareCode) {
+      throw new Error('No photo to delete');
+    }
+    
+    try {
+      await deleteAlbumPhoto(albumData.id, shareCode);
+      
+      // Update local album data
+      setAlbumData(prev => prev ? ({
+        ...prev,
+        currentPhotos: Math.max(0, prev.currentPhotos - 1),
+      }) : null);
+      
+      // Reset to camera state
+      handleReset();
+    } catch (error) {
+      console.error('Failed to delete photo:', error);
+      throw error;
+    }
+  };
+
   return (
     <div className="min-h-screen bg-zinc-950 relative">
       {/* QR Scanner Modal */}
@@ -579,8 +602,10 @@ export const PhotoBoothPage = () => {
                 shareCode={shareCode}
                 onTakeAnother={handleReset}
                 onViewAlbum={handleViewAlbum}
+                onDeletePhoto={handleDeleteCurrentPhoto}
                 canTakeMore={canTakeMorePhotos}
                 primaryColor={config.theme?.primaryColor}
+                staffPin={config.settings?.staffAccessCode}
               />
             </div>
           </div>

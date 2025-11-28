@@ -181,6 +181,38 @@ async def add_photo(code: str, photo: AlbumPhotoCreate):
         result["created_at"] = result["created_at"].isoformat() if result["created_at"] else None
         return result
 
+@router.delete("/{code}/photos/{photo_id}")
+async def delete_album_photo(code: str, photo_id: str):
+    """Delete a photo from an album (staff action for retakes)"""
+    async with db_pool.acquire() as conn:
+        # Get album details
+        album = await conn.fetchrow("SELECT id, status FROM albums WHERE code = $1", code)
+        if not album:
+            raise HTTPException(status_code=404, detail="Album not found")
+        
+        # Find the photo in the album
+        photo = await conn.fetchrow(
+            "SELECT id FROM album_photos WHERE album_id = $1 AND photo_id = $2",
+            album["id"], photo_id
+        )
+        if not photo:
+            raise HTTPException(status_code=404, detail="Photo not found in album")
+        
+        # Delete the photo from album
+        await conn.execute(
+            "DELETE FROM album_photos WHERE album_id = $1 AND photo_id = $2",
+            album["id"], photo_id
+        )
+        
+        # If album was completed, set it back to in_progress
+        if album["status"] == "completed":
+            await conn.execute(
+                "UPDATE albums SET status = 'in_progress' WHERE id = $1",
+                album["id"]
+            )
+        
+        return {"status": "success", "message": "Photo deleted from album"}
+
 @router.put("/{album_code}/status")
 async def update_album_status(album_code: str, status: str, request: Request):
     """Update album status (e.g. mark complete, paid)"""
