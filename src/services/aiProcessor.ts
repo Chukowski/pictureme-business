@@ -2,19 +2,25 @@ import { fal } from "@fal-ai/client";
 import { applyBrandingOverlay } from "./imageOverlay";
 import { ENV } from "../config/env";
 
-// Configuration state
-let FAL_KEY: string | undefined = ENV.FAL_KEY || import.meta.env.VITE_FAL_KEY;
-let FAL_MODEL: string = import.meta.env.VITE_FAL_MODEL || "fal-ai/bytedance/seedream/v4/edit";
+// Configuration state - FAL_KEY is ONLY loaded from backend for security
+let FAL_KEY: string | undefined = undefined;
+let FAL_MODEL: string = "fal-ai/bytedance/seedream/v4/edit";
 let configLoaded = false;
 
-// Load config from backend API if not available in build-time env
+// Load config from backend API - this is the ONLY source for sensitive keys
 async function loadConfig() {
-  if (configLoaded || FAL_KEY) {
+  if (configLoaded) {
     return;
   }
   
   try {
-    const apiUrl = ENV.API_URL || 'http://localhost:3001';
+    let apiUrl = ENV.API_URL || 'http://localhost:3001';
+    
+    // Enforce HTTPS for production
+    if (apiUrl.startsWith('http://') && !apiUrl.includes('localhost') && !apiUrl.includes('127.0.0.1')) {
+      apiUrl = apiUrl.replace('http://', 'https://');
+    }
+    
     const response = await fetch(`${apiUrl}/api/config`);
     const config = await response.json();
     
@@ -27,20 +33,13 @@ async function loadConfig() {
         credentials: FAL_KEY,
       });
       
-      console.log('✅ Configuration loaded from backend');
+      console.log('✅ FAL configuration loaded from backend (secure)');
     }
   } catch (error) {
     console.warn('⚠️ Failed to load config from backend:', error);
   }
   
   configLoaded = true;
-}
-
-// Configure fal client with credentials if available at build time
-if (FAL_KEY) {
-  fal.config({
-    credentials: FAL_KEY,
-  });
 }
 
 import type { WatermarkConfig } from './imageOverlay';

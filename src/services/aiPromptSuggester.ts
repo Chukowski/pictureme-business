@@ -1,12 +1,31 @@
 import { fal } from "@fal-ai/client";
 import { ENV } from "../config/env";
 
-const FAL_KEY = ENV.FAL_KEY || import.meta.env.VITE_FAL_KEY;
+// FAL_KEY is loaded from backend for security
+let FAL_KEY: string | undefined = undefined;
+let configLoaded = false;
 
-if (FAL_KEY) {
-  fal.config({
-    credentials: FAL_KEY,
-  });
+async function ensureConfig() {
+  if (configLoaded) return;
+  
+  try {
+    let apiUrl = ENV.API_URL || 'http://localhost:3001';
+    if (apiUrl.startsWith('http://') && !apiUrl.includes('localhost') && !apiUrl.includes('127.0.0.1')) {
+      apiUrl = apiUrl.replace('http://', 'https://');
+    }
+    
+    const response = await fetch(`${apiUrl}/api/config`);
+    const config = await response.json();
+    
+    if (config.falKey) {
+      FAL_KEY = config.falKey;
+      fal.config({ credentials: FAL_KEY });
+    }
+  } catch (error) {
+    console.warn('⚠️ Failed to load FAL config:', error);
+  }
+  
+  configLoaded = true;
 }
 
 export interface PromptSuggestion {
@@ -20,8 +39,10 @@ export interface PromptSuggestion {
 export async function suggestPromptsFromImages(
   imageUrls: string[]
 ): Promise<PromptSuggestion[]> {
+  await ensureConfig();
+  
   if (!FAL_KEY) {
-    throw new Error("FAL_KEY not configured. Please add VITE_FAL_KEY to your .env file");
+    throw new Error("FAL_KEY not configured. Backend /api/config endpoint may be unavailable.");
   }
 
   if (imageUrls.length === 0) {

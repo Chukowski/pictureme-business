@@ -1,6 +1,9 @@
 /**
  * Runtime environment configuration
  * Reads from window.ENV (injected at runtime) or falls back to import.meta.env (build time)
+ * 
+ * NOTE: Sensitive keys (FAL_KEY, etc.) should NOT be in window.ENV
+ * They are fetched from backend via /api/config endpoint
  */
 
 interface EnvConfig {
@@ -11,8 +14,6 @@ interface EnvConfig {
   VITE_MINIO_BUCKET: string;
   VITE_MINIO_SERVER_URL: string;
   VITE_STRIPE_PUBLISHABLE_KEY: string;
-  VITE_FAL_KEY: string;
-  VITE_COUCHDB_URL: string;
 }
 
 declare global {
@@ -57,7 +58,7 @@ function getEnv(key: keyof EnvConfig): string {
   }
 
   // Auto-upgrade http to https for URL-type configs to prevent Mixed Content errors
-  const urlKeys: (keyof EnvConfig)[] = ['VITE_API_URL', 'VITE_AUTH_URL', 'VITE_BASE_URL', 'VITE_MINIO_SERVER_URL', 'VITE_COUCHDB_URL'];
+  const urlKeys: (keyof EnvConfig)[] = ['VITE_API_URL', 'VITE_AUTH_URL', 'VITE_BASE_URL', 'VITE_MINIO_SERVER_URL'];
   if (urlKeys.includes(key)) {
     return enforceHttps(value);
   }
@@ -67,6 +68,7 @@ function getEnv(key: keyof EnvConfig): string {
 
 // Export environment variables as getters to ensure they're evaluated at access time
 // This ensures window.ENV is available when the values are read
+// NOTE: Sensitive keys like FAL_KEY are NOT included here - they come from backend
 export const ENV = {
   get API_URL() { return getEnv('VITE_API_URL'); },
   get AUTH_URL() { return getEnv('VITE_AUTH_URL'); },
@@ -75,8 +77,6 @@ export const ENV = {
   get MINIO_BUCKET() { return getEnv('VITE_MINIO_BUCKET'); },
   get MINIO_SERVER_URL() { return getEnv('VITE_MINIO_SERVER_URL'); },
   get STRIPE_PUBLISHABLE_KEY() { return getEnv('VITE_STRIPE_PUBLISHABLE_KEY'); },
-  get FAL_KEY() { return getEnv('VITE_FAL_KEY'); },
-  get COUCHDB_URL() { return getEnv('VITE_COUCHDB_URL'); },
 };
 
 // Log config in development (delayed to ensure window.ENV is loaded)
