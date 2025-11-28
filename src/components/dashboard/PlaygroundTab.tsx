@@ -69,7 +69,10 @@ import { User as UserType, getUserEvents, EventConfig, Template, updateEvent } f
 import { processImageWithAI, downloadImageAsBase64, AI_MODELS, type AIModelKey } from "@/services/aiProcessor";
 import { toast } from "sonner";
 import { BadgeTemplateConfig, DEFAULT_BADGE_CONFIG, CustomElementPositions, DEFAULT_ELEMENT_POSITIONS } from "@/components/templates/BadgeTemplateEditor";
-import { Move, Save, RotateCcw, Maximize2 } from "lucide-react";
+import { Move, Save, RotateCcw, Maximize2, MessageSquare } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { PromptHelper } from "@/components/PromptHelper";
+import { Switch } from "@/components/ui/switch";
 
 interface PlaygroundTabProps {
   currentUser: UserType;
@@ -143,6 +146,10 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
   
   // Group photo toggle
   const [isGroupPhoto, setIsGroupPhoto] = useState(false);
+  
+  // Custom prompt mode
+  const [useCustomPrompt, setUseCustomPrompt] = useState(false);
+  const [customPrompt, setCustomPrompt] = useState('');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
@@ -285,10 +292,18 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
     try {
       toast.info("Starting AI processing... This will use tokens.", { duration: 3000 });
 
-      // Use group prompt if group mode is selected and available
-      const promptToUse = isGroupPhoto && selectedTemplate.groupPrompt 
-        ? selectedTemplate.groupPrompt 
-        : selectedTemplate.prompt || 'Create a professional photo';
+      // Determine which prompt to use:
+      // 1. Custom prompt if enabled and not empty
+      // 2. Group prompt if group mode and available
+      // 3. Template's default prompt
+      let promptToUse: string;
+      if (useCustomPrompt && customPrompt.trim()) {
+        promptToUse = customPrompt;
+      } else if (isGroupPhoto && selectedTemplate.groupPrompt) {
+        promptToUse = selectedTemplate.groupPrompt;
+      } else {
+        promptToUse = selectedTemplate.prompt || 'Create a professional photo';
+      }
       
       const result = await processImageWithAI({
         userPhotoBase64: testImageBase64,
@@ -1094,7 +1109,7 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
                 </div>
 
                 {/* Individual/Group Toggle */}
-                {selectedTemplate?.groupPrompt && (
+                {selectedTemplate?.groupPrompt && !useCustomPrompt && (
                   <div className="space-y-2">
                     <Label className="text-zinc-300">Photo Type</Label>
                     <div className="flex gap-2">
@@ -1125,6 +1140,120 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
                       {isGroupPhoto 
                         ? '📝 Using group prompt for multiple people' 
                         : '📝 Using individual prompt for single person'}
+                    </p>
+                  </div>
+                )}
+
+                {/* Custom Prompt Section */}
+                <div className="space-y-3 p-4 rounded-xl bg-gradient-to-br from-indigo-500/10 to-purple-500/10 border border-indigo-500/20">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <MessageSquare className="w-4 h-4 text-indigo-400" />
+                      <Label className="text-zinc-300 font-medium">Custom Prompt</Label>
+                    </div>
+                    <Switch
+                      checked={useCustomPrompt}
+                      onCheckedChange={(checked) => {
+                        setUseCustomPrompt(checked);
+                        if (!checked) setCustomPrompt('');
+                      }}
+                      className="data-[state=checked]:bg-indigo-600"
+                    />
+                  </div>
+                  
+                  {useCustomPrompt ? (
+                    <div className="space-y-3">
+                      <Textarea
+                        value={customPrompt}
+                        onChange={(e) => setCustomPrompt(e.target.value)}
+                        placeholder="Write your own prompt to test... e.g., 'Transform this person into a superhero in a comic book style'"
+                        rows={4}
+                        className="font-mono text-sm bg-black/40 border-white/10 text-zinc-300 placeholder:text-zinc-600 focus:border-indigo-500"
+                      />
+                      <PromptHelper
+                        onSelectPrompt={(prompt) => setCustomPrompt(prompt)}
+                        currentPrompt={customPrompt}
+                        section="template"
+                        placeholder="Describe what you want to create or ask AI to improve your prompt..."
+                      />
+                      {selectedTemplate && (
+                        <div className="flex gap-2">
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setCustomPrompt(selectedTemplate.prompt || '')}
+                            className="text-xs border-white/10 text-zinc-400"
+                          >
+                            Load Individual Prompt
+                          </Button>
+                          {selectedTemplate.groupPrompt && (
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              onClick={() => setCustomPrompt(selectedTemplate.groupPrompt || '')}
+                              className="text-xs border-white/10 text-zinc-400"
+                            >
+                              Load Group Prompt
+                            </Button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-zinc-500">
+                      Enable to write and test your own prompts instead of using the template's prompt
+                    </p>
+                  )}
+                </div>
+
+                {/* Current Prompt Preview */}
+                {selectedTemplate && !useCustomPrompt && (
+                  <div className="p-3 rounded-lg bg-black/30 border border-white/5">
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-xs text-zinc-500">
+                        {isGroupPhoto && selectedTemplate.groupPrompt ? 'Group Prompt:' : 'Individual Prompt:'}
+                      </p>
+                      <div className="flex gap-1">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => {
+                            const promptToCopy = isGroupPhoto && selectedTemplate.groupPrompt 
+                              ? selectedTemplate.groupPrompt 
+                              : selectedTemplate.prompt || '';
+                            navigator.clipboard.writeText(promptToCopy);
+                            toast.success('Prompt copied to clipboard');
+                          }}
+                          className="h-6 px-2 text-xs text-zinc-400 hover:text-white"
+                        >
+                          <Copy className="w-3 h-3 mr-1" />
+                          Copy
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => {
+                            const promptToEdit = isGroupPhoto && selectedTemplate.groupPrompt 
+                              ? selectedTemplate.groupPrompt 
+                              : selectedTemplate.prompt || '';
+                            setCustomPrompt(promptToEdit);
+                            setUseCustomPrompt(true);
+                          }}
+                          className="h-6 px-2 text-xs text-zinc-400 hover:text-indigo-400"
+                        >
+                          <Wand2 className="w-3 h-3 mr-1" />
+                          Edit & Enhance
+                        </Button>
+                      </div>
+                    </div>
+                    <p className="text-xs text-zinc-400 font-mono line-clamp-3">
+                      {isGroupPhoto && selectedTemplate.groupPrompt 
+                        ? selectedTemplate.groupPrompt 
+                        : selectedTemplate.prompt || 'No prompt configured'}
                     </p>
                   </div>
                 )}
