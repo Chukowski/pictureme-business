@@ -2,20 +2,31 @@ interface EventTitleProps {
   eventName?: string;
   description?: string;
   brandName?: string;
+  logoUrl?: string;
 }
 
-export function EventTitle({ eventName, description, brandName }: EventTitleProps) {
+export function EventTitle({ eventName, description, brandName, logoUrl }: EventTitleProps) {
   // Use event name if provided, otherwise fall back to brand name
   const displayTitle = eventName || brandName || "AI Photo Booth";
   const displayDescription = description;
 
-  if (!displayTitle) return null;
+  if (!displayTitle && !logoUrl) return null;
 
   return (
     <div className="absolute top-6 left-1/2 -translate-x-1/2 z-20 text-center pointer-events-none px-4 max-w-4xl">
-      <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight text-foreground drop-shadow-sm">
-        {displayTitle}
-      </h1>
+      {logoUrl ? (
+        // Show logo if available
+        <img 
+          src={logoUrl} 
+          alt={displayTitle} 
+          className="h-16 md:h-24 max-w-[300px] md:max-w-[400px] mx-auto object-contain drop-shadow-lg"
+        />
+      ) : (
+        // Fallback to text title
+        <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight text-foreground drop-shadow-sm">
+          {displayTitle}
+        </h1>
+      )}
       {displayDescription && (
         <p className="mt-2 text-sm md:text-base text-muted-foreground">
           {displayDescription}

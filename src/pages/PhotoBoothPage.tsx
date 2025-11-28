@@ -535,9 +535,9 @@ export const PhotoBoothPage = () => {
         />
       )}
 
-      {/* Album Progress Bar - shown in album mode */}
-      {isAlbumMode && albumData && state !== 'scan-badge' && state !== 'processing' && (
-        <div className="fixed top-4 left-4 right-4 z-50">
+      {/* Album Progress - Full version only in select state (bottom right corner) */}
+      {isAlbumMode && albumData && state === 'select' && (
+        <div className="fixed bottom-4 right-4 z-50 max-w-sm">
           <AlbumProgress
             albumId={albumData.id}
             visitorName={albumData.visitorName}
@@ -546,17 +546,34 @@ export const PhotoBoothPage = () => {
             maxPhotos={albumData.maxPhotos}
             currentStation={albumData.currentStation}
             primaryColor={config.theme?.primaryColor}
+            eventLogo={config.branding?.logoPath}
+            eventName={config.title}
+            variant="full"
+          />
+        </div>
+      )}
+      
+      {/* Album Progress - Compact version in camera state (bottom right corner) */}
+      {isAlbumMode && albumData && state === 'camera' && (
+        <div className="fixed bottom-4 right-4 z-50">
+          <AlbumProgress
+            albumId={albumData.id}
+            currentPhotos={albumData.currentPhotos}
+            maxPhotos={albumData.maxPhotos}
+            primaryColor={config.theme?.primaryColor}
+            variant="compact"
           />
         </div>
       )}
 
       {/* Only show title in select state */}
       {state === 'select' && (
-        <div className={isAlbumMode && albumData ? 'pt-24' : ''}>
+        <div>
           <EventTitle
             eventName={config.title}
             description={config.description}
             brandName={config.theme?.brandName || 'AI Photobooth'}
+            logoUrl={config.branding?.logoPath}
           />
         </div>
       )}
