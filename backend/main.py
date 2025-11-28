@@ -1830,6 +1830,7 @@ class PublicPhotoUpload(BaseModel):
     eventSlug: Optional[str] = None
 
 @app.post("/api/photos/upload/public")
+@app.post("/api/photos/upload/public/")
 async def upload_photo_public(payload: PublicPhotoUpload):
     """Upload processed photo without authentication (for legacy Index.tsx flow)"""
     
@@ -1891,10 +1892,21 @@ async def upload_photo_public(payload: PublicPhotoUpload):
 
     if payload.userSlug and payload.eventSlug:
         async with db_pool.acquire() as conn:
+            # Try legacy users table first
             user = await conn.fetchrow(
                 "SELECT id, username, full_name, slug FROM users WHERE slug = $1 AND is_active = TRUE",
                 payload.userSlug
             )
+            
+            # If not found, try Better Auth user table
+            if not user:
+                user = await conn.fetchrow(
+                    """SELECT id, name as full_name, 
+                       LOWER(REPLACE(name, ' ', '-')) as slug,
+                       email as username
+                       FROM "user" WHERE LOWER(REPLACE(name, ' ', '-')) = $1""",
+                    payload.userSlug
+                )
 
         if not user:
             raise HTTPException(status_code=404, detail="User not found for provided slug")

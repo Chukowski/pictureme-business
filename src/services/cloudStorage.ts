@@ -45,7 +45,8 @@ export async function savePhotoToCloud(photo: {
   eventSlug?: string;
 }): Promise<CloudPhoto> {
   try {
-    const response = await fetch(`${getApiUrl()}/api/photos/upload/public`, {
+    // Note: trailing slash required to avoid 307 redirect
+    const response = await fetch(`${getApiUrl()}/api/photos/upload/public/`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
