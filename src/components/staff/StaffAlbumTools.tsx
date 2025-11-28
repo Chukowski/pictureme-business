@@ -8,18 +8,26 @@
 import { useState, useEffect } from 'react';
 import {
   CheckCircle2, XCircle, Mail, MessageSquare, MonitorPlay,
-  Printer, Download, QrCode, Users, Clock, Camera, Send,
-  Smartphone, Laptop, RefreshCw, Loader2
+  Printer, Download, QrCode, Users, Clock, Camera,
+  Smartphone, Laptop, RefreshCw, Loader2, ChevronDown,
+  ExternalLink, Copy, Check
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { toast } from 'sonner';
-import { sendAlbumEmail, getEmailStatus } from '@/services/eventsApi';
+import { sendAlbumEmail, getEmailStatus, getEventAlbums, type Album } from '@/services/eventsApi';
+import { QRCodeSVG } from 'qrcode.react';
 
 interface AlbumStats {
   totalAlbums: number;
@@ -30,7 +38,10 @@ interface AlbumStats {
 
 interface StaffAlbumToolsProps {
   eventId: string;
+  postgresEventId?: number;
   eventName: string;
+  userSlug?: string;
+  eventSlug?: string;
   stats?: AlbumStats;
   primaryColor?: string;
   onRefresh?: () => void;
@@ -39,7 +50,10 @@ interface StaffAlbumToolsProps {
 
 export function StaffAlbumTools({
   eventId,
+  postgresEventId,
   eventName,
+  userSlug,
+  eventSlug,
   stats = {
     totalAlbums: 0,
     completedAlbums: 0,
@@ -56,24 +70,67 @@ export function StaffAlbumTools({
   const [phoneNumber, setPhoneNumber] = useState('');
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [emailConfigured, setEmailConfigured] = useState(true);
+  const [albums, setAlbums] = useState<Album[]>([]);
+  const [selectedAlbumCode, setSelectedAlbumCode] = useState<string>('');
+  const [isLoadingAlbums, setIsLoadingAlbums] = useState(false);
+  const [showQR, setShowQR] = useState(false);
+  const [copiedUrl, setCopiedUrl] = useState(false);
 
-  // Check email configuration on mount
+  // Check email configuration and load albums on mount
   useEffect(() => {
     getEmailStatus().then(status => {
       setEmailConfigured(status.configured);
     }).catch(() => {
       setEmailConfigured(false);
     });
-  }, []);
+
+    if (postgresEventId) {
+      loadAlbums();
+    }
+  }, [postgresEventId]);
+
+  const loadAlbums = async () => {
+    if (!postgresEventId) return;
+    setIsLoadingAlbums(true);
+    try {
+      const albumList = await getEventAlbums(postgresEventId);
+      setAlbums(albumList);
+      // Auto-select first completed album if available
+      const completedAlbum = albumList.find(a => a.status === 'completed');
+      if (completedAlbum) {
+        setSelectedAlbumCode(completedAlbum.code);
+      }
+    } catch (error) {
+      console.error('Failed to load albums:', error);
+    } finally {
+      setIsLoadingAlbums(false);
+    }
+  };
+
+  const getAlbumUrl = (code: string) => {
+    const baseUrl = window.location.origin;
+    return `${baseUrl}/${userSlug || 'album'}/${eventSlug || 'view'}/${code}`;
+  };
+
+  const getRegistrationUrl = () => {
+    const baseUrl = window.location.origin;
+    return `${baseUrl}/${userSlug}/${eventSlug}/registration`;
+  };
 
   // Actions
   const handleApproveAll = () => {
     toast.success('All pending photos approved');
+    onRefresh?.();
   };
 
-  const handleSendBulkEmail = async () => {
+  const handleSendEmail = async () => {
     if (!emailAddress) {
       toast.error('Please enter an email address');
+      return;
+    }
+
+    if (!selectedAlbumCode) {
+      toast.error('Please select an album to send');
       return;
     }
 
@@ -82,20 +139,20 @@ export function StaffAlbumTools({
       return;
     }
 
+    const selectedAlbum = albums.find(a => a.code === selectedAlbumCode);
+    
     setIsSendingEmail(true);
     try {
-      // Get current URL to build album URL
-      const baseUrl = window.location.origin;
-      const albumUrl = `${baseUrl}/${window.location.pathname.split('/')[1]}/${window.location.pathname.split('/')[2]}/album`;
+      const albumUrl = getAlbumUrl(selectedAlbumCode);
       
       await sendAlbumEmail(
         emailAddress,
         albumUrl,
         eventName,
-        undefined, // visitorName
-        undefined, // brandName
+        selectedAlbum?.owner_name,
+        undefined,
         primaryColor,
-        stats.totalPhotos
+        selectedAlbum?.photo_count || 0
       );
       
       toast.success(`Album link sent to ${emailAddress}`);
@@ -108,25 +165,56 @@ export function StaffAlbumTools({
     }
   };
 
-  const handleSendBulkSMS = () => {
+  const handleSendWhatsApp = () => {
     if (!phoneNumber) {
       toast.error('Please enter a phone number');
       return;
     }
-    toast.success(`Album links sent to ${phoneNumber}`);
-    setPhoneNumber('');
+    if (!selectedAlbumCode) {
+      toast.error('Please select an album to send');
+      return;
+    }
+
+    const albumUrl = getAlbumUrl(selectedAlbumCode);
+    const selectedAlbum = albums.find(a => a.code === selectedAlbumCode);
+    const message = encodeURIComponent(
+      `🎉 Your photos from ${eventName} are ready!\n\n` +
+      `${selectedAlbum?.owner_name ? `Hi ${selectedAlbum.owner_name}, ` : ''}` +
+      `View and download your photos here:\n${albumUrl}`
+    );
+    
+    // Clean phone number
+    const cleanPhone = phoneNumber.replace(/\D/g, '');
+    window.open(`https://wa.me/${cleanPhone}?text=${message}`, '_blank');
+    toast.success('Opening WhatsApp...');
   };
 
-  const handlePrintQueue = () => {
-    toast.success('Print queue opened');
+  const handleCopyUrl = () => {
+    if (!selectedAlbumCode) {
+      toast.error('Please select an album first');
+      return;
+    }
+    navigator.clipboard.writeText(getAlbumUrl(selectedAlbumCode));
+    setCopiedUrl(true);
+    toast.success('Album URL copied!');
+    setTimeout(() => setCopiedUrl(false), 2000);
   };
 
   const handleExportAll = () => {
-    toast.success('Exporting all albums...');
+    toast.info('Export feature coming soon');
   };
 
-  const handleGenerateQR = () => {
-    toast.success('Registration QR generated');
+  const handlePrintQueue = () => {
+    toast.info('Print queue feature coming soon');
+  };
+
+  const handleOpenDisplay = () => {
+    if (!userSlug || !eventSlug) {
+      toast.error('Event URLs not configured');
+      return;
+    }
+    const displayUrl = `${window.location.origin}/${userSlug}/${eventSlug}/display`;
+    window.open(displayUrl, '_blank');
   };
 
   return (
@@ -166,16 +254,16 @@ export function StaffAlbumTools({
       {/* Main Tools */}
       <Tabs defaultValue="approval" className="w-full">
         <TabsList className="grid w-full grid-cols-4 bg-zinc-900/50 border border-white/10">
-          <TabsTrigger value="approval" className="data-[state=active]:bg-white/10">
+          <TabsTrigger value="approval" className="data-[state=active]:bg-white/10 text-zinc-400 data-[state=active]:text-white">
             Approval
           </TabsTrigger>
-          <TabsTrigger value="send" className="data-[state=active]:bg-white/10">
+          <TabsTrigger value="send" className="data-[state=active]:bg-white/10 text-zinc-400 data-[state=active]:text-white">
             Send
           </TabsTrigger>
-          <TabsTrigger value="presentation" className="data-[state=active]:bg-white/10">
+          <TabsTrigger value="display" className="data-[state=active]:bg-white/10 text-zinc-400 data-[state=active]:text-white">
             Display
           </TabsTrigger>
-          <TabsTrigger value="settings" className="data-[state=active]:bg-white/10">
+          <TabsTrigger value="settings" className="data-[state=active]:bg-white/10 text-zinc-400 data-[state=active]:text-white">
             Settings
           </TabsTrigger>
         </TabsList>
@@ -204,26 +292,24 @@ export function StaffAlbumTools({
                 />
               </div>
 
-              {stats.pendingApproval > 0 && (
+              {stats.pendingApproval > 0 ? (
                 <div className="flex gap-3">
                   <Button
                     onClick={handleApproveAll}
-                    className="flex-1 bg-green-600 hover:bg-green-500"
+                    className="flex-1 bg-green-600 hover:bg-green-500 text-white"
                   >
                     <CheckCircle2 className="w-4 h-4 mr-2" />
                     Approve All ({stats.pendingApproval})
                   </Button>
                   <Button
-                    variant="outline"
-                    className="border-white/20 text-zinc-300"
+                    onClick={() => toast.info('Review queue coming soon')}
+                    className="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-white/10"
                   >
                     <XCircle className="w-4 h-4 mr-2" />
                     Review Queue
                   </Button>
                 </div>
-              )}
-
-              {stats.pendingApproval === 0 && (
+              ) : (
                 <p className="text-center text-zinc-500 py-4">
                   No photos pending approval
                 </p>
@@ -242,6 +328,68 @@ export function StaffAlbumTools({
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* Album Selector */}
+              <div className="space-y-2">
+                <Label className="text-zinc-400 text-xs">Select Album</Label>
+                <Select
+                  value={selectedAlbumCode}
+                  onValueChange={setSelectedAlbumCode}
+                  disabled={isLoadingAlbums}
+                >
+                  <SelectTrigger className="bg-black/40 border-white/10 text-white">
+                    <SelectValue placeholder={isLoadingAlbums ? "Loading albums..." : "Select an album"} />
+                  </SelectTrigger>
+                  <SelectContent className="bg-zinc-900 border-white/10">
+                    {albums.length === 0 ? (
+                      <SelectItem value="none" disabled className="text-zinc-500">
+                        No albums available
+                      </SelectItem>
+                    ) : (
+                      albums.map(album => (
+                        <SelectItem 
+                          key={album.code} 
+                          value={album.code}
+                          className="text-white hover:bg-white/10"
+                        >
+                          <div className="flex items-center gap-2">
+                            <span>{album.owner_name || album.code}</span>
+                            <span className={`text-xs px-1.5 py-0.5 rounded ${
+                              album.status === 'completed' ? 'bg-green-500/20 text-green-400' :
+                              album.status === 'in_progress' ? 'bg-amber-500/20 text-amber-400' :
+                              'bg-zinc-500/20 text-zinc-400'
+                            }`}>
+                              {album.status}
+                            </span>
+                            <span className="text-zinc-500 text-xs">
+                              ({album.photo_count || 0} photos)
+                            </span>
+                          </div>
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Copy URL */}
+              {selectedAlbumCode && (
+                <div className="flex gap-2">
+                  <Input
+                    value={getAlbumUrl(selectedAlbumCode)}
+                    readOnly
+                    className="flex-1 bg-black/40 border-white/10 text-zinc-400 text-sm"
+                  />
+                  <Button
+                    onClick={handleCopyUrl}
+                    className="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-white/10"
+                  >
+                    {copiedUrl ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                  </Button>
+                </div>
+              )}
+
+              <hr className="border-white/10" />
+
               {/* Email */}
               <div className="space-y-2">
                 <Label className="text-zinc-400 text-xs">
@@ -256,38 +404,40 @@ export function StaffAlbumTools({
                     value={emailAddress}
                     onChange={(e) => setEmailAddress(e.target.value)}
                     placeholder="visitor@email.com"
-                    className="flex-1 bg-black/40 border-white/10 text-white"
-                    disabled={isSendingEmail}
+                    className="flex-1 bg-black/40 border-white/10 text-white placeholder:text-zinc-600"
+                    disabled={isSendingEmail || !selectedAlbumCode}
                   />
                   <Button
-                    onClick={handleSendBulkEmail}
-                    className="bg-blue-600 hover:bg-blue-500"
-                    disabled={isSendingEmail || !emailConfigured}
+                    onClick={handleSendEmail}
+                    className="bg-blue-600 hover:bg-blue-500 text-white"
+                    disabled={isSendingEmail || !emailConfigured || !selectedAlbumCode}
                   >
                     {isSendingEmail ? (
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                     ) : (
                       <Mail className="w-4 h-4 mr-2" />
                     )}
-                    {isSendingEmail ? 'Sending...' : 'Send'}
+                    Send
                   </Button>
                 </div>
               </div>
 
-              {/* SMS/WhatsApp */}
+              {/* WhatsApp */}
               <div className="space-y-2">
-                <Label className="text-zinc-400 text-xs">Send via SMS/WhatsApp</Label>
+                <Label className="text-zinc-400 text-xs">Send via WhatsApp</Label>
                 <div className="flex gap-2">
                   <Input
                     type="tel"
                     value={phoneNumber}
                     onChange={(e) => setPhoneNumber(e.target.value)}
                     placeholder="+1 234 567 8900"
-                    className="flex-1 bg-black/40 border-white/10 text-white"
+                    className="flex-1 bg-black/40 border-white/10 text-white placeholder:text-zinc-600"
+                    disabled={!selectedAlbumCode}
                   />
                   <Button
-                    onClick={handleSendBulkSMS}
-                    className="bg-green-600 hover:bg-green-500"
+                    onClick={handleSendWhatsApp}
+                    className="bg-green-600 hover:bg-green-500 text-white"
+                    disabled={!selectedAlbumCode}
                   >
                     <MessageSquare className="w-4 h-4 mr-2" />
                     Send
@@ -300,17 +450,15 @@ export function StaffAlbumTools({
               {/* Bulk Actions */}
               <div className="grid grid-cols-2 gap-3">
                 <Button
-                  variant="outline"
                   onClick={handleExportAll}
-                  className="border-white/20 text-zinc-300"
+                  className="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-white/10"
                 >
                   <Download className="w-4 h-4 mr-2" />
                   Export All
                 </Button>
                 <Button
-                  variant="outline"
                   onClick={handlePrintQueue}
-                  className="border-white/20 text-zinc-300"
+                  className="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-white/10"
                 >
                   <Printer className="w-4 h-4 mr-2" />
                   Print Queue
@@ -320,8 +468,8 @@ export function StaffAlbumTools({
           </Card>
         </TabsContent>
 
-        {/* Presentation Tab */}
-        <TabsContent value="send" className="mt-4">
+        {/* Display Tab */}
+        <TabsContent value="display" className="mt-4">
           <Card className="bg-zinc-900/50 border-white/10">
             <CardHeader>
               <CardTitle className="text-white text-lg">Big Screen Display</CardTitle>
@@ -353,19 +501,28 @@ export function StaffAlbumTools({
               {bigScreenMode && (
                 <div className="grid grid-cols-2 gap-3">
                   <Button
-                    variant="outline"
-                    className="border-white/20 text-zinc-300"
+                    onClick={handleOpenDisplay}
+                    className="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-white/10"
                   >
                     <Laptop className="w-4 h-4 mr-2" />
                     Open Display
                   </Button>
                   <Button
-                    variant="outline"
-                    className="border-white/20 text-zinc-300"
+                    onClick={() => setShowQR(!showQR)}
+                    className="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-white/10"
                   >
-                    <Smartphone className="w-4 h-4 mr-2" />
+                    <QrCode className="w-4 h-4 mr-2" />
                     QR for Display
                   </Button>
+                </div>
+              )}
+
+              {bigScreenMode && showQR && userSlug && eventSlug && (
+                <div className="flex justify-center p-4 bg-white rounded-lg">
+                  <QRCodeSVG 
+                    value={`${window.location.origin}/${userSlug}/${eventSlug}/display`}
+                    size={150}
+                  />
                 </div>
               )}
             </CardContent>
@@ -379,23 +536,47 @@ export function StaffAlbumTools({
               <CardTitle className="text-white text-lg">Quick Actions</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <Button
-                onClick={handleGenerateQR}
-                className="w-full"
-                style={{ backgroundColor: primaryColor }}
-              >
-                <QrCode className="w-4 h-4 mr-2" />
-                Generate Registration QR
-              </Button>
+              {/* Registration QR */}
+              <div className="space-y-3">
+                <Button
+                  onClick={() => setShowQR(!showQR)}
+                  className="w-full"
+                  style={{ backgroundColor: primaryColor }}
+                >
+                  <QrCode className="w-4 h-4 mr-2" />
+                  {showQR ? 'Hide' : 'Show'} Registration QR
+                </Button>
+
+                {showQR && userSlug && eventSlug && (
+                  <div className="flex flex-col items-center gap-3 p-4 bg-white rounded-lg">
+                    <QRCodeSVG 
+                      value={getRegistrationUrl()}
+                      size={180}
+                    />
+                    <p className="text-xs text-zinc-600 text-center break-all">
+                      {getRegistrationUrl()}
+                    </p>
+                  </div>
+                )}
+              </div>
 
               <Button
-                variant="outline"
                 onClick={onRefresh}
-                className="w-full border-white/20 text-zinc-300"
+                className="w-full bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-white/10"
               >
                 <RefreshCw className="w-4 h-4 mr-2" />
                 Refresh Data
               </Button>
+
+              {userSlug && eventSlug && (
+                <Button
+                  onClick={() => window.open(`/${userSlug}/${eventSlug}/registration`, '_blank')}
+                  className="w-full bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-white/10"
+                >
+                  <ExternalLink className="w-4 h-4 mr-2" />
+                  Open Registration Page
+                </Button>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -405,4 +586,3 @@ export function StaffAlbumTools({
 }
 
 export default StaffAlbumTools;
-

@@ -303,7 +303,10 @@ export default function AlbumsTab({ currentUser }: AlbumsTabProps) {
           <div className="lg:col-span-1">
             <StaffAlbumTools
               eventId={selectedEvent._id}
+              postgresEventId={selectedEvent.postgres_event_id}
               eventName={selectedEvent.title}
+              userSlug={currentUser.slug}
+              eventSlug={selectedEvent.slug}
               stats={selectedEvent.albumStats}
               primaryColor={selectedEvent.theme?.primaryColor}
               onRefresh={loadEvents}
