@@ -6,10 +6,18 @@
 
 import { ENV } from "@/config/env";
 
-// Helper function to get API URL dynamically
+// Helper function to get API URL dynamically with HTTPS enforcement
 // This ensures window.ENV is available when the URL is needed
 function getApiUrl(): string {
-  return ENV.API_URL || '';
+  let url = ENV.API_URL || '';
+  
+  // Force HTTPS for production (non-localhost) URLs
+  if (url && url.startsWith('http://') && !url.includes('localhost') && !url.includes('127.0.0.1')) {
+    console.warn('🔒 [eventsApi] Forcing HTTPS for API URL:', url);
+    url = url.replace('http://', 'https://');
+  }
+  
+  return url;
 }
 
 export interface User {

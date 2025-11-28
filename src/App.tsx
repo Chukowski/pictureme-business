@@ -77,20 +77,31 @@ const getUserProperties = () => {
 };
 
 // Get API URL with HTTPS enforcement for production
-const getApiUrl = () => {
-  let url = ENV.API_URL || (import.meta.env.DEV ? "http://localhost:3001" : "");
+// This is a function to ensure it's evaluated when needed, not at module load time
+const getApiUrl = (): string => {
+  // Try window.ENV first (runtime config from config.js)
+  let url = '';
+  
+  if (typeof window !== 'undefined' && window.ENV?.VITE_API_URL) {
+    url = window.ENV.VITE_API_URL;
+  } else {
+    url = ENV.API_URL || (import.meta.env.DEV ? "http://localhost:3001" : "");
+  }
   
   // Enforce HTTPS in production (non-localhost)
   if (url && url.startsWith('http://') && !url.includes('localhost') && !url.includes('127.0.0.1')) {
+    console.warn('🔒 [App] Forcing HTTPS for API URL:', url);
     url = url.replace('http://', 'https://');
   }
   
   return url;
 };
 
-const API_URL = getApiUrl();
-
-const App = () => (
+const App = () => {
+  // Get API URL dynamically inside the component
+  const apiUrl = getApiUrl();
+  
+  return (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider>
       <TooltipProvider>
@@ -99,7 +110,7 @@ const App = () => (
         <BrowserRouter>
           {/* CopilotKit Provider - Self-hosted, connects to our FastAPI backend */}
           <CopilotKit
-            runtimeUrl={`${API_URL}/copilotkit`}
+            runtimeUrl={`${apiUrl}/copilotkit`}
             properties={getUserProperties()}
           >
             {/* Register frontend actions for Akito */}
@@ -180,7 +191,8 @@ const App = () => (
       </TooltipProvider>
     </ThemeProvider>
   </QueryClientProvider>
-);
+  );
+};
 
 // Note: AkitoWidget uses our custom branding with CopilotKit backend actions
 
