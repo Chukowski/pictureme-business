@@ -1108,41 +1108,45 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
                   </p>
                 </div>
 
-                {/* Individual/Group Toggle */}
-                {selectedTemplate?.groupPrompt && !useCustomPrompt && (
-                  <div className="space-y-2">
-                    <Label className="text-zinc-300">Photo Type</Label>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => setIsGroupPhoto(false)}
-                        className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border transition-all ${
-                          !isGroupPhoto 
-                            ? 'bg-cyan-500/20 border-cyan-500/50 text-cyan-400' 
-                            : 'bg-black/20 border-white/10 text-zinc-400 hover:text-zinc-300'
-                        }`}
-                      >
-                        <span className="text-lg">👤</span>
-                        <span className="text-sm font-medium">Individual</span>
-                      </button>
-                      <button
-                        onClick={() => setIsGroupPhoto(true)}
-                        className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border transition-all ${
-                          isGroupPhoto 
-                            ? 'bg-purple-500/20 border-purple-500/50 text-purple-400' 
-                            : 'bg-black/20 border-white/10 text-zinc-400 hover:text-zinc-300'
-                        }`}
-                      >
-                        <span className="text-lg">👥</span>
-                        <span className="text-sm font-medium">Group</span>
-                      </button>
-                    </div>
-                    <p className="text-xs text-zinc-500">
-                      {isGroupPhoto 
-                        ? '📝 Using group prompt for multiple people' 
-                        : '📝 Using individual prompt for single person'}
-                    </p>
+                {/* Individual/Group Toggle - Always show for testing */}
+                <div className="space-y-2">
+                  <Label className="text-zinc-300">Photo Type</Label>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsGroupPhoto(false)}
+                      className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border transition-all ${
+                        !isGroupPhoto 
+                          ? 'bg-cyan-500/20 border-cyan-500/50 text-cyan-400' 
+                          : 'bg-black/20 border-white/10 text-zinc-400 hover:text-zinc-300'
+                      }`}
+                    >
+                      <span className="text-lg">👤</span>
+                      <span className="text-sm font-medium">Individual</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsGroupPhoto(true)}
+                      className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border transition-all ${
+                        isGroupPhoto 
+                          ? 'bg-purple-500/20 border-purple-500/50 text-purple-400' 
+                          : 'bg-black/20 border-white/10 text-zinc-400 hover:text-zinc-300'
+                      }`}
+                    >
+                      <span className="text-lg">👥</span>
+                      <span className="text-sm font-medium">Group</span>
+                    </button>
                   </div>
-                )}
+                  <p className="text-xs text-zinc-500">
+                    {isGroupPhoto 
+                      ? selectedTemplate?.groupPrompt 
+                        ? '📝 Using template group prompt' 
+                        : '📝 Group mode - use custom prompt or PromptHelper templates'
+                      : selectedTemplate?.prompt 
+                        ? '📝 Using template individual prompt' 
+                        : '📝 Individual mode - use custom prompt or PromptHelper templates'}
+                  </p>
+                </div>
 
                 {/* Custom Prompt Section */}
                 <div className="space-y-3 p-4 rounded-xl bg-gradient-to-br from-indigo-500/10 to-purple-500/10 border border-indigo-500/20">
