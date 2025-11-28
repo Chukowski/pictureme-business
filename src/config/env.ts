@@ -52,6 +52,49 @@ function isProduction(): boolean {
 }
 
 /**
+ * Derive production URLs from current origin
+ * If window.ENV is missing values, we can infer them from the current hostname
+ */
+function deriveProductionUrl(type: 'api' | 'auth' | 'base'): string {
+  if (typeof window === 'undefined') return '';
+  
+  const hostname = window.location.hostname;
+  const protocol = window.location.protocol; // Should be https: in production
+  
+  // For pictureme.now domain
+  if (hostname.includes('pictureme.now')) {
+    switch (type) {
+      case 'api': return `${protocol}//api.pictureme.now`;
+      case 'auth': return `${protocol}//auth.pictureme.now`;
+      case 'base': return `${protocol}//${hostname}`;
+    }
+  }
+  
+  // For akitapr.com domain
+  if (hostname.includes('akitapr.com')) {
+    switch (type) {
+      case 'api': return `${protocol}//photoapi.akitapr.com`;
+      case 'auth': return `${protocol}//photoauth.akitapr.com`;
+      case 'base': return `${protocol}//${hostname}`;
+    }
+  }
+  
+  // Default: derive from current hostname pattern
+  // e.g., if on app.example.com, derive api.example.com
+  const parts = hostname.split('.');
+  if (parts.length >= 2) {
+    const domain = parts.slice(-2).join('.');
+    switch (type) {
+      case 'api': return `${protocol}//api.${domain}`;
+      case 'auth': return `${protocol}//auth.${domain}`;
+      case 'base': return `${protocol}//${hostname}`;
+    }
+  }
+  
+  return '';
+}
+
+/**
  * Get environment variable with runtime override support
  * This is called dynamically to ensure window.ENV is available
  * 
@@ -67,8 +110,22 @@ function getEnv(key: keyof EnvConfig): string {
     if (typeof window !== 'undefined' && window.ENV && window.ENV[key]) {
       value = window.ENV[key] as string;
     }
-    // In production, if window.ENV doesn't have the value, return empty string
-    // DO NOT fallback to import.meta.env which may have localhost values
+    
+    // If window.ENV doesn't have the value, try to derive it from current origin
+    // This ensures production always has valid URLs even if config.js isn't updated
+    if (!value) {
+      switch (key) {
+        case 'VITE_API_URL':
+          value = deriveProductionUrl('api');
+          break;
+        case 'VITE_AUTH_URL':
+          value = deriveProductionUrl('auth');
+          break;
+        case 'VITE_BASE_URL':
+          value = deriveProductionUrl('base');
+          break;
+      }
+    }
   } else {
     // In development, try window.ENV first, then fallback to build-time env
     if (typeof window !== 'undefined' && window.ENV && window.ENV[key]) {

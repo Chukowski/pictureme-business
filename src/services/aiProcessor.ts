@@ -38,11 +38,13 @@ async function loadConfig() {
   }
   
   try {
-    let apiUrl = ENV.API_URL || 'http://localhost:3001';
+    // ENV.API_URL now auto-derives production URLs if not set
+    const apiUrl = ENV.API_URL;
     
-    // Enforce HTTPS for production
-    if (apiUrl.startsWith('http://') && !apiUrl.includes('localhost') && !apiUrl.includes('127.0.0.1')) {
-      apiUrl = apiUrl.replace('http://', 'https://');
+    if (!apiUrl) {
+      console.warn('⚠️ No API URL configured - cannot load FAL config');
+      configLoaded = true;
+      return;
     }
     
     const response = await fetch(`${apiUrl}/api/config`);
@@ -233,8 +235,17 @@ INSTRUCTIONS:
 
 Output a single cohesive image.`;
         console.log("📝 Prompt with FORCED instructions:", finalPrompt);
+      } else if (hasBackgroundImages) {
+        // Always add minimal context about the images to help the model understand
+        // This is less verbose than force instructions but helps with style transfer
+        finalPrompt = `[Image 1: person/people to transform] [Image 2: background scene]
+
+${backgroundPrompt}
+
+Transform the person(s) from Image 1 according to the instructions above and place them in the scene from Image 2.`;
+        console.log("📝 Prompt with minimal context:", finalPrompt);
       } else {
-        // Use user's prompt exactly as-is (default behavior)
+        // No background images, use prompt as-is
         console.log("📝 Using user prompt as-is:", finalPrompt);
       }
       

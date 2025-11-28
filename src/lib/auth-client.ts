@@ -2,8 +2,28 @@ import { createAuthClient } from "better-auth/react";
 import { adminClient } from "better-auth/client/plugins";
 import { ENV } from "@/config/env";
 
+/**
+ * Get auth URL - uses ENV which auto-derives production URLs
+ * Falls back to localhost only in development
+ */
+function getAuthUrl(): string {
+  const url = ENV.AUTH_URL;
+  if (url) return url;
+  
+  // Only use localhost fallback in development
+  if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname;
+    if (hostname.includes('localhost') || hostname.includes('127.0.0.1')) {
+      return 'http://localhost:3002';
+    }
+  }
+  
+  // In production without URL, return empty (auth will fail gracefully)
+  return '';
+}
+
 export const authClient = createAuthClient({
-  baseURL: ENV.AUTH_URL || "http://localhost:3002",
+  baseURL: getAuthUrl(),
   
   plugins: [
     adminClient(), // Enable admin plugin for roles

@@ -9,9 +9,13 @@ async function ensureConfig() {
   if (configLoaded) return;
   
   try {
-    let apiUrl = ENV.API_URL || 'http://localhost:3001';
-    if (apiUrl.startsWith('http://') && !apiUrl.includes('localhost') && !apiUrl.includes('127.0.0.1')) {
-      apiUrl = apiUrl.replace('http://', 'https://');
+    // ENV.API_URL now auto-derives production URLs if not set
+    const apiUrl = ENV.API_URL;
+    
+    if (!apiUrl) {
+      console.warn('⚠️ No API URL configured - cannot load FAL config');
+      configLoaded = true;
+      return;
     }
     
     const response = await fetch(`${apiUrl}/api/config`);
