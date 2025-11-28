@@ -26,9 +26,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from 'sonner';
-import { sendAlbumEmail, getEmailStatus, getEventAlbums, updateAlbumStatus, type Album } from '@/services/eventsApi';
+import { sendAlbumEmail, getEmailStatus, getEventAlbums, updateAlbumStatus, getPaymentRequests, type Album, type PaymentRequest } from '@/services/eventsApi';
 import { QRCodeSVG } from 'qrcode.react';
-import { CreditCard, CheckSquare } from 'lucide-react';
+import { CreditCard, CheckSquare, Bell, DollarSign } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 
 interface AlbumStats {
   totalAlbums: number;
@@ -78,6 +79,7 @@ export function StaffAlbumTools({
   const [isLoadingAlbums, setIsLoadingAlbums] = useState(false);
   const [showQR, setShowQR] = useState(false);
   const [copiedUrl, setCopiedUrl] = useState(false);
+  const [paymentRequests, setPaymentRequests] = useState<PaymentRequest[]>([]);
 
   // Check email configuration and load albums on mount
   useEffect(() => {
@@ -89,7 +91,19 @@ export function StaffAlbumTools({
 
     if (postgresEventId) {
       loadAlbums();
+      loadPaymentRequests();
     }
+  }, [postgresEventId]);
+
+  // Poll for payment requests every 10 seconds
+  useEffect(() => {
+    if (!postgresEventId) return;
+    
+    const interval = setInterval(() => {
+      loadPaymentRequests();
+    }, 10000);
+    
+    return () => clearInterval(interval);
   }, [postgresEventId]);
 
   const loadAlbums = async () => {
@@ -107,6 +121,28 @@ export function StaffAlbumTools({
       console.error('Failed to load albums:', error);
     } finally {
       setIsLoadingAlbums(false);
+    }
+  };
+
+  const loadPaymentRequests = async () => {
+    if (!postgresEventId) return;
+    try {
+      const requests = await getPaymentRequests(postgresEventId);
+      setPaymentRequests(requests);
+    } catch (error) {
+      console.error('Failed to load payment requests:', error);
+    }
+  };
+
+  const handleMarkAsPaid = async (albumCode: string) => {
+    try {
+      await updateAlbumStatus(albumCode, 'paid');
+      toast.success('Album marked as paid!');
+      loadAlbums();
+      loadPaymentRequests();
+      onRefresh?.();
+    } catch (error) {
+      toast.error('Failed to mark as paid');
     }
   };
 
@@ -225,6 +261,51 @@ export function StaffAlbumTools({
 
   return (
     <div className={`space-y-6 ${className}`}>
+      {/* Payment Requests Alert */}
+      {paymentRequests.length > 0 && (
+        <Card className="bg-amber-500/10 border-amber-500/30 animate-pulse">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="p-2 rounded-full bg-amber-500/20">
+                <Bell className="w-5 h-5 text-amber-400" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-amber-400">
+                  {paymentRequests.length} Payment Request{paymentRequests.length > 1 ? 's' : ''}
+                </h3>
+                <p className="text-xs text-amber-400/70">Visitors waiting to pay</p>
+              </div>
+            </div>
+            <div className="space-y-2 max-h-40 overflow-y-auto">
+              {paymentRequests.map((req) => (
+                <div 
+                  key={req.code}
+                  className="flex items-center justify-between p-2 rounded-lg bg-black/30"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-sm text-white">{req.code}</span>
+                    {req.owner_name && (
+                      <span className="text-zinc-400 text-sm">• {req.owner_name}</span>
+                    )}
+                    <Badge className="bg-zinc-700 text-zinc-300 text-xs">
+                      {req.photo_count} photos
+                    </Badge>
+                  </div>
+                  <Button
+                    size="sm"
+                    onClick={() => handleMarkAsPaid(req.code)}
+                    className="bg-green-600 hover:bg-green-500 text-white"
+                  >
+                    <DollarSign className="w-3 h-3 mr-1" />
+                    Mark Paid
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Stats Overview */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card className="bg-zinc-900/50 border-white/10">

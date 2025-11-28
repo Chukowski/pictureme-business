@@ -480,14 +480,14 @@ async def get_connect_dashboard_link(request: Request):
         }
 
 
-@router.post("/albums/{album_id}/checkout")
-async def create_album_checkout(album_id: str, request: Request):
+@router.post("/albums/{album_code}/checkout")
+async def create_album_checkout(album_code: str, request: Request):
     """Create checkout session for purchasing an album"""
     stripe = get_stripe()
     
     async with db_pool.acquire() as conn:
-        # Verify album exists (by UUID)
-        album = await conn.fetchrow("SELECT * FROM albums WHERE id = $1", album_id)
+        # Verify album exists (by code, not UUID)
+        album = await conn.fetchrow("SELECT * FROM albums WHERE code = $1", album_code)
         if not album:
              raise HTTPException(status_code=404, detail="Album not found")
         

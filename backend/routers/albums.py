@@ -158,8 +158,8 @@ async def add_photo(code: str, photo: AlbumPhotoCreate):
         result["created_at"] = result["created_at"].isoformat() if result["created_at"] else None
         return result
 
-@router.put("/{album_id}/status")
-async def update_album_status(album_id: UUID, status: str, request: Request):
+@router.put("/{album_code}/status")
+async def update_album_status(album_code: str, status: str, request: Request):
     """Update album status (e.g. mark complete, paid)"""
     user = await get_current_user_from_request(request)
     
@@ -167,10 +167,77 @@ async def update_album_status(album_id: UUID, status: str, request: Request):
         raise HTTPException(status_code=400, detail="Invalid status")
 
     async with db_pool.acquire() as conn:
-        # TODO: Verify user has staff access to this album's event
+        # Find album by code
+        album = await conn.fetchrow("SELECT id FROM albums WHERE code = $1", album_code)
+        if not album:
+            raise HTTPException(status_code=404, detail="Album not found")
         
-        await conn.execute("UPDATE albums SET status = $1 WHERE id = $2", status, album_id)
+        # Update status and payment_status if marking as paid
+        if status == 'paid':
+            await conn.execute(
+                "UPDATE albums SET status = $1, payment_status = 'paid' WHERE id = $2", 
+                status, album["id"]
+            )
+        else:
+            await conn.execute("UPDATE albums SET status = $1 WHERE id = $2", status, album["id"])
+        
         return {"status": "success"}
+
+@router.post("/{album_code}/request-payment")
+async def request_album_payment(album_code: str):
+    """Visitor requests to pay for album - notifies staff"""
+    from datetime import datetime
+    
+    async with db_pool.acquire() as conn:
+        # Find album
+        album = await conn.fetchrow(
+            "SELECT id, event_id, owner_name, owner_email, payment_status FROM albums WHERE code = $1", 
+            album_code
+        )
+        if not album:
+            raise HTTPException(status_code=404, detail="Album not found")
+        
+        if album["payment_status"] == "paid":
+            raise HTTPException(status_code=400, detail="Album already paid")
+        
+        # Update payment_status to 'requested'
+        await conn.execute(
+            "UPDATE albums SET payment_status = 'requested', updated_at = $1 WHERE id = $2",
+            datetime.utcnow(), album["id"]
+        )
+        
+        return {
+            "status": "success",
+            "message": "Payment request sent to staff",
+            "album_code": album_code
+        }
+
+@router.get("/event/{event_id}/payment-requests")
+async def get_payment_requests(event_id: int, request: Request):
+    """Get albums with pending payment requests for an event"""
+    user = await get_current_user_from_request(request)
+    
+    async with db_pool.acquire() as conn:
+        # Verify user has access
+        event = await conn.fetchrow(
+            "SELECT user_id FROM events WHERE id = $1", event_id
+        )
+        if not event:
+            raise HTTPException(status_code=404, detail="Event not found")
+        
+        if str(event["user_id"]) != str(user["id"]):
+            raise HTTPException(status_code=403, detail="Access denied")
+        
+        # Get albums with payment_status = 'requested'
+        rows = await conn.fetch("""
+            SELECT id, code, owner_name, owner_email, status, payment_status, created_at,
+                   (SELECT COUNT(*) FROM album_photos WHERE album_id = albums.id) as photo_count
+            FROM albums 
+            WHERE event_id = $1 AND payment_status = 'requested'
+            ORDER BY updated_at DESC
+        """, event_id)
+        
+        return [dict(row) for row in rows]
 
 @router.get("/event/{event_id}", response_model=List[Album])
 async def list_event_albums(event_id: int, request: Request):

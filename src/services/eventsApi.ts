@@ -769,12 +769,42 @@ export async function updateAlbumStatus(albumCode: string, status: 'in_progress'
   if (!response.ok) throw new Error('Failed to update album status');
 }
 
-export async function createAlbumCheckout(albumId: string): Promise<{ checkout_url: string }> {
-  const response = await fetch(`${getApiUrl()}/api/billing/albums/${albumId}/checkout`, {
+export async function createAlbumCheckout(albumCode: string): Promise<{ checkout_url: string }> {
+  const response = await fetch(`${getApiUrl()}/api/billing/albums/${albumCode}/checkout/`, {
     method: 'POST'
   });
   
   if (!response.ok) throw new Error('Failed to create checkout');
+  return response.json();
+}
+
+export async function requestAlbumPayment(albumCode: string): Promise<{ status: string; message: string }> {
+  const response = await fetch(`${getApiUrl()}/api/albums/${albumCode}/request-payment/`, {
+    method: 'POST'
+  });
+  
+  if (!response.ok) throw new Error('Failed to request payment');
+  return response.json();
+}
+
+export interface PaymentRequest {
+  id: string;
+  code: string;
+  owner_name?: string;
+  owner_email?: string;
+  status: string;
+  payment_status: string;
+  created_at: string;
+  photo_count: number;
+}
+
+export async function getPaymentRequests(eventId: number): Promise<PaymentRequest[]> {
+  const token = getAuthToken();
+  const response = await fetch(`${getApiUrl()}/api/albums/event/${eventId}/payment-requests/`, {
+    headers: { 'Authorization': `Bearer ${token}` }
+  });
+  
+  if (!response.ok) return [];
   return response.json();
 }
 

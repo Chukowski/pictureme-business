@@ -20,7 +20,7 @@ import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { EventNotFound } from '@/components/EventNotFound';
-import { getAlbum, getAlbumPhotos, createAlbumCheckout, updateAlbumStatus, Album, sendAlbumEmail, getEmailStatus } from '@/services/eventsApi';
+import { getAlbum, getAlbumPhotos, createAlbumCheckout, updateAlbumStatus, Album, sendAlbumEmail, getEmailStatus, requestAlbumPayment } from '@/services/eventsApi';
 import { QRCodeSVG } from 'qrcode.react';
 
 // Mock photo data - will be replaced with real API
@@ -285,16 +285,63 @@ export default function AlbumFeedPage() {
     toast.success('Opening print dialog...');
   };
 
+  // Check if Stripe is enabled for this event
+  const stripeEnabled = config?.rules?.useStripeCodeForPayment || config?.rules?.enableQRToPayment;
+  
   const handleUnlockAlbum = async () => {
     if (!albumId) return;
     
     setIsProcessingPayment(true);
     try {
-      const { checkout_url } = await createAlbumCheckout(albumId);
-      // Redirect to Stripe checkout
-      window.location.href = checkout_url;
+      if (stripeEnabled) {
+        // Use Stripe checkout
+        const result = await createAlbumCheckout(albumId);
+        if (result.checkout_url) {
+          window.location.href = result.checkout_url;
+        }
+      } else {
+        // Request payment from staff (cash payment)
+        await requestAlbumPayment(albumId);
+        toast.success('Payment request sent! Staff will assist you shortly.', {
+          duration: 5000,
+        });
+      }
+    } catch (error) {
+      toast.error('Failed to process request. Please try again.');
+      console.error(error);
+    } finally {
+      setIsProcessingPayment(false);
+    }
+  };
+  
+  const handlePayWithStripe = async () => {
+    if (!albumId) return;
+    
+    setIsProcessingPayment(true);
+    try {
+      const result = await createAlbumCheckout(albumId);
+      if (result.checkout_url) {
+        window.location.href = result.checkout_url;
+      }
     } catch (error) {
       toast.error('Failed to start checkout. Please try again.');
+      console.error(error);
+    } finally {
+      setIsProcessingPayment(false);
+    }
+  };
+  
+  const handleRequestCashPayment = async () => {
+    if (!albumId) return;
+    
+    setIsProcessingPayment(true);
+    try {
+      await requestAlbumPayment(albumId);
+      toast.success('Payment request sent! Staff will assist you shortly.', {
+        duration: 5000,
+      });
+    } catch (error) {
+      toast.error('Failed to send request. Please try again.');
       console.error(error);
     } finally {
       setIsProcessingPayment(false);
@@ -464,21 +511,43 @@ export default function AlbumFeedPage() {
                         <p className="text-zinc-400 mb-6 max-w-xs">
                           Your photos are waiting for you. Unlock to view and download in full quality.
                         </p>
-                        <Button
-                          onClick={handleUnlockAlbum}
-                          disabled={isProcessingPayment}
-                          size="lg"
-                          className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-black font-bold px-8"
-                        >
-                          {isProcessingPayment ? (
-                            <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                          ) : (
-                            <CreditCard className="w-5 h-5 mr-2" />
+                        
+                        {/* Payment Options */}
+                        <div className="space-y-3 w-full max-w-xs">
+                          {stripeEnabled && (
+                            <Button
+                              onClick={handlePayWithStripe}
+                              disabled={isProcessingPayment}
+                              size="lg"
+                              className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-black font-bold"
+                            >
+                              {isProcessingPayment ? (
+                                <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                              ) : (
+                                <CreditCard className="w-5 h-5 mr-2" />
+                              )}
+                              Pay with Card
+                            </Button>
                           )}
-                          Unlock Album
-                        </Button>
+                          
+                          <Button
+                            onClick={handleRequestCashPayment}
+                            disabled={isProcessingPayment}
+                            size="lg"
+                            variant="outline"
+                            className="w-full border-white/20 text-white hover:bg-white/10"
+                          >
+                            {isProcessingPayment ? (
+                              <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                            ) : (
+                              <ShoppingCart className="w-5 h-5 mr-2" />
+                            )}
+                            Pay at Counter (Cash)
+                          </Button>
+                        </div>
+                        
                         <p className="text-xs text-zinc-500 mt-4">
-                          Secure payment • Instant access
+                          {stripeEnabled ? 'Secure payment • Instant access' : 'Staff will assist you with payment'}
                         </p>
                       </>
                     ) : null}
