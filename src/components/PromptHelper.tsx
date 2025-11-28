@@ -41,6 +41,68 @@ const QUICK_ENHANCEMENTS = [
   { id: "simplify", label: "Simplify", icon: ArrowRight },
 ];
 
+// Photobooth-specific prompt templates
+const PHOTOBOOTH_TEMPLATES = {
+  compositing: [
+    { 
+      label: "🖼️ Place in Background", 
+      prompt: "Take the person from the first image and seamlessly composite them into the background scene. Preserve their exact appearance, clothing, and pose. Match lighting and perspective naturally."
+    },
+    { 
+      label: "👥 Group in Scene", 
+      prompt: "Take all the people from the first image and composite them into the background scene. Preserve each person's exact appearance and relative positions. Match lighting and scale naturally."
+    },
+  ],
+  styleTransfer: [
+    { 
+      label: "🧱 LEGO Minifigure", 
+      prompt: "Transform the person into a LEGO minifigure character while preserving their key features (hair color, clothing style, accessories). Place them in a LEGO brick environment matching the background theme."
+    },
+    { 
+      label: "🎬 Pixar/3D Animation", 
+      prompt: "Transform the person into a Pixar-style 3D animated character. Preserve their likeness, hair, and clothing but render in the signature Pixar aesthetic with expressive features and smooth textures."
+    },
+    { 
+      label: "🎨 Anime/Manga", 
+      prompt: "Transform the person into an anime character style. Preserve their key features and clothing but render in Japanese anime aesthetic with characteristic eyes and art style."
+    },
+    { 
+      label: "🖌️ Oil Painting", 
+      prompt: "Transform the person into a classical oil painting portrait. Preserve their likeness but render with visible brushstrokes, rich colors, and Renaissance-style lighting."
+    },
+    { 
+      label: "✏️ Sketch/Drawing", 
+      prompt: "Transform the person into a detailed pencil sketch or charcoal drawing. Preserve their features with artistic cross-hatching and shading techniques."
+    },
+    { 
+      label: "🦸 Comic Book Hero", 
+      prompt: "Transform the person into a comic book superhero style. Bold outlines, dynamic pose, vibrant colors, and heroic aesthetic while preserving their likeness."
+    },
+    { 
+      label: "👾 Pixel Art/8-bit", 
+      prompt: "Transform the person into pixel art / 8-bit retro game style. Preserve recognizable features in a nostalgic video game aesthetic."
+    },
+    { 
+      label: "🎃 Cartoon/Caricature", 
+      prompt: "Transform the person into a fun cartoon caricature. Exaggerate distinctive features playfully while keeping them recognizable and friendly."
+    },
+  ],
+  combined: [
+    { 
+      label: "🧱 LEGO + Background", 
+      prompt: "Transform the person into a LEGO minifigure and place them in the LEGO-style background scene. Preserve their key features (hair color, clothing) as minifigure elements. The entire scene should look like a LEGO diorama."
+    },
+    { 
+      label: "🎬 Pixar + Scene", 
+      prompt: "Transform the person into a Pixar-style 3D animated character and composite them into the background scene rendered in the same Pixar animation style. Create a cohesive animated movie scene."
+    },
+    { 
+      label: "🎨 Anime + World", 
+      prompt: "Transform the person into an anime character and place them in the background scene rendered in matching anime style. Create a cohesive anime scene with consistent art direction."
+    },
+  ],
+};
+
 // Style chips for quick additions
 const STYLE_CHIPS = {
   template: [
@@ -170,6 +232,9 @@ export function PromptHelper({
 
   const styleChips = STYLE_CHIPS[section] || STYLE_CHIPS.template;
 
+  const [showTemplates, setShowTemplates] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<'compositing' | 'styleTransfer' | 'combined'>('styleTransfer');
+
   return (
     <div className="space-y-3">
       {/* Header with AI Helper branding */}
@@ -183,7 +248,88 @@ export function PromptHelper({
             AI
           </Badge>
         </div>
+        {section === "template" && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowTemplates(!showTemplates)}
+            className="h-7 text-xs text-cyan-400 hover:text-cyan-300 hover:bg-cyan-500/10"
+          >
+            <Lightbulb className="w-3 h-3 mr-1" />
+            {showTemplates ? 'Hide Templates' : 'Prompt Templates'}
+          </Button>
+        )}
       </div>
+
+      {/* Photobooth Prompt Templates - Only for template section */}
+      {section === "template" && showTemplates && (
+        <div className="p-3 rounded-xl bg-gradient-to-br from-cyan-500/10 to-blue-500/10 border border-cyan-500/20 space-y-3">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-xs font-medium text-cyan-300">🎯 Quick Start Templates</span>
+          </div>
+          
+          {/* Category Tabs */}
+          <div className="flex gap-1 p-1 rounded-lg bg-black/30">
+            <button
+              type="button"
+              onClick={() => setSelectedCategory('compositing')}
+              className={`flex-1 px-3 py-1.5 text-xs rounded-md transition-all ${
+                selectedCategory === 'compositing' 
+                  ? 'bg-cyan-500/30 text-cyan-300' 
+                  : 'text-zinc-400 hover:text-zinc-300'
+              }`}
+            >
+              🖼️ Compositing
+            </button>
+            <button
+              type="button"
+              onClick={() => setSelectedCategory('styleTransfer')}
+              className={`flex-1 px-3 py-1.5 text-xs rounded-md transition-all ${
+                selectedCategory === 'styleTransfer' 
+                  ? 'bg-purple-500/30 text-purple-300' 
+                  : 'text-zinc-400 hover:text-zinc-300'
+              }`}
+            >
+              🎨 Style Transfer
+            </button>
+            <button
+              type="button"
+              onClick={() => setSelectedCategory('combined')}
+              className={`flex-1 px-3 py-1.5 text-xs rounded-md transition-all ${
+                selectedCategory === 'combined' 
+                  ? 'bg-amber-500/30 text-amber-300' 
+                  : 'text-zinc-400 hover:text-zinc-300'
+              }`}
+            >
+              ✨ Combined
+            </button>
+          </div>
+          
+          {/* Template Buttons */}
+          <div className="grid grid-cols-2 gap-2">
+            {PHOTOBOOTH_TEMPLATES[selectedCategory].map((template, i) => (
+              <button
+                key={i}
+                type="button"
+                onClick={() => {
+                  onSelectPrompt(template.prompt);
+                  toast.success(`Applied: ${template.label}`);
+                }}
+                className="p-2 text-left rounded-lg bg-black/30 border border-white/5 hover:border-cyan-500/30 hover:bg-cyan-500/5 transition-all group"
+              >
+                <span className="text-sm font-medium text-white group-hover:text-cyan-300 transition-colors">
+                  {template.label}
+                </span>
+              </button>
+            ))}
+          </div>
+          
+          <p className="text-[10px] text-zinc-500 text-center">
+            Click a template to use it, then customize as needed
+          </p>
+        </div>
+      )}
 
       {/* Quick Style Chips */}
       <div className="flex flex-wrap gap-1.5">
