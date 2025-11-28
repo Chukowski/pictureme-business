@@ -58,6 +58,9 @@ async def get_album(code: str):
 @router.get("/{code}/photos")
 async def get_album_photos(code: str):
     """Get photos in an album with details"""
+    import logging
+    logger = logging.getLogger(__name__)
+    
     couch = get_couch_service()
     async with db_pool.acquire() as conn:
         # Get album ID first
@@ -76,22 +79,42 @@ async def get_album_photos(code: str):
             photo_data["created_at"] = photo_data["created_at"].isoformat() if photo_data["created_at"] else None
             
             share_code = photo_data["photo_id"] # stored shareCode
+            logger.info(f"📸 Looking for photo with share_code: {share_code}")
             
-            # Try CouchDB
+            # Try CouchDB first
             photo_doc = couch.get_photo_by_share_code(share_code)
             if photo_doc:
-                photo_data["url"] = photo_doc.get("processed_image_url") or photo_doc.get("processedImageUrl")
-                photo_data["thumbnail_url"] = photo_doc.get("original_image_url") or photo_doc.get("originalImageUrl")
+                logger.info(f"✅ Found photo in CouchDB: {photo_doc.get('_id')}")
+                processed_url = photo_doc.get("processed_image_url") or photo_doc.get("processedImageUrl")
+                original_url = photo_doc.get("original_image_url") or photo_doc.get("originalImageUrl")
+                # Use processed image for both main and thumbnail (preview should show AI result)
+                photo_data["url"] = processed_url
+                photo_data["thumbnail_url"] = processed_url or original_url  # Prefer processed for preview
+                photo_data["photo_url"] = processed_url  # Alias for frontend compatibility
+                photo_data["original_url"] = original_url  # Keep original available if needed
                 photo_data["meta"] = photo_doc.get("meta")
             else:
+                logger.info(f"⚠️ Photo not found in CouchDB, trying Postgres...")
                 # Try Postgres
                 pg_photo = await conn.fetchrow(
                     "SELECT processed_image_url, original_image_url FROM processed_photos WHERE share_code = $1", 
                     share_code
                 )
                 if pg_photo:
-                    photo_data["url"] = pg_photo["processed_image_url"]
-                    photo_data["thumbnail_url"] = pg_photo["original_image_url"]
+                    logger.info(f"✅ Found photo in Postgres")
+                    processed_url = pg_photo["processed_image_url"]
+                    original_url = pg_photo["original_image_url"]
+                    # Use processed image for both main and thumbnail
+                    photo_data["url"] = processed_url
+                    photo_data["thumbnail_url"] = processed_url or original_url  # Prefer processed for preview
+                    photo_data["photo_url"] = processed_url  # Alias for frontend compatibility
+                    photo_data["original_url"] = original_url  # Keep original available if needed
+                else:
+                    logger.warning(f"❌ Photo not found anywhere for share_code: {share_code}")
+                    # Use the share_code as a fallback URL if it looks like a URL
+                    if share_code and (share_code.startswith('http') or share_code.startswith('data:')):
+                        photo_data["url"] = share_code
+                        photo_data["photo_url"] = share_code
             
             photos.append(photo_data)
             
