@@ -280,15 +280,19 @@ export const PhotoBoothPage = () => {
 
     try {
       // Determine branding settings based on template toggles
-      // If "Include All Overlays" is ON, use individual toggles
-      // If "Include All Overlays" is OFF, no overlays are applied
-      // If "Include All Overlays" is undefined (not set), default to checking individual toggles
+      // "Include All Overlays" (includeBranding) is a MASTER toggle:
+      //   - If ON (true): All individual toggles are respected
+      //   - If OFF (false): ONLY explicitly enabled individual toggles work
+      //   - If undefined: Default to individual toggles
       const masterToggle = selectedBackground.includeBranding;
       
-      // Individual toggles - these work when master is ON or undefined
-      const wantsHeader = (masterToggle !== false) && (selectedBackground.includeHeader ?? false);
-      const wantsTagline = (masterToggle !== false) && (selectedBackground.includeTagline ?? true);
-      const wantsWatermark = (masterToggle !== false) && (selectedBackground.includeWatermark ?? true);
+      // Individual toggles - check what's explicitly enabled
+      // includeHeader: Show logo header (default false)
+      // includeTagline: Show tagline (default true when master is on)
+      // includeWatermark: Show watermark (default true when master is on)
+      const wantsHeader = selectedBackground.includeHeader === true;
+      const wantsTagline = masterToggle === true ? (selectedBackground.includeTagline ?? true) : selectedBackground.includeTagline === true;
+      const wantsWatermark = masterToggle === true ? (selectedBackground.includeWatermark ?? true) : selectedBackground.includeWatermark === true;
 
       // Use custom prompt and images if this is a custom prompt template
       const promptToUse = selectedBackground.isCustomPrompt && customPrompt
@@ -308,7 +312,9 @@ export const PhotoBoothPage = () => {
         ? config.branding.logoPath
         : undefined;
 
-      const footer = (masterToggle !== false) && config?.branding?.footerPath && config.branding.footerPath.trim()
+      // Footer shows if master is ON, or if there's a footer configured and master isn't explicitly OFF
+      const footer = (masterToggle === true || (masterToggle !== false && config?.branding?.footerPath)) 
+        && config?.branding?.footerPath && config.branding.footerPath.trim()
         ? config.branding.footerPath
         : undefined;
       
@@ -319,12 +325,13 @@ export const PhotoBoothPage = () => {
       // Check if there are any branding elements to apply
       const hasBrandingElements = !!(logo || footer || tagline || selectedBackground.campaignText || watermarkConfig);
       
-      // Apply branding if master toggle is not explicitly OFF and there are elements
-      const shouldApplyBranding = (masterToggle !== false) && hasBrandingElements;
+      // Apply branding if there are elements to apply (regardless of master toggle)
+      const shouldApplyBranding = hasBrandingElements;
       
       console.log('🎨 Branding check:', { 
         masterToggle,
-        wantsHeader, 
+        wantsHeader,
+        includeHeader: selectedBackground.includeHeader,
         logoConfigured: !!config?.branding?.logoPath,
         logoPath: config?.branding?.logoPath,
         logo,

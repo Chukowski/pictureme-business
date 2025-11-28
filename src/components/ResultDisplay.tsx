@@ -68,15 +68,36 @@ export const ResultDisplay = ({ imageUrl, shareCode, onReset }: ResultDisplayPro
       return;
     }
 
+    if (!shareCode) {
+      toast.error("Cannot send email - photo not uploaded to cloud");
+      return;
+    }
+
     setIsSending(true);
-    // TODO: Integrate with email service via edge function
-    // For now, just copy the link
-    setTimeout(() => {
-      toast.info("Email integration coming soon! The link has been copied to your clipboard.");
-      navigator.clipboard.writeText(shareUrl);
-      setIsSending(false);
+    try {
+      await sendPhotoEmail(
+        email,
+        imageUrl,
+        shareUrl,
+        undefined, // eventName - will be filled if available
+        brandConfig.brandName,
+        brandConfig.primaryColor
+      );
+      toast.success("Photo sent to your email!");
+      setEmailSent(true);
       setEmail("");
-    }, 1000);
+    } catch (error) {
+      console.error("Email error:", error);
+      // Fallback to copying link if email service unavailable
+      if (!emailConfigured) {
+        toast.info("Email service not configured. Link copied to clipboard instead.");
+        navigator.clipboard.writeText(shareUrl);
+      } else {
+        toast.error("Failed to send email. Please try again.");
+      }
+    } finally {
+      setIsSending(false);
+    }
   };
 
   const handleCopyLink = () => {
@@ -146,14 +167,24 @@ export const ResultDisplay = ({ imageUrl, shareCode, onReset }: ResultDisplayPro
           {/* Email Card */}
           <div className="bg-zinc-900/50 border border-white/10 backdrop-blur-xl rounded-3xl p-6 shadow-2xl space-y-4">
             <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 rounded-full gradient-secondary flex items-center justify-center glow-secondary">
-                <Mail className="w-5 h-5 text-secondary-foreground" />
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center ${emailSent ? 'bg-green-600' : 'gradient-secondary glow-secondary'}`}>
+                {emailSent ? (
+                  <CheckCircle className="w-5 h-5 text-white" />
+                ) : (
+                  <Mail className="w-5 h-5 text-secondary-foreground" />
+                )}
               </div>
-              <h3 className="text-xl font-bold text-white">Email Photo</h3>
+              <h3 className="text-xl font-bold text-white">
+                {emailSent ? "Email Sent!" : "Email Photo"}
+              </h3>
             </div>
 
             <p className="text-sm text-zinc-400">
-              Receive your photo directly in your inbox
+              {emailSent 
+                ? "Check your inbox for your photo" 
+                : emailConfigured 
+                  ? "Receive your photo directly in your inbox"
+                  : "Email service not configured"}
             </p>
 
             <div className="space-y-3">
@@ -161,17 +192,31 @@ export const ResultDisplay = ({ imageUrl, shareCode, onReset }: ResultDisplayPro
                 type="email"
                 placeholder="your@email.com"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (emailSent) setEmailSent(false);
+                }}
                 className="h-12 rounded-xl text-base bg-zinc-950/50 border-white/10 text-white placeholder:text-zinc-600"
               />
               <Button
                 onClick={handleEmailSend}
-                disabled={isSending}
+                disabled={isSending || !shareCode}
                 size="lg"
-                className="w-full gradient-secondary hover:scale-105 transition-transform rounded-xl"
+                className={`w-full hover:scale-105 transition-transform rounded-xl ${
+                  emailSent ? 'bg-green-600 hover:bg-green-500' : 'gradient-secondary'
+                }`}
               >
-                <Mail className="w-5 h-5 mr-2" />
-                {isSending ? "Sending..." : "Send Photo"}
+                {emailSent ? (
+                  <>
+                    <CheckCircle className="w-5 h-5 mr-2" />
+                    Send Again
+                  </>
+                ) : (
+                  <>
+                    <Mail className="w-5 h-5 mr-2" />
+                    {isSending ? "Sending..." : "Send Photo"}
+                  </>
+                )}
               </Button>
             </div>
           </div>

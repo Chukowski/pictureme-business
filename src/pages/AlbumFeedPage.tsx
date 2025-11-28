@@ -17,9 +17,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
+import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { EventNotFound } from '@/components/EventNotFound';
-import { getAlbum, getAlbumPhotos, createAlbumCheckout, updateAlbumStatus, Album } from '@/services/eventsApi';
+import { getAlbum, getAlbumPhotos, createAlbumCheckout, updateAlbumStatus, Album, sendAlbumEmail, getEmailStatus } from '@/services/eventsApi';
 import { QRCodeSVG } from 'qrcode.react';
 
 // Mock photo data - will be replaced with real API
@@ -58,6 +59,18 @@ export default function AlbumFeedPage() {
   const [showStaffTools, setShowStaffTools] = useState(false);
   const [bigScreenMode, setBigScreenMode] = useState(false);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const [emailInput, setEmailInput] = useState('');
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
+  const [emailConfigured, setEmailConfigured] = useState(true);
+
+  // Check email configuration
+  useEffect(() => {
+    getEmailStatus().then(status => {
+      setEmailConfigured(status.configured);
+    }).catch(() => {
+      setEmailConfigured(false);
+    });
+  }, []);
 
   // Check if user is staff - check localStorage for current user role
   const isStaff = (() => {
@@ -140,22 +153,41 @@ export default function AlbumFeedPage() {
     }
   };
 
-  const handleSendEmail = () => {
-    if (!albumInfo?.visitorName) {
-      // Prompt for email if not available
-      const email = prompt('Enter email address:');
-      if (!email) return;
-      
-      // Open email client with album link
+  const handleSendEmail = async (email?: string) => {
+    const targetEmail = email || emailInput;
+    
+    if (!targetEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(targetEmail)) {
+      toast.error('Please enter a valid email address');
+      return;
+    }
+
+    if (!emailConfigured) {
+      // Fallback to mailto if email service not configured
       const subject = encodeURIComponent(`Your photos from ${config?.title || 'the event'}`);
       const body = encodeURIComponent(`Hi ${albumInfo?.visitorName || 'there'},\n\nHere are your photos from ${config?.title || 'the event'}:\n\n${window.location.href}\n\nEnjoy!`);
-      window.open(`mailto:${email}?subject=${subject}&body=${body}`);
-      toast.success('Opening email client...');
-    } else {
-      const subject = encodeURIComponent(`Your photos from ${config?.title || 'the event'}`);
-      const body = encodeURIComponent(`Hi ${albumInfo?.visitorName || 'there'},\n\nHere are your photos from ${config?.title || 'the event'}:\n\n${window.location.href}\n\nEnjoy!`);
-      window.open(`mailto:?subject=${subject}&body=${body}`);
-      toast.success('Opening email client...');
+      window.open(`mailto:${targetEmail}?subject=${subject}&body=${body}`);
+      toast.info('Opening email client (email service not configured)');
+      return;
+    }
+
+    setIsSendingEmail(true);
+    try {
+      await sendAlbumEmail(
+        targetEmail,
+        window.location.href,
+        config?.title || 'the event',
+        albumInfo?.visitorName,
+        config?.theme?.brandName,
+        config?.theme?.primaryColor,
+        photos.length
+      );
+      toast.success(`Album sent to ${targetEmail}!`);
+      setEmailInput('');
+    } catch (error) {
+      console.error('Email error:', error);
+      toast.error('Failed to send email. Please try again.');
+    } finally {
+      setIsSendingEmail(false);
     }
   };
 

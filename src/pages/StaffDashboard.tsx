@@ -30,7 +30,7 @@ import { toast } from 'sonner';
 import { EventNotFound } from '@/components/EventNotFound';
 import { ScanAlbumQR } from '@/components/album';
 import { StaffAlbumTools, StaffStationAnalytics } from '@/components/staff';
-import { getEventAlbums, updateAlbumStatus } from '@/services/eventsApi';
+import { getEventAlbums, updateAlbumStatus, sendAlbumEmailByCode, getEmailStatus } from '@/services/eventsApi';
 import { ENV } from '@/config/env';
 
 // Mock data types
@@ -180,8 +180,26 @@ export default function StaffDashboard() {
   };
 
   const handleSendEmail = async (albumId: string) => {
-    // TODO: Implement email sending
-    toast.info('Email feature coming soon');
+    try {
+      const baseUrl = `${window.location.origin}/${userSlug}/${eventSlug}`;
+      await sendAlbumEmailByCode(
+        albumId,
+        config?.title || 'the event',
+        baseUrl,
+        config?.theme?.brandName,
+        config?.theme?.primaryColor
+      );
+      toast.success('Album email sent successfully!');
+    } catch (error: any) {
+      console.error('Email error:', error);
+      if (error.message?.includes('no email')) {
+        toast.error('Album has no email address');
+      } else if (error.message?.includes('not configured')) {
+        toast.error('Email service not configured');
+      } else {
+        toast.error('Failed to send email');
+      }
+    }
   };
 
   const handleSendWhatsApp = async (albumId: string) => {

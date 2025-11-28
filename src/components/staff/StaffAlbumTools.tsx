@@ -5,11 +5,11 @@
  * Includes photo approval, album completion, sending, and presentation controls.
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   CheckCircle2, XCircle, Mail, MessageSquare, MonitorPlay,
   Printer, Download, QrCode, Users, Clock, Camera, Send,
-  Smartphone, Laptop, RefreshCw
+  Smartphone, Laptop, RefreshCw, Loader2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -19,6 +19,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
+import { sendAlbumEmail, getEmailStatus } from '@/services/eventsApi';
 
 interface AlbumStats {
   totalAlbums: number;
@@ -53,19 +54,58 @@ export function StaffAlbumTools({
   const [autoApprove, setAutoApprove] = useState(false);
   const [emailAddress, setEmailAddress] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
+  const [emailConfigured, setEmailConfigured] = useState(true);
+
+  // Check email configuration on mount
+  useEffect(() => {
+    getEmailStatus().then(status => {
+      setEmailConfigured(status.configured);
+    }).catch(() => {
+      setEmailConfigured(false);
+    });
+  }, []);
 
   // Actions
   const handleApproveAll = () => {
     toast.success('All pending photos approved');
   };
 
-  const handleSendBulkEmail = () => {
+  const handleSendBulkEmail = async () => {
     if (!emailAddress) {
       toast.error('Please enter an email address');
       return;
     }
-    toast.success(`Albums sent to ${emailAddress}`);
-    setEmailAddress('');
+
+    if (!emailConfigured) {
+      toast.error('Email service not configured');
+      return;
+    }
+
+    setIsSendingEmail(true);
+    try {
+      // Get current URL to build album URL
+      const baseUrl = window.location.origin;
+      const albumUrl = `${baseUrl}/${window.location.pathname.split('/')[1]}/${window.location.pathname.split('/')[2]}/album`;
+      
+      await sendAlbumEmail(
+        emailAddress,
+        albumUrl,
+        eventName,
+        undefined, // visitorName
+        undefined, // brandName
+        primaryColor,
+        stats.totalPhotos
+      );
+      
+      toast.success(`Album link sent to ${emailAddress}`);
+      setEmailAddress('');
+    } catch (error) {
+      console.error('Email error:', error);
+      toast.error('Failed to send email');
+    } finally {
+      setIsSendingEmail(false);
+    }
   };
 
   const handleSendBulkSMS = () => {
@@ -204,7 +244,12 @@ export function StaffAlbumTools({
             <CardContent className="space-y-4">
               {/* Email */}
               <div className="space-y-2">
-                <Label className="text-zinc-400 text-xs">Send via Email</Label>
+                <Label className="text-zinc-400 text-xs">
+                  Send via Email
+                  {!emailConfigured && (
+                    <span className="ml-2 text-amber-400">(Not configured)</span>
+                  )}
+                </Label>
                 <div className="flex gap-2">
                   <Input
                     type="email"
@@ -212,13 +257,19 @@ export function StaffAlbumTools({
                     onChange={(e) => setEmailAddress(e.target.value)}
                     placeholder="visitor@email.com"
                     className="flex-1 bg-black/40 border-white/10 text-white"
+                    disabled={isSendingEmail}
                   />
                   <Button
                     onClick={handleSendBulkEmail}
                     className="bg-blue-600 hover:bg-blue-500"
+                    disabled={isSendingEmail || !emailConfigured}
                   >
-                    <Mail className="w-4 h-4 mr-2" />
-                    Send
+                    {isSendingEmail ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <Mail className="w-4 h-4 mr-2" />
+                    )}
+                    {isSendingEmail ? 'Sending...' : 'Send'}
                   </Button>
                 </div>
               </div>
