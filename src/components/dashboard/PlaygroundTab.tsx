@@ -69,7 +69,7 @@ import { User as UserType, getUserEvents, EventConfig, Template, updateEvent } f
 import { processImageWithAI, downloadImageAsBase64, AI_MODELS, type AIModelKey } from "@/services/aiProcessor";
 import { toast } from "sonner";
 import { BadgeTemplateConfig, DEFAULT_BADGE_CONFIG, CustomElementPositions, DEFAULT_ELEMENT_POSITIONS } from "@/components/templates/BadgeTemplateEditor";
-import { Move, Save, RotateCcw, Maximize2, MessageSquare } from "lucide-react";
+import { Move, Save, RotateCcw, Maximize2, MessageSquare, AlertCircle } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { PromptHelper } from "@/components/PromptHelper";
 import { Switch } from "@/components/ui/switch";
@@ -1123,6 +1123,7 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
                     >
                       <span className="text-lg">👤</span>
                       <span className="text-sm font-medium">Individual</span>
+                      {selectedTemplate?.prompt && <Check className="w-3 h-3 text-green-400" />}
                     </button>
                     <button
                       type="button"
@@ -1135,8 +1136,25 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
                     >
                       <span className="text-lg">👥</span>
                       <span className="text-sm font-medium">Group</span>
+                      {selectedTemplate?.groupPrompt ? (
+                        <Check className="w-3 h-3 text-green-400" />
+                      ) : (
+                        <AlertCircle className="w-3 h-3 text-amber-400" />
+                      )}
                     </button>
                   </div>
+                  
+                  {/* Warning if no group prompt */}
+                  {isGroupPhoto && selectedTemplate && !selectedTemplate.groupPrompt && (
+                    <div className="p-2 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-start gap-2">
+                      <AlertCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                      <div className="text-xs">
+                        <p className="text-amber-300 font-medium">No group prompt configured</p>
+                        <p className="text-amber-200/70">Use Custom Prompt or PromptHelper to create one, then save it to the template.</p>
+                      </div>
+                    </div>
+                  )}
+                  
                   <p className="text-xs text-zinc-500">
                     {isGroupPhoto 
                       ? selectedTemplate?.groupPrompt 
@@ -1180,28 +1198,89 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
                         section="template"
                         placeholder="Describe what you want to create or ask AI to improve your prompt..."
                       />
+                      
+                      {/* Load from Template */}
                       {selectedTemplate && (
-                        <div className="flex gap-2">
+                        <div className="flex flex-wrap gap-2">
                           <Button
                             type="button"
                             size="sm"
                             variant="outline"
                             onClick={() => setCustomPrompt(selectedTemplate.prompt || '')}
                             className="text-xs border-white/10 text-zinc-400"
+                            disabled={!selectedTemplate.prompt}
                           >
-                            Load Individual Prompt
+                            Load Individual
                           </Button>
-                          {selectedTemplate.groupPrompt && (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setCustomPrompt(selectedTemplate.groupPrompt || '')}
+                            className="text-xs border-white/10 text-zinc-400"
+                            disabled={!selectedTemplate.groupPrompt}
+                          >
+                            Load Group
+                          </Button>
+                        </div>
+                      )}
+                      
+                      {/* Save to Template - Only show if there's a custom prompt */}
+                      {selectedTemplate && selectedEvent && customPrompt.trim() && (
+                        <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/20 space-y-2">
+                          <p className="text-xs text-green-300 font-medium flex items-center gap-1">
+                            <Save className="w-3 h-3" />
+                            Save this prompt to template
+                          </p>
+                          <div className="flex flex-wrap gap-2">
                             <Button
                               type="button"
                               size="sm"
-                              variant="outline"
-                              onClick={() => setCustomPrompt(selectedTemplate.groupPrompt || '')}
-                              className="text-xs border-white/10 text-zinc-400"
+                              onClick={async () => {
+                                try {
+                                  const updatedTemplates = selectedEvent.templates?.map(t => 
+                                    t.id === selectedTemplate.id 
+                                      ? { ...t, prompt: customPrompt }
+                                      : t
+                                  ) || [];
+                                  await updateEvent(selectedEvent._id, { templates: updatedTemplates });
+                                  await loadEvents();
+                                  toast.success('Individual prompt saved to template!');
+                                } catch (error) {
+                                  toast.error('Failed to save prompt');
+                                }
+                              }}
+                              className="text-xs bg-green-600 hover:bg-green-500 text-white"
                             >
-                              Load Group Prompt
+                              <Save className="w-3 h-3 mr-1" />
+                              Save as Individual Prompt
                             </Button>
-                          )}
+                            <Button
+                              type="button"
+                              size="sm"
+                              onClick={async () => {
+                                try {
+                                  const updatedTemplates = selectedEvent.templates?.map(t => 
+                                    t.id === selectedTemplate.id 
+                                      ? { ...t, groupPrompt: customPrompt }
+                                      : t
+                                  ) || [];
+                                  await updateEvent(selectedEvent._id, { templates: updatedTemplates });
+                                  await loadEvents();
+                                  toast.success('Group prompt saved to template!');
+                                } catch (error) {
+                                  toast.error('Failed to save prompt');
+                                }
+                              }}
+                              className="text-xs bg-purple-600 hover:bg-purple-500 text-white"
+                            >
+                              <Save className="w-3 h-3 mr-1" />
+                              Save as Group Prompt
+                            </Button>
+                          </div>
+                          <p className="text-[10px] text-green-200/60">
+                            This will update the template in the event editor
+                          </p>
                         </div>
                       )}
                     </div>

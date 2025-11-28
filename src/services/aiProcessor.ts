@@ -208,10 +208,36 @@ Transform them while keeping their identity recognizable.`;
         },
       });
     } else {
-      // Gemini Flash or other models - send both images
+      // Gemini Flash (Nano Banana) or other models
+      // Enhance prompt to be more explicit about transformation
+      const hasBackgroundImages = bgImages.length > 0;
+      
+      // Build enhanced prompt that's clearer about what to do
+      let enhancedPrompt = backgroundPrompt;
+      
+      // Check if prompt mentions style transformation keywords
+      const styleKeywords = ['transform', 'convert', 'turn into', 'make', 'lego', 'pixar', 'anime', 'cartoon', 'comic', 'pixel', 'painting', 'sketch', 'drawing'];
+      const isStyleTransfer = styleKeywords.some(keyword => backgroundPrompt.toLowerCase().includes(keyword));
+      
+      if (isStyleTransfer) {
+        // For style transfer prompts, make it very explicit
+        enhancedPrompt = `EDIT THE FIRST IMAGE: ${backgroundPrompt}. 
+The first image contains the person/people to transform. 
+Apply the style transformation to the person(s) while keeping them recognizable.
+${hasBackgroundImages ? 'Use the additional images as style/scene reference.' : ''}
+Output a single cohesive image with the transformation applied.`;
+      } else if (hasBackgroundImages) {
+        // For compositing, be clear about what to do
+        enhancedPrompt = `COMPOSITE IMAGES: Take the person/people from the first image and place them into the scene from the second image. 
+${backgroundPrompt}
+Preserve the person's appearance, clothing, and pose. Match lighting naturally.`;
+      }
+      
+      console.log("📝 Enhanced prompt for Nano Banana:", enhancedPrompt);
+      
       result = await fal.subscribe(modelToUse, {
         input: {
-          prompt: backgroundPrompt,
+          prompt: enhancedPrompt,
           image_urls: imageUrls, // User photo + background to combine
           num_images: 1,
           output_format: "jpeg",
