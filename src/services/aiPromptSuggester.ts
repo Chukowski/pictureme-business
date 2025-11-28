@@ -1,6 +1,7 @@
 import { fal } from "@fal-ai/client";
+import { ENV } from "../config/env";
 
-const FAL_KEY = import.meta.env.VITE_FAL_KEY;
+const FAL_KEY = ENV.FAL_KEY || import.meta.env.VITE_FAL_KEY;
 
 if (FAL_KEY) {
   fal.config({

@@ -1,8 +1,9 @@
 import { fal } from "@fal-ai/client";
 import { applyBrandingOverlay } from "./imageOverlay";
+import { ENV } from "../config/env";
 
 // Configuration state
-let FAL_KEY: string | undefined = import.meta.env.VITE_FAL_KEY;
+let FAL_KEY: string | undefined = ENV.FAL_KEY || import.meta.env.VITE_FAL_KEY;
 let FAL_MODEL: string = import.meta.env.VITE_FAL_MODEL || "fal-ai/bytedance/seedream/v4/edit";
 let configLoaded = false;
 
@@ -13,7 +14,7 @@ async function loadConfig() {
   }
   
   try {
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+    const apiUrl = ENV.API_URL || 'http://localhost:3001';
     const response = await fetch(`${apiUrl}/api/config`);
     const config = await response.json();
     
