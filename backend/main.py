@@ -1482,24 +1482,61 @@ async def get_event(user_slug: str, event_slug: str):
     """Public endpoint to get event config by user slug and event slug (CouchDB)"""
     couch = get_couch_service()
 
-    # Resolve user by slug to obtain UUID (users remain in PostgreSQL)
+    # Resolve user by slug - check both legacy users table and Better Auth user table
+    user = None
+    user_id_for_event = None
     async with db_pool.acquire() as conn:
+        # First try legacy users table
         user = await conn.fetchrow(
-            "SELECT id, username, full_name, slug FROM users WHERE slug = $1 AND is_active = TRUE",
+            "SELECT id::text as id, username, full_name, slug FROM users WHERE slug = $1 AND is_active = TRUE",
             user_slug
         )
+        
+        # If not found, try Better Auth user table
+        if not user:
+            user = await conn.fetchrow(
+                '''SELECT id, NULL as username, name as full_name, slug FROM "user" WHERE slug = $1 AND (is_active IS NULL OR is_active = TRUE)''',
+                user_slug
+            )
 
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
+    # Try to find event with this user's ID
     event_doc = couch.get_event_by_slug(str(user["id"]), event_slug)
+    
+    # If not found with this ID, also try searching by user_slug directly in CouchDB
+    if not event_doc:
+        # Search by user_slug field in CouchDB
+        all_events = couch.get_events_by_user(str(user["id"]))
+        for evt in all_events:
+            if evt.get("slug") == event_slug:
+                event_doc = evt
+                break
+        
+        # Still not found? Try searching all events with matching slug and user_slug
+        if not event_doc:
+            try:
+                # Query CouchDB directly for events with matching user_slug
+                result = couch.events_db.find({
+                    "selector": {
+                        "user_slug": user_slug,
+                        "slug": event_slug
+                    },
+                    "limit": 1
+                })
+                docs = list(result)
+                if docs:
+                    event_doc = docs[0]
+            except Exception as e:
+                print(f"⚠️ CouchDB query error: {e}")
 
     if not event_doc or not event_doc.get("is_active", True):
         raise HTTPException(status_code=404, detail="Event not found")
 
     # Enrich document with user info (ensures legacy fields are present)
     event_doc.setdefault("user_id", str(user["id"]))
-    event_doc["username"] = user["username"]
+    event_doc["username"] = user.get("username")
     event_doc["user_full_name"] = user["full_name"]
     event_doc["user_slug"] = user["slug"]
 
@@ -1508,7 +1545,7 @@ async def get_event(user_slug: str, event_slug: str):
         async with db_pool.acquire() as conn:
             row = await conn.fetchrow(
                 "SELECT id FROM events WHERE user_id = $1 AND slug = $2",
-                user["id"], event_slug
+                str(user["id"]), event_slug
             )
             if row:
                 event_doc["postgres_event_id"] = row["id"]
@@ -1526,17 +1563,43 @@ async def get_event_photos_by_slug(user_slug: str, event_slug: str, limit: int =
     """Public endpoint to fetch photos for an event"""
     couch = get_couch_service()
 
-    # Resolve user
+    # Resolve user - check both legacy users table and Better Auth user table
+    user = None
     async with db_pool.acquire() as conn:
+        # First try legacy users table
         user = await conn.fetchrow(
-            "SELECT id, username, full_name, slug FROM users WHERE slug = $1 AND is_active = TRUE",
+            "SELECT id::text as id, username, full_name, slug FROM users WHERE slug = $1 AND is_active = TRUE",
             user_slug
         )
+        
+        # If not found, try Better Auth user table
+        if not user:
+            user = await conn.fetchrow(
+                '''SELECT id, NULL as username, name as full_name, slug FROM "user" WHERE slug = $1 AND (is_active IS NULL OR is_active = TRUE)''',
+                user_slug
+            )
 
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
+    # Try to find event with this user's ID
     event_doc = couch.get_event_by_slug(str(user["id"]), event_slug)
+    
+    # If not found, try searching by user_slug in CouchDB
+    if not event_doc:
+        try:
+            result = couch.events_db.find({
+                "selector": {
+                    "user_slug": user_slug,
+                    "slug": event_slug
+                },
+                "limit": 1
+            })
+            docs = list(result)
+            if docs:
+                event_doc = docs[0]
+        except Exception as e:
+            print(f"⚠️ CouchDB query error: {e}")
 
     if not event_doc or not event_doc.get("is_active", True):
         raise HTTPException(status_code=404, detail="Event not found")
