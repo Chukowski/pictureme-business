@@ -280,10 +280,13 @@ export const PhotoBoothPage = () => {
 
     try {
       // Determine branding settings based on template toggles
-      const templateWantsBranding = selectedBackground.includeBranding ?? true;
-      const includeHeader = templateWantsBranding && (selectedBackground.includeHeader ?? false);
-      const includeTagline = templateWantsBranding && (selectedBackground.includeTagline ?? true);
-      const includeWatermark = templateWantsBranding && (selectedBackground.includeWatermark ?? true);
+      // includeBranding (Include All Overlays) is the master toggle
+      const includeBranding = selectedBackground.includeBranding ?? true;
+      
+      // Individual toggles only apply if master toggle is on
+      const wantsHeader = includeBranding && (selectedBackground.includeHeader ?? false);
+      const wantsTagline = includeBranding && (selectedBackground.includeTagline ?? true);
+      const wantsWatermark = includeBranding && (selectedBackground.includeWatermark ?? true);
 
       // Use custom prompt and images if this is a custom prompt template
       const promptToUse = selectedBackground.isCustomPrompt && customPrompt
@@ -294,38 +297,50 @@ export const PhotoBoothPage = () => {
         ? customImages
         : (selectedBackground.images || []);
 
-      // Only pass branding elements if they're explicitly set (not empty strings)
-      const tagline = includeTagline && config?.branding?.taglineText && config.branding.taglineText.trim()
+      // Only pass branding elements if they're explicitly set (not empty strings) AND toggle is on
+      const tagline = wantsTagline && config?.branding?.taglineText && config.branding.taglineText.trim()
         ? config.branding.taglineText
         : undefined;
 
-      const logo = includeHeader && config?.branding?.logoPath && config.branding.logoPath.trim()
+      const logo = wantsHeader && config?.branding?.logoPath && config.branding.logoPath.trim()
         ? config.branding.logoPath
         : undefined;
 
-      const footer = config?.branding?.footerPath && config.branding.footerPath.trim()
+      const footer = includeBranding && config?.branding?.footerPath && config.branding.footerPath.trim()
         ? config.branding.footerPath
         : undefined;
       
-      const watermarkConfig = includeWatermark ? config?.branding?.watermark : undefined;
+      const watermarkConfig = wantsWatermark && config?.branding?.watermark?.enabled 
+        ? config.branding.watermark 
+        : undefined;
       
-      // Only apply branding if there's actually something to apply
-      // This ensures the AI output matches the Playground when no branding is configured
-      const hasBrandingElements = !!(logo || footer || tagline || selectedBackground.campaignText || watermarkConfig?.enabled);
-      const includeBranding = templateWantsBranding && hasBrandingElements;
+      // Check if there are any branding elements to apply
+      const hasBrandingElements = !!(logo || footer || tagline || selectedBackground.campaignText || watermarkConfig);
+      
+      // Only run branding overlay if master toggle is on AND there are elements to apply
+      const shouldApplyBranding = includeBranding && hasBrandingElements;
+      
+      console.log('🎨 Branding check:', { 
+        includeBranding, 
+        wantsHeader, 
+        logoConfigured: !!config?.branding?.logoPath,
+        logo,
+        hasBrandingElements,
+        shouldApplyBranding 
+      });
 
       const result = await processImageWithAI({
         userPhotoBase64: imageData,
         backgroundPrompt: promptToUse,
         backgroundImageUrls: imagesToUse,
-        includeBranding,
-        includeHeader: includeBranding && includeHeader,
-        campaignText: includeBranding ? selectedBackground.campaignText : undefined,
-        taglineText: includeBranding ? tagline : undefined,
-        logoUrl: includeBranding ? logo : undefined,
-        footerUrl: includeBranding ? footer : undefined,
-        headerBackgroundColor: includeBranding ? config?.branding?.headerBackgroundColor : undefined,
-        watermark: includeBranding ? watermarkConfig : undefined,
+        includeBranding: shouldApplyBranding,
+        includeHeader: wantsHeader && !!logo, // Only include header if logo exists
+        campaignText: shouldApplyBranding ? selectedBackground.campaignText : undefined,
+        taglineText: tagline,
+        logoUrl: logo,
+        footerUrl: footer,
+        headerBackgroundColor: wantsHeader ? config?.branding?.headerBackgroundColor : undefined,
+        watermark: watermarkConfig,
         aspectRatio: selectedBackground.aspectRatio || '9:16', // Use template aspect ratio
         onProgress: (status) => {
           if (status === "queued") {
