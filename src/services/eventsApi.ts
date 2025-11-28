@@ -1,19 +1,15 @@
 /**
  * Events API Service
  * Communicates with FastAPI backend for multiuser/multi-event functionality
- * Last updated: 2025-11-02 13:00 - Fixed proxy routing
+ * Last updated: 2025-11-28 - Fixed HTTPS enforcement
  */
 
 import { ENV } from "@/config/env";
 
-// Use empty string to use Vite proxy (configured in vite.config.ts)
-// This will route /api/* to http://localhost:3001/api/*
-const API_URL = ENV.API_URL || '';
-
-// Verify API_URL is correct
-if (API_URL && API_URL.includes('localhost:3001')) {
-  console.error('❌ ERROR: API_URL should be empty to use proxy, but got:', API_URL);
-  console.error('   Please clear browser cache and reload');
+// Helper function to get API URL dynamically
+// This ensures window.ENV is available when the URL is needed
+function getApiUrl(): string {
+  return ENV.API_URL || '';
 }
 
 export interface User {
@@ -202,7 +198,7 @@ export interface PhotoFeed {
  * Get event configuration by user slug and event slug
  */
 export async function getEventConfig(userSlug: string, eventSlug: string): Promise<EventConfig> {
-  const response = await fetch(`${API_URL}/api/events/${userSlug}/${eventSlug}`);
+  const response = await fetch(`${getApiUrl()}/api/events/${userSlug}/${eventSlug}`);
 
   if (!response.ok) {
     if (response.status === 404) {
@@ -222,7 +218,7 @@ export async function getEventConfig(userSlug: string, eventSlug: string): Promi
  * Get photos for event feed
  */
 export async function getEventPhotos(userSlug: string, eventSlug: string, limit: number = 20, offset: number = 0): Promise<PhotoFeed[]> {
-  const response = await fetch(`${API_URL}/api/events/${userSlug}/${eventSlug}/photos?limit=${limit}&offset=${offset}`);
+  const response = await fetch(`${getApiUrl()}/api/events/${userSlug}/${eventSlug}/photos?limit=${limit}&offset=${offset}`);
 
   if (!response.ok) {
     throw new Error(`Failed to load photos: ${response.statusText}`);
@@ -244,7 +240,7 @@ export async function getEventPhotos(userSlug: string, eventSlug: string, limit:
  * Login user
  */
 export async function loginUser(username: string, password: string): Promise<{ token: string; user: User }> {
-  const response = await fetch(`${API_URL}/api/auth/login`, {
+  const response = await fetch(`${getApiUrl()}/api/auth/login`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -278,7 +274,7 @@ export async function registerUser(
   password: string,
   fullName?: string
 ): Promise<{ token: string; user: User }> {
-  const response = await fetch(`${API_URL}/api/auth/register`, {
+  const response = await fetch(`${getApiUrl()}/api/auth/register`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -386,14 +382,14 @@ export async function createEvent(eventData: {
 
   console.log('🔐 Creating event...');
   console.log('   Token exists:', !!token);
-  console.log('   API URL:', API_URL);
-  console.log('   Full URL:', `${API_URL}/api/events`);
+  console.log('   API URL:', getApiUrl());
+  console.log('   Full URL:', `${getApiUrl()}/api/events`);
 
   if (!token) {
     throw new Error('Not authenticated - please login again');
   }
 
-  const response = await fetch(`${API_URL}/api/events`, {
+  const response = await fetch(`${getApiUrl()}/api/events`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -427,7 +423,7 @@ export async function getUserEvents(): Promise<EventConfig[]> {
   }
 
   try {
-    const response = await fetch(`${API_URL}/api/events`, {
+    const response = await fetch(`${getApiUrl()}/api/events`, {
       headers: {
         'Authorization': `Bearer ${token}`,
       },
@@ -461,7 +457,7 @@ export async function updateEvent(eventId: string, eventData: Partial<EventConfi
     throw new Error('Not authenticated');
   }
 
-  const response = await fetch(`${API_URL}/api/events/${eventId}`, {
+  const response = await fetch(`${getApiUrl()}/api/events/${eventId}`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
@@ -487,7 +483,7 @@ export async function deleteEvent(eventId: string): Promise<void> {
     throw new Error('Not authenticated');
   }
 
-  const response = await fetch(`${API_URL}/api/events/${eventId}`, {
+  const response = await fetch(`${getApiUrl()}/api/events/${eventId}`, {
     method: 'DELETE',
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -517,7 +513,7 @@ export async function uploadPhotoToEvent(
     throw new Error('Not authenticated');
   }
 
-  const response = await fetch(`${API_URL}/api/photos/upload`, {
+  const response = await fetch(`${getApiUrl()}/api/photos/upload`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -555,7 +551,7 @@ export const updateUser = async (data: Partial<User> & { password?: string }): P
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${API_URL}/api/users/me`, {
+  const response = await fetch(`${getApiUrl()}/api/users/me`, {
     method: 'PUT',
     headers,
     credentials: 'include', // Important for Better Auth cookies
@@ -615,7 +611,7 @@ export async function getUserOrganizations(): Promise<Organization[]> {
   const token = getAuthToken();
   if (!token) return [];
   
-  const response = await fetch(`${API_URL}/api/organizations/me`, {
+  const response = await fetch(`${getApiUrl()}/api/organizations/me`, {
     headers: { 'Authorization': `Bearer ${token}` }
   });
   
@@ -625,7 +621,7 @@ export async function getUserOrganizations(): Promise<Organization[]> {
 
 export async function getOrganizationMembers(orgId: string): Promise<OrganizationMember[]> {
   const token = getAuthToken();
-  const response = await fetch(`${API_URL}/api/organizations/${orgId}/members`, {
+  const response = await fetch(`${getApiUrl()}/api/organizations/${orgId}/members`, {
     headers: { 'Authorization': `Bearer ${token}` }
   });
   return response.json();
@@ -633,7 +629,7 @@ export async function getOrganizationMembers(orgId: string): Promise<Organizatio
 
 export async function inviteMember(orgId: string, email: string, role: string = 'staff'): Promise<void> {
   const token = getAuthToken();
-  const response = await fetch(`${API_URL}/api/organizations/${orgId}/invite`, {
+  const response = await fetch(`${getApiUrl()}/api/organizations/${orgId}/invite`, {
     method: 'POST',
     headers: { 
       'Content-Type': 'application/json',
@@ -660,7 +656,7 @@ export async function createAlbum(eventId: number, orgId?: string, ownerName?: s
     throw new Error('Invalid event ID');
   }
   
-  const response = await fetch(`${API_URL}/api/albums`, {
+  const response = await fetch(`${getApiUrl()}/api/albums`, {
     method: 'POST',
     headers,
     body: JSON.stringify({ 
@@ -680,19 +676,19 @@ export async function createAlbum(eventId: number, orgId?: string, ownerName?: s
 }
 
 export async function getAlbum(code: string): Promise<Album> {
-  const response = await fetch(`${API_URL}/api/albums/${code}`);
+  const response = await fetch(`${getApiUrl()}/api/albums/${code}`);
   if (!response.ok) throw new Error('Album not found');
   return response.json();
 }
 
 export async function getAlbumPhotos(code: string): Promise<AlbumPhoto[]> {
-  const response = await fetch(`${API_URL}/api/albums/${code}/photos`);
+  const response = await fetch(`${getApiUrl()}/api/albums/${code}/photos`);
   if (!response.ok) return [];
   return response.json();
 }
 
 export async function addAlbumPhoto(code: string, photoId: string, stationType: string): Promise<AlbumPhoto> {
-  const response = await fetch(`${API_URL}/api/albums/${code}/photos`, {
+  const response = await fetch(`${getApiUrl()}/api/albums/${code}/photos`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ photo_id: photoId, station_type: stationType })
@@ -704,7 +700,7 @@ export async function addAlbumPhoto(code: string, photoId: string, stationType: 
 
 export async function getEventAlbums(eventId: number): Promise<Album[]> {
   const token = getAuthToken();
-  const response = await fetch(`${API_URL}/api/albums/event/${eventId}`, {
+  const response = await fetch(`${getApiUrl()}/api/albums/event/${eventId}`, {
     headers: { 'Authorization': `Bearer ${token}` }
   });
   if (!response.ok) return [];
@@ -713,7 +709,7 @@ export async function getEventAlbums(eventId: number): Promise<Album[]> {
 
 export async function updateAlbumStatus(albumCode: string, status: 'in_progress' | 'completed' | 'paid' | 'archived'): Promise<void> {
   const token = getAuthToken();
-  const response = await fetch(`${API_URL}/api/albums/${albumCode}/status?status=${status}`, {
+  const response = await fetch(`${getApiUrl()}/api/albums/${albumCode}/status?status=${status}`, {
     method: 'PUT',
     headers: { 
       'Authorization': `Bearer ${token}`,
@@ -724,7 +720,7 @@ export async function updateAlbumStatus(albumCode: string, status: 'in_progress'
 }
 
 export async function createAlbumCheckout(albumId: string): Promise<{ checkout_url: string }> {
-  const response = await fetch(`${API_URL}/api/billing/albums/${albumId}/checkout`, {
+  const response = await fetch(`${getApiUrl()}/api/billing/albums/${albumId}/checkout`, {
     method: 'POST'
   });
   

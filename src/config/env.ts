@@ -43,12 +43,13 @@ function enforceHttps(url: string): string {
 
 /**
  * Get environment variable with runtime override support
+ * This is called dynamically to ensure window.ENV is available
  */
 function getEnv(key: keyof EnvConfig): string {
   let value = '';
   
   // Try runtime config first (from config.js)
-  if (window.ENV && window.ENV[key]) {
+  if (typeof window !== 'undefined' && window.ENV && window.ENV[key]) {
     value = window.ENV[key] as string;
   } else {
     // Fallback to build-time env
@@ -64,21 +65,28 @@ function getEnv(key: keyof EnvConfig): string {
   return value;
 }
 
-// Export environment variables
+// Export environment variables as getters to ensure they're evaluated at access time
+// This ensures window.ENV is available when the values are read
 export const ENV = {
-  API_URL: getEnv('VITE_API_URL'),
-  AUTH_URL: getEnv('VITE_AUTH_URL'),
-  BASE_URL: getEnv('VITE_BASE_URL'),
-  MINIO_ENDPOINT: getEnv('VITE_MINIO_ENDPOINT'),
-  MINIO_BUCKET: getEnv('VITE_MINIO_BUCKET'),
-  MINIO_SERVER_URL: getEnv('VITE_MINIO_SERVER_URL'),
-  STRIPE_PUBLISHABLE_KEY: getEnv('VITE_STRIPE_PUBLISHABLE_KEY'),
-  FAL_KEY: getEnv('VITE_FAL_KEY'),
-  COUCHDB_URL: getEnv('VITE_COUCHDB_URL'),
+  get API_URL() { return getEnv('VITE_API_URL'); },
+  get AUTH_URL() { return getEnv('VITE_AUTH_URL'); },
+  get BASE_URL() { return getEnv('VITE_BASE_URL'); },
+  get MINIO_ENDPOINT() { return getEnv('VITE_MINIO_ENDPOINT'); },
+  get MINIO_BUCKET() { return getEnv('VITE_MINIO_BUCKET'); },
+  get MINIO_SERVER_URL() { return getEnv('VITE_MINIO_SERVER_URL'); },
+  get STRIPE_PUBLISHABLE_KEY() { return getEnv('VITE_STRIPE_PUBLISHABLE_KEY'); },
+  get FAL_KEY() { return getEnv('VITE_FAL_KEY'); },
+  get COUCHDB_URL() { return getEnv('VITE_COUCHDB_URL'); },
 };
 
-// Log config in development
+// Log config in development (delayed to ensure window.ENV is loaded)
 if (import.meta.env.DEV) {
-  console.log('🔧 Environment Config:', ENV);
+  setTimeout(() => {
+    console.log('🔧 Environment Config:', {
+      API_URL: ENV.API_URL,
+      AUTH_URL: ENV.AUTH_URL,
+      BASE_URL: ENV.BASE_URL,
+    });
+  }, 100);
 }
 
