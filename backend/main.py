@@ -2331,6 +2331,55 @@ async def upload_template_image(
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
 
+# ===== Image Proxy Endpoint (for CORS bypass) =====
+
+@app.get("/api/proxy/image")
+async def proxy_image(url: str):
+    """Proxy an image to bypass CORS restrictions"""
+    import httpx
+    
+    # Validate URL - only allow our S3 bucket
+    allowed_domains = [
+        "s3.amazonaws.com/pictureme.now",
+        "pictureme.now.s3.amazonaws.com",
+        MINIO_SERVER_URL.replace("https://", "").replace("http://", "") if MINIO_SERVER_URL else ""
+    ]
+    
+    url_domain = url.replace("https://", "").replace("http://", "").split("/")[0]
+    url_path = "/".join(url.replace("https://", "").replace("http://", "").split("/")[1:])
+    
+    is_allowed = any(
+        url.replace("https://", "").replace("http://", "").startswith(domain)
+        for domain in allowed_domains if domain
+    )
+    
+    if not is_allowed:
+        raise HTTPException(status_code=403, detail="URL not allowed for proxying")
+    
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(url, timeout=30.0)
+            
+            if response.status_code != 200:
+                raise HTTPException(status_code=response.status_code, detail="Failed to fetch image")
+            
+            content_type = response.headers.get("content-type", "image/jpeg")
+            
+            from fastapi.responses import Response
+            return Response(
+                content=response.content,
+                media_type=content_type,
+                headers={
+                    "Cache-Control": "public, max-age=86400",
+                    "Access-Control-Allow-Origin": "*"
+                }
+            )
+    except httpx.TimeoutException:
+        raise HTTPException(status_code=504, detail="Image fetch timeout")
+    except Exception as e:
+        print(f"❌ Image proxy error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to proxy image: {str(e)}")
+
 # ===== Admin API Endpoints =====
 
 @app.get("/api/admin/stats")

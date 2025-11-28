@@ -11,6 +11,7 @@
  */
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { ENV } from "@/config/env";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -181,8 +182,27 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
     }
   };
 
+  // Get proxied URL for S3 images to bypass CORS
+  const getProxiedUrl = (url: string): string => {
+    const s3Patterns = [
+      's3.amazonaws.com/pictureme.now',
+      'pictureme.now.s3.amazonaws.com'
+    ];
+    
+    const needsProxy = s3Patterns.some(pattern => url.includes(pattern));
+    
+    if (needsProxy) {
+      const apiUrl = ENV.API_URL || '';
+      return `${apiUrl}/api/proxy/image?url=${encodeURIComponent(url)}`;
+    }
+    
+    return url;
+  };
+
   // Convert image URL to base64
   const imageUrlToBase64 = async (url: string): Promise<string> => {
+    const proxiedUrl = getProxiedUrl(url);
+    
     return new Promise((resolve, reject) => {
       const img = new window.Image();
       img.crossOrigin = 'anonymous';
@@ -199,7 +219,7 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
         resolve(canvas.toDataURL('image/jpeg', 0.95));
       };
       img.onerror = () => reject(new Error('Failed to load image'));
-      img.src = url;
+      img.src = proxiedUrl;
     });
   };
 

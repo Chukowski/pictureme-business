@@ -4,6 +4,27 @@
  * Layout: Logo (top) + AI Image (middle) + Footer (bottom)
  */
 
+import { ENV } from '../config/env';
+
+/**
+ * Get proxied URL for S3 images to bypass CORS
+ */
+function getProxiedUrl(url: string): string {
+  const s3Patterns = [
+    's3.amazonaws.com/pictureme.now',
+    'pictureme.now.s3.amazonaws.com'
+  ];
+  
+  const needsProxy = s3Patterns.some(pattern => url.includes(pattern));
+  
+  if (needsProxy) {
+    const apiUrl = ENV.API_URL || '';
+    return `${apiUrl}/api/proxy/image?url=${encodeURIComponent(url)}`;
+  }
+  
+  return url;
+}
+
 export interface WatermarkConfig {
   enabled: boolean;
   type: "image" | "text";
@@ -194,6 +215,9 @@ export async function applyBrandingOverlay(
  * Helper function to load an image
  */
 function loadImage(src: string): Promise<HTMLImageElement> {
+  // Use proxy for S3 URLs to bypass CORS
+  const proxiedSrc = getProxiedUrl(src);
+  
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.crossOrigin = 'anonymous';
@@ -201,7 +225,7 @@ function loadImage(src: string): Promise<HTMLImageElement> {
     img.onload = () => resolve(img);
     img.onerror = () => reject(new Error(`Failed to load image: ${src}`));
 
-    img.src = src;
+    img.src = proxiedSrc;
   });
 }
 

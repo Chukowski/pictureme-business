@@ -217,9 +217,32 @@ export async function processImageWithAI(
 }
 
 /**
+ * Get proxied URL for S3 images to bypass CORS
+ */
+function getProxiedUrl(url: string): string {
+  // Check if URL is from S3 and needs proxying
+  const s3Patterns = [
+    's3.amazonaws.com/pictureme.now',
+    'pictureme.now.s3.amazonaws.com'
+  ];
+  
+  const needsProxy = s3Patterns.some(pattern => url.includes(pattern));
+  
+  if (needsProxy) {
+    const apiUrl = ENV.API_URL || '';
+    return `${apiUrl}/api/proxy/image?url=${encodeURIComponent(url)}`;
+  }
+  
+  return url;
+}
+
+/**
  * Helper function to convert image URL to data URI
  */
 async function imageUrlToDataUri(url: string): Promise<string> {
+  // Use proxy for S3 URLs to bypass CORS
+  const proxiedUrl = getProxiedUrl(url);
+  
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.crossOrigin = "anonymous"; // Enable CORS
@@ -244,7 +267,7 @@ async function imageUrlToDataUri(url: string): Promise<string> {
       reject(new Error(`Failed to load image: ${url}`));
     };
     
-    img.src = url;
+    img.src = proxiedUrl;
   });
 }
 
