@@ -354,6 +354,7 @@ export const PhotoBoothPage = () => {
         headerBackgroundColor: wantsHeader ? config?.branding?.headerBackgroundColor : undefined,
         watermark: watermarkConfig,
         aspectRatio: selectedBackground.aspectRatio || '9:16', // Use template aspect ratio
+        aiModel: selectedBackground.pipelineConfig?.imageModel, // Use template's AI model
         onProgress: (status) => {
           if (status === "queued") {
             setProcessingStatus("Waiting in queue...");

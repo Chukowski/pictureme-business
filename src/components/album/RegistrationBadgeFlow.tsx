@@ -195,6 +195,7 @@ export function RegistrationBadgeFlow({
             backgroundImageUrls: badgeTemplate.aiPipeline.referenceImages || [],
             includeBranding: false,
             aspectRatio: aspectRatio as any,
+            aiModel: badgeTemplate.aiPipeline.model, // Use badge template's AI model
             onProgress: (status) => {
               if (status === 'queued') {
                 setProcessingStatus('Waiting in queue...');

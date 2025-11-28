@@ -3131,9 +3131,9 @@ export default function AdminEventForm() {
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                   {/* Base Image Model */}
                                   <div className="space-y-2">
-                                    <Label className="text-zinc-400 text-xs">Base Image Model</Label>
+                                    <Label className="text-zinc-400 text-xs">AI Model</Label>
                                     <select
-                                      value={template.pipelineConfig?.imageModel || 'seedream-t2i'}
+                                      value={template.pipelineConfig?.imageModel || 'fal-ai/gemini-25-flash-preview-05-20'}
                                       onChange={(e) => updateTemplate(index, {
                                         pipelineConfig: {
                                           ...template.pipelineConfig,
@@ -3142,10 +3142,9 @@ export default function AdminEventForm() {
                                       })}
                                       className="w-full h-10 px-3 rounded-lg bg-black/40 border border-white/10 text-white text-sm"
                                     >
-                                      <option value="seedream-t2i">Seedream v4 — 1 token (Fast, mixing)</option>
-                                      <option value="nano-banana">Nano Banana / Imagen 3 — 1 token</option>
-                                      <option value="nano-banana-pro">Nano Banana Pro — 4 tokens (High quality)</option>
-                                      <option value="flux-realism">Flux Realism — 2 tokens</option>
+                                      <option value="fal-ai/gemini-25-flash-preview-05-20">Gemini 2.5 Flash — Fast, good quality</option>
+                                      <option value="fal-ai/bytedance/seedream/v4/edit">Seedream v4 — Best for LEGO/artistic</option>
+                                      <option value="fal-ai/flux-pro/v1.1">Flux Pro 1.1 — Photorealistic</option>
                                     </select>
                                   </div>
 

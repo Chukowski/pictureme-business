@@ -4,8 +4,32 @@ import { ENV } from "../config/env";
 
 // Configuration state - FAL_KEY is ONLY loaded from backend for security
 let FAL_KEY: string | undefined = undefined;
-let FAL_MODEL: string = "fal-ai/bytedance/seedream/v4/edit";
+let DEFAULT_FAL_MODEL: string = "fal-ai/gemini-25-flash-preview-05-20"; // Default to Gemini
 let configLoaded = false;
+
+// Available AI models for selection
+export const AI_MODELS = {
+  gemini: {
+    id: "fal-ai/gemini-25-flash-preview-05-20",
+    name: "Gemini 2.5 Flash",
+    description: "Fast, high-quality image editing with good prompt following",
+    speed: "fast",
+  },
+  seedream: {
+    id: "fal-ai/bytedance/seedream/v4/edit",
+    name: "Seedream v4",
+    description: "Best for LEGO-style and artistic transformations",
+    speed: "medium",
+  },
+  flux: {
+    id: "fal-ai/flux-pro/v1.1",
+    name: "Flux Pro 1.1",
+    description: "High-quality photorealistic generation",
+    speed: "slow",
+  },
+} as const;
+
+export type AIModelKey = keyof typeof AI_MODELS;
 
 // Load config from backend API - this is the ONLY source for sensitive keys
 async function loadConfig() {
@@ -26,7 +50,7 @@ async function loadConfig() {
     
     if (config.falKey) {
       FAL_KEY = config.falKey;
-      FAL_MODEL = config.falModel || FAL_MODEL;
+      // Don't override default model from backend - let event config control it
       
       // Configure fal client
       fal.config({
@@ -60,6 +84,7 @@ export interface ProcessImageOptions {
   headerBackgroundColor?: string; // Header background color
   watermark?: WatermarkConfig; // Watermark configuration
   aspectRatio?: AspectRatio; // Output aspect ratio
+  aiModel?: string; // AI model to use (defaults to Gemini)
   onProgress?: (status: string, logs?: string[]) => void;
 }
 
@@ -104,6 +129,7 @@ export async function processImageWithAI(
     includeHeader = false,
     campaignText,
     aspectRatio = '9:16',
+    aiModel,
     onProgress,
   } = options;
 
@@ -116,7 +142,10 @@ export async function processImageWithAI(
     );
   }
 
-  console.log("🤖 Starting AI processing with model:", FAL_MODEL);
+  // Use provided model or default
+  const modelToUse = aiModel || DEFAULT_FAL_MODEL;
+  
+  console.log("🤖 Starting AI processing with model:", modelToUse);
   console.log("📝 Prompt:", backgroundPrompt);
   console.log("🖼️ Background images:", backgroundImageUrls || [backgroundImageUrl]);
 
@@ -139,7 +168,7 @@ export async function processImageWithAI(
     console.log("📸 Sending images count:", imageUrls.length, "(1 user photo +", bgImages.length, "background images)");
 
     // Call fal.ai based on model type
-    const isSeedream = FAL_MODEL.includes("seedream");
+    const isSeedream = modelToUse.includes("seedream");
     
     let result;
     
@@ -149,7 +178,7 @@ export async function processImageWithAI(
       console.log(`📐 Using aspect ratio: ${aspectRatio} (${dimensions.width}x${dimensions.height})`);
       
       // Seedream v4 Edit model - send both images
-      result = await fal.subscribe(FAL_MODEL, {
+      result = await fal.subscribe(modelToUse, {
         input: {
           prompt: backgroundPrompt,
           image_urls: imageUrls, // User photo + background to combine
@@ -170,8 +199,8 @@ export async function processImageWithAI(
         },
       });
     } else {
-      // Gemini Flash model - send both images
-      result = await fal.subscribe(FAL_MODEL, {
+      // Gemini Flash or other models - send both images
+      result = await fal.subscribe(modelToUse, {
         input: {
           prompt: backgroundPrompt,
           image_urls: imageUrls, // User photo + background to combine

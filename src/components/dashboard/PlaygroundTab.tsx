@@ -66,7 +66,7 @@ import {
   X,
 } from "lucide-react";
 import { User as UserType, getUserEvents, EventConfig, Template, updateEvent } from "@/services/eventsApi";
-import { processImageWithAI, downloadImageAsBase64 } from "@/services/aiProcessor";
+import { processImageWithAI, downloadImageAsBase64, AI_MODELS, type AIModelKey } from "@/services/aiProcessor";
 import { toast } from "sonner";
 import { BadgeTemplateConfig, DEFAULT_BADGE_CONFIG, CustomElementPositions, DEFAULT_ELEMENT_POSITIONS } from "@/components/templates/BadgeTemplateEditor";
 import { Move, Save, RotateCcw, Maximize2 } from "lucide-react";
@@ -126,6 +126,9 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
     eventNameColor: 'rgba(255,255,255,0.8)',
     dateTimeColor: 'rgba(255,255,255,0.6)',
   });
+
+  // AI Model selection
+  const [selectedAiModel, setSelectedAiModel] = useState<AIModelKey>('gemini');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
@@ -274,6 +277,7 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
         backgroundImageUrls: selectedTemplate.images || [],
         includeBranding: false,
         aspectRatio: selectedTemplate.aspectRatio || '9:16',
+        aiModel: selectedTemplate.pipelineConfig?.imageModel || AI_MODELS[selectedAiModel].id,
         onProgress: (status) => {
           if (status === 'queued') {
             setProcessingStatus('queued');
@@ -336,6 +340,7 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
         backgroundImageUrls: badgeConfig.aiPipeline.referenceImages || [],
         includeBranding: false,
         aspectRatio: badgeConfig.layout === 'landscape' ? '16:9' : badgeConfig.layout === 'square' ? '1:1' : '9:16',
+        aiModel: badgeConfig.aiPipeline.model || AI_MODELS[selectedAiModel].id,
         onProgress: (status) => {
           console.log('Badge processing status:', status);
         },
@@ -972,6 +977,38 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
                       />
                     ))}
                   </div>
+                </div>
+
+                {/* AI Model Selector */}
+                <div className="space-y-2">
+                  <Label className="text-zinc-300">AI Model</Label>
+                  <Select
+                    value={selectedAiModel}
+                    onValueChange={(value: AIModelKey) => setSelectedAiModel(value)}
+                  >
+                    <SelectTrigger className="bg-black/40 border-white/10 text-white">
+                      <SelectValue placeholder="Select AI model" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-zinc-900 border-white/10">
+                      {Object.entries(AI_MODELS).map(([key, model]) => (
+                        <SelectItem key={key} value={key} className="text-white hover:bg-white/10">
+                          <div className="flex items-center gap-2">
+                            <span>{model.name}</span>
+                            <Badge variant="outline" className={`text-[10px] ${
+                              model.speed === 'fast' ? 'border-green-500/50 text-green-400' :
+                              model.speed === 'medium' ? 'border-yellow-500/50 text-yellow-400' :
+                              'border-orange-500/50 text-orange-400'
+                            }`}>
+                              {model.speed}
+                            </Badge>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-zinc-500">
+                    {AI_MODELS[selectedAiModel].description}
+                  </p>
                 </div>
 
                 {/* Process Button */}
