@@ -334,10 +334,19 @@ export function getCurrentUser(): User | null {
 }
 
 /**
- * Get auth token
+ * Get auth token from localStorage
+ * Better Auth stores session in cookies, but we also store token in localStorage for API calls
  */
 export function getAuthToken(): string | null {
-  return localStorage.getItem('auth_token');
+  // Try auth_token first (set during login)
+  const token = localStorage.getItem('auth_token');
+  if (token) return token;
+  
+  // Try to get from Better Auth session cookie (fallback)
+  // Note: This won't work for cross-origin requests due to cookie restrictions
+  // The main auth mechanism should be the token stored in localStorage
+  
+  return null;
 }
 
 /**
@@ -413,20 +422,34 @@ export async function createEvent(eventData: {
 export async function getUserEvents(): Promise<EventConfig[]> {
   const token = getAuthToken();
   if (!token) {
-    throw new Error('Not authenticated');
+    console.warn('No auth token found, returning empty events list');
+    return []; // Return empty array instead of throwing error for new users
   }
 
-  const response = await fetch(`${API_URL}/api/events`, {
-    headers: {
-      'Authorization': `Bearer ${token}`,
-    },
-  });
+  try {
+    const response = await fetch(`${API_URL}/api/events`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+      credentials: 'include', // Include cookies for Better Auth
+    });
 
-  if (!response.ok) {
-    throw new Error(`Failed to load events: ${response.statusText}`);
+    if (response.status === 401) {
+      console.warn('Unauthorized - token may be expired');
+      return []; // Return empty instead of throwing
+    }
+
+    if (!response.ok) {
+      console.error(`Failed to load events: ${response.statusText}`);
+      return []; // Return empty instead of throwing
+    }
+
+    const data = await response.json();
+    return Array.isArray(data) ? data : [];
+  } catch (error) {
+    console.error('Error loading events:', error);
+    return []; // Return empty on network errors
   }
-
-  return await response.json();
 }
 
 /**

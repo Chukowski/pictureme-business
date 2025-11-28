@@ -324,42 +324,69 @@ async def get_current_user(
             print(f"⚠️  Better Auth JWT Error: {e}")
             print(f"🔑 Secret used: {BETTER_AUTH_SECRET[:10]}...")
     
-    # Fallback to Authorization header (old auth)
+    # Fallback to Authorization header
     if not user_id and credentials:
+        token = credentials.credentials
+        
+        # Try Better Auth JWT first (tokens from auth-server)
         try:
-            token = credentials.credentials
-            payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-            user_id = payload.get("sub")
-            print(f"✅ Legacy auth validated for user: {user_id}")
+            payload = jwt.decode(token, BETTER_AUTH_SECRET, algorithms=["HS256"])
+            user_id = payload.get("sub") or payload.get("userId")
+            print(f"✅ Better Auth token validated for user: {user_id}")
         except JWTError as e:
-            print(f"⚠️  Legacy JWT Error: {e}")
+            print(f"⚠️  Better Auth JWT Error: {e}")
+            
+            # Try legacy SECRET_KEY
+            try:
+                payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+                user_id = payload.get("sub")
+                print(f"✅ Legacy auth validated for user: {user_id}")
+            except JWTError as e2:
+                print(f"⚠️  Legacy JWT Error: {e2}")
     
     if not user_id:
         print(f"❌ No valid authentication found")
         raise credentials_exception
     
     async with db_pool.acquire() as conn:
-        # Try to fetch user by id (supports both UUID and legacy int)
-        # Include plan details for business users
+        # First try Better Auth "user" table (new auth system)
         user = await conn.fetchrow(
             """
             SELECT 
-                u.id, u.username, u.email, u.full_name, u.slug, u.role, 
-                u.birth_date, u.avatar_url, u.tokens_remaining, u.plan_id,
-                u.plan_started_at, u.plan_renewal_date,
-                bp.name as plan_name,
-                bp.included_tokens as tokens_total,
-                bp.max_concurrent_events
-            FROM users u
-            LEFT JOIN business_plans bp ON u.plan_id = bp.slug
-            WHERE u.id::text = $1 AND u.is_active = TRUE
+                id, email, name as full_name, slug, role, 
+                tokens_remaining, is_active,
+                NULL as username, NULL as birth_date, image as avatar_url,
+                NULL as plan_id, NULL as plan_started_at, NULL as plan_renewal_date,
+                NULL as plan_name, NULL as tokens_total, NULL as max_concurrent_events
+            FROM "user"
+            WHERE id = $1 AND (is_active IS NULL OR is_active = TRUE)
             """,
             str(user_id)
         )
+        
+        # If not found in Better Auth, try legacy "users" table
+        if user is None:
+            user = await conn.fetchrow(
+                """
+                SELECT 
+                    u.id, u.username, u.email, u.full_name, u.slug, u.role, 
+                    u.birth_date, u.avatar_url, u.tokens_remaining, u.plan_id,
+                    u.plan_started_at, u.plan_renewal_date,
+                    bp.name as plan_name,
+                    bp.included_tokens as tokens_total,
+                    bp.max_concurrent_events
+                FROM users u
+                LEFT JOIN business_plans bp ON u.plan_id = bp.slug
+                WHERE u.id::text = $1 AND u.is_active = TRUE
+                """,
+                str(user_id)
+            )
     
     if user is None:
+        print(f"❌ User not found in database: {user_id}")
         raise credentials_exception
     
+    print(f"✅ User found: {user['email']} (role: {user.get('role', 'unknown')})")
     return dict(user)
 
 async def require_superadmin(current_user: dict = Depends(get_current_user)):
