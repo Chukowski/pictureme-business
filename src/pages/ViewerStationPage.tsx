@@ -195,9 +195,23 @@ export function ViewerStationPage() {
   const primaryColor = config.theme?.primaryColor || '#6366F1';
   const isLocked = album && 'payment_status' in album && album.payment_status === 'unpaid';
 
+  // When in scan mode, show the QR scanner directly (full screen)
+  if (state === 'scan' || state === 'pin') {
+    return (
+      <ScanAlbumQR
+        onScan={handleScan}
+        onCancel={undefined} // No cancel - this is the main view
+        title="Scan Badge QR Code"
+        subtitle="Point the camera at the QR code on the visitor's badge"
+        primaryColor={primaryColor}
+        allowManualEntry={true}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen bg-zinc-950">
-      {/* Header */}
+      {/* Header - only shown when viewing album */}
       <header className="border-b border-zinc-800 bg-zinc-900/50 backdrop-blur-sm">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -221,71 +235,6 @@ export function ViewerStationPage() {
       </header>
 
       <main className="container mx-auto px-4 py-8">
-        {/* PIN Login */}
-        {state === 'pin' && (
-          <div className="max-w-md mx-auto">
-            <StaffPINLogin
-              eventId={config.postgres_event_id || 0}
-              eventName={config.title}
-              stationName="Viewer Station"
-              onSuccess={handlePinVerified}
-              primaryColor={primaryColor}
-            />
-          </div>
-        )}
-
-        {/* Scan Badge */}
-        {state === 'scan' && (
-          <div className="max-w-md mx-auto space-y-6">
-            <Card className="bg-zinc-900 border-zinc-800">
-              <CardHeader className="text-center">
-                <div
-                  className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center"
-                  style={{ backgroundColor: `${primaryColor}20` }}
-                >
-                  <QrCode className="w-8 h-8" style={{ color: primaryColor }} />
-                </div>
-                <CardTitle className="text-white">Scan Badge to View Album</CardTitle>
-                <CardDescription className="text-zinc-400">
-                  Scan the QR code on your badge or enter the album code manually
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <Button
-                  onClick={() => setShowQRScanner(true)}
-                  className="w-full"
-                  size="lg"
-                  style={{ backgroundColor: primaryColor }}
-                >
-                  <Camera className="w-5 h-5 mr-2" />
-                  Scan QR Code
-                </Button>
-
-                <div className="relative">
-                  <div className="absolute inset-0 flex items-center">
-                    <span className="w-full border-t border-zinc-700" />
-                  </div>
-                  <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-zinc-900 px-2 text-zinc-500">Or enter code</span>
-                  </div>
-                </div>
-
-                <div className="flex gap-2">
-                  <Input
-                    value={manualCode}
-                    onChange={(e) => setManualCode(e.target.value.toUpperCase())}
-                    placeholder="Enter album code"
-                    className="bg-zinc-800 border-zinc-700 text-white font-mono"
-                    onKeyDown={(e) => e.key === 'Enter' && handleManualEntry()}
-                  />
-                  <Button onClick={handleManualEntry} variant="secondary">
-                    Go
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
 
         {/* Loading */}
         {state === 'loading' && (
@@ -420,17 +369,6 @@ export function ViewerStationPage() {
               </Card>
             )}
           </div>
-        )}
-
-        {/* QR Scanner Modal */}
-        {showQRScanner && (
-          <ScanAlbumQR
-            onScan={handleScan}
-            onCancel={() => setShowQRScanner(false)}
-            title="Scan Badge QR Code"
-            subtitle="Point the camera at the QR code on the visitor's badge"
-            primaryColor={primaryColor}
-          />
         )}
 
         {/* Photo Lightbox */}
