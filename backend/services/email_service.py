@@ -149,17 +149,22 @@ def send_album_share_email(
     greeting = f"Hi {visitor_name}," if visitor_name else "Hi there,"
     brand = brand_name or "PictureMe.Now"
     
-    # Akito mascot image URL (hosted on pictureme.now)
-    akito_url = "https://pictureme.now/assets/akito-2d.png"
+    # Akito mascot - using a simple emoji as fallback since image has ratio issues
+    # TODO: Host a properly sized Akito icon (square, ~48x48)
+    akito_icon = "🤖"
+    
+    # Log for debugging
+    logger.info(f"📧 Event logo URL received: {event_logo_url}")
     
     # Event logo in header (if available)
     header_logo = ""
-    if event_logo_url:
+    if event_logo_url and event_logo_url.strip():
         header_logo = f'''
             <div style="margin-bottom: 20px;">
-                <img src="{event_logo_url}" alt="{event_name}" style="max-width: 200px; max-height: 80px; object-fit: contain;" />
+                <img src="{event_logo_url}" alt="{event_name}" style="max-width: 200px; max-height: 80px;" />
             </div>
         '''
+        logger.info(f"📧 Header logo HTML generated")
     
     subject = f"Your photos from {event_name} are ready! 📸"
     
@@ -216,28 +221,13 @@ def send_album_share_email(
                         </td>
                     </tr>
                     
-                    <!-- Footer with Akito -->
+                    <!-- Footer -->
                     <tr>
                         <td style="background-color: #0f0f0f; border-radius: 0 0 16px 16px; padding: 25px 30px; text-align: center;">
-                            <table role="presentation" style="width: 100%; border-collapse: collapse;">
-                                <tr>
-                                    <td align="center" style="vertical-align: middle;">
-                                        <a href="https://pictureme.now" style="text-decoration: none;">
-                                            <table role="presentation" style="border-collapse: collapse; display: inline-table;">
-                                                <tr>
-                                                    <td style="vertical-align: middle; padding-right: 8px;">
-                                                        <img src="{akito_url}" alt="Akito" width="24" height="24" style="display: block; width: 24px; height: 24px;" />
-                                                    </td>
-                                                    <td style="vertical-align: middle;">
-                                                        <span style="color: #a1a1aa; font-size: 13px;">Powered by <strong style="color: #06B6D4;">PictureMe.Now</strong></span>
-                                                    </td>
-                                                </tr>
-                                            </table>
-                                        </a>
-                                    </td>
-                                </tr>
-                            </table>
-                            <p style="margin: 12px 0 0; color: #52525b; font-size: 11px;">
+                            <p style="margin: 0 0 8px; color: #a1a1aa; font-size: 13px;">
+                                {akito_icon} Powered by <a href="https://pictureme.now" style="color: #06B6D4; text-decoration: none; font-weight: 600;">PictureMe.Now</a>
+                            </p>
+                            <p style="margin: 0; color: #52525b; font-size: 11px;">
                                 © {datetime.now().year} {brand}. All rights reserved.
                             </p>
                         </td>

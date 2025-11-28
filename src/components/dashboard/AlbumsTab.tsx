@@ -337,6 +337,11 @@ export default function AlbumsTab({ currentUser }: AlbumsTabProps) {
 
           {/* Right Column - Staff Tools */}
           <div className="lg:col-span-1">
+            {(() => {
+              console.log('📧 Event branding:', selectedEvent.branding);
+              console.log('📧 Logo path:', selectedEvent.branding?.logoPath);
+              return null;
+            })()}
             <StaffAlbumTools
               eventId={selectedEvent._id}
               postgresEventId={selectedEvent.postgres_event_id}
