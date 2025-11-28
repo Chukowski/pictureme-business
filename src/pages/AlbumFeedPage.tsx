@@ -89,17 +89,25 @@ export default function AlbumFeedPage() {
                                 albumInfo && 
                                 albumInfo.isComplete === false;
   
-  // Check if payment is required for viewing/downloads
-  const requiresPayment = config?.albumTracking?.rules?.printReady && !albumInfo?.isPaid;
-  
-  // Check if album requires staff to mark as paid (no self-service payment)
-  const staffPaymentOnly = config?.albumTracking?.rules?.staffPaymentOnly !== false; // Default true
+  // Check if payment is required for viewing/downloads (printReady = payment wall enabled)
+  const requiresPayment = config?.albumTracking?.rules?.printReady === true && albumInfo?.isPaid !== true;
   
   // Album is blocked if it needs approval OR payment (and user is not staff)
   const albumIsBlocked = !isStaff && (requiresStaffApproval || requiresPayment);
   
-  // Album is completely locked - can't even see blurred photos (staff must mark paid)
-  const albumIsLocked = !isStaff && requiresPayment && staffPaymentOnly;
+  // Album is completely locked - can't even see blurred photos until paid
+  // When printReady is enabled, album is locked until staff marks as paid
+  const albumIsLocked = !isStaff && requiresPayment;
+  
+  // Debug logging
+  console.log('🔒 Album access check:', {
+    isStaff,
+    isPaid: albumInfo?.isPaid,
+    printReady: config?.albumTracking?.rules?.printReady,
+    requiresPayment,
+    albumIsLocked,
+    albumInfo: albumInfo ? { id: albumInfo.id, isPaid: albumInfo.isPaid } : null
+  });
   
   // Check if hard watermark should be applied
   const applyHardWatermark = config?.branding?.watermark?.enabled || 
