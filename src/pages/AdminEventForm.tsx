@@ -2980,6 +2980,31 @@ export default function AdminEventForm() {
                                 </div>
                               </div>
 
+                              {/* Force Instructions Toggle */}
+                              <div className="flex items-center justify-between p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2">
+                                    <AlertTriangle className="w-4 h-4 text-amber-400" />
+                                    <Label className="text-zinc-300 font-medium text-sm">Force Instructions</Label>
+                                  </div>
+                                  <p className="text-xs text-zinc-500 mt-1">
+                                    {template.pipelineConfig?.forceInstructions 
+                                      ? 'Extra AI instructions will be added to help understand the images'
+                                      : 'Your prompts will be sent exactly as written (recommended)'}
+                                  </p>
+                                </div>
+                                <Switch
+                                  checked={template.pipelineConfig?.forceInstructions || false}
+                                  onCheckedChange={(checked) => updateTemplate(index, {
+                                    pipelineConfig: {
+                                      ...template.pipelineConfig,
+                                      forceInstructions: checked
+                                    }
+                                  })}
+                                  className="data-[state=checked]:bg-amber-600"
+                                />
+                              </div>
+
                               <div className="space-y-3 p-4 rounded-lg bg-black/20 border border-white/5">
                                 <div className="flex items-center justify-between">
                                   <Label className="text-zinc-300 font-medium">Background Images</Label>
@@ -3273,31 +3298,6 @@ export default function AdminEventForm() {
                                       <option value="fal-ai/bytedance/seedream/v4/edit">Seedream v4 — Best for LEGO/artistic</option>
                                       <option value="fal-ai/flux/dev">Flux Dev — Photorealistic</option>
                                     </select>
-                                  </div>
-
-                                  {/* Force Instructions */}
-                                  <div className="space-y-2">
-                                    <div className="flex items-center justify-between">
-                                      <Label className="text-zinc-400 text-xs flex items-center gap-1">
-                                        <AlertTriangle className="w-3 h-3 text-amber-400" />
-                                        Force Instructions
-                                      </Label>
-                                      <Switch
-                                        checked={template.pipelineConfig?.forceInstructions || false}
-                                        onCheckedChange={(checked) => updateTemplate(index, {
-                                          pipelineConfig: {
-                                            ...template.pipelineConfig,
-                                            forceInstructions: checked
-                                          }
-                                        })}
-                                        className="data-[state=checked]:bg-amber-600"
-                                      />
-                                    </div>
-                                    <p className="text-[10px] text-zinc-500">
-                                      {template.pipelineConfig?.forceInstructions 
-                                        ? 'Adds extra context to help AI understand images'
-                                        : 'Prompt sent as-is (recommended)'}
-                                    </p>
                                   </div>
 
                                   {/* Aspect Ratio */}

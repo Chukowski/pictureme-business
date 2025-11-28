@@ -1113,26 +1113,6 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
                   </p>
                 </div>
 
-                {/* Force Instructions Toggle */}
-                <div className="flex items-center justify-between p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <AlertTriangle className="w-4 h-4 text-amber-400" />
-                      <Label className="text-zinc-300 font-medium">Force Instructions</Label>
-                    </div>
-                    <p className="text-xs text-zinc-500 mt-1">
-                      {forceInstructions 
-                        ? 'Extra instructions will be added to help AI understand the images'
-                        : 'Your prompt will be sent exactly as written'}
-                    </p>
-                  </div>
-                  <Switch
-                    checked={forceInstructions}
-                    onCheckedChange={setForceInstructions}
-                    className="data-[state=checked]:bg-amber-600"
-                  />
-                </div>
-
                 {/* Individual/Group Toggle - Always show for testing */}
                 <div className="space-y-2">
                   <Label className="text-zinc-300">Photo Type</Label>
@@ -1223,6 +1203,23 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
                         section="template"
                         placeholder="Describe what you want to create or ask AI to improve your prompt..."
                       />
+
+                      {/* Force Instructions Toggle */}
+                      <div className="flex items-center justify-between p-2 rounded-lg bg-amber-500/5 border border-amber-500/10">
+                        <div className="flex items-center gap-2">
+                          <AlertTriangle className="w-3 h-3 text-amber-400" />
+                          <span className="text-xs text-zinc-400">
+                            {forceInstructions 
+                              ? 'Force: ON - Extra AI instructions added'
+                              : 'Force: OFF - Prompt sent as-is'}
+                          </span>
+                        </div>
+                        <Switch
+                          checked={forceInstructions}
+                          onCheckedChange={setForceInstructions}
+                          className="data-[state=checked]:bg-amber-600 scale-75"
+                        />
+                      </div>
                       
                       {/* Load from Template */}
                       {selectedTemplate && (
@@ -1318,8 +1315,8 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
 
                 {/* Current Prompt Preview */}
                 {selectedTemplate && !useCustomPrompt && (
-                  <div className="p-3 rounded-lg bg-black/30 border border-white/5">
-                    <div className="flex items-center justify-between mb-2">
+                  <div className="p-3 rounded-lg bg-black/30 border border-white/5 space-y-2">
+                    <div className="flex items-center justify-between">
                       <p className="text-xs text-zinc-500">
                         {isGroupPhoto && selectedTemplate.groupPrompt ? 'Group Prompt:' : 'Individual Prompt:'}
                       </p>
@@ -1363,6 +1360,23 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
                         ? selectedTemplate.groupPrompt 
                         : selectedTemplate.prompt || 'No prompt configured'}
                     </p>
+                    
+                    {/* Force Instructions Toggle */}
+                    <div className="flex items-center justify-between pt-2 border-t border-white/5">
+                      <div className="flex items-center gap-2">
+                        <AlertTriangle className="w-3 h-3 text-amber-400" />
+                        <span className="text-xs text-zinc-400">
+                          {forceInstructions 
+                            ? 'Force: ON - Extra AI instructions added'
+                            : 'Force: OFF - Prompt sent as-is'}
+                        </span>
+                      </div>
+                      <Switch
+                        checked={forceInstructions}
+                        onCheckedChange={setForceInstructions}
+                        className="data-[state=checked]:bg-amber-600 scale-75"
+                      />
+                    </div>
                   </div>
                 )}
 
@@ -1443,9 +1457,24 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
 
                 {selectedTemplate && (
                   <div className="mt-4 p-3 rounded-lg bg-zinc-800/50 space-y-2">
-                    <p className="text-sm font-medium text-white">{selectedTemplate.name}</p>
-                    <p className="text-xs text-zinc-400 line-clamp-2">
-                      {selectedTemplate.prompt || 'No prompt configured'}
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-medium text-white">{selectedTemplate.name}</p>
+                      <Badge variant="outline" className={`text-xs ${
+                        useCustomPrompt 
+                          ? 'border-indigo-500/50 text-indigo-400' 
+                          : isGroupPhoto 
+                            ? 'border-purple-500/50 text-purple-400' 
+                            : 'border-cyan-500/50 text-cyan-400'
+                      }`}>
+                        {useCustomPrompt ? '✏️ Custom' : isGroupPhoto ? '👥 Group' : '👤 Individual'}
+                      </Badge>
+                    </div>
+                    <p className="text-xs text-zinc-400 line-clamp-3">
+                      {useCustomPrompt && customPrompt.trim()
+                        ? customPrompt
+                        : isGroupPhoto && selectedTemplate.groupPrompt
+                          ? selectedTemplate.groupPrompt
+                          : selectedTemplate.prompt || 'No prompt configured'}
                     </p>
                     {selectedTemplate.images?.length > 0 && (
                       <div className="flex gap-1 mt-2">
