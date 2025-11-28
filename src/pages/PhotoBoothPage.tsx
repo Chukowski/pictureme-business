@@ -280,10 +280,10 @@ export const PhotoBoothPage = () => {
 
     try {
       // Determine branding settings based on template toggles
-      const includeBranding = selectedBackground.includeBranding ?? true;
-      const includeHeader = includeBranding && (selectedBackground.includeHeader ?? false);
-      const includeTagline = includeBranding && (selectedBackground.includeTagline ?? true);
-      const includeWatermark = includeBranding && (selectedBackground.includeWatermark ?? true);
+      const templateWantsBranding = selectedBackground.includeBranding ?? true;
+      const includeHeader = templateWantsBranding && (selectedBackground.includeHeader ?? false);
+      const includeTagline = templateWantsBranding && (selectedBackground.includeTagline ?? true);
+      const includeWatermark = templateWantsBranding && (selectedBackground.includeWatermark ?? true);
 
       // Use custom prompt and images if this is a custom prompt template
       const promptToUse = selectedBackground.isCustomPrompt && customPrompt
@@ -306,19 +306,26 @@ export const PhotoBoothPage = () => {
       const footer = config?.branding?.footerPath && config.branding.footerPath.trim()
         ? config.branding.footerPath
         : undefined;
+      
+      const watermarkConfig = includeWatermark ? config?.branding?.watermark : undefined;
+      
+      // Only apply branding if there's actually something to apply
+      // This ensures the AI output matches the Playground when no branding is configured
+      const hasBrandingElements = !!(logo || footer || tagline || selectedBackground.campaignText || watermarkConfig?.enabled);
+      const includeBranding = templateWantsBranding && hasBrandingElements;
 
       const result = await processImageWithAI({
         userPhotoBase64: imageData,
         backgroundPrompt: promptToUse,
         backgroundImageUrls: imagesToUse,
         includeBranding,
-        includeHeader,
-        campaignText: selectedBackground.campaignText,
-        taglineText: tagline,
-        logoUrl: logo,
-        footerUrl: footer,
-        headerBackgroundColor: config?.branding?.headerBackgroundColor,
-        watermark: includeWatermark ? config?.branding?.watermark : undefined,
+        includeHeader: includeBranding && includeHeader,
+        campaignText: includeBranding ? selectedBackground.campaignText : undefined,
+        taglineText: includeBranding ? tagline : undefined,
+        logoUrl: includeBranding ? logo : undefined,
+        footerUrl: includeBranding ? footer : undefined,
+        headerBackgroundColor: includeBranding ? config?.branding?.headerBackgroundColor : undefined,
+        watermark: includeBranding ? watermarkConfig : undefined,
         aspectRatio: selectedBackground.aspectRatio || '9:16', // Use template aspect ratio
         onProgress: (status) => {
           if (status === "queued") {
