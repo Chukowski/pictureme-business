@@ -98,7 +98,7 @@ export interface ProcessImageOptions {
 }
 
 /**
- * Get image dimensions based on aspect ratio
+ * Get image dimensions based on aspect ratio (standard quality)
  */
 function getImageDimensions(aspectRatio: AspectRatio = '9:16'): { width: number; height: number } {
   switch (aspectRatio) {
@@ -113,6 +113,54 @@ function getImageDimensions(aspectRatio: AspectRatio = '9:16'): { width: number;
     case '9:16':
     default:
       return { width: 1080, height: 1920 };
+  }
+}
+
+/**
+ * Get optimized dimensions for Flux models to stay under 1 megapixel (~$0.03)
+ * 1 megapixel = 1,000,000 pixels
+ * These dimensions are optimized to be just under 1MP while maintaining aspect ratio
+ */
+function getFluxOptimizedDimensions(aspectRatio: AspectRatio = '9:16'): { width: number; height: number } {
+  switch (aspectRatio) {
+    case '1:1':
+      // 1000x1000 = 1,000,000 pixels (exactly 1MP)
+      return { width: 1000, height: 1000 };
+    case '4:5':
+      // 894x1118 ≈ 999,492 pixels (<1MP)
+      return { width: 894, height: 1118 };
+    case '3:2':
+      // 1224x816 ≈ 998,784 pixels (<1MP)
+      return { width: 1224, height: 816 };
+    case '16:9':
+      // 1332x750 ≈ 999,000 pixels (<1MP) - using landscape_16_9 preset
+      return { width: 1024, height: 576 }; // Flux preset: landscape_16_9
+    case '9:16':
+    default:
+      // 750x1332 ≈ 999,000 pixels (<1MP) - using portrait_16_9 preset
+      return { width: 576, height: 1024 }; // Flux preset: portrait_16_9
+  }
+}
+
+/**
+ * Get Flux image_size enum value when available, or custom dimensions
+ */
+function getFluxImageSize(aspectRatio: AspectRatio = '9:16'): string | { width: number; height: number } {
+  // Use Flux's built-in presets when they match our aspect ratios
+  switch (aspectRatio) {
+    case '1:1':
+      return 'square'; // 1024x1024
+    case '4:5':
+      return 'portrait_4_3'; // Close enough, 768x1024
+    case '16:9':
+      return 'landscape_16_9'; // 1024x576
+    case '9:16':
+      return 'portrait_16_9'; // 576x1024
+    case '3:2':
+      // No preset for 3:2, use custom dimensions
+      return { width: 1224, height: 816 };
+    default:
+      return 'portrait_16_9';
   }
 }
 
@@ -255,12 +303,9 @@ Transform the person(s) from Image 1 according to the instructions above and pla
         console.log("📝 Using user prompt as-is:", finalPrompt);
       }
       
-      // Get dimensions based on aspect ratio for models that support it
-      const dimensions = getImageDimensions(aspectRatio);
       const isFlux2Pro = modelToUse.includes("flux-2-pro");
       
       console.log("📸 Images being sent:", imageUrls.length, "(hasBackground:", hasBackgroundImages, ", forceInstructions:", forceInstructions, ")");
-      console.log(`📐 Using aspect ratio: ${aspectRatio} (${dimensions.width}x${dimensions.height})`);
       
       // Build input based on model capabilities
       const modelInput: Record<string, unknown> = {
@@ -270,9 +315,20 @@ Transform the person(s) from Image 1 according to the instructions above and pla
         output_format: "jpeg",
       };
       
-      // Add image_size for models that support it (Flux 2 Pro, etc.)
+      // Add image_size for Flux 2 Pro - use optimized sizes to stay under 1 megapixel ($0.03)
       if (isFlux2Pro && aspectRatio !== 'auto') {
-        modelInput.image_size = dimensions;
+        const fluxImageSize = getFluxImageSize(aspectRatio);
+        modelInput.image_size = fluxImageSize;
+        
+        if (typeof fluxImageSize === 'string') {
+          console.log(`📐 Flux 2 Pro: Using preset "${fluxImageSize}" for aspect ratio ${aspectRatio}`);
+        } else {
+          console.log(`📐 Flux 2 Pro: Using custom size ${fluxImageSize.width}x${fluxImageSize.height} for aspect ratio ${aspectRatio}`);
+        }
+        console.log(`💰 Cost optimized: ~$0.03 (under 1 megapixel)`);
+      } else {
+        const dimensions = getImageDimensions(aspectRatio);
+        console.log(`📐 Using aspect ratio: ${aspectRatio} (${dimensions.width}x${dimensions.height})`);
       }
       
       result = await fal.subscribe(modelToUse, {
