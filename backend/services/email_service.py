@@ -15,7 +15,20 @@ from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
-# Email configuration from environment
+# Email configuration - using functions to get fresh values after dotenv loads
+def get_smtp_config():
+    """Get SMTP configuration from environment"""
+    return {
+        "host": os.getenv("SMTP_HOST", "email-smtp.us-east-1.amazonaws.com"),
+        "port": int(os.getenv("SMTP_PORT", "587")),
+        "username": os.getenv("SMTP_USERNAME", ""),
+        "password": os.getenv("SMTP_PASSWORD", ""),
+        "from_email": os.getenv("SMTP_FROM_EMAIL", "share@pictureme.now"),
+        "from_name": os.getenv("SMTP_FROM_NAME", "PictureMe.Now"),
+        "use_tls": os.getenv("SMTP_USE_TLS", "true").lower() == "true",
+    }
+
+# Legacy variables for backward compatibility
 SMTP_HOST = os.getenv("SMTP_HOST", "email-smtp.us-east-1.amazonaws.com")
 SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
 SMTP_USERNAME = os.getenv("SMTP_USERNAME", "")
@@ -27,7 +40,11 @@ SMTP_USE_TLS = os.getenv("SMTP_USE_TLS", "true").lower() == "true"
 
 def is_email_configured() -> bool:
     """Check if email service is properly configured"""
-    return bool(SMTP_HOST and SMTP_USERNAME and SMTP_PASSWORD and SMTP_FROM_EMAIL)
+    config = get_smtp_config()
+    configured = bool(config['host'] and config['username'] and config['password'] and config['from_email'])
+    if not configured:
+        logger.warning(f"📧 Email config check - HOST: {'✅' if config['host'] else '❌'}, USER: {'✅' if config['username'] else '❌'}, PASS: {'✅' if config['password'] else '❌'}, FROM: {'✅' if config['from_email'] else '❌'}")
+    return configured
 
 
 def send_email(
@@ -50,6 +67,9 @@ def send_email(
     Returns:
         bool: True if email sent successfully, False otherwise
     """
+    # Get fresh config values
+    config = get_smtp_config()
+    
     if not is_email_configured():
         logger.error("Email service not configured. Please set SMTP environment variables.")
         return False
@@ -58,7 +78,7 @@ def send_email(
         # Create message
         message = MIMEMultipart("alternative")
         message["Subject"] = subject
-        message["From"] = f"{SMTP_FROM_NAME} <{SMTP_FROM_EMAIL}>"
+        message["From"] = f"{config['from_name']} <{config['from_email']}>"
         message["To"] = to_email
         
         if reply_to:
@@ -74,25 +94,31 @@ def send_email(
         message.attach(part2)
         
         # Connect and send
+        logger.info(f"📧 Connecting to SMTP: {config['host']}:{config['port']}")
         context = ssl.create_default_context()
         
-        with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
-            if SMTP_USE_TLS:
+        with smtplib.SMTP(config['host'], config['port']) as server:
+            if config['use_tls']:
+                logger.info("📧 Starting TLS...")
                 server.starttls(context=context)
-            server.login(SMTP_USERNAME, SMTP_PASSWORD)
-            server.sendmail(SMTP_FROM_EMAIL, to_email, message.as_string())
+            logger.info(f"📧 Logging in as {config['username'][:4]}...{config['username'][-4:] if len(config['username']) > 8 else ''}...")
+            server.login(config['username'], config['password'])
+            logger.info(f"📧 Sending from {config['from_email']} to {to_email}...")
+            server.sendmail(config['from_email'], to_email, message.as_string())
         
-        logger.info(f"Email sent successfully to {to_email}")
+        logger.info(f"✅ Email sent successfully to {to_email}")
         return True
         
     except smtplib.SMTPAuthenticationError as e:
-        logger.error(f"SMTP authentication failed: {e}")
+        logger.error(f"❌ SMTP authentication failed: {e}")
         return False
     except smtplib.SMTPException as e:
-        logger.error(f"SMTP error sending email: {e}")
+        logger.error(f"❌ SMTP error sending email: {e}")
         return False
     except Exception as e:
-        logger.error(f"Unexpected error sending email: {e}")
+        logger.error(f"❌ Unexpected error sending email: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
         return False
 
 

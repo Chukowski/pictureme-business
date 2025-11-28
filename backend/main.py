@@ -24,8 +24,18 @@ import io
 # Import CouchDB service
 from couchdb_service import get_couch_service
 
-# Load .env from parent directory (project root)
-load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
+# Load .env files - check both locations
+# First try backend/.env (local development)
+backend_env = os.path.join(os.path.dirname(__file__), '.env')
+if os.path.exists(backend_env):
+    load_dotenv(backend_env)
+    print(f"📁 Loaded .env from: {backend_env}")
+
+# Then load from project root (may override or add missing vars)
+root_env = os.path.join(os.path.dirname(__file__), '..', '.env')
+if os.path.exists(root_env):
+    load_dotenv(root_env, override=False)  # Don't override backend/.env values
+    print(f"📁 Loaded .env from: {root_env}")
 
 # ===== Configuration =====
 DATABASE_URL = os.getenv("DATABASE_URL") or os.getenv("VITE_POSTGRES_URL")

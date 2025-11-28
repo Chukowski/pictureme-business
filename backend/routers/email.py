@@ -67,9 +67,21 @@ class GenericEmailRequest(BaseModel):
 @router.get("/status")
 async def get_email_status():
     """Check if email service is configured"""
+    from services.email_service import SMTP_HOST, SMTP_PORT, SMTP_USERNAME, SMTP_PASSWORD, SMTP_FROM_EMAIL
+    
+    # Debug info (masked for security)
+    debug_info = {
+        "smtp_host": SMTP_HOST if SMTP_HOST else "NOT SET",
+        "smtp_port": SMTP_PORT,
+        "smtp_username": f"{SMTP_USERNAME[:4]}...{SMTP_USERNAME[-4:]}" if SMTP_USERNAME and len(SMTP_USERNAME) > 8 else ("SET" if SMTP_USERNAME else "NOT SET"),
+        "smtp_password": "SET" if SMTP_PASSWORD else "NOT SET",
+        "smtp_from": SMTP_FROM_EMAIL if SMTP_FROM_EMAIL else "NOT SET",
+    }
+    
     return {
         "configured": is_email_configured(),
-        "message": "Email service is ready" if is_email_configured() else "Email service not configured. Please set SMTP environment variables."
+        "message": "Email service is ready" if is_email_configured() else "Email service not configured. Please set SMTP environment variables.",
+        "debug": debug_info
     }
 
 
@@ -97,8 +109,15 @@ async def send_photo_email(request: SendPhotoEmailRequest):
 @router.post("/send/album")
 async def send_album_email(request: SendAlbumEmailRequest):
     """Send album share email to a visitor"""
+    logger.info(f"📧 Attempting to send album email to {request.to_email}")
+    logger.info(f"📧 Album URL: {request.album_url}")
+    logger.info(f"📧 Event: {request.event_name}")
+    
     if not is_email_configured():
+        logger.error("❌ Email service not configured")
         raise HTTPException(status_code=503, detail="Email service not configured")
+    
+    logger.info("✅ Email service is configured, sending...")
     
     success = send_album_share_email(
         to_email=request.to_email,
@@ -111,8 +130,10 @@ async def send_album_email(request: SendAlbumEmailRequest):
     )
     
     if not success:
+        logger.error(f"❌ Failed to send email to {request.to_email}")
         raise HTTPException(status_code=500, detail="Failed to send email")
     
+    logger.info(f"✅ Email sent successfully to {request.to_email}")
     return {"success": True, "message": f"Album email sent to {request.to_email}"}
 
 
