@@ -70,6 +70,8 @@ security = HTTPBearer(auto_error=False)  # auto_error=False makes it optional
 app = FastAPI(title="AI Photo Booth API", version="2.0.0")
 
 # CORS - Allow all pictureme.now subdomains and localhost
+# Read additional origins from environment variable for flexibility in deployment
+ADDITIONAL_CORS_ORIGINS = os.getenv("CORS_ORIGINS", "").split(",") if os.getenv("CORS_ORIGINS") else []
 CORS_ORIGINS = [
     "https://pictureme.now",
     "https://www.pictureme.now",
@@ -80,7 +82,10 @@ CORS_ORIGINS = [
     "http://localhost:8080",
     "http://localhost:3000",
     "http://localhost:5173",
-]
+] + [origin.strip() for origin in ADDITIONAL_CORS_ORIGINS if origin.strip()]
+
+# Log CORS origins for debugging
+print(f"🔒 CORS allowed origins: {CORS_ORIGINS}")
 
 app.add_middleware(
     CORSMiddleware,
@@ -89,6 +94,7 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
     expose_headers=["*"],
+    max_age=3600,  # Cache preflight requests for 1 hour
 )
 
 # Import and include routers
@@ -441,6 +447,34 @@ class ApplicationUpdateAdmin(BaseModel):
     status: str # approved, rejected, pending
     notes: Optional[str] = None
 
+# ===== Exception Handlers =====
+# Ensure CORS headers are sent even on errors
+
+from starlette.responses import JSONResponse as StarletteJSONResponse
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """Global exception handler that ensures CORS headers are present"""
+    logging.error(f"Unhandled exception: {exc}", exc_info=True)
+    
+    # Get the origin from the request
+    origin = request.headers.get("origin", "")
+    
+    # Create response with CORS headers
+    response = StarletteJSONResponse(
+        status_code=500,
+        content={"detail": "Internal server error"}
+    )
+    
+    # Add CORS headers if origin is allowed
+    if origin in CORS_ORIGINS or not origin:
+        response.headers["Access-Control-Allow-Origin"] = origin or "*"
+        response.headers["Access-Control-Allow-Credentials"] = "true"
+        response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
+        response.headers["Access-Control-Allow-Headers"] = "*"
+    
+    return response
+
 # ===== Routes =====
 
 @app.get("/")
@@ -454,6 +488,16 @@ async def root():
 @app.get("/health")
 async def health():
     return {"status": "ok", "timestamp": datetime.utcnow().isoformat()}
+
+@app.get("/api/cors-test")
+async def cors_test(request: Request):
+    """Debug endpoint to verify CORS is working"""
+    return {
+        "message": "CORS test successful",
+        "origin": request.headers.get("origin", "none"),
+        "allowed_origins": CORS_ORIGINS[:5],  # Show first 5 for debugging
+        "total_allowed": len(CORS_ORIGINS)
+    }
 
 @app.get("/api/config")
 async def get_config():

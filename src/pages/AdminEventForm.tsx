@@ -3296,7 +3296,8 @@ export default function AdminEventForm() {
                                     >
                                       <option value="fal-ai/nano-banana/edit">Nano Banana (Gemini/Imagen 3) — Fast, good quality</option>
                                       <option value="fal-ai/bytedance/seedream/v4/edit">Seedream v4 — Best for LEGO/artistic</option>
-                                      <option value="fal-ai/flux/dev">Flux Dev — Photorealistic</option>
+                                      <option value="fal-ai/flux-2-pro/edit">Flux 2 Pro Edit — Professional image editing</option>
+                                      <option value="fal-ai/flux/dev">Flux Dev — Photorealistic (text-to-image)</option>
                                     </select>
                                   </div>
 

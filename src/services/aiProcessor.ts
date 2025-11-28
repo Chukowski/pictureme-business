@@ -21,10 +21,16 @@ export const AI_MODELS = {
     description: "Best for LEGO-style and artistic transformations",
     speed: "medium",
   },
+  flux2Pro: {
+    id: "fal-ai/flux-2-pro/edit",
+    name: "Flux 2 Pro Edit",
+    description: "Professional-grade image editing with excellent prompt adherence",
+    speed: "medium",
+  },
   flux: {
     id: "fal-ai/flux/dev",
     name: "Flux Dev",
-    description: "High-quality photorealistic generation",
+    description: "High-quality photorealistic generation (text-to-image only)",
     speed: "slow",
   },
 } as const;
