@@ -193,6 +193,7 @@ const AppContent = () => {
             <Route path="/admin/albums" element={<AdminDashboard />} />
             <Route path="/admin/organization" element={<OrganizationSettingsPage />} />
             <Route path="/admin/business" element={<BusinessSettingsPage />} />
+            <Route path="/admin/staff/:eventId" element={<StaffDashboard />} />
             {/* Catch-all for unknown admin routes - show 404 */}
             <Route path="/admin/*" element={<NotFound />} />
 

@@ -112,8 +112,8 @@ export default function AlbumsTab({ currentUser }: AlbumsTabProps) {
   };
 
   const handleOpenStaffDashboard = (event: EventWithAlbums) => {
-    // Open the full Staff Dashboard in a new tab
-    const url = `${window.location.origin}/${currentUser.slug}/${event.slug}/staff`;
+    // Open the full Staff Dashboard using admin route
+    const url = `/admin/staff/${event._id}`;
     window.open(url, '_blank');
   };
 

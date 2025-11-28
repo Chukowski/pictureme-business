@@ -2,17 +2,19 @@
  * StaffDashboard Page
  * 
  * Staff-only dashboard for managing albums and photos during an event.
- * Accessible via /:userSlug/:eventSlug/staff
+ * Accessible via /admin/staff/:eventId OR /:userSlug/:eventSlug/staff (legacy)
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useEventConfig } from '@/hooks/useEventConfig';
+import { getUserEvents } from '@/services/eventsApi';
 import {
   Loader2, ArrowLeft, QrCode, Users, Camera, BookOpen,
   CheckCircle2, XCircle, Clock, Settings, RefreshCw,
   MonitorPlay, Printer, Mail, MessageSquare, Lock, Unlock,
-  Search, Filter, MoreVertical, Eye, BarChart3, Copy, Download
+  Search, Filter, MoreVertical, Eye, BarChart3, Copy, Download,
+  DollarSign, LayoutDashboard
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -55,9 +57,33 @@ interface StaffStats {
 }
 
 export default function StaffDashboard() {
-  const { userSlug, eventSlug } = useParams<{ userSlug: string; eventSlug: string }>();
+  // Support both /admin/staff/:eventId and /:userSlug/:eventSlug/staff routes
+  const { userSlug, eventSlug, eventId: routeEventId } = useParams<{ 
+    userSlug?: string; 
+    eventSlug?: string;
+    eventId?: string;
+  }>();
   const navigate = useNavigate();
-  const { config, loading, error } = useEventConfig(userSlug!, eventSlug!);
+  const location = useLocation();
+  
+  // Determine if we're in admin route mode
+  const isAdminRoute = location.pathname.startsWith('/admin/staff');
+  
+  // State for event config when using admin route
+  const [adminEventConfig, setAdminEventConfig] = useState<any>(null);
+  const [adminEventLoading, setAdminEventLoading] = useState(isAdminRoute);
+  const [adminEventError, setAdminEventError] = useState<string | null>(null);
+  
+  // Use hook for legacy route (only when not admin route)
+  const { config: hookConfig, loading: hookLoading, error: hookError } = useEventConfig(
+    isAdminRoute ? '' : (userSlug || ''), 
+    isAdminRoute ? '' : (eventSlug || '')
+  );
+  
+  // Unified config
+  const config = isAdminRoute ? adminEventConfig : hookConfig;
+  const loading = isAdminRoute ? adminEventLoading : hookLoading;
+  const error = isAdminRoute ? adminEventError : hookError;
 
   const [activeTab, setActiveTab] = useState('overview');
   const [albums, setAlbums] = useState<Album[]>([]);
@@ -73,7 +99,7 @@ export default function StaffDashboard() {
   const [showScanner, setShowScanner] = useState(false);
   const [bigScreenMode, setBigScreenMode] = useState(false);
   
-  // Auth state
+  // Auth state - check sessionStorage first
   const [pin, setPin] = useState('');
   const [isAuthorized, setIsAuthorized] = useState(false);
   
@@ -82,6 +108,38 @@ export default function StaffDashboard() {
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const POLLING_INTERVAL = 10000; // 10 seconds
+  
+  // Get effective user/event slugs for URLs
+  const effectiveUserSlug = userSlug || config?.user_slug || '';
+  const effectiveEventSlug = eventSlug || config?.slug || '';
+  
+  // Load event config for admin route
+  useEffect(() => {
+    if (!isAdminRoute || !routeEventId) return;
+    
+    const loadEventConfig = async () => {
+      try {
+        setAdminEventLoading(true);
+        // Get all user events and find the one matching the ID
+        const events = await getUserEvents();
+        const eventData = events.find(e => e._id === routeEventId);
+        
+        if (!eventData) {
+          throw new Error('Event not found');
+        }
+        
+        setAdminEventConfig(eventData);
+        setAdminEventError(null);
+      } catch (err: any) {
+        console.error('Failed to load event:', err);
+        setAdminEventError(err.message || 'Failed to load event');
+      } finally {
+        setAdminEventLoading(false);
+      }
+    };
+    
+    loadEventConfig();
+  }, [isAdminRoute, routeEventId]);
 
   // Load albums function (memoized for polling)
   const loadAlbums = useCallback(async () => {
@@ -127,15 +185,24 @@ export default function StaffDashboard() {
   useEffect(() => {
     if (!config) return;
     
+    const eventKey = config._id || config.postgres_event_id || routeEventId;
+    const sessionKey = `staff_auth_${eventKey}`;
+    
     // Auto-authorize if no PIN set
     if (!config.settings?.staffAccessCode) {
       setIsAuthorized(true);
+    } else {
+      // Check if already authorized in this session
+      const savedAuth = sessionStorage.getItem(sessionKey);
+      if (savedAuth === config.settings.staffAccessCode) {
+        setIsAuthorized(true);
+      }
     }
 
     if (config.postgres_event_id) {
       loadAlbums();
     }
-  }, [config]);
+  }, [config, routeEventId]);
 
   // Polling effect
   useEffect(() => {
@@ -173,6 +240,16 @@ export default function StaffDashboard() {
     try {
       await updateAlbumStatus(albumId, 'completed');
       toast.success('Album marked as complete');
+      loadAlbums();
+    } catch (error) {
+      toast.error('Failed to update album');
+    }
+  };
+
+  const handleMarkPaid = async (albumId: string) => {
+    try {
+      await updateAlbumStatus(albumId, 'paid');
+      toast.success('Album marked as paid');
       loadAlbums();
     } catch (error) {
       toast.error('Failed to update album');
@@ -218,7 +295,7 @@ export default function StaffDashboard() {
 
   const getAlbumUrl = (albumId: string) => {
     const baseUrl = window.location.origin;
-    return `${baseUrl}/${userSlug}/${eventSlug}/album/${albumId}`;
+    return `${baseUrl}/${effectiveUserSlug}/${effectiveEventSlug}/album/${albumId}`;
   };
 
   const handleCopyAlbumUrl = async (albumId: string) => {
@@ -237,7 +314,7 @@ export default function StaffDashboard() {
     const album = albums.find(a => a.id === albumId);
     if (album) {
       toast.success(`Album ${albumId} found - ${album.photoCount} photos`);
-      navigate(`/${userSlug}/${eventSlug}/album/${albumId}`);
+      navigate(`/${effectiveUserSlug}/${effectiveEventSlug}/album/${albumId}`);
     } else {
       toast.info(`New album: ${albumId}`);
     }
@@ -299,6 +376,17 @@ export default function StaffDashboard() {
 
   // PIN Check
   if (config.settings?.staffAccessCode && !isAuthorized) {
+      const handlePinSubmit = () => {
+        if (pin === config.settings.staffAccessCode) {
+          // Save to sessionStorage
+          const eventKey = config._id || config.postgres_event_id || routeEventId;
+          sessionStorage.setItem(`staff_auth_${eventKey}`, pin);
+          setIsAuthorized(true);
+        } else {
+          toast.error("Incorrect PIN");
+        }
+      };
+      
       return (
           <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-4">
               <Card className="w-full max-w-sm bg-zinc-900 border-zinc-800">
@@ -311,19 +399,27 @@ export default function StaffDashboard() {
                           type="password" 
                           value={pin} 
                           onChange={e => setPin(e.target.value)}
+                          onKeyDown={e => e.key === 'Enter' && handlePinSubmit()}
                           placeholder="Enter PIN"
                           className="bg-zinc-800 border-zinc-700 text-white text-center tracking-widest text-2xl"
                       />
                       <Button 
-                          onClick={() => {
-                              if (pin === config.settings.staffAccessCode) setIsAuthorized(true);
-                              else toast.error("Incorrect PIN");
-                          }}
+                          onClick={handlePinSubmit}
                           className="w-full"
                           style={{ backgroundColor: primaryColor }}
                       >
                           Access Dashboard
                       </Button>
+                      {isAdminRoute && (
+                        <Button 
+                          variant="ghost"
+                          onClick={() => navigate('/admin')}
+                          className="w-full text-zinc-400 hover:text-white"
+                        >
+                          <ArrowLeft className="w-4 h-4 mr-2" />
+                          Back to Admin
+                        </Button>
+                      )}
                   </CardContent>
               </Card>
           </div>
@@ -352,8 +448,9 @@ export default function StaffDashboard() {
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => navigate(-1)}
+              onClick={() => isAdminRoute ? navigate('/admin') : navigate(-1)}
               className="text-zinc-400 hover:text-white"
+              title={isAdminRoute ? 'Back to Admin Dashboard' : 'Go Back'}
             >
               <ArrowLeft className="w-5 h-5" />
             </Button>
@@ -366,6 +463,17 @@ export default function StaffDashboard() {
               </h1>
               <p className="text-sm text-zinc-400">{config.title}</p>
             </div>
+            {isAdminRoute && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate('/admin')}
+                className="ml-4 border-white/20 text-zinc-300 hover:text-white"
+              >
+                <LayoutDashboard className="w-4 h-4 mr-2" />
+                Admin Area
+              </Button>
+            )}
           </div>
           
           <div className="flex items-center gap-3">
@@ -487,7 +595,7 @@ export default function StaffDashboard() {
                 <Card 
                   key={album.id}
                   className="bg-zinc-900/50 border-white/10 hover:border-white/20 transition-colors cursor-pointer"
-                  onClick={() => navigate(`/${userSlug}/${eventSlug}/album/${album.id}`)}
+                  onClick={() => navigate(`/${effectiveUserSlug}/${effectiveEventSlug}/album/${album.id}`)}
                 >
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between mb-3">
@@ -513,7 +621,7 @@ export default function StaffDashboard() {
                             className="text-zinc-300"
                             onClick={(e) => {
                               e.stopPropagation();
-                              navigate(`/${userSlug}/${eventSlug}/album/${album.id}`);
+                              navigate(`/${effectiveUserSlug}/${effectiveEventSlug}/album/${album.id}`);
                             }}
                           >
                             <Eye className="w-4 h-4 mr-2" />
@@ -529,6 +637,18 @@ export default function StaffDashboard() {
                             >
                               <CheckCircle2 className="w-4 h-4 mr-2" />
                               Mark Complete
+                            </DropdownMenuItem>
+                          )}
+                          {!album.isPaid && (
+                            <DropdownMenuItem 
+                              className="text-green-400"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleMarkPaid(album.id);
+                              }}
+                            >
+                              <DollarSign className="w-4 h-4 mr-2" />
+                              Mark Paid
                             </DropdownMenuItem>
                           )}
                           <DropdownMenuItem 
@@ -687,7 +807,7 @@ export default function StaffDashboard() {
                         variant="outline"
                         className="h-auto py-4 flex-col gap-2 border-white/10 hover:bg-cyan-500/10 hover:border-cyan-500/30"
                         onClick={() => {
-                          const displayUrl = `${window.location.origin}/${userSlug}/${eventSlug}/display`;
+                          const displayUrl = `${window.location.origin}/${effectiveUserSlug}/${effectiveEventSlug}/display`;
                           window.open(displayUrl, 'bigscreen', 'width=1920,height=1080');
                           toast.success('Display window opened! Move it to your big screen.');
                         }}
@@ -699,7 +819,7 @@ export default function StaffDashboard() {
                         variant="outline"
                         className="h-auto py-4 flex-col gap-2 border-white/10 hover:bg-purple-500/10 hover:border-purple-500/30"
                         onClick={() => {
-                          const registrationUrl = `${window.location.origin}/${userSlug}/${eventSlug}/registration`;
+                          const registrationUrl = `${window.location.origin}/${effectiveUserSlug}/${effectiveEventSlug}/registration`;
                           navigator.clipboard.writeText(registrationUrl);
                           toast.success('Registration URL copied!');
                         }}
