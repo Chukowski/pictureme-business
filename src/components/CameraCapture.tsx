@@ -15,9 +15,20 @@ interface CameraCaptureProps {
   selectedBackground: string | null;
   onBack?: () => void;
   lastPhotoUrl?: string;
+  isGroupPhoto?: boolean;
+  onGroupPhotoChange?: (isGroup: boolean) => void;
+  hasGroupPrompt?: boolean; // Whether the template has a group prompt configured
 }
 
-export const CameraCapture = ({ onCapture, selectedBackground, onBack, lastPhotoUrl }: CameraCaptureProps) => {
+export const CameraCapture = ({ 
+  onCapture, 
+  selectedBackground, 
+  onBack, 
+  lastPhotoUrl,
+  isGroupPhoto = false,
+  onGroupPhotoChange,
+  hasGroupPrompt = false,
+}: CameraCaptureProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
@@ -251,6 +262,36 @@ export const CameraCapture = ({ onCapture, selectedBackground, onBack, lastPhoto
 
         {/* Bottom Controls Bar */}
         <div className={`absolute bottom-0 inset-x-0 z-20 pb-8 pt-12 bg-gradient-to-t from-black/80 to-transparent transition-transform duration-300 ${showControls ? 'translate-y-0' : 'translate-y-full'}`}>
+
+          {/* Individual/Group Toggle - Only show if group prompt is available */}
+          {hasGroupPrompt && onGroupPhotoChange && (
+            <div className="flex justify-center mb-4">
+              <div className="inline-flex items-center gap-1 p-1 rounded-full bg-zinc-900/70 backdrop-blur-sm border border-white/10">
+                <button
+                  onClick={() => onGroupPhotoChange(false)}
+                  className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                    !isGroupPhoto 
+                      ? 'bg-cyan-500 text-white shadow-lg' 
+                      : 'text-white/60 hover:text-white/80'
+                  }`}
+                >
+                  <span className="text-base">👤</span>
+                  Individual
+                </button>
+                <button
+                  onClick={() => onGroupPhotoChange(true)}
+                  className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                    isGroupPhoto 
+                      ? 'bg-purple-500 text-white shadow-lg' 
+                      : 'text-white/60 hover:text-white/80'
+                  }`}
+                >
+                  <span className="text-base">👥</span>
+                  Group
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Mode Slider */}
           <div className="flex justify-center gap-8 mb-8 text-sm font-bold tracking-widest">

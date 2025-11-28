@@ -2920,30 +2920,62 @@ export default function AdminEventForm() {
                                 </div>
                               </div>
 
+                              {/* Individual Prompt */}
                               <div className="space-y-2">
-                                <Label className="text-zinc-300">
-                                  AI Prompt <span className="text-red-400">*</span>
+                                <Label className="text-zinc-300 flex items-center gap-2">
+                                  <span className="w-5 h-5 rounded-full bg-cyan-500/20 flex items-center justify-center text-xs">👤</span>
+                                  Individual Prompt <span className="text-red-400">*</span>
                                 </Label>
                                 <Textarea
                                   value={template.prompt}
                                   onChange={(e) =>
                                     updateTemplate(index, { prompt: e.target.value })
                                   }
-                                  placeholder="Create a professional scene by compositing these images..."
-                                  rows={6}
+                                  placeholder="Create a professional scene with a single person..."
+                                  rows={4}
                                   className="font-mono text-sm bg-black/40 border-white/10 text-zinc-300 placeholder:text-zinc-600 focus:border-indigo-500"
                                 />
                                 <p className="text-xs text-zinc-500">
-                                  💡 Use compositing language: "Create a scene by compositing these images...", "Preserve the person from first image...", "Add elements from second image..."
+                                  💡 Prompt for single person photos. Use "the person", "preserve their likeness", etc.
                                 </p>
-                                <div className="mt-3">
+                                <div className="mt-2">
                                   <PromptHelper
                                     onSelectPrompt={(prompt) => {
                                       updateTemplate(index, { prompt });
                                     }}
                                     currentPrompt={template.prompt}
                                     section="template"
-                                    placeholder="Describe what you want to create or ask AI to improve your prompt..."
+                                    placeholder="Describe what you want to create..."
+                                  />
+                                </div>
+                              </div>
+                              
+                              {/* Group Prompt */}
+                              <div className="space-y-2">
+                                <Label className="text-zinc-300 flex items-center gap-2">
+                                  <span className="w-5 h-5 rounded-full bg-purple-500/20 flex items-center justify-center text-xs">👥</span>
+                                  Group Prompt <span className="text-zinc-500 text-xs font-normal">(optional)</span>
+                                </Label>
+                                <Textarea
+                                  value={template.groupPrompt || ''}
+                                  onChange={(e) =>
+                                    updateTemplate(index, { groupPrompt: e.target.value })
+                                  }
+                                  placeholder="Create a professional scene with a group of people..."
+                                  rows={4}
+                                  className="font-mono text-sm bg-black/40 border-white/10 text-zinc-300 placeholder:text-zinc-600 focus:border-purple-500"
+                                />
+                                <p className="text-xs text-zinc-500">
+                                  💡 Prompt for group photos. Use "the group", "preserve all people", "multiple people", etc. If empty, individual prompt will be used.
+                                </p>
+                                <div className="mt-2">
+                                  <PromptHelper
+                                    onSelectPrompt={(prompt) => {
+                                      updateTemplate(index, { groupPrompt: prompt });
+                                    }}
+                                    currentPrompt={template.groupPrompt || ''}
+                                    section="template"
+                                    placeholder="Describe what you want for group photos..."
                                   />
                                 </div>
                               </div>

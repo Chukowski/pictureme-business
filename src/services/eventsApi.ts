@@ -166,6 +166,7 @@ export interface Template {
   images: string[]; // Background images
   elementImages?: string[]; // Element/prop images for mixing (Seedream, Imagen)
   prompt: string;
+  groupPrompt?: string; // Alternative prompt for group photos
   active: boolean;
   // Individual branding controls per template
   includeHeader?: boolean;

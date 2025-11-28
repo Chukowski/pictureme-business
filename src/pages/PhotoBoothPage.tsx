@@ -63,6 +63,7 @@ export const PhotoBoothPage = () => {
   const [customPrompt, setCustomPrompt] = useState<string>('');
   const [customImages, setCustomImages] = useState<string[]>([]);
   const [showQRScanner, setShowQRScanner] = useState(false);
+  const [isGroupPhoto, setIsGroupPhoto] = useState(false); // Toggle for individual vs group photo
 
   // Memoized values - MUST be before any conditional returns
   const isAlbumMode = useMemo(() => {
@@ -236,6 +237,7 @@ export const PhotoBoothPage = () => {
 
   const handleBackgroundSelect = (template: Template) => {
     setSelectedBackground(template);
+    setIsGroupPhoto(false); // Reset to individual when selecting new template
 
     // If it's a custom prompt template, show the modal first
     if (template.isCustomPrompt) {
@@ -295,9 +297,14 @@ export const PhotoBoothPage = () => {
       const wantsWatermark = masterToggle === true ? (selectedBackground.includeWatermark ?? true) : selectedBackground.includeWatermark === true;
 
       // Use custom prompt and images if this is a custom prompt template
+      // For group photos, use groupPrompt if available, otherwise fall back to regular prompt
+      const basePrompt = isGroupPhoto && selectedBackground.groupPrompt 
+        ? selectedBackground.groupPrompt 
+        : selectedBackground.prompt;
+      
       const promptToUse = selectedBackground.isCustomPrompt && customPrompt
         ? customPrompt
-        : selectedBackground.prompt;
+        : basePrompt;
 
       const imagesToUse = selectedBackground.isCustomPrompt && customImages.length > 0
         ? customImages
@@ -595,6 +602,9 @@ export const PhotoBoothPage = () => {
             const eventPhotos = photos.filter(p => p.eventSlug === (config?.slug || eventSlug));
             return eventPhotos.length > 0 ? (eventPhotos[0].processedImageUrl || eventPhotos[0].processedImageBase64) : undefined;
           })()}
+          isGroupPhoto={isGroupPhoto}
+          onGroupPhotoChange={setIsGroupPhoto}
+          hasGroupPrompt={!!selectedBackground.groupPrompt}
         />
       )}
 
