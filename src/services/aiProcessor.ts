@@ -209,31 +209,67 @@ Transform them while keeping their identity recognizable.`;
       });
     } else {
       // Gemini Flash (Nano Banana) or other models
-      // Enhance prompt to be more explicit about transformation
       const hasBackgroundImages = bgImages.length > 0;
       
-      // Build enhanced prompt that's clearer about what to do
+      // Build enhanced prompt based on what we're trying to do
       let enhancedPrompt = backgroundPrompt;
       
       // Check if prompt mentions style transformation keywords
-      const styleKeywords = ['transform', 'convert', 'turn into', 'make', 'lego', 'pixar', 'anime', 'cartoon', 'comic', 'pixel', 'painting', 'sketch', 'drawing'];
+      const styleKeywords = ['transform', 'convert', 'turn into', 'make', 'lego', 'pixar', 'anime', 'cartoon', 'comic', 'pixel', 'painting', 'sketch', 'drawing', 'minifigure', '3d', 'animated'];
       const isStyleTransfer = styleKeywords.some(keyword => backgroundPrompt.toLowerCase().includes(keyword));
       
-      if (isStyleTransfer) {
-        // For style transfer prompts, make it very explicit
-        enhancedPrompt = `EDIT THE FIRST IMAGE: ${backgroundPrompt}. 
-The first image contains the person/people to transform. 
-Apply the style transformation to the person(s) while keeping them recognizable.
-${hasBackgroundImages ? 'Use the additional images as style/scene reference.' : ''}
-Output a single cohesive image with the transformation applied.`;
+      if (hasBackgroundImages && isStyleTransfer) {
+        // COMBINED: Style transfer + Background scene
+        // This is the most common photobooth use case
+        enhancedPrompt = `CREATE A NEW IMAGE combining these elements:
+
+IMAGE 1 (first image): Contains the person/people - this is who to transform
+IMAGE 2 (second image): Contains the background/scene - this is WHERE to place them
+
+TASK: ${backgroundPrompt}
+
+IMPORTANT INSTRUCTIONS:
+1. Extract the person(s) from Image 1
+2. Apply the style transformation to them (e.g., LEGO, Pixar, anime style)
+3. Place the transformed person(s) INTO the scene from Image 2
+4. The final image should show the stylized person IN the background scene
+5. Match the art style consistently across the entire image
+6. Keep the person recognizable despite the style change
+
+Output a single cohesive image with the transformed person placed in the background scene.`;
       } else if (hasBackgroundImages) {
-        // For compositing, be clear about what to do
-        enhancedPrompt = `COMPOSITE IMAGES: Take the person/people from the first image and place them into the scene from the second image. 
+        // COMPOSITING: Just place person in background (no style change)
+        enhancedPrompt = `CREATE A COMPOSITE IMAGE:
+
+IMAGE 1 (first image): Contains the person/people to extract
+IMAGE 2 (second image): Contains the background scene
+
+TASK: ${backgroundPrompt}
+
+INSTRUCTIONS:
+1. Extract the person(s) from Image 1
+2. Place them naturally into the scene from Image 2
+3. Match lighting, scale, and perspective
+4. Preserve the person's exact appearance, clothing, and pose
+5. Make it look like they were photographed in that location
+
+Output a single realistic composite image.`;
+      } else if (isStyleTransfer) {
+        // STYLE ONLY: Transform person without specific background
+        enhancedPrompt = `TRANSFORM THE PERSON in this image:
+
 ${backgroundPrompt}
-Preserve the person's appearance, clothing, and pose. Match lighting naturally.`;
+
+INSTRUCTIONS:
+1. Apply the style transformation to the person
+2. Keep them recognizable (preserve key features like hair, face shape)
+3. Transform the entire scene to match the style
+4. Output a cohesive stylized image`;
       }
+      // If none of the above, just use the original prompt
       
       console.log("📝 Enhanced prompt for Nano Banana:", enhancedPrompt);
+      console.log("📸 Images being sent:", imageUrls.length, "(hasBackground:", hasBackgroundImages, ", isStyleTransfer:", isStyleTransfer, ")");
       
       result = await fal.subscribe(modelToUse, {
         input: {
