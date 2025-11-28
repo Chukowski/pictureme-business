@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { SidebarProvider, SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
@@ -43,6 +43,37 @@ import BigScreenPage from "./pages/BigScreenPage";
 import { CopilotKit } from "@copilotkit/react-core";
 import { AkitoCopilotActions } from "./components/AkitoCopilotActions";
 import { AkitoWidget } from "./components/AkitoWidget";
+
+// Conditional Akito Widget - only shows on admin pages
+const ConditionalAkitoWidget = () => {
+  const location = useLocation();
+  
+  // Pages where Akito should NOT appear
+  const excludedPaths = [
+    '/registration',
+    '/booth',
+    '/playground',
+    '/viewer',
+    '/bigscreen',
+    '/feed',
+    '/album/',
+    '/share/',
+  ];
+  
+  // Check if current path should exclude Akito
+  const shouldHideAkito = excludedPaths.some(path => location.pathname.includes(path)) ||
+    // Also hide on dynamic event routes (/:userSlug/:eventSlug) but not admin routes
+    (location.pathname.split('/').length >= 3 && 
+     !location.pathname.startsWith('/admin') && 
+     !location.pathname.startsWith('/super-admin') &&
+     !location.pathname.startsWith('/profile'));
+  
+  if (shouldHideAkito) {
+    return null;
+  }
+  
+  return <AkitoWidget />;
+};
 
 const queryClient = new QueryClient();
 
@@ -97,28 +128,27 @@ const getApiUrl = (): string => {
   return url;
 };
 
-const App = () => {
-  // Get API URL dynamically inside the component
+// Wrapper component that conditionally includes CopilotKit
+const AppContent = () => {
+  const location = useLocation();
   const apiUrl = getApiUrl();
   
+  // Only initialize CopilotKit on admin and super-admin pages
+  const shouldInitCopilot = location.pathname.startsWith('/admin') || 
+                            location.pathname.startsWith('/super-admin');
+  
   return (
-  <QueryClientProvider client={queryClient}>
-    <ThemeProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          {/* CopilotKit Provider - Self-hosted, connects to our FastAPI backend */}
-          <CopilotKit
-            runtimeUrl={`${apiUrl}/copilotkit`}
-            properties={getUserProperties()}
-          >
-            {/* Register frontend actions for Akito */}
-            <AkitoCopilotActions />
-            {/* Custom Akito Widget with our branding */}
-            <AkitoWidget />
-          </CopilotKit>
-          <Routes>
+    <>
+      {shouldInitCopilot && apiUrl && (
+        <CopilotKit
+          runtimeUrl={`${apiUrl}/copilotkit`}
+          properties={getUserProperties()}
+        >
+          <AkitoCopilotActions />
+          <ConditionalAkitoWidget />
+        </CopilotKit>
+      )}
+      <Routes>
             {/* Root shows Landing Page */}
             <Route path="/" element={<LandingPage />} />
 
@@ -187,10 +217,23 @@ const App = () => {
             {/* 404 */}
             <Route path="*" element={<NotFound />} />
           </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
-    </ThemeProvider>
-  </QueryClientProvider>
+    </>
+  );
+};
+
+const App = () => {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <AppContent />
+          </BrowserRouter>
+        </TooltipProvider>
+      </ThemeProvider>
+    </QueryClientProvider>
   );
 };
 
