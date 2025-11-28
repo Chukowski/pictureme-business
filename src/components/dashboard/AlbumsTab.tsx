@@ -14,7 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   BookOpen, QrCode, Users, Camera, MapPin, Settings,
   ExternalLink, ChevronRight, Plus, RefreshCw, Loader2,
-  Copy, Check, Link
+  Copy, Check, Link, Key, Eye, EyeOff
 } from "lucide-react";
 import { toast } from "sonner";
 import { StaffAlbumTools } from "@/components/staff";
@@ -38,6 +38,8 @@ export default function AlbumsTab({ currentUser }: AlbumsTabProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedEvent, setSelectedEvent] = useState<EventWithAlbums | null>(null);
   const [copiedStationId, setCopiedStationId] = useState<string | null>(null);
+  const [showPin, setShowPin] = useState(false);
+  const [copiedPin, setCopiedPin] = useState(false);
 
   // Load events with album tracking enabled
   useEffect(() => {
@@ -110,8 +112,9 @@ export default function AlbumsTab({ currentUser }: AlbumsTabProps) {
   };
 
   const handleOpenStaffDashboard = (event: EventWithAlbums) => {
-    // Open staff tools in the same page (scroll to tools section)
-    toast.info('Staff tools are in the right panel');
+    // Open the full Staff Dashboard in a new tab
+    const url = `${window.location.origin}/${currentUser.slug}/${event.slug}/staff`;
+    window.open(url, '_blank');
   };
 
   const handleViewAlbums = (event: EventWithAlbums) => {
@@ -241,6 +244,64 @@ export default function AlbumsTab({ currentUser }: AlbumsTabProps) {
                   </div>
                 </div>
 
+                {/* Staff Access PIN */}
+                {selectedEvent.settings?.staffAccessCode && (
+                  <div className="mb-6 p-4 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <Key className="w-5 h-5 text-amber-400" />
+                        <div>
+                          <p className="text-sm font-medium text-white">Staff PIN</p>
+                          <p className="text-xs text-zinc-400">Share with staff for dashboard access</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <code className="px-3 py-1.5 bg-black/40 rounded-lg text-amber-400 font-mono text-lg tracking-widest">
+                          {showPin ? selectedEvent.settings.staffAccessCode : '••••••'}
+                        </code>
+                        <button
+                          onClick={() => setShowPin(!showPin)}
+                          className="p-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white transition-all"
+                          title={showPin ? 'Hide PIN' : 'Show PIN'}
+                        >
+                          {showPin ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(selectedEvent.settings?.staffAccessCode || '');
+                            setCopiedPin(true);
+                            toast.success('PIN copied!');
+                            setTimeout(() => setCopiedPin(false), 2000);
+                          }}
+                          className="p-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white transition-all"
+                          title="Copy PIN"
+                        >
+                          {copiedPin ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Album Rules Info */}
+                {(selectedEvent.albumTracking?.rules?.requireStaffApproval || selectedEvent.albumTracking?.rules?.printReady) && (
+                  <div className="mb-6 p-4 rounded-lg bg-zinc-800/50 border border-white/10">
+                    <p className="text-sm font-medium text-white mb-2">Album Rules</p>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedEvent.albumTracking?.rules?.requireStaffApproval && (
+                        <span className="px-2 py-1 rounded-full bg-purple-500/20 text-purple-400 text-xs">
+                          Staff Approval Required
+                        </span>
+                      )}
+                      {selectedEvent.albumTracking?.rules?.printReady && (
+                        <span className="px-2 py-1 rounded-full bg-green-500/20 text-green-400 text-xs">
+                          Payment Required for Downloads
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 {/* Stations */}
                 <div className="space-y-3">
                   <h4 className="text-sm font-medium text-zinc-400">Stations</h4>
@@ -296,7 +357,7 @@ export default function AlbumsTab({ currentUser }: AlbumsTabProps) {
             </Card>
 
             {/* Quick Actions */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
               <button
                 onClick={() => handleOpenRegistrationQR(selectedEvent)}
                 className="h-auto py-4 flex flex-col items-center gap-2 rounded-xl bg-zinc-900/50 border border-white/10 text-zinc-300 hover:text-white hover:bg-zinc-800/50 hover:border-cyan-500/30 transition-all"
@@ -314,6 +375,14 @@ export default function AlbumsTab({ currentUser }: AlbumsTabProps) {
                 <span className="text-xs">View Albums</span>
               </button>
               <button
+                onClick={() => handleOpenStaffDashboard(selectedEvent)}
+                className="h-auto py-4 flex flex-col items-center gap-2 rounded-xl bg-zinc-900/50 border border-white/10 text-zinc-300 hover:text-white hover:bg-zinc-800/50 hover:border-amber-500/30 transition-all"
+                title="Open extended staff dashboard"
+              >
+                <Users className="w-6 h-6 text-amber-400" />
+                <span className="text-xs">Staff Dashboard</span>
+              </button>
+              <button
                 onClick={() => {
                   const url = `${window.location.origin}/${currentUser.slug}/${selectedEvent.slug}/booth`;
                   window.open(url, '_blank');
@@ -321,7 +390,7 @@ export default function AlbumsTab({ currentUser }: AlbumsTabProps) {
                 className="h-auto py-4 flex flex-col items-center gap-2 rounded-xl bg-zinc-900/50 border border-white/10 text-zinc-300 hover:text-white hover:bg-zinc-800/50 hover:border-green-500/30 transition-all"
                 title="Open photo booth"
               >
-                <Users className="w-6 h-6 text-green-400" />
+                <Camera className="w-6 h-6 text-green-400" />
                 <span className="text-xs">Open Booth</span>
               </button>
               <button

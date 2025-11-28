@@ -26,8 +26,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from 'sonner';
-import { sendAlbumEmail, getEmailStatus, getEventAlbums, type Album } from '@/services/eventsApi';
+import { sendAlbumEmail, getEmailStatus, getEventAlbums, updateAlbumStatus, type Album } from '@/services/eventsApi';
 import { QRCodeSVG } from 'qrcode.react';
+import { CreditCard, CheckSquare } from 'lucide-react';
 
 interface AlbumStats {
   totalAlbums: number;
@@ -257,10 +258,10 @@ export function StaffAlbumTools({
       </div>
 
       {/* Main Tools */}
-      <Tabs defaultValue="approval" className="w-full">
+      <Tabs defaultValue="manage" className="w-full">
         <TabsList className="grid w-full grid-cols-4 bg-zinc-900/50 border border-white/10">
-          <TabsTrigger value="approval" className="data-[state=active]:bg-white/10 text-zinc-400 data-[state=active]:text-white">
-            Approval
+          <TabsTrigger value="manage" className="data-[state=active]:bg-white/10 text-zinc-400 data-[state=active]:text-white">
+            Manage
           </TabsTrigger>
           <TabsTrigger value="send" className="data-[state=active]:bg-white/10 text-zinc-400 data-[state=active]:text-white">
             Send
@@ -273,16 +274,167 @@ export function StaffAlbumTools({
           </TabsTrigger>
         </TabsList>
 
-        {/* Approval Tab */}
-        <TabsContent value="approval" className="mt-4">
+        {/* Manage Tab - Album approval and payment */}
+        <TabsContent value="manage" className="mt-4">
           <Card className="bg-zinc-900/50 border-white/10">
             <CardHeader>
-              <CardTitle className="text-white text-lg">Photo Approval</CardTitle>
+              <CardTitle className="text-white text-lg">Manage Albums</CardTitle>
               <CardDescription className="text-zinc-400">
-                Review and approve photos before they appear in albums
+                Approve albums and manage payments
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* Album Selector for Management */}
+              <div className="space-y-2">
+                <Label className="text-zinc-400 text-xs">Select Album to Manage</Label>
+                <Select
+                  value={selectedAlbumCode}
+                  onValueChange={setSelectedAlbumCode}
+                  disabled={isLoadingAlbums}
+                >
+                  <SelectTrigger className="bg-black/40 border-white/10 text-white">
+                    <SelectValue placeholder={isLoadingAlbums ? "Loading albums..." : "Select an album"} />
+                  </SelectTrigger>
+                  <SelectContent className="bg-zinc-900 border-white/10">
+                    {albums.length === 0 ? (
+                      <SelectItem value="none" disabled className="text-zinc-500">
+                        No albums available
+                      </SelectItem>
+                    ) : (
+                      albums.map(album => (
+                        <SelectItem 
+                          key={album.code} 
+                          value={album.code}
+                          className="text-white hover:bg-white/10"
+                        >
+                          <div className="flex items-center gap-2">
+                            <span>{album.owner_name || album.code}</span>
+                            <span className={`text-xs px-1.5 py-0.5 rounded ${
+                              album.status === 'completed' ? 'bg-green-500/20 text-green-400' :
+                              album.status === 'paid' ? 'bg-cyan-500/20 text-cyan-400' :
+                              album.status === 'in_progress' ? 'bg-amber-500/20 text-amber-400' :
+                              'bg-zinc-500/20 text-zinc-400'
+                            }`}>
+                              {album.status}
+                            </span>
+                            {album.payment_status === 'paid' && (
+                              <span className="text-xs px-1.5 py-0.5 rounded bg-green-500/20 text-green-400">
+                                💰 Paid
+                              </span>
+                            )}
+                          </div>
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {selectedAlbumCode && (() => {
+                const album = albums.find(a => a.code === selectedAlbumCode);
+                if (!album) return null;
+                
+                return (
+                  <div className="space-y-3">
+                    {/* Album Info */}
+                    <div className="p-3 rounded-lg bg-black/30 border border-white/5">
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div>
+                          <span className="text-zinc-500">Owner:</span>
+                          <span className="text-white ml-2">{album.owner_name || 'Anonymous'}</span>
+                        </div>
+                        <div>
+                          <span className="text-zinc-500">Photos:</span>
+                          <span className="text-white ml-2">{album.photo_count || 0}</span>
+                        </div>
+                        <div>
+                          <span className="text-zinc-500">Status:</span>
+                          <span className={`ml-2 ${
+                            album.status === 'completed' ? 'text-green-400' :
+                            album.status === 'paid' ? 'text-cyan-400' :
+                            'text-amber-400'
+                          }`}>{album.status}</span>
+                        </div>
+                        <div>
+                          <span className="text-zinc-500">Payment:</span>
+                          <span className={`ml-2 ${
+                            album.payment_status === 'paid' ? 'text-green-400' : 'text-zinc-400'
+                          }`}>{album.payment_status || 'unpaid'}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="grid grid-cols-2 gap-3">
+                      {/* Mark as Completed */}
+                      <Button
+                        onClick={async () => {
+                          try {
+                            await updateAlbumStatus(selectedAlbumCode, 'completed');
+                            toast.success('Album marked as completed');
+                            loadAlbums();
+                          } catch (error) {
+                            toast.error('Failed to update album');
+                          }
+                        }}
+                        disabled={album.status === 'completed' || album.status === 'paid'}
+                        className="bg-green-600 hover:bg-green-500 text-white disabled:opacity-50"
+                      >
+                        <CheckSquare className="w-4 h-4 mr-2" />
+                        Approve
+                      </Button>
+
+                      {/* Mark as Paid */}
+                      <Button
+                        onClick={async () => {
+                          try {
+                            await updateAlbumStatus(selectedAlbumCode, 'paid');
+                            toast.success('Album marked as paid - downloads unlocked');
+                            loadAlbums();
+                          } catch (error) {
+                            toast.error('Failed to update album');
+                          }
+                        }}
+                        disabled={album.status === 'paid'}
+                        className="bg-cyan-600 hover:bg-cyan-500 text-white disabled:opacity-50"
+                      >
+                        <CreditCard className="w-4 h-4 mr-2" />
+                        Mark Paid
+                      </Button>
+                    </div>
+
+                    {/* Archive Option */}
+                    {album.status !== 'archived' && (
+                      <Button
+                        onClick={async () => {
+                          try {
+                            await updateAlbumStatus(selectedAlbumCode, 'archived');
+                            toast.success('Album archived');
+                            loadAlbums();
+                          } catch (error) {
+                            toast.error('Failed to archive album');
+                          }
+                        }}
+                        variant="outline"
+                        className="w-full bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-white/10"
+                      >
+                        <XCircle className="w-4 h-4 mr-2" />
+                        Archive Album
+                      </Button>
+                    )}
+                  </div>
+                );
+              })()}
+
+              {!selectedAlbumCode && (
+                <p className="text-center text-zinc-500 py-4">
+                  Select an album to manage
+                </p>
+              )}
+
+              <hr className="border-white/10" />
+
+              {/* Auto-Approve Toggle */}
               <div className="flex items-center justify-between p-4 rounded-lg bg-black/30 border border-white/5">
                 <div>
                   <p className="text-white font-medium">Auto-Approve Photos</p>
@@ -296,29 +448,6 @@ export function StaffAlbumTools({
                   className="data-[state=checked]:bg-green-600"
                 />
               </div>
-
-              {stats.pendingApproval > 0 ? (
-                <div className="flex gap-3">
-                  <Button
-                    onClick={handleApproveAll}
-                    className="flex-1 bg-green-600 hover:bg-green-500 text-white"
-                  >
-                    <CheckCircle2 className="w-4 h-4 mr-2" />
-                    Approve All ({stats.pendingApproval})
-                  </Button>
-                  <Button
-                    onClick={() => toast.info('Review queue coming soon')}
-                    className="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-white/10"
-                  >
-                    <XCircle className="w-4 h-4 mr-2" />
-                    Review Queue
-                  </Button>
-                </div>
-              ) : (
-                <p className="text-center text-zinc-500 py-4">
-                  No photos pending approval
-                </p>
-              )}
             </CardContent>
           </Card>
         </TabsContent>

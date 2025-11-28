@@ -212,6 +212,7 @@ export default function AdminEventForm() {
       feedEnabled: true,
       moderationEnabled: false,
       maxPhotosPerSession: 5,
+      staffAccessCode: "",
     },
     templates: [] as Template[],
   });
@@ -276,6 +277,7 @@ export default function AdminEventForm() {
           feedEnabled: event.settings?.feedEnabled ?? prev.settings.feedEnabled,
           moderationEnabled: event.settings?.moderationEnabled ?? prev.settings.moderationEnabled,
           maxPhotosPerSession: event.settings?.maxPhotosPerSession || prev.settings.maxPhotosPerSession,
+          staffAccessCode: event.settings?.staffAccessCode || "",
         },
         // Album Tracking - ensure full hydration from saved event data
         albumTracking: event.albumTracking ? {
@@ -1677,6 +1679,42 @@ export default function AdminEventForm() {
                           })}
                         />
                       </div>
+                      
+                      {/* Staff PIN Input - shown when Staff-Only Mode is enabled */}
+                      {formData.rules.staffOnlyMode && (
+                        <div className="col-span-2 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                          <Label className="text-sm text-amber-400 mb-2 block">Staff Access PIN</Label>
+                          <div className="flex gap-2">
+                            <Input
+                              type="text"
+                              placeholder="Enter 4-6 digit PIN"
+                              value={formData.settings.staffAccessCode || ''}
+                              onChange={(e) => setFormData({
+                                ...formData,
+                                settings: { ...formData.settings, staffAccessCode: e.target.value }
+                              })}
+                              className="flex-1 bg-black/40 border-amber-500/30 text-white font-mono tracking-widest text-center"
+                              maxLength={6}
+                            />
+                            <Button
+                              type="button"
+                              onClick={() => {
+                                const randomPin = Math.floor(1000 + Math.random() * 9000).toString();
+                                setFormData({
+                                  ...formData,
+                                  settings: { ...formData.settings, staffAccessCode: randomPin }
+                                });
+                              }}
+                              className="bg-amber-600 hover:bg-amber-500 text-white"
+                            >
+                              Generate
+                            </Button>
+                          </div>
+                          <p className="text-xs text-amber-400/70 mt-2">
+                            Share this PIN with your staff to access the booth and staff dashboard.
+                          </p>
+                        </div>
+                      )}
                     </div>
                   </div>
 
