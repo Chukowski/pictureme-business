@@ -76,7 +76,19 @@ const getUserProperties = () => {
   return { user_id: null, user_role: "guest", user_name: "Guest" };
 };
 
-const API_URL = ENV.API_URL || (import.meta.env.DEV ? "http://localhost:3001" : "");
+// Get API URL with HTTPS enforcement for production
+const getApiUrl = () => {
+  let url = ENV.API_URL || (import.meta.env.DEV ? "http://localhost:3001" : "");
+  
+  // Enforce HTTPS in production (non-localhost)
+  if (url && url.startsWith('http://') && !url.includes('localhost') && !url.includes('127.0.0.1')) {
+    url = url.replace('http://', 'https://');
+  }
+  
+  return url;
+};
+
+const API_URL = getApiUrl();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
