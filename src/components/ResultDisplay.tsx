@@ -1,11 +1,12 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { QRCodeSVG } from "qrcode.react";
-import { Download, Mail, RotateCcw, Share2, Copy } from "lucide-react";
+import { Download, Mail, RotateCcw, Share2, Copy, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { getShareUrl } from "@/services/localStorage";
 import { useTheme } from "@/contexts/ThemeContext";
+import { sendPhotoEmail, getEmailStatus } from "@/services/eventsApi";
 
 interface ResultDisplayProps {
   imageUrl: string;
@@ -17,12 +18,23 @@ export const ResultDisplay = ({ imageUrl, shareCode, onReset }: ResultDisplayPro
   const { brandConfig } = useTheme();
   const [email, setEmail] = useState("");
   const [isSending, setIsSending] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
+  const [emailConfigured, setEmailConfigured] = useState(true);
 
   // Always use short share code URL for QR code to avoid "Data too long" error
   // If no shareCode (storage failed), use a placeholder short URL
   const shareUrl = shareCode ? getShareUrl(shareCode) : window.location.origin;
 
   const safeBrandSlug = useMemo(() => (brandConfig.brandName || "photobooth").toLowerCase().replace(/\s+/g, "-"), [brandConfig.brandName]);
+
+  // Check if email service is configured
+  useEffect(() => {
+    getEmailStatus().then(status => {
+      setEmailConfigured(status.configured);
+    }).catch(() => {
+      setEmailConfigured(false);
+    });
+  }, []);
 
   const handleDownload = async () => {
     try {

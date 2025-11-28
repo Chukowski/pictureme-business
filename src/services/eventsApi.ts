@@ -749,3 +749,159 @@ export async function createAlbumCheckout(albumId: string): Promise<{ checkout_u
   if (!response.ok) throw new Error('Failed to create checkout');
   return response.json();
 }
+
+// ==================== Email API ====================
+
+export interface EmailStatus {
+  configured: boolean;
+  message: string;
+}
+
+/**
+ * Check if email service is configured
+ */
+export async function getEmailStatus(): Promise<EmailStatus> {
+  const response = await fetch(`${getApiUrl()}/api/email/status`);
+  if (!response.ok) {
+    return { configured: false, message: 'Email service unavailable' };
+  }
+  return response.json();
+}
+
+/**
+ * Send a photo share email
+ */
+export async function sendPhotoEmail(
+  toEmail: string,
+  photoUrl: string,
+  shareUrl: string,
+  eventName?: string,
+  brandName?: string,
+  primaryColor?: string
+): Promise<{ success: boolean; message: string }> {
+  const response = await fetch(`${getApiUrl()}/api/email/send/photo`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      to_email: toEmail,
+      photo_url: photoUrl,
+      share_url: shareUrl,
+      event_name: eventName,
+      brand_name: brandName,
+      primary_color: primaryColor,
+    }),
+  });
+  
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ detail: 'Failed to send email' }));
+    throw new Error(error.detail || 'Failed to send email');
+  }
+  return response.json();
+}
+
+/**
+ * Send an album share email
+ */
+export async function sendAlbumEmail(
+  toEmail: string,
+  albumUrl: string,
+  eventName: string,
+  visitorName?: string,
+  brandName?: string,
+  primaryColor?: string,
+  photosCount?: number
+): Promise<{ success: boolean; message: string }> {
+  const response = await fetch(`${getApiUrl()}/api/email/send/album`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      to_email: toEmail,
+      album_url: albumUrl,
+      event_name: eventName,
+      visitor_name: visitorName,
+      brand_name: brandName,
+      primary_color: primaryColor,
+      photos_count: photosCount,
+    }),
+  });
+  
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ detail: 'Failed to send email' }));
+    throw new Error(error.detail || 'Failed to send email');
+  }
+  return response.json();
+}
+
+/**
+ * Send album email by album code (uses stored email from album record)
+ */
+export async function sendAlbumEmailByCode(
+  albumCode: string,
+  eventName: string,
+  baseUrl: string,
+  brandName?: string,
+  primaryColor?: string
+): Promise<{ success: boolean; message: string }> {
+  const params = new URLSearchParams({
+    event_name: eventName,
+    base_url: baseUrl,
+  });
+  if (brandName) params.append('brand_name', brandName);
+  if (primaryColor) params.append('primary_color', primaryColor);
+  
+  const response = await fetch(`${getApiUrl()}/api/email/send/album/${albumCode}?${params}`, {
+    method: 'POST',
+  });
+  
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ detail: 'Failed to send email' }));
+    throw new Error(error.detail || 'Failed to send email');
+  }
+  return response.json();
+}
+
+/**
+ * Send bulk emails to all albums in an event
+ */
+export async function sendBulkAlbumEmails(
+  eventId: number,
+  baseUrl: string,
+  brandName?: string,
+  primaryColor?: string
+): Promise<{ sent: number; failed: number; skipped: number; message: string }> {
+  const token = getAuthToken();
+  const response = await fetch(`${getApiUrl()}/api/email/send/bulk-albums`, {
+    method: 'POST',
+    headers: { 
+      'Content-Type': 'application/json',
+      ...(token && { 'Authorization': `Bearer ${token}` }),
+    },
+    body: JSON.stringify({
+      event_id: eventId,
+      base_url: baseUrl,
+      brand_name: brandName,
+      primary_color: primaryColor,
+    }),
+  });
+  
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ detail: 'Failed to send emails' }));
+    throw new Error(error.detail || 'Failed to send emails');
+  }
+  return response.json();
+}
+
+/**
+ * Send a test email to verify configuration
+ */
+export async function sendTestEmail(toEmail: string): Promise<{ success: boolean; message: string }> {
+  const response = await fetch(`${getApiUrl()}/api/email/test?to_email=${encodeURIComponent(toEmail)}`, {
+    method: 'POST',
+  });
+  
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ detail: 'Email test failed' }));
+    throw new Error(error.detail || 'Email test failed');
+  }
+  return response.json();
+}

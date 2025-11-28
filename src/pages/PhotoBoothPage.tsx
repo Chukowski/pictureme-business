@@ -280,13 +280,15 @@ export const PhotoBoothPage = () => {
 
     try {
       // Determine branding settings based on template toggles
-      // includeBranding (Include All Overlays) is the master toggle
-      const includeBranding = selectedBackground.includeBranding ?? true;
+      // If "Include All Overlays" is ON, use individual toggles
+      // If "Include All Overlays" is OFF, no overlays are applied
+      // If "Include All Overlays" is undefined (not set), default to checking individual toggles
+      const masterToggle = selectedBackground.includeBranding;
       
-      // Individual toggles only apply if master toggle is on
-      const wantsHeader = includeBranding && (selectedBackground.includeHeader ?? false);
-      const wantsTagline = includeBranding && (selectedBackground.includeTagline ?? true);
-      const wantsWatermark = includeBranding && (selectedBackground.includeWatermark ?? true);
+      // Individual toggles - these work when master is ON or undefined
+      const wantsHeader = (masterToggle !== false) && (selectedBackground.includeHeader ?? false);
+      const wantsTagline = (masterToggle !== false) && (selectedBackground.includeTagline ?? true);
+      const wantsWatermark = (masterToggle !== false) && (selectedBackground.includeWatermark ?? true);
 
       // Use custom prompt and images if this is a custom prompt template
       const promptToUse = selectedBackground.isCustomPrompt && customPrompt
@@ -306,7 +308,7 @@ export const PhotoBoothPage = () => {
         ? config.branding.logoPath
         : undefined;
 
-      const footer = includeBranding && config?.branding?.footerPath && config.branding.footerPath.trim()
+      const footer = (masterToggle !== false) && config?.branding?.footerPath && config.branding.footerPath.trim()
         ? config.branding.footerPath
         : undefined;
       
@@ -317,14 +319,16 @@ export const PhotoBoothPage = () => {
       // Check if there are any branding elements to apply
       const hasBrandingElements = !!(logo || footer || tagline || selectedBackground.campaignText || watermarkConfig);
       
-      // Only run branding overlay if master toggle is on AND there are elements to apply
-      const shouldApplyBranding = includeBranding && hasBrandingElements;
+      // Apply branding if master toggle is not explicitly OFF and there are elements
+      const shouldApplyBranding = (masterToggle !== false) && hasBrandingElements;
       
       console.log('🎨 Branding check:', { 
-        includeBranding, 
+        masterToggle,
         wantsHeader, 
         logoConfigured: !!config?.branding?.logoPath,
+        logoPath: config?.branding?.logoPath,
         logo,
+        footer,
         hasBrandingElements,
         shouldApplyBranding 
       });
@@ -334,6 +338,7 @@ export const PhotoBoothPage = () => {
         backgroundPrompt: promptToUse,
         backgroundImageUrls: imagesToUse,
         includeBranding: shouldApplyBranding,
+        // Debug: log what we're sending
         includeHeader: wantsHeader && !!logo, // Only include header if logo exists
         campaignText: shouldApplyBranding ? selectedBackground.campaignText : undefined,
         taglineText: tagline,

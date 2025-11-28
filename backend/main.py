@@ -154,6 +154,14 @@ try:
 except Exception as e:
     print(f"⚠️  Warning: Could not include analytics router: {e}")
 
+# Email Router (AWS SES)
+try:
+    from routers import email
+    app.include_router(email.router)
+    print("✅ Email router included successfully")
+except Exception as e:
+    print(f"⚠️  Warning: Could not include email router: {e}")
+
 # CopilotKit Integration
 try:
     from routers.copilotkit_endpoint import sdk
@@ -176,13 +184,14 @@ async def startup():
     
     # Connect routers to db_pool
     try:
-        from routers import tokens, billing, marketplace, organizations, albums, analytics
+        from routers import tokens, billing, marketplace, organizations, albums, analytics, email
         tokens.set_db_pool(db_pool)
         billing.set_db_pool(db_pool)
         marketplace.set_db_pool(db_pool)
         organizations.set_db_pool(db_pool)
         albums.set_db_pool(db_pool)
         analytics.set_db_pool(db_pool)
+        email.set_db_pool(db_pool)
         print("✅ Routers connected to database pool")
     except Exception as e:
         print(f"⚠️  Warning: Could not connect routers to db_pool: {e}")
