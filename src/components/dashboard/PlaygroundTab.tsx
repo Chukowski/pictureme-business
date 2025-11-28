@@ -128,7 +128,7 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
   });
 
   // AI Model selection
-  const [selectedAiModel, setSelectedAiModel] = useState<AIModelKey>('gemini');
+  const [selectedAiModel, setSelectedAiModel] = useState<AIModelKey>('nanoBanana');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);

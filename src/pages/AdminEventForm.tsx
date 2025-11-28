@@ -3133,7 +3133,7 @@ export default function AdminEventForm() {
                                   <div className="space-y-2">
                                     <Label className="text-zinc-400 text-xs">AI Model</Label>
                                     <select
-                                      value={template.pipelineConfig?.imageModel || 'fal-ai/gemini-25-flash-preview-05-20'}
+                                      value={template.pipelineConfig?.imageModel || 'fal-ai/nano-banana/edit'}
                                       onChange={(e) => updateTemplate(index, {
                                         pipelineConfig: {
                                           ...template.pipelineConfig,
@@ -3142,9 +3142,9 @@ export default function AdminEventForm() {
                                       })}
                                       className="w-full h-10 px-3 rounded-lg bg-black/40 border border-white/10 text-white text-sm"
                                     >
-                                      <option value="fal-ai/gemini-25-flash-preview-05-20">Gemini 2.5 Flash — Fast, good quality</option>
+                                      <option value="fal-ai/nano-banana/edit">Nano Banana (Gemini/Imagen 3) — Fast, good quality</option>
                                       <option value="fal-ai/bytedance/seedream/v4/edit">Seedream v4 — Best for LEGO/artistic</option>
-                                      <option value="fal-ai/flux-pro/v1.1">Flux Pro 1.1 — Photorealistic</option>
+                                      <option value="fal-ai/flux/dev">Flux Dev — Photorealistic</option>
                                     </select>
                                   </div>
 

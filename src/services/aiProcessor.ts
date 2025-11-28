@@ -4,14 +4,14 @@ import { ENV } from "../config/env";
 
 // Configuration state - FAL_KEY is ONLY loaded from backend for security
 let FAL_KEY: string | undefined = undefined;
-let DEFAULT_FAL_MODEL: string = "fal-ai/gemini-25-flash-preview-05-20"; // Default to Gemini
+let DEFAULT_FAL_MODEL: string = "fal-ai/nano-banana/edit"; // Default to Nano Banana (Gemini/Imagen 3)
 let configLoaded = false;
 
 // Available AI models for selection
 export const AI_MODELS = {
-  gemini: {
-    id: "fal-ai/gemini-25-flash-preview-05-20",
-    name: "Gemini 2.5 Flash",
+  nanoBanana: {
+    id: "fal-ai/nano-banana/edit",
+    name: "Nano Banana (Gemini/Imagen 3)",
     description: "Fast, high-quality image editing with good prompt following",
     speed: "fast",
   },
@@ -22,8 +22,8 @@ export const AI_MODELS = {
     speed: "medium",
   },
   flux: {
-    id: "fal-ai/flux-pro/v1.1",
-    name: "Flux Pro 1.1",
+    id: "fal-ai/flux/dev",
+    name: "Flux Dev",
     description: "High-quality photorealistic generation",
     speed: "slow",
   },
