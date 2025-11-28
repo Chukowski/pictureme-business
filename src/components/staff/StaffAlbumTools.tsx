@@ -44,6 +44,7 @@ interface StaffAlbumToolsProps {
   eventSlug?: string;
   stats?: AlbumStats;
   primaryColor?: string;
+  eventLogoUrl?: string;
   onRefresh?: () => void;
   className?: string;
 }
@@ -61,6 +62,7 @@ export function StaffAlbumTools({
     totalPhotos: 0,
   },
   primaryColor = '#06B6D4',
+  eventLogoUrl,
   onRefresh,
   className = '',
 }: StaffAlbumToolsProps) {
@@ -150,9 +152,10 @@ export function StaffAlbumTools({
         albumUrl,
         eventName,
         selectedAlbum?.owner_name,
-        undefined,
+        undefined, // brandName
         primaryColor,
-        selectedAlbum?.photo_count || 0
+        selectedAlbum?.photo_count || 0,
+        eventLogoUrl
       );
       
       toast.success(`Album link sent to ${emailAddress}`);

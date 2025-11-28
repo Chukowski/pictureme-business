@@ -149,27 +149,22 @@ def send_album_share_email(
     greeting = f"Hi {visitor_name}," if visitor_name else "Hi there,"
     brand = brand_name or "PictureMe.Now"
     
-    # Akito mascot SVG (inline for email compatibility)
-    akito_svg = '''<svg width="60" height="60" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="50" cy="50" r="45" fill="#06B6D4"/>
-        <circle cx="35" cy="40" r="8" fill="white"/>
-        <circle cx="65" cy="40" r="8" fill="white"/>
-        <circle cx="35" cy="40" r="4" fill="#1a1a1a"/>
-        <circle cx="65" cy="40" r="4" fill="#1a1a1a"/>
-        <path d="M 30 60 Q 50 80 70 60" stroke="white" stroke-width="4" fill="none" stroke-linecap="round"/>
-        <ellipse cx="25" cy="55" rx="6" ry="4" fill="#f472b6" opacity="0.6"/>
-        <ellipse cx="75" cy="55" rx="6" ry="4" fill="#f472b6" opacity="0.6"/>
-    </svg>'''
+    # Akito mascot image URL (hosted on pictureme.now)
+    akito_url = "https://pictureme.now/assets/akito-2d.png"
     
-    # Event logo section
-    logo_section = ""
+    # Event logo section - show event logo if available, otherwise show Akito
+    header_image = ""
     if event_logo_url:
-        logo_section = f'''
-        <tr>
-            <td align="center" style="padding: 20px 0 0 0;">
-                <img src="{event_logo_url}" alt="{event_name}" style="max-width: 150px; max-height: 80px; object-fit: contain;" />
-            </td>
-        </tr>
+        header_image = f'''
+            <div style="margin-bottom: 15px;">
+                <img src="{event_logo_url}" alt="{event_name}" style="max-width: 180px; max-height: 100px; object-fit: contain;" />
+            </div>
+        '''
+    else:
+        header_image = f'''
+            <div style="margin-bottom: 15px;">
+                <img src="{akito_url}" alt="Akito" style="width: 80px; height: 80px; border-radius: 50%;" />
+            </div>
         '''
     
     subject = f"Your photos from {event_name} are ready! 📸"
@@ -187,13 +182,10 @@ def send_album_share_email(
         <tr>
             <td align="center" style="padding: 40px 20px;">
                 <table role="presentation" style="width: 100%; max-width: 600px; border-collapse: collapse;">
-                    {logo_section}
-                    <!-- Header with Akito -->
+                    <!-- Header with Logo/Akito -->
                     <tr>
                         <td style="background: linear-gradient(135deg, {primary_color} 0%, #7c3aed 100%); border-radius: 16px 16px 0 0; padding: 30px 30px 40px 30px; text-align: center;">
-                            <div style="margin-bottom: 15px;">
-                                {akito_svg}
-                            </div>
+                            {header_image}
                             <h1 style="margin: 0; color: #ffffff; font-size: 26px; font-weight: 700;">
                                 Your Photos Are Ready! 📸
                             </h1>

@@ -345,6 +345,7 @@ export default function AlbumsTab({ currentUser }: AlbumsTabProps) {
               eventSlug={selectedEvent.slug}
               stats={selectedEvent.albumStats}
               primaryColor={selectedEvent.theme?.primaryColor}
+              eventLogoUrl={selectedEvent.branding?.logo}
               onRefresh={loadEvents}
             />
           </div>
