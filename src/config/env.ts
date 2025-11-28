@@ -43,18 +43,39 @@ function enforceHttps(url: string): string {
 }
 
 /**
+ * Check if we're in production (not localhost)
+ */
+function isProduction(): boolean {
+  if (typeof window === 'undefined') return false;
+  const hostname = window.location.hostname;
+  return !hostname.includes('localhost') && !hostname.includes('127.0.0.1');
+}
+
+/**
  * Get environment variable with runtime override support
  * This is called dynamically to ensure window.ENV is available
+ * 
+ * In production, ONLY use window.ENV (from config.js)
+ * In development, fallback to import.meta.env
  */
 function getEnv(key: keyof EnvConfig): string {
   let value = '';
   
-  // Try runtime config first (from config.js)
-  if (typeof window !== 'undefined' && window.ENV && window.ENV[key]) {
-    value = window.ENV[key] as string;
+  // In production, ONLY use window.ENV - never use build-time env vars
+  // This prevents localhost:3001 from being used in production
+  if (isProduction()) {
+    if (typeof window !== 'undefined' && window.ENV && window.ENV[key]) {
+      value = window.ENV[key] as string;
+    }
+    // In production, if window.ENV doesn't have the value, return empty string
+    // DO NOT fallback to import.meta.env which may have localhost values
   } else {
-    // Fallback to build-time env
-    value = import.meta.env[key] || '';
+    // In development, try window.ENV first, then fallback to build-time env
+    if (typeof window !== 'undefined' && window.ENV && window.ENV[key]) {
+      value = window.ENV[key] as string;
+    } else {
+      value = import.meta.env[key] || '';
+    }
   }
 
   // Auto-upgrade http to https for URL-type configs to prevent Mixed Content errors
