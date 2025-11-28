@@ -319,6 +319,7 @@ export const PhotoBoothPage = () => {
         footerUrl: footer,
         headerBackgroundColor: config?.branding?.headerBackgroundColor,
         watermark: includeWatermark ? config?.branding?.watermark : undefined,
+        aspectRatio: selectedBackground.aspectRatio || '9:16', // Use template aspect ratio
         onProgress: (status) => {
           if (status === "queued") {
             setProcessingStatus("Waiting in queue...");
