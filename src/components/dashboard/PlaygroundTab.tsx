@@ -150,6 +150,9 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
   // Custom prompt mode
   const [useCustomPrompt, setUseCustomPrompt] = useState(false);
   const [customPrompt, setCustomPrompt] = useState('');
+  
+  // Force instructions toggle - adds extra context to help AI understand images
+  const [forceInstructions, setForceInstructions] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
@@ -312,6 +315,7 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
         includeBranding: false,
         aspectRatio: selectedTemplate.aspectRatio || '9:16',
         aiModel: selectedTemplate.pipelineConfig?.imageModel || AI_MODELS[selectedAiModel].id,
+        forceInstructions: forceInstructions,
         onProgress: (status) => {
           if (status === 'queued') {
             setProcessingStatus('queued');
@@ -375,6 +379,7 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
         includeBranding: false,
         aspectRatio: badgeConfig.layout === 'landscape' ? '16:9' : badgeConfig.layout === 'square' ? '1:1' : '9:16',
         aiModel: badgeConfig.aiPipeline.model || AI_MODELS[selectedAiModel].id,
+        forceInstructions: forceInstructions,
         onProgress: (status) => {
           console.log('Badge processing status:', status);
         },
@@ -1106,6 +1111,26 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
                   <p className="text-xs text-zinc-500">
                     {AI_MODELS[selectedAiModel].description}
                   </p>
+                </div>
+
+                {/* Force Instructions Toggle */}
+                <div className="flex items-center justify-between p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <AlertTriangle className="w-4 h-4 text-amber-400" />
+                      <Label className="text-zinc-300 font-medium">Force Instructions</Label>
+                    </div>
+                    <p className="text-xs text-zinc-500 mt-1">
+                      {forceInstructions 
+                        ? 'Extra instructions will be added to help AI understand the images'
+                        : 'Your prompt will be sent exactly as written'}
+                    </p>
+                  </div>
+                  <Switch
+                    checked={forceInstructions}
+                    onCheckedChange={setForceInstructions}
+                    className="data-[state=checked]:bg-amber-600"
+                  />
                 </div>
 
                 {/* Individual/Group Toggle - Always show for testing */}

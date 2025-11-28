@@ -85,6 +85,7 @@ export interface ProcessImageOptions {
   watermark?: WatermarkConfig; // Watermark configuration
   aspectRatio?: AspectRatio; // Output aspect ratio
   aiModel?: string; // AI model to use (defaults to Gemini)
+  forceInstructions?: boolean; // Add extra instructions to help model understand images
   onProgress?: (status: string, logs?: string[]) => void;
 }
 
@@ -210,70 +211,38 @@ Transform them while keeping their identity recognizable.`;
     } else {
       // Gemini Flash (Nano Banana) or other models
       const hasBackgroundImages = bgImages.length > 0;
+      const forceInstructions = options.forceInstructions || false;
       
-      // Build enhanced prompt based on what we're trying to do
-      let enhancedPrompt = backgroundPrompt;
+      let finalPrompt = backgroundPrompt;
       
-      // Check if prompt mentions style transformation keywords
-      const styleKeywords = ['transform', 'convert', 'turn into', 'make', 'lego', 'pixar', 'anime', 'cartoon', 'comic', 'pixel', 'painting', 'sketch', 'drawing', 'minifigure', '3d', 'animated'];
-      const isStyleTransfer = styleKeywords.some(keyword => backgroundPrompt.toLowerCase().includes(keyword));
-      
-      if (hasBackgroundImages && isStyleTransfer) {
-        // COMBINED: Style transfer + Background scene
-        // This is the most common photobooth use case
-        enhancedPrompt = `CREATE A NEW IMAGE combining these elements:
+      if (forceInstructions && hasBackgroundImages) {
+        // User explicitly wants extra instructions added
+        finalPrompt = `You have ${imageUrls.length} images:
+- Image 1: Photo of person/people (the subject to transform)
+- Image 2: Background/scene image (where to place them)
 
-IMAGE 1 (first image): Contains the person/people - this is who to transform
-IMAGE 2 (second image): Contains the background/scene - this is WHERE to place them
+YOUR TASK: ${backgroundPrompt}
 
-TASK: ${backgroundPrompt}
-
-IMPORTANT INSTRUCTIONS:
+INSTRUCTIONS:
 1. Extract the person(s) from Image 1
-2. Apply the style transformation to them (e.g., LEGO, Pixar, anime style)
+2. Apply any style transformation mentioned in the task
 3. Place the transformed person(s) INTO the scene from Image 2
-4. The final image should show the stylized person IN the background scene
+4. The final image should show the person IN the background scene
 5. Match the art style consistently across the entire image
-6. Keep the person recognizable despite the style change
+6. Keep the person recognizable despite any style changes
 
-Output a single cohesive image with the transformed person placed in the background scene.`;
-      } else if (hasBackgroundImages) {
-        // COMPOSITING: Just place person in background (no style change)
-        enhancedPrompt = `CREATE A COMPOSITE IMAGE:
-
-IMAGE 1 (first image): Contains the person/people to extract
-IMAGE 2 (second image): Contains the background scene
-
-TASK: ${backgroundPrompt}
-
-INSTRUCTIONS:
-1. Extract the person(s) from Image 1
-2. Place them naturally into the scene from Image 2
-3. Match lighting, scale, and perspective
-4. Preserve the person's exact appearance, clothing, and pose
-5. Make it look like they were photographed in that location
-
-Output a single realistic composite image.`;
-      } else if (isStyleTransfer) {
-        // STYLE ONLY: Transform person without specific background
-        enhancedPrompt = `TRANSFORM THE PERSON in this image:
-
-${backgroundPrompt}
-
-INSTRUCTIONS:
-1. Apply the style transformation to the person
-2. Keep them recognizable (preserve key features like hair, face shape)
-3. Transform the entire scene to match the style
-4. Output a cohesive stylized image`;
+Output a single cohesive image.`;
+        console.log("📝 Prompt with FORCED instructions:", finalPrompt);
+      } else {
+        // Use user's prompt exactly as-is (default behavior)
+        console.log("📝 Using user prompt as-is:", finalPrompt);
       }
-      // If none of the above, just use the original prompt
       
-      console.log("📝 Enhanced prompt for Nano Banana:", enhancedPrompt);
-      console.log("📸 Images being sent:", imageUrls.length, "(hasBackground:", hasBackgroundImages, ", isStyleTransfer:", isStyleTransfer, ")");
+      console.log("📸 Images being sent:", imageUrls.length, "(hasBackground:", hasBackgroundImages, ", forceInstructions:", forceInstructions, ")");
       
       result = await fal.subscribe(modelToUse, {
         input: {
-          prompt: enhancedPrompt,
+          prompt: finalPrompt,
           image_urls: imageUrls, // User photo + background to combine
           num_images: 1,
           output_format: "jpeg",
