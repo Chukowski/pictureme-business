@@ -152,18 +152,12 @@ def send_album_share_email(
     # Akito mascot image URL (hosted on pictureme.now)
     akito_url = "https://pictureme.now/assets/akito-2d.png"
     
-    # Event logo section - show event logo if available, otherwise show Akito
-    header_image = ""
+    # Event logo in header (if available)
+    header_logo = ""
     if event_logo_url:
-        header_image = f'''
-            <div style="margin-bottom: 15px;">
-                <img src="{event_logo_url}" alt="{event_name}" style="max-width: 180px; max-height: 100px; object-fit: contain;" />
-            </div>
-        '''
-    else:
-        header_image = f'''
-            <div style="margin-bottom: 15px;">
-                <img src="{akito_url}" alt="Akito" style="width: 80px; height: 80px; border-radius: 50%;" />
+        header_logo = f'''
+            <div style="margin-bottom: 20px;">
+                <img src="{event_logo_url}" alt="{event_name}" style="max-width: 200px; max-height: 80px; object-fit: contain;" />
             </div>
         '''
     
@@ -182,10 +176,10 @@ def send_album_share_email(
         <tr>
             <td align="center" style="padding: 40px 20px;">
                 <table role="presentation" style="width: 100%; max-width: 600px; border-collapse: collapse;">
-                    <!-- Header with Logo/Akito -->
+                    <!-- Header with Event Logo -->
                     <tr>
                         <td style="background: linear-gradient(135deg, {primary_color} 0%, #7c3aed 100%); border-radius: 16px 16px 0 0; padding: 30px 30px 40px 30px; text-align: center;">
-                            {header_image}
+                            {header_logo}
                             <h1 style="margin: 0; color: #ffffff; font-size: 26px; font-weight: 700;">
                                 Your Photos Are Ready! 📸
                             </h1>
@@ -222,13 +216,20 @@ def send_album_share_email(
                         </td>
                     </tr>
                     
-                    <!-- Footer -->
+                    <!-- Footer with Akito -->
                     <tr>
-                        <td style="background-color: #0f0f0f; border-radius: 0 0 16px 16px; padding: 30px; text-align: center;">
-                            <p style="margin: 0 0 10px; color: #71717a; font-size: 14px;">
-                                Powered by <strong style="color: #a1a1aa;">{brand}</strong>
-                            </p>
-                            <p style="margin: 0; color: #52525b; font-size: 12px;">
+                        <td style="background-color: #0f0f0f; border-radius: 0 0 16px 16px; padding: 25px 30px; text-align: center;">
+                            <table role="presentation" style="width: 100%; border-collapse: collapse;">
+                                <tr>
+                                    <td align="center">
+                                        <a href="https://pictureme.now" style="text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
+                                            <img src="{akito_url}" alt="Akito" style="width: 28px; height: 28px; vertical-align: middle;" />
+                                            <span style="color: #a1a1aa; font-size: 13px;">Powered by <strong style="color: #06B6D4;">PictureMe.Now</strong></span>
+                                        </a>
+                                    </td>
+                                </tr>
+                            </table>
+                            <p style="margin: 12px 0 0; color: #52525b; font-size: 11px;">
                                 © {datetime.now().year} {brand}. All rights reserved.
                             </p>
                         </td>
