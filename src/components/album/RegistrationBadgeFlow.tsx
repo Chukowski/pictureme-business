@@ -31,6 +31,7 @@ import { createAlbum } from '@/services/eventsApi';
 import { QRCodeSVG } from 'qrcode.react';
 import QRCode from 'qrcode';
 import { BadgeTemplateConfig } from '@/components/templates/BadgeTemplateEditor';
+import { processImageWithAI, downloadImageAsBase64 } from '@/services/aiProcessor';
 
 type FlowState = 'input' | 'camera' | 'preview' | 'creating' | 'badge' | 'complete';
 
@@ -57,9 +58,11 @@ export function RegistrationBadgeFlow({
   const [visitorName, setVisitorName] = useState('');
   const [visitorEmail, setVisitorEmail] = useState('');
   const [capturedPhoto, setCapturedPhoto] = useState<string | null>(null);
+  const [processedPhoto, setProcessedPhoto] = useState<string | null>(null); // AI processed photo
   const [albumCode, setAlbumCode] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [isCameraReady, setIsCameraReady] = useState(false);
+  const [processingStatus, setProcessingStatus] = useState<string>('');
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -158,7 +161,7 @@ export function RegistrationBadgeFlow({
     startCamera();
   }, [startCamera]);
 
-  // Create album and badge
+  // Create album and badge (with optional AI processing)
   const createAlbumAndBadge = useCallback(async () => {
     if (!capturedPhoto) return;
     
@@ -169,8 +172,56 @@ export function RegistrationBadgeFlow({
     
     setIsCreating(true);
     setState('creating');
+    setProcessingStatus('Creating your badge...');
     
     try {
+      // Check if AI Pipeline is enabled for badge
+      const aiPipelineEnabled = badgeTemplate?.aiPipeline?.enabled === true;
+      let finalPhoto = capturedPhoto;
+      
+      if (aiPipelineEnabled && badgeTemplate?.aiPipeline?.prompt) {
+        setProcessingStatus('Processing photo with AI...');
+        toast.info('Enhancing your photo with AI...', { duration: 5000 });
+        
+        try {
+          // Determine aspect ratio from badge layout
+          const aspectRatio = badgeTemplate.layout === 'landscape' ? '16:9' 
+            : badgeTemplate.layout === 'square' ? '1:1' 
+            : badgeTemplate.aiPipeline.outputRatio || '1:1';
+          
+          const result = await processImageWithAI({
+            userPhotoBase64: capturedPhoto,
+            backgroundPrompt: badgeTemplate.aiPipeline.prompt,
+            backgroundImageUrls: badgeTemplate.aiPipeline.referenceImages || [],
+            includeBranding: false,
+            aspectRatio: aspectRatio as any,
+            onProgress: (status) => {
+              if (status === 'queued') {
+                setProcessingStatus('Waiting in queue...');
+              } else if (status === 'processing') {
+                setProcessingStatus('AI is working its magic...');
+              }
+            }
+          });
+          
+          // Get the processed image
+          if (result.url.startsWith('data:')) {
+            finalPhoto = result.url;
+          } else {
+            finalPhoto = await downloadImageAsBase64(result.url);
+          }
+          
+          setProcessedPhoto(finalPhoto);
+          toast.success('Photo enhanced with AI! ✨');
+        } catch (aiError: any) {
+          console.error('AI processing failed:', aiError);
+          toast.warning('AI enhancement failed, using original photo');
+          // Continue with original photo if AI fails
+        }
+      }
+      
+      setProcessingStatus('Creating album...');
+      
       // Create album via API - pass parameters in correct order: eventId, orgId, ownerName, ownerEmail
       const album = await createAlbum(
         eventId,
@@ -192,12 +243,15 @@ export function RegistrationBadgeFlow({
       setState('preview');
     } finally {
       setIsCreating(false);
+      setProcessingStatus('');
     }
-  }, [capturedPhoto, eventId, visitorName, visitorEmail]);
+  }, [capturedPhoto, eventId, visitorName, visitorEmail, badgeTemplate]);
 
   // Download badge with real QR code using badge template settings (including custom positions)
   const downloadBadge = useCallback(async () => {
-    if (!capturedPhoto || !albumCode) return;
+    // Use processed photo if available, otherwise use captured photo
+    const photoToUse = processedPhoto || capturedPhoto;
+    if (!photoToUse || !albumCode) return;
     
     // Create a canvas with badge layout from template
     const canvas = document.createElement('canvas');
@@ -299,7 +353,7 @@ export function RegistrationBadgeFlow({
         resolve();
       };
       img.onerror = () => resolve();
-      img.src = capturedPhoto;
+      img.src = photoToUse;
     });
     
     // Draw text with template styles and custom positions
@@ -411,7 +465,7 @@ export function RegistrationBadgeFlow({
     link.click();
     
     toast.success('Badge downloaded!');
-  }, [capturedPhoto, albumCode, badgeTemplate, primaryColor, visitorName, eventName, userSlug, eventSlug]);
+  }, [capturedPhoto, processedPhoto, albumCode, badgeTemplate, primaryColor, visitorName, eventName, userSlug, eventSlug]);
 
   // Print badge - opens browser print dialog with template settings
   const printBadge = useCallback(() => {
@@ -479,7 +533,7 @@ export function RegistrationBadgeFlow({
         </head>
         <body>
           <div class="badge">
-            <img src="${capturedPhoto}" class="photo" />
+            <img src="${processedPhoto || capturedPhoto}" class="photo" />
             ${badgeTemplate?.fields?.showName !== false && visitorName ? `<div class="name">${visitorName}</div>` : ''}
             ${badgeTemplate?.fields?.showEventName !== false ? `<div class="event">${eventName}</div>` : ''}
             ${badgeTemplate?.fields?.showDateTime !== false ? `<div class="date">${new Date().toLocaleDateString()}</div>` : ''}
@@ -499,7 +553,7 @@ export function RegistrationBadgeFlow({
     printWindow.document.close();
     
     toast.success('Opening print dialog...');
-  }, [capturedPhoto, albumCode, visitorName, eventName, primaryColor, badgeTemplate, userSlug, eventSlug]);
+  }, [capturedPhoto, processedPhoto, albumCode, visitorName, eventName, primaryColor, badgeTemplate, userSlug, eventSlug]);
 
   // Continue to next station
   const continueToNextStation = useCallback(() => {
@@ -653,8 +707,12 @@ export function RegistrationBadgeFlow({
         {state === 'creating' && (
           <CardContent className="py-16 text-center">
             <Loader2 className="w-12 h-12 mx-auto mb-4 animate-spin" style={{ color: primaryColor }} />
-            <p className="text-lg text-white">Creating your badge...</p>
-            <p className="text-sm text-zinc-400 mt-2">This will just take a moment</p>
+            <p className="text-lg text-white">{processingStatus || 'Creating your badge...'}</p>
+            <p className="text-sm text-zinc-400 mt-2">
+              {badgeTemplate?.aiPipeline?.enabled 
+                ? 'AI enhancement may take a few moments' 
+                : 'This will just take a moment'}
+            </p>
           </CardContent>
         )}
 
@@ -705,7 +763,7 @@ export function RegistrationBadgeFlow({
                       }}
                     >
                       <img
-                        src={capturedPhoto}
+                        src={processedPhoto || capturedPhoto}
                         alt="Profile"
                         className="w-full h-full object-cover"
                       />
