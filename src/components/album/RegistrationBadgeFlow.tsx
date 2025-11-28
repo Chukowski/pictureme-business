@@ -335,7 +335,27 @@ export function RegistrationBadgeFlow({
           ctx.clip();
         }
         
-        ctx.drawImage(img, photoX, photoY, photoSize, photoSize);
+        // Calculate "object-fit: cover" dimensions to maintain aspect ratio
+        const imgAspect = img.width / img.height;
+        const containerAspect = 1; // Square container (photoSize x photoSize)
+        
+        let drawWidth, drawHeight, drawX, drawY;
+        
+        if (imgAspect > containerAspect) {
+          // Image is wider - fit height, crop width
+          drawHeight = photoSize;
+          drawWidth = photoSize * imgAspect;
+          drawX = photoX - (drawWidth - photoSize) / 2;
+          drawY = photoY;
+        } else {
+          // Image is taller - fit width, crop height
+          drawWidth = photoSize;
+          drawHeight = photoSize / imgAspect;
+          drawX = photoX;
+          drawY = photoY - (drawHeight - photoSize) / 2;
+        }
+        
+        ctx.drawImage(img, drawX, drawY, drawWidth, drawHeight);
         ctx.restore();
         
         // Draw border around photo

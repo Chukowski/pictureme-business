@@ -451,7 +451,7 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
             // Photo size follows badge template settings
             const photoSizePercent = badgeConfig.photoPlacement?.size === 'small' ? 22 : badgeConfig.photoPlacement?.size === 'large' ? 38 : 30;
             const photoWidth = photoSizePercent / 100 * width;
-            const photoHeight = photoWidth; // Keep square
+            const photoHeight = photoWidth; // Container is square
             const x = (positions.photo?.x || 50) / 100 * width - photoWidth / 2;
             const y = (positions.photo?.y || 20) / 100 * height - photoHeight / 2;
             
@@ -467,7 +467,28 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
               ctx.roundRect(x, y, photoWidth, photoHeight, radius);
               ctx.clip();
             }
-            ctx.drawImage(photoImg, x, y, photoWidth, photoHeight);
+            
+            // Calculate "object-fit: cover" to maintain aspect ratio
+            const imgAspect = photoImg.width / photoImg.height;
+            const containerAspect = 1; // Square container
+            
+            let drawWidth, drawHeight, drawX, drawY;
+            
+            if (imgAspect > containerAspect) {
+              // Image is wider - fit height, crop width
+              drawHeight = photoHeight;
+              drawWidth = photoHeight * imgAspect;
+              drawX = x - (drawWidth - photoWidth) / 2;
+              drawY = y;
+            } else {
+              // Image is taller - fit width, crop height
+              drawWidth = photoWidth;
+              drawHeight = photoWidth / imgAspect;
+              drawX = x;
+              drawY = y - (drawHeight - photoHeight) / 2;
+            }
+            
+            ctx.drawImage(photoImg, drawX, drawY, drawWidth, drawHeight);
             ctx.restore();
             resolve();
           };
