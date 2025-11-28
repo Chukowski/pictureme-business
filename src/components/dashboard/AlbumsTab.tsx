@@ -169,15 +169,13 @@ export default function AlbumsTab({ currentUser }: AlbumsTabProps) {
             ))}
           </select>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
+        <button
           onClick={loadEvents}
-          className="border-white/20 text-zinc-300"
+          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white border border-white/10 transition-all text-sm"
         >
-          <RefreshCw className="w-4 h-4 mr-2" />
+          <RefreshCw className="w-4 h-4" />
           Refresh
-        </Button>
+        </button>
       </div>
 
       {selectedEvent && (
@@ -201,15 +199,13 @@ export default function AlbumsTab({ currentUser }: AlbumsTabProps) {
                       Max {selectedEvent.albumTracking?.rules?.maxPhotosPerAlbum || 5} photos per album
                     </CardDescription>
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
+                  <button
                     onClick={() => handleOpenStaffDashboard(selectedEvent)}
-                    className="border-white/20 text-zinc-300"
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white border border-white/10 transition-all text-sm"
                   >
-                    <ExternalLink className="w-4 h-4 mr-2" />
+                    <ExternalLink className="w-4 h-4" />
                     Staff Dashboard
-                  </Button>
+                  </button>
                 </div>
               </CardHeader>
               <CardContent>
