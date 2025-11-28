@@ -13,7 +13,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   BookOpen, QrCode, Users, Camera, MapPin, Settings,
-  ExternalLink, ChevronRight, Plus, RefreshCw, Loader2
+  ExternalLink, ChevronRight, Plus, RefreshCw, Loader2,
+  Copy, Check, Link
 } from "lucide-react";
 import { toast } from "sonner";
 import { StaffAlbumTools } from "@/components/staff";
@@ -36,6 +37,7 @@ export default function AlbumsTab({ currentUser }: AlbumsTabProps) {
   const [events, setEvents] = useState<EventWithAlbums[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedEvent, setSelectedEvent] = useState<EventWithAlbums | null>(null);
+  const [copiedStationId, setCopiedStationId] = useState<string | null>(null);
 
   // Load events with album tracking enabled
   useEffect(() => {
@@ -94,9 +96,17 @@ export default function AlbumsTab({ currentUser }: AlbumsTabProps) {
     }
   };
 
-  const handleGenerateQR = (event: EventWithAlbums, stationType: string) => {
-    // In production, this would generate a real QR code
-    toast.success(`QR code generated for ${stationType}`);
+  const getStationUrl = (event: EventWithAlbums, stationType: string) => {
+    const baseUrl = window.location.origin;
+    return `${baseUrl}/${currentUser.slug}/${event.slug}/${stationType}`;
+  };
+
+  const handleCopyStationLink = (event: EventWithAlbums, station: { id: string; type: string; name: string }) => {
+    const url = getStationUrl(event, station.type);
+    navigator.clipboard.writeText(url);
+    setCopiedStationId(station.id);
+    toast.success(`Link copied for ${station.name}`);
+    setTimeout(() => setCopiedStationId(null), 2000);
   };
 
   const handleOpenStaffDashboard = (event: EventWithAlbums) => {
@@ -246,14 +256,29 @@ export default function AlbumsTab({ currentUser }: AlbumsTabProps) {
                               <p className="text-xs text-zinc-500">{station.type}</p>
                             </div>
                           </div>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleGenerateQR(selectedEvent, station.name)}
-                            className="border-white/10 text-zinc-400 hover:text-white"
-                          >
-                            <QrCode className="w-4 h-4" />
-                          </Button>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-zinc-600 truncate max-w-[150px] hidden md:block">
+                              /{currentUser.slug}/{selectedEvent.slug}/{station.type}
+                            </span>
+                            <button
+                              onClick={() => handleCopyStationLink(selectedEvent, station)}
+                              className="p-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white border border-white/10 transition-all"
+                              title={`Copy link for ${station.name}`}
+                            >
+                              {copiedStationId === station.id ? (
+                                <Check className="w-4 h-4 text-green-400" />
+                              ) : (
+                                <Copy className="w-4 h-4" />
+                              )}
+                            </button>
+                            <button
+                              onClick={() => window.open(getStationUrl(selectedEvent, station.type), '_blank')}
+                              className="p-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white border border-white/10 transition-all"
+                              title={`Open ${station.name}`}
+                            >
+                              <ExternalLink className="w-4 h-4" />
+                            </button>
+                          </div>
                         </div>
                       ))}
                     </div>

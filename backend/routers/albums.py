@@ -280,12 +280,9 @@ async def get_event_album_stats(event_id: int, request: Request):
                 COUNT(*) FILTER (WHERE status = 'completed') as completed_albums,
                 COUNT(*) FILTER (WHERE status = 'in_progress') as in_progress_albums,
                 COUNT(*) FILTER (WHERE payment_status = 'paid') as paid_albums,
-                COALESCE(SUM(
-                    (SELECT COUNT(*) FROM album_photos WHERE album_id = a.id)
-                ), 0) as total_photos,
-                COUNT(*) FILTER (WHERE status = 'in_progress' AND 
-                    (SELECT COUNT(*) FROM album_photos WHERE album_id = a.id AND approved = false) > 0
-                ) as pending_approval
+                (SELECT COUNT(*) FROM album_photos ap 
+                 JOIN albums al ON ap.album_id = al.id 
+                 WHERE al.event_id = $1) as total_photos
             FROM albums a
             WHERE a.event_id = $1
         """, event_id)
@@ -296,6 +293,6 @@ async def get_event_album_stats(event_id: int, request: Request):
             "inProgressAlbums": stats["in_progress_albums"] or 0,
             "paidAlbums": stats["paid_albums"] or 0,
             "totalPhotos": stats["total_photos"] or 0,
-            "pendingApproval": stats["pending_approval"] or 0
+            "pendingApproval": 0  # TODO: Add approval tracking when column exists
         }
 

@@ -1233,12 +1233,13 @@ async def get_user_events(current_user: dict = Depends(get_current_user)):
         # Get organization events if any
         try:
             async with db_pool.acquire() as conn:
+                # user_id can be UUID string from Better Auth
                 org_ids = await conn.fetch("""
                     SELECT organization_id FROM organization_members 
-                    WHERE user_id = $1 AND status = 'active'
+                    WHERE user_id::text = $1 AND status = 'active'
                     UNION
-                    SELECT id FROM organizations WHERE owner_user_id = $1
-                """, int(user_id)) # user_id is int in Postgres
+                    SELECT id FROM organizations WHERE owner_user_id::text = $1
+                """, str(user_id))
                 
             for row in org_ids:
                 # In UNION, the column name is from first query 'organization_id' or 'id' aliased?
