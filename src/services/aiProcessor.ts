@@ -202,9 +202,14 @@ export async function processImageWithAI(
   // Use provided model or default
   const modelToUse = aiModel || DEFAULT_FAL_MODEL;
   
-  console.log("🤖 Starting AI processing with model:", modelToUse);
-  console.log("📝 Prompt:", backgroundPrompt);
-  console.log("🖼️ Background images:", backgroundImageUrls || [backgroundImageUrl]);
+  console.log("═══════════════════════════════════════════════════════════");
+  console.log("🚀 AI PROCESSING STARTED");
+  console.log("═══════════════════════════════════════════════════════════");
+  console.log("🤖 Model requested:", aiModel || "(default)");
+  console.log("🤖 Model to use:", modelToUse);
+  console.log("📝 Prompt received:", backgroundPrompt?.substring(0, 200) + (backgroundPrompt?.length > 200 ? '...' : ''));
+  console.log("🖼️ Background images:", backgroundImageUrls?.length || (backgroundImageUrl ? 1 : 0));
+  console.log("⚙️ Options - forceInstructions:", options.forceInstructions, ", aspectRatio:", options.aspectRatio);
 
   try {
     // Prepare image URLs array - user photo + all background images
@@ -305,7 +310,21 @@ Transform the person(s) from Image 1 according to the instructions above and pla
       
       const isFlux2Pro = modelToUse.includes("flux-2-pro");
       
-      console.log("📸 Images being sent:", imageUrls.length, "(hasBackground:", hasBackgroundImages, ", forceInstructions:", forceInstructions, ")");
+      // Detailed logging for debugging
+      console.log("═══════════════════════════════════════════════════════════");
+      console.log("🤖 AI REQUEST DETAILS:");
+      console.log("═══════════════════════════════════════════════════════════");
+      console.log("🎯 Model:", modelToUse);
+      console.log("📸 Images count:", imageUrls.length, "(1 user photo +", bgImages.length, "background images)");
+      console.log("⚙️ Force Instructions:", forceInstructions);
+      console.log("📐 Aspect Ratio:", aspectRatio);
+      console.log("───────────────────────────────────────────────────────────");
+      console.log("📝 ORIGINAL PROMPT (from template):");
+      console.log(backgroundPrompt);
+      console.log("───────────────────────────────────────────────────────────");
+      console.log("📝 FINAL PROMPT (sent to AI):");
+      console.log(finalPrompt);
+      console.log("───────────────────────────────────────────────────────────");
       
       // Build input based on model capabilities
       const modelInput: Record<string, unknown> = {
