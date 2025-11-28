@@ -1915,6 +1915,23 @@ async def upload_photo_public(payload: PublicPhotoUpload):
 
         user_id = user["id"]
         event_doc = couch.get_event_by_slug(str(user_id), payload.eventSlug)
+        
+        # If not found by user_id, try searching by user_slug in CouchDB
+        if not event_doc:
+            try:
+                docs = couch._find_documents(
+                    couch.events_db_name,
+                    {
+                        "user_slug": payload.userSlug,
+                        "slug": payload.eventSlug
+                    },
+                    limit=1
+                )
+                if docs:
+                    event_doc = docs[0]
+            except Exception as e:
+                print(f"⚠️ CouchDB query error in upload_photo_public: {e}")
+        
         if not event_doc or not event_doc.get("is_active", True):
             raise HTTPException(status_code=404, detail="Event not found for provided slug")
 
