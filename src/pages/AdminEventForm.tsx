@@ -250,12 +250,24 @@ export default function AdminEventForm() {
         is_active: event.is_active,
         start_date: event.start_date || "",
         end_date: event.end_date || "",
+        // Event Mode
+        eventMode: (event as any).eventMode || prev.eventMode,
+        // Rules
+        rules: {
+          ...prev.rules,
+          ...((event as any).rules || {}),
+        },
         theme: {
+          ...prev.theme,
           brandName: event.theme?.brandName || prev.theme.brandName,
           primaryColor: event.theme?.primaryColor || prev.theme.primaryColor,
           secondaryColor: event.theme?.secondaryColor || prev.theme.secondaryColor,
+          accentColor: (event.theme as any)?.accentColor || prev.theme.accentColor,
           tagline: event.theme?.tagline || prev.theme.tagline,
           mode: event.theme?.mode || prev.theme.mode,
+          preset: (event.theme as any)?.preset || prev.theme.preset,
+          cardRadius: (event.theme as any)?.cardRadius || prev.theme.cardRadius,
+          buttonStyle: (event.theme as any)?.buttonStyle || prev.theme.buttonStyle,
         },
         branding: {
           ...prev.branding,
@@ -269,6 +281,7 @@ export default function AdminEventForm() {
             position: event.branding.watermark.position,
             size: event.branding.watermark.size,
             opacity: event.branding.watermark.opacity,
+            pattern: (event.branding.watermark as any).pattern || prev.branding.watermark.pattern,
           } : prev.branding.watermark,
         },
         settings: {
@@ -321,6 +334,16 @@ export default function AdminEventForm() {
             ...((event as any).badgeTemplate?.photoPlacement || {}),
           },
         } : prev.badgeTemplate,
+        // Badge Creator (legacy)
+        badgeCreator: (event as any).badgeCreator ? {
+          ...prev.badgeCreator,
+          ...((event as any).badgeCreator || {}),
+        } : prev.badgeCreator,
+        // Sharing settings
+        sharing: (event as any).sharing ? {
+          ...prev.sharing,
+          ...((event as any).sharing || {}),
+        } : prev.sharing,
         templates: event.templates || [],
       }));
     } catch (error: any) {
