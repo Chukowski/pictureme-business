@@ -11,7 +11,7 @@ import { useEventConfig } from '@/hooks/useEventConfig';
 import { 
   Loader2, ArrowLeft, Download, Share2, Mail, MessageSquare, 
   CheckCircle2, XCircle, MonitorPlay, Printer, Lock, Unlock,
-  QrCode, ExternalLink, CreditCard, ShoppingCart
+  QrCode, ExternalLink, CreditCard, ShoppingCart, Clock
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -84,8 +84,16 @@ export default function AlbumFeedPage() {
     }
   })();
 
+  // Check if staff approval is required and album is not yet approved
+  const requiresStaffApproval = config?.albumTracking?.rules?.requireStaffApproval && 
+                                albumInfo && 
+                                albumInfo.isComplete === false;
+  
   // Check if payment is required for downloads
   const requiresPayment = config?.albumTracking?.rules?.printReady && !albumInfo?.isPaid;
+  
+  // Album is blocked if it needs approval OR payment (and user is not staff)
+  const albumIsBlocked = !isStaff && (requiresStaffApproval || requiresPayment);
   
   // Check if hard watermark should be applied
   const applyHardWatermark = config?.branding?.watermark?.enabled || 
@@ -391,10 +399,10 @@ export default function AlbumFeedPage() {
           {/* Photo Grid */}
           <div 
             className="lg:col-span-3"
-            onContextMenu={(e) => requiresPayment && e.preventDefault()} // Prevent right-click when payment required
+            onContextMenu={(e) => albumIsBlocked && e.preventDefault()} // Prevent right-click when blocked
           >
-            {/* Payment Wall - Stack Preview */}
-            {requiresPayment && photos.length > 0 && (
+            {/* Blocked Album Wall - Staff Approval or Payment Required */}
+            {albumIsBlocked && photos.length > 0 && (
               <div className="mb-8">
                 {/* Stacked Photos Preview */}
                 <div className="relative flex justify-center items-center py-12">
@@ -423,33 +431,57 @@ export default function AlbumFeedPage() {
                     </div>
                   ))}
                   
-                  {/* Lock Icon Overlay */}
+                  {/* Status Overlay */}
                   <div className="relative z-10 text-center p-8 rounded-2xl bg-black/60 backdrop-blur-md border border-white/20">
-                    <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-amber-500/20 flex items-center justify-center">
-                      <Lock className="w-10 h-10 text-amber-400" />
-                    </div>
-                    <h3 className="text-2xl font-bold text-white mb-2">
-                      {photos.length} Photos Ready!
-                    </h3>
-                    <p className="text-zinc-400 mb-6 max-w-xs">
-                      Your photos are waiting for you. Unlock to view and download in full quality.
-                    </p>
-                    <Button
-                      onClick={handleUnlockAlbum}
-                      disabled={isProcessingPayment}
-                      size="lg"
-                      className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-black font-bold px-8"
-                    >
-                      {isProcessingPayment ? (
-                        <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                      ) : (
-                        <CreditCard className="w-5 h-5 mr-2" />
-                      )}
-                      Unlock Album
-                    </Button>
-                    <p className="text-xs text-zinc-500 mt-4">
-                      Secure payment • Instant access
-                    </p>
+                    {/* Different UI based on what's blocking */}
+                    {requiresStaffApproval ? (
+                      // Waiting for Staff Approval
+                      <>
+                        <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-purple-500/20 flex items-center justify-center">
+                          <Clock className="w-10 h-10 text-purple-400" />
+                        </div>
+                        <h3 className="text-2xl font-bold text-white mb-2">
+                          Waiting for Approval
+                        </h3>
+                        <p className="text-zinc-400 mb-4 max-w-xs">
+                          Your {photos.length} photo{photos.length !== 1 ? 's are' : ' is'} being reviewed by staff.
+                          You'll be notified when they're ready!
+                        </p>
+                        <div className="flex items-center justify-center gap-2 text-purple-400">
+                          <div className="w-2 h-2 rounded-full bg-purple-400 animate-pulse" />
+                          <span className="text-sm">Staff review in progress</span>
+                        </div>
+                      </>
+                    ) : requiresPayment ? (
+                      // Payment Required
+                      <>
+                        <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-amber-500/20 flex items-center justify-center">
+                          <Lock className="w-10 h-10 text-amber-400" />
+                        </div>
+                        <h3 className="text-2xl font-bold text-white mb-2">
+                          {photos.length} Photos Ready!
+                        </h3>
+                        <p className="text-zinc-400 mb-6 max-w-xs">
+                          Your photos are waiting for you. Unlock to view and download in full quality.
+                        </p>
+                        <Button
+                          onClick={handleUnlockAlbum}
+                          disabled={isProcessingPayment}
+                          size="lg"
+                          className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-black font-bold px-8"
+                        >
+                          {isProcessingPayment ? (
+                            <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                          ) : (
+                            <CreditCard className="w-5 h-5 mr-2" />
+                          )}
+                          Unlock Album
+                        </Button>
+                        <p className="text-xs text-zinc-500 mt-4">
+                          Secure payment • Instant access
+                        </p>
+                      </>
+                    ) : null}
                   </div>
                 </div>
                 
@@ -477,8 +509,8 @@ export default function AlbumFeedPage() {
               </div>
             )}
 
-            {/* Regular Photo Grid - Only shown when NOT requiring payment */}
-            {!requiresPayment && (
+            {/* Regular Photo Grid - Only shown when album is NOT blocked */}
+            {!albumIsBlocked && (
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 {photos.map((photo) => (
                   <div
