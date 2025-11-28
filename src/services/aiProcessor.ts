@@ -255,15 +255,28 @@ Transform the person(s) from Image 1 according to the instructions above and pla
         console.log("📝 Using user prompt as-is:", finalPrompt);
       }
       
+      // Get dimensions based on aspect ratio for models that support it
+      const dimensions = getImageDimensions(aspectRatio);
+      const isFlux2Pro = modelToUse.includes("flux-2-pro");
+      
       console.log("📸 Images being sent:", imageUrls.length, "(hasBackground:", hasBackgroundImages, ", forceInstructions:", forceInstructions, ")");
+      console.log(`📐 Using aspect ratio: ${aspectRatio} (${dimensions.width}x${dimensions.height})`);
+      
+      // Build input based on model capabilities
+      const modelInput: Record<string, unknown> = {
+        prompt: finalPrompt,
+        image_urls: imageUrls,
+        num_images: 1,
+        output_format: "jpeg",
+      };
+      
+      // Add image_size for models that support it (Flux 2 Pro, etc.)
+      if (isFlux2Pro && aspectRatio !== 'auto') {
+        modelInput.image_size = dimensions;
+      }
       
       result = await fal.subscribe(modelToUse, {
-        input: {
-          prompt: finalPrompt,
-          image_urls: imageUrls, // User photo + background to combine
-          num_images: 1,
-          output_format: "jpeg",
-        },
+        input: modelInput,
         logs: true,
         onQueueUpdate: (update) => {
           if (update.status === "IN_PROGRESS" && onProgress) {
