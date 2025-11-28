@@ -89,11 +89,17 @@ export default function AlbumFeedPage() {
                                 albumInfo && 
                                 albumInfo.isComplete === false;
   
-  // Check if payment is required for downloads
+  // Check if payment is required for viewing/downloads
   const requiresPayment = config?.albumTracking?.rules?.printReady && !albumInfo?.isPaid;
+  
+  // Check if album requires staff to mark as paid (no self-service payment)
+  const staffPaymentOnly = config?.albumTracking?.rules?.staffPaymentOnly !== false; // Default true
   
   // Album is blocked if it needs approval OR payment (and user is not staff)
   const albumIsBlocked = !isStaff && (requiresStaffApproval || requiresPayment);
+  
+  // Album is completely locked - can't even see blurred photos (staff must mark paid)
+  const albumIsLocked = !isStaff && requiresPayment && staffPaymentOnly;
   
   // Check if hard watermark should be applied
   const applyHardWatermark = config?.branding?.watermark?.enabled || 
@@ -389,6 +395,87 @@ export default function AlbumFeedPage() {
   }
 
   const primaryColor = config.theme?.primaryColor || '#06B6D4';
+
+  // Completely locked album - show only lock screen (no photos visible at all)
+  if (albumIsLocked && albumInfo) {
+    return (
+      <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md bg-zinc-900/80 border-white/10 backdrop-blur-lg">
+          <CardContent className="pt-8 pb-8 text-center">
+            {/* Event Logo or Lock Icon */}
+            {config.branding?.logoPath ? (
+              <img 
+                src={config.branding.logoPath} 
+                alt={config.title}
+                className="h-16 mx-auto mb-6 object-contain"
+              />
+            ) : (
+              <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-gradient-to-br from-amber-500/20 to-orange-500/20 flex items-center justify-center border border-amber-500/30">
+                <Lock className="w-12 h-12 text-amber-400" />
+              </div>
+            )}
+            
+            <h1 className="text-2xl font-bold text-white mb-2">
+              Album Locked
+            </h1>
+            
+            <p className="text-zinc-400 mb-2">
+              Hi{albumInfo.visitorName ? ` ${albumInfo.visitorName}` : ''}! 👋
+            </p>
+            
+            <p className="text-zinc-500 mb-6 text-sm">
+              Your {photos.length} photo{photos.length !== 1 ? 's are' : ' is'} ready but requires payment to view and download.
+            </p>
+            
+            {/* Photo count indicator */}
+            <div className="flex items-center justify-center gap-2 mb-6">
+              <div className="flex -space-x-2">
+                {[...Array(Math.min(3, photos.length))].map((_, i) => (
+                  <div 
+                    key={i}
+                    className="w-10 h-10 rounded-lg bg-gradient-to-br from-zinc-700 to-zinc-800 border-2 border-zinc-900 flex items-center justify-center"
+                  >
+                    <Lock className="w-4 h-4 text-zinc-500" />
+                  </div>
+                ))}
+              </div>
+              <span className="text-zinc-400 text-sm ml-2">
+                {photos.length} photo{photos.length !== 1 ? 's' : ''} waiting
+              </span>
+            </div>
+            
+            {/* Instructions */}
+            <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 mb-6">
+              <p className="text-amber-300 text-sm font-medium mb-1">
+                💳 Payment Required
+              </p>
+              <p className="text-zinc-400 text-xs">
+                Please visit the event staff to complete your payment. Once paid, you'll have full access to view and download your photos.
+              </p>
+            </div>
+            
+            {/* Album Code for reference */}
+            <div className="text-center">
+              <p className="text-xs text-zinc-500 mb-1">Your Album Code</p>
+              <code className="px-4 py-2 bg-black/40 rounded-lg text-cyan-400 font-mono text-lg tracking-widest">
+                {albumInfo.id}
+              </code>
+              <p className="text-xs text-zinc-600 mt-2">
+                Show this code to staff when paying
+              </p>
+            </div>
+            
+            {/* Event info */}
+            <div className="mt-8 pt-6 border-t border-white/10">
+              <p className="text-xs text-zinc-600">
+                {config.title}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-zinc-950">
