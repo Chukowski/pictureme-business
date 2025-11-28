@@ -3005,6 +3005,47 @@ export default function AdminEventForm() {
                                 />
                               </div>
 
+                              {/* Seed for Reproducibility */}
+                              <div className="p-3 rounded-lg bg-purple-500/10 border border-purple-500/20">
+                                <div className="flex items-center justify-between mb-2">
+                                  <div className="flex items-center gap-2">
+                                    <Sparkles className="w-4 h-4 text-purple-400" />
+                                    <Label className="text-zinc-300 font-medium text-sm">Seed (Optional)</Label>
+                                  </div>
+                                  {template.pipelineConfig?.seed && (
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => updateTemplate(index, {
+                                        pipelineConfig: {
+                                          ...template.pipelineConfig,
+                                          seed: undefined
+                                        }
+                                      })}
+                                      className="h-6 px-2 text-xs text-red-400 hover:text-red-300"
+                                    >
+                                      Clear
+                                    </Button>
+                                  )}
+                                </div>
+                                <Input
+                                  type="number"
+                                  value={template.pipelineConfig?.seed || ''}
+                                  onChange={(e) => updateTemplate(index, {
+                                    pipelineConfig: {
+                                      ...template.pipelineConfig,
+                                      seed: e.target.value ? parseInt(e.target.value) : undefined
+                                    }
+                                  })}
+                                  placeholder="Leave empty for random (e.g., 12345)"
+                                  className="bg-black/40 border-white/10 text-white text-sm"
+                                />
+                                <p className="text-xs text-zinc-500 mt-2">
+                                  Same seed + same prompt = similar results. Find a good result in Playground, copy its seed here.
+                                </p>
+                              </div>
+
                               <div className="space-y-3 p-4 rounded-lg bg-black/20 border border-white/5">
                                 <div className="flex items-center justify-between">
                                   <Label className="text-zinc-300 font-medium">Background Images</Label>

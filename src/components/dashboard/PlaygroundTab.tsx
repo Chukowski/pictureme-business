@@ -153,6 +153,10 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
   
   // Force instructions toggle - adds extra context to help AI understand images
   const [forceInstructions, setForceInstructions] = useState(false);
+  
+  // Seed for reproducible results
+  const [customSeed, setCustomSeed] = useState<number | undefined>(undefined);
+  const [lastResultSeed, setLastResultSeed] = useState<number | undefined>(undefined);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
@@ -316,6 +320,7 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
         aspectRatio: selectedTemplate.aspectRatio || '9:16',
         aiModel: selectedTemplate.pipelineConfig?.imageModel || AI_MODELS[selectedAiModel].id,
         forceInstructions: forceInstructions,
+        seed: customSeed || selectedTemplate.pipelineConfig?.seed,
         onProgress: (status) => {
           if (status === 'queued') {
             setProcessingStatus('queued');
@@ -332,6 +337,12 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
 
       setProcessingStatus('complete');
       setProcessingProgress(100);
+
+      // Save the seed from the result for reproducibility
+      if (result.seed) {
+        setLastResultSeed(result.seed);
+        console.log(`🎲 Result seed: ${result.seed} (save this for reproducible results)`);
+      }
 
       // Get the result as base64 if needed
       let finalImage: string;
@@ -380,10 +391,17 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
         aspectRatio: badgeConfig.layout === 'landscape' ? '16:9' : badgeConfig.layout === 'square' ? '1:1' : '9:16',
         aiModel: badgeConfig.aiPipeline.model || AI_MODELS[selectedAiModel].id,
         forceInstructions: forceInstructions,
+        seed: customSeed,
         onProgress: (status) => {
           console.log('Badge processing status:', status);
         },
       });
+
+      // Save the seed from the result
+      if (result.seed) {
+        setLastResultSeed(result.seed);
+        console.log(`🎲 Badge result seed: ${result.seed}`);
+      }
 
       let finalImage: string;
       if (result.url.startsWith('data:')) {
@@ -1377,6 +1395,37 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
                         className="data-[state=checked]:bg-amber-600 scale-75"
                       />
                     </div>
+                    
+                    {/* Seed Input */}
+                    <div className="pt-2 border-t border-white/5">
+                      <div className="flex items-center justify-between mb-1">
+                        <div className="flex items-center gap-2">
+                          <Sparkles className="w-3 h-3 text-purple-400" />
+                          <span className="text-xs text-zinc-400">Seed (optional)</span>
+                        </div>
+                        {customSeed && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setCustomSeed(undefined)}
+                            className="h-5 px-1 text-[10px] text-red-400 hover:text-red-300"
+                          >
+                            Clear
+                          </Button>
+                        )}
+                      </div>
+                      <Input
+                        type="number"
+                        value={customSeed || ''}
+                        onChange={(e) => setCustomSeed(e.target.value ? parseInt(e.target.value) : undefined)}
+                        placeholder="Leave empty for random"
+                        className="h-7 text-xs bg-black/40 border-white/10"
+                      />
+                      <p className="text-[10px] text-zinc-500 mt-1">
+                        Same seed = similar results. {selectedTemplate?.pipelineConfig?.seed && `Template seed: ${selectedTemplate.pipelineConfig.seed}`}
+                      </p>
+                    </div>
                   </div>
                 )}
 
@@ -1440,6 +1489,45 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
                           Download
                         </Button>
                       </div>
+                      
+                      {/* Show seed from result */}
+                      {lastResultSeed && (
+                        <div className="mt-2 flex items-center justify-between p-2 rounded bg-purple-500/10 border border-purple-500/20">
+                          <div className="flex items-center gap-2">
+                            <Sparkles className="w-3 h-3 text-purple-400" />
+                            <span className="text-xs text-zinc-400">
+                              Seed: <code className="text-purple-300 font-mono">{lastResultSeed}</code>
+                            </span>
+                          </div>
+                          <div className="flex gap-1">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                navigator.clipboard.writeText(lastResultSeed.toString());
+                                toast.success('Seed copied!');
+                              }}
+                              className="h-6 px-2 text-xs text-purple-400 hover:text-purple-300"
+                            >
+                              <Copy className="w-3 h-3 mr-1" />
+                              Copy
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setCustomSeed(lastResultSeed);
+                                toast.success('Seed set for next generation!');
+                              }}
+                              className="h-6 px-2 text-xs text-cyan-400 hover:text-cyan-300"
+                            >
+                              Use Again
+                            </Button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ) : isProcessing ? (
                     <div className="text-center p-8">

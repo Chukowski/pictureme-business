@@ -363,6 +363,7 @@ export const PhotoBoothPage = () => {
         aspectRatio: selectedBackground.aspectRatio || '9:16', // Use template aspect ratio
         aiModel: selectedBackground.pipelineConfig?.imageModel, // Use template's AI model
         forceInstructions: selectedBackground.pipelineConfig?.forceInstructions, // Use template's force instructions setting
+        seed: selectedBackground.pipelineConfig?.seed, // Use template's seed for reproducible results
         onProgress: (status) => {
           if (status === "queued") {
             setProcessingStatus("Waiting in queue...");

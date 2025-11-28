@@ -94,6 +94,7 @@ export interface ProcessImageOptions {
   aspectRatio?: AspectRatio; // Output aspect ratio
   aiModel?: string; // AI model to use (defaults to Gemini)
   forceInstructions?: boolean; // Add extra instructions to help model understand images
+  seed?: number; // Seed for reproducible results (same seed = similar output)
   onProgress?: (status: string, logs?: string[]) => void;
 }
 
@@ -248,15 +249,23 @@ Transform them while keeping their identity recognizable.`;
       console.log("📝 Enhanced prompt for Seedream:", enhancedPrompt);
       
       // Seedream v4 Edit model - send both images with higher guidance for better prompt following
+      const seedreamInput: Record<string, unknown> = {
+        prompt: enhancedPrompt,
+        image_urls: imageUrls, // User photo + background to combine
+        num_images: 1,
+        output_format: "jpeg",
+        image_size: dimensions,
+        guidance_scale: 7.5, // Higher guidance = follows prompt more closely
+      };
+      
+      // Add seed if provided
+      if (options.seed !== undefined) {
+        seedreamInput.seed = options.seed;
+        console.log(`🎲 Seed: ${options.seed} (for reproducible results)`);
+      }
+      
       result = await fal.subscribe(modelToUse, {
-        input: {
-          prompt: enhancedPrompt,
-          image_urls: imageUrls, // User photo + background to combine
-          num_images: 1,
-          output_format: "jpeg",
-          image_size: dimensions,
-          guidance_scale: 7.5, // Higher guidance = follows prompt more closely
-        },
+        input: seedreamInput,
         logs: true,
         onQueueUpdate: (update) => {
           if (update.status === "IN_PROGRESS" && onProgress) {
@@ -333,6 +342,12 @@ Transform the person(s) from Image 1 according to the instructions above and pla
         num_images: 1,
         output_format: "jpeg",
       };
+      
+      // Add seed if provided (for reproducible results)
+      if (options.seed !== undefined) {
+        modelInput.seed = options.seed;
+        console.log(`🎲 Seed: ${options.seed} (for reproducible results)`);
+      }
       
       // Add image_size for Flux 2 Pro - use optimized sizes to stay under 1 megapixel ($0.03)
       if (isFlux2Pro && aspectRatio !== 'auto') {
