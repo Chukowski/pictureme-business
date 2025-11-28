@@ -242,3 +242,60 @@ async def get_album_status(code: str):
             "photo_count": row["photo_count"]
         }
 
+
+@router.get("/event/{event_id}/stats")
+async def get_event_album_stats(event_id: int, request: Request):
+    """Get album statistics for an event (for dashboard)"""
+    user = await get_current_user_from_request(request)
+    
+    async with db_pool.acquire() as conn:
+        # Verify user has access to event
+        event = await conn.fetchrow(
+            "SELECT user_id, organization_id FROM events WHERE id = $1", event_id
+        )
+        if not event:
+            raise HTTPException(status_code=404, detail="Event not found")
+        
+        has_access = str(event["user_id"]) == str(user["id"])
+        
+        # Check organization membership
+        if not has_access and event["organization_id"]:
+            is_owner = await conn.fetchval(
+                "SELECT 1 FROM organizations WHERE id = $1 AND owner_user_id = $2",
+                event["organization_id"], user["id"]
+            )
+            is_member = await conn.fetchval("""
+                SELECT 1 FROM organization_members 
+                WHERE organization_id = $1 AND user_id = $2 AND status = 'active'
+            """, event["organization_id"], user["id"])
+            has_access = is_owner or is_member
+        
+        if not has_access:
+            raise HTTPException(status_code=403, detail="No access to this event")
+        
+        # Get album statistics
+        stats = await conn.fetchrow("""
+            SELECT 
+                COUNT(*) as total_albums,
+                COUNT(*) FILTER (WHERE status = 'completed') as completed_albums,
+                COUNT(*) FILTER (WHERE status = 'in_progress') as in_progress_albums,
+                COUNT(*) FILTER (WHERE payment_status = 'paid') as paid_albums,
+                COALESCE(SUM(
+                    (SELECT COUNT(*) FROM album_photos WHERE album_id = a.id)
+                ), 0) as total_photos,
+                COUNT(*) FILTER (WHERE status = 'in_progress' AND 
+                    (SELECT COUNT(*) FROM album_photos WHERE album_id = a.id AND approved = false) > 0
+                ) as pending_approval
+            FROM albums a
+            WHERE a.event_id = $1
+        """, event_id)
+        
+        return {
+            "totalAlbums": stats["total_albums"] or 0,
+            "completedAlbums": stats["completed_albums"] or 0,
+            "inProgressAlbums": stats["in_progress_albums"] or 0,
+            "paidAlbums": stats["paid_albums"] or 0,
+            "totalPhotos": stats["total_photos"] or 0,
+            "pendingApproval": stats["pending_approval"] or 0
+        }
+

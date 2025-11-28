@@ -7,7 +7,7 @@
 
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { User, getUserEvents, type EventConfig } from "@/services/eventsApi";
+import { User, getUserEvents, getEventAlbumStats, type EventConfig, type EventAlbumStats } from "@/services/eventsApi";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -49,16 +49,38 @@ export default function AlbumsTab({ currentUser }: AlbumsTabProps) {
       // Filter events with album tracking enabled
       const albumEvents = allEvents.filter(e => e.albumTracking?.enabled);
       
-      // Add mock album stats (in production, this would come from API)
-      const eventsWithStats: EventWithAlbums[] = albumEvents.map(e => ({
-        ...e,
-        albumStats: {
-          totalAlbums: Math.floor(Math.random() * 100) + 10,
-          completedAlbums: Math.floor(Math.random() * 50) + 5,
-          pendingApproval: Math.floor(Math.random() * 10),
-          totalPhotos: Math.floor(Math.random() * 500) + 50,
-        }
-      }));
+      // Fetch real album stats for each event
+      const eventsWithStats: EventWithAlbums[] = await Promise.all(
+        albumEvents.map(async (e) => {
+          let stats: EventAlbumStats = {
+            totalAlbums: 0,
+            completedAlbums: 0,
+            inProgressAlbums: 0,
+            paidAlbums: 0,
+            totalPhotos: 0,
+            pendingApproval: 0
+          };
+          
+          // Only fetch stats if we have a postgres_event_id
+          if (e.postgres_event_id) {
+            try {
+              stats = await getEventAlbumStats(e.postgres_event_id);
+            } catch (err) {
+              console.warn(`Failed to load stats for event ${e._id}:`, err);
+            }
+          }
+          
+          return {
+            ...e,
+            albumStats: {
+              totalAlbums: stats.totalAlbums,
+              completedAlbums: stats.completedAlbums,
+              pendingApproval: stats.pendingApproval,
+              totalPhotos: stats.totalPhotos,
+            }
+          };
+        })
+      );
 
       setEvents(eventsWithStats);
       if (eventsWithStats.length > 0) {
@@ -246,38 +268,34 @@ export default function AlbumsTab({ currentUser }: AlbumsTabProps) {
 
             {/* Quick Actions */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <Button
-                variant="outline"
+              <button
                 onClick={() => handleGenerateQR(selectedEvent, 'Registration')}
-                className="h-auto py-4 flex-col gap-2 border-white/10 text-zinc-300 hover:text-white hover:bg-white/5"
+                className="h-auto py-4 flex flex-col items-center gap-2 rounded-xl bg-zinc-900/50 border border-white/10 text-zinc-300 hover:text-white hover:bg-zinc-800/50 hover:border-cyan-500/30 transition-all"
               >
                 <QrCode className="w-6 h-6 text-cyan-400" />
                 <span className="text-xs">Registration QR</span>
-              </Button>
-              <Button
-                variant="outline"
+              </button>
+              <button
                 onClick={() => handleViewAlbums(selectedEvent)}
-                className="h-auto py-4 flex-col gap-2 border-white/10 text-zinc-300 hover:text-white hover:bg-white/5"
+                className="h-auto py-4 flex flex-col items-center gap-2 rounded-xl bg-zinc-900/50 border border-white/10 text-zinc-300 hover:text-white hover:bg-zinc-800/50 hover:border-purple-500/30 transition-all"
               >
                 <BookOpen className="w-6 h-6 text-purple-400" />
                 <span className="text-xs">View Albums</span>
-              </Button>
-              <Button
-                variant="outline"
+              </button>
+              <button
                 onClick={() => handleOpenStaffDashboard(selectedEvent)}
-                className="h-auto py-4 flex-col gap-2 border-white/10 text-zinc-300 hover:text-white hover:bg-white/5"
+                className="h-auto py-4 flex flex-col items-center gap-2 rounded-xl bg-zinc-900/50 border border-white/10 text-zinc-300 hover:text-white hover:bg-zinc-800/50 hover:border-green-500/30 transition-all"
               >
                 <Users className="w-6 h-6 text-green-400" />
                 <span className="text-xs">Staff Tools</span>
-              </Button>
-              <Button
-                variant="outline"
+              </button>
+              <button
                 onClick={() => navigate(`/admin/events/${selectedEvent._id}/edit`)}
-                className="h-auto py-4 flex-col gap-2 border-white/10 text-zinc-300 hover:text-white hover:bg-white/5"
+                className="h-auto py-4 flex flex-col items-center gap-2 rounded-xl bg-zinc-900/50 border border-white/10 text-zinc-300 hover:text-white hover:bg-zinc-800/50 hover:border-amber-500/30 transition-all"
               >
                 <Settings className="w-6 h-6 text-amber-400" />
                 <span className="text-xs">Edit Event</span>
-              </Button>
+              </button>
             </div>
           </div>
 

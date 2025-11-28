@@ -729,6 +729,33 @@ export async function getEventAlbums(eventId: number): Promise<Album[]> {
   return response.json();
 }
 
+export interface EventAlbumStats {
+  totalAlbums: number;
+  completedAlbums: number;
+  inProgressAlbums: number;
+  paidAlbums: number;
+  totalPhotos: number;
+  pendingApproval: number;
+}
+
+export async function getEventAlbumStats(eventId: number): Promise<EventAlbumStats> {
+  const token = getAuthToken();
+  const response = await fetch(`${getApiUrl()}/api/albums/event/${eventId}/stats`, {
+    headers: { 'Authorization': `Bearer ${token}` }
+  });
+  if (!response.ok) {
+    return {
+      totalAlbums: 0,
+      completedAlbums: 0,
+      inProgressAlbums: 0,
+      paidAlbums: 0,
+      totalPhotos: 0,
+      pendingApproval: 0
+    };
+  }
+  return response.json();
+}
+
 export async function updateAlbumStatus(albumCode: string, status: 'in_progress' | 'completed' | 'paid' | 'archived'): Promise<void> {
   const token = getAuthToken();
   const response = await fetch(`${getApiUrl()}/api/albums/${albumCode}/status?status=${status}`, {
