@@ -82,7 +82,7 @@ async def get_token_stats(request: Request):
     user_id = user["id"]
     
     async with db_pool.acquire() as conn:
-        # Get current tokens and plan info
+        # Get current tokens and plan info - try legacy users table first
         user_data = await conn.fetchrow(
             """
             SELECT 
@@ -95,8 +95,25 @@ async def get_token_stats(request: Request):
             user_id
         )
         
-        current_tokens = user_data["tokens_remaining"] or 0
-        tokens_total = user_data["tokens_total"] or 1000
+        # If not found in legacy users, check Better Auth user table
+        if not user_data:
+            # For Better Auth users, use default token allocation
+            user_data = await conn.fetchrow(
+                """
+                SELECT 
+                    COALESCE(
+                        (SELECT tokens_remaining FROM users WHERE email = u.email),
+                        1000
+                    ) as tokens_remaining,
+                    1000 as tokens_total
+                FROM "user" u
+                WHERE u.id = $1
+                """,
+                user_id
+            )
+        
+        current_tokens = user_data["tokens_remaining"] if user_data else 0
+        tokens_total = user_data["tokens_total"] if user_data else 1000
         
         # Get tokens used this month
         first_of_month = datetime.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
