@@ -5,6 +5,7 @@
  */
 
 import { ENV } from "@/config/env";
+import type { BadgeTemplateConfig } from "@/components/templates/BadgeTemplateEditor";
 
 // Helper function to get API URL dynamically with HTTPS enforcement
 // This ensures window.ENV is available when the URL is needed
@@ -152,6 +153,8 @@ export interface EventConfig {
   albumTracking?: AlbumTrackingConfig;
   // Sharing Overrides (Business: Event Pro+)
   sharingOverrides?: SharingOverrides;
+  // Badge Template (for Registration stations)
+  badgeTemplate?: BadgeTemplateConfig;
 }
 
 export type AspectRatio = 'auto' | '1:1' | '4:5' | '3:2' | '16:9' | '9:16';

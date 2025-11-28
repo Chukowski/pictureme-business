@@ -195,7 +195,7 @@ export function RegistrationBadgeFlow({
     }
   }, [capturedPhoto, eventId, visitorName, visitorEmail]);
 
-  // Download badge with real QR code using badge template settings
+  // Download badge with real QR code using badge template settings (including custom positions)
   const downloadBadge = useCallback(async () => {
     if (!capturedPhoto || !albumCode) return;
     
@@ -218,6 +218,10 @@ export function RegistrationBadgeFlow({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     
+    // Check if using custom positions from visual editor
+    const useCustom = badgeTemplate?.useCustomPositions && badgeTemplate?.customPositions;
+    const customPos = badgeTemplate?.customPositions;
+    
     // Draw background from template or use primary color
     if (badgeTemplate?.backgroundUrl) {
       const bgImg = new Image();
@@ -239,12 +243,20 @@ export function RegistrationBadgeFlow({
       ctx.fillRect(0, 0, canvas.width, canvas.height);
     }
     
-    // Calculate photo size from template
-    const photoSizePercent = badgeTemplate?.photoPlacement?.size === 'small' ? 0.25 
-      : badgeTemplate?.photoPlacement?.size === 'large' ? 0.45 : 0.35;
+    // Calculate photo size and position
+    const photoSizePercent = useCustom && customPos?.photo?.width 
+      ? customPos.photo.width / 100
+      : (badgeTemplate?.photoPlacement?.size === 'small' ? 0.25 
+        : badgeTemplate?.photoPlacement?.size === 'large' ? 0.45 : 0.35);
     const photoSize = Math.min(canvas.width, canvas.height) * photoSizePercent;
-    const photoX = (canvas.width - photoSize) / 2;
-    const photoY = 40;
+    
+    // Use custom positions or default centered positions
+    const photoX = useCustom && customPos?.photo 
+      ? (customPos.photo.x / 100) * canvas.width - photoSize / 2
+      : (canvas.width - photoSize) / 2;
+    const photoY = useCustom && customPos?.photo 
+      ? (customPos.photo.y / 100) * canvas.height - photoSize / 2
+      : 40;
     
     // Load and draw photo
     const img = new Image();
@@ -290,19 +302,24 @@ export function RegistrationBadgeFlow({
       img.src = capturedPhoto;
     });
     
-    // Draw text with template styles
+    // Draw text with template styles and custom positions
     const textStyle = badgeTemplate?.textStyle;
     ctx.textAlign = 'center';
-    
-    let textY = photoY + photoSize + 50;
     
     // Name
     if (badgeTemplate?.fields?.showName !== false && visitorName) {
       ctx.fillStyle = textStyle?.nameColor || 'white';
       const nameFontSize = Math.round(canvas.height * (textStyle?.nameFontSize || 5) / 100);
       ctx.font = `bold ${nameFontSize}px ${textStyle?.fontFamily || 'sans-serif'}`;
-      ctx.fillText(visitorName, canvas.width / 2, textY);
-      textY += nameFontSize + 15;
+      
+      const nameX = useCustom && customPos?.name 
+        ? (customPos.name.x / 100) * canvas.width 
+        : canvas.width / 2;
+      const nameY = useCustom && customPos?.name 
+        ? (customPos.name.y / 100) * canvas.height 
+        : photoY + photoSize + 50;
+      
+      ctx.fillText(visitorName, nameX, nameY);
     }
     
     // Event name
@@ -310,8 +327,15 @@ export function RegistrationBadgeFlow({
       ctx.fillStyle = textStyle?.eventNameColor || 'rgba(255,255,255,0.9)';
       const eventFontSize = Math.round(canvas.height * (textStyle?.eventNameFontSize || 3.5) / 100);
       ctx.font = `${eventFontSize}px ${textStyle?.fontFamily || 'sans-serif'}`;
-      ctx.fillText(eventName, canvas.width / 2, textY);
-      textY += eventFontSize + 10;
+      
+      const eventX = useCustom && customPos?.eventName 
+        ? (customPos.eventName.x / 100) * canvas.width 
+        : canvas.width / 2;
+      const eventY = useCustom && customPos?.eventName 
+        ? (customPos.eventName.y / 100) * canvas.height 
+        : photoY + photoSize + 90;
+      
+      ctx.fillText(eventName, eventX, eventY);
     }
     
     // Date
@@ -319,17 +343,32 @@ export function RegistrationBadgeFlow({
       ctx.fillStyle = textStyle?.dateTimeColor || 'rgba(255,255,255,0.7)';
       const dateFontSize = Math.round(canvas.height * (textStyle?.dateTimeFontSize || 2.5) / 100);
       ctx.font = `${dateFontSize}px ${textStyle?.fontFamily || 'sans-serif'}`;
-      ctx.fillText(new Date().toLocaleDateString(), canvas.width / 2, textY);
+      
+      const dateX = useCustom && customPos?.dateTime 
+        ? (customPos.dateTime.x / 100) * canvas.width 
+        : canvas.width / 2;
+      const dateY = useCustom && customPos?.dateTime 
+        ? (customPos.dateTime.y / 100) * canvas.height 
+        : photoY + photoSize + 120;
+      
+      ctx.fillText(new Date().toLocaleDateString(), dateX, dateY);
     }
     
     // Generate and draw real QR code
     if (badgeTemplate?.qrCode?.enabled !== false) {
       const qrUrl = `${window.location.origin}/${userSlug}/${eventSlug}/booth?album=${albumCode}`;
-      const qrSizePercent = badgeTemplate?.qrCode?.size === 'small' ? 0.15 
-        : badgeTemplate?.qrCode?.size === 'large' ? 0.25 : 0.20;
+      const qrSizePercent = useCustom && customPos?.qrCode?.width 
+        ? customPos.qrCode.width / 100
+        : (badgeTemplate?.qrCode?.size === 'small' ? 0.15 
+          : badgeTemplate?.qrCode?.size === 'large' ? 0.25 : 0.20);
       const qrSize = Math.min(canvas.width, canvas.height) * qrSizePercent;
-      const qrX = (canvas.width - qrSize) / 2;
-      const qrY = canvas.height - qrSize - 50;
+      
+      const qrX = useCustom && customPos?.qrCode 
+        ? (customPos.qrCode.x / 100) * canvas.width - qrSize / 2
+        : (canvas.width - qrSize) / 2;
+      const qrY = useCustom && customPos?.qrCode 
+        ? (customPos.qrCode.y / 100) * canvas.height - qrSize / 2
+        : canvas.height - qrSize - 50;
       
       // Draw white background for QR
       ctx.fillStyle = 'white';
@@ -362,7 +401,7 @@ export function RegistrationBadgeFlow({
       // Draw album code below QR
       ctx.fillStyle = 'rgba(255,255,255,0.9)';
       ctx.font = 'bold 14px monospace';
-      ctx.fillText(albumCode, canvas.width / 2, qrY + qrSize + padding + 20);
+      ctx.fillText(albumCode, qrX + qrSize / 2, qrY + qrSize + padding + 20);
     }
     
     // Download
@@ -632,77 +671,115 @@ export function RegistrationBadgeFlow({
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              {/* Badge Preview - uses badge template settings */}
-              <div 
-                className="relative rounded-xl overflow-hidden p-6"
-                style={{ 
-                  backgroundColor: badgeTemplate?.backgroundUrl ? undefined : (badgeTemplate?.backgroundColor || primaryColor),
-                  backgroundImage: badgeTemplate?.backgroundUrl ? `url(${badgeTemplate.backgroundUrl})` : undefined,
-                  backgroundSize: 'cover',
-                  backgroundPosition: 'center',
-                }}
-              >
-                <div className="flex flex-col items-center">
-                  {/* Photo with template shape */}
+              {/* Badge Preview - uses badge template settings including custom positions */}
+              {(() => {
+                const useCustom = badgeTemplate?.useCustomPositions && badgeTemplate?.customPositions;
+                const customPos = badgeTemplate?.customPositions;
+                const layout = badgeTemplate?.layout || 'portrait';
+                const aspectRatio = layout === 'landscape' ? '4/3' : layout === 'square' ? '1/1' : '3/4';
+                
+                return (
                   <div 
-                    className={`w-24 h-24 overflow-hidden border-4 border-white/30 mb-4 ${
-                      badgeTemplate?.photoPlacement?.shape === 'rounded' ? 'rounded-xl' :
-                      badgeTemplate?.photoPlacement?.shape === 'square' ? 'rounded-none' : 'rounded-full'
-                    }`}
+                    className="relative rounded-xl overflow-hidden"
+                    style={{ 
+                      backgroundColor: badgeTemplate?.backgroundUrl ? undefined : (badgeTemplate?.backgroundColor || primaryColor),
+                      backgroundImage: badgeTemplate?.backgroundUrl ? `url(${badgeTemplate.backgroundUrl})` : undefined,
+                      backgroundSize: 'cover',
+                      backgroundPosition: 'center',
+                      aspectRatio,
+                      minHeight: '280px',
+                    }}
                   >
-                    <img
-                      src={capturedPhoto}
-                      alt="Profile"
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  
-                  {/* Name */}
-                  {badgeTemplate?.fields?.showName !== false && visitorName && (
-                    <p 
-                      className="text-xl font-bold"
-                      style={{ color: badgeTemplate?.textStyle?.nameColor || 'white' }}
+                    {/* Photo with template shape and custom position */}
+                    <div 
+                      className={`absolute overflow-hidden border-4 border-white/30 ${
+                        badgeTemplate?.photoPlacement?.shape === 'rounded' ? 'rounded-xl' :
+                        badgeTemplate?.photoPlacement?.shape === 'square' ? 'rounded-none' : 'rounded-full'
+                      }`}
+                      style={{
+                        width: `${(useCustom && customPos?.photo?.width) || (badgeTemplate?.photoPlacement?.size === 'small' ? 20 : badgeTemplate?.photoPlacement?.size === 'large' ? 40 : 30)}%`,
+                        aspectRatio: '1/1',
+                        left: `${(useCustom && customPos?.photo?.x) || 50}%`,
+                        top: `${(useCustom && customPos?.photo?.y) || 25}%`,
+                        transform: 'translate(-50%, -50%)',
+                      }}
                     >
-                      {visitorName}
-                    </p>
-                  )}
-                  
-                  {/* Event name */}
-                  {badgeTemplate?.fields?.showEventName !== false && (
-                    <p 
-                      className="text-sm"
-                      style={{ color: badgeTemplate?.textStyle?.eventNameColor || 'rgba(255,255,255,0.8)' }}
-                    >
-                      {eventName}
-                    </p>
-                  )}
-                  
-                  {/* Date */}
-                  {badgeTemplate?.fields?.showDateTime !== false && (
-                    <p 
-                      className="text-xs mt-1"
-                      style={{ color: badgeTemplate?.textStyle?.dateTimeColor || 'rgba(255,255,255,0.6)' }}
-                    >
-                      {new Date().toLocaleDateString()}
-                    </p>
-                  )}
-                  
-                  {/* Real QR Code */}
-                  {badgeTemplate?.qrCode?.enabled !== false && (
-                    <>
-                      <div className="mt-4 p-3 bg-white rounded-lg" data-qr-code>
-                        <QRCodeSVG 
-                          value={`${window.location.origin}/${userSlug}/${eventSlug}/booth?album=${albumCode}`}
-                          size={80}
-                          level="M"
-                          includeMargin={false}
-                        />
+                      <img
+                        src={capturedPhoto}
+                        alt="Profile"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    
+                    {/* Name */}
+                    {badgeTemplate?.fields?.showName !== false && visitorName && (
+                      <p 
+                        className="absolute text-lg font-bold whitespace-nowrap"
+                        style={{ 
+                          color: badgeTemplate?.textStyle?.nameColor || 'white',
+                          left: `${(useCustom && customPos?.name?.x) || 50}%`,
+                          top: `${(useCustom && customPos?.name?.y) || 55}%`,
+                          transform: 'translate(-50%, -50%)',
+                        }}
+                      >
+                        {visitorName}
+                      </p>
+                    )}
+                    
+                    {/* Event name */}
+                    {badgeTemplate?.fields?.showEventName !== false && (
+                      <p 
+                        className="absolute text-sm whitespace-nowrap"
+                        style={{ 
+                          color: badgeTemplate?.textStyle?.eventNameColor || 'rgba(255,255,255,0.8)',
+                          left: `${(useCustom && customPos?.eventName?.x) || 50}%`,
+                          top: `${(useCustom && customPos?.eventName?.y) || 62}%`,
+                          transform: 'translate(-50%, -50%)',
+                        }}
+                      >
+                        {eventName}
+                      </p>
+                    )}
+                    
+                    {/* Date */}
+                    {badgeTemplate?.fields?.showDateTime !== false && (
+                      <p 
+                        className="absolute text-xs whitespace-nowrap"
+                        style={{ 
+                          color: badgeTemplate?.textStyle?.dateTimeColor || 'rgba(255,255,255,0.6)',
+                          left: `${(useCustom && customPos?.dateTime?.x) || 50}%`,
+                          top: `${(useCustom && customPos?.dateTime?.y) || 68}%`,
+                          transform: 'translate(-50%, -50%)',
+                        }}
+                      >
+                        {new Date().toLocaleDateString()}
+                      </p>
+                    )}
+                    
+                    {/* Real QR Code */}
+                    {badgeTemplate?.qrCode?.enabled !== false && (
+                      <div 
+                        className="absolute flex flex-col items-center"
+                        style={{
+                          left: `${(useCustom && customPos?.qrCode?.x) || 50}%`,
+                          top: `${(useCustom && customPos?.qrCode?.y) || 85}%`,
+                          transform: 'translate(-50%, -50%)',
+                        }}
+                      >
+                        <div className="p-2 bg-white rounded-lg" data-qr-code>
+                          <QRCodeSVG 
+                            value={`${window.location.origin}/${userSlug}/${eventSlug}/booth?album=${albumCode}`}
+                            size={60}
+                            level="M"
+                            includeMargin={false}
+                          />
+                        </div>
+                        <p className="mt-1 font-mono text-xs text-white/80">{albumCode}</p>
                       </div>
-                      <p className="mt-2 font-mono text-sm text-white/80">{albumCode}</p>
-                    </>
-                  )}
-                </div>
-              </div>
+                    )}
+                  </div>
+                );
+              })()}
 
               {/* Actions */}
               <div className="grid grid-cols-2 gap-3">

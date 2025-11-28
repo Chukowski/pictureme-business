@@ -433,7 +433,7 @@ export const PhotoBoothPage = () => {
           userSlug={userSlug!}
           eventSlug={eventSlug!}
           primaryColor={config.theme?.primaryColor}
-          badgeTemplate={(config as any).badgeTemplate}
+          badgeTemplate={config.badgeTemplate}
           onComplete={(albumCode) => {
             // Navigate to booth with the new album
             navigate(`/${userSlug}/${eventSlug}/booth?album=${albumCode}`);
