@@ -4,7 +4,19 @@
  * Backend handles MinIO uploads and PostgreSQL operations
  */
 
-const API_URL = import.meta.env.VITE_API_URL || '';
+import { ENV } from '@/config/env';
+
+// Helper to get API URL dynamically with HTTPS enforcement
+function getApiUrl(): string {
+  let url = ENV.API_URL || '';
+  
+  // Force HTTPS for production (non-localhost) URLs
+  if (url && url.startsWith('http://') && !url.includes('localhost') && !url.includes('127.0.0.1')) {
+    url = url.replace('http://', 'https://');
+  }
+  
+  return url;
+}
 
 export interface CloudPhoto {
   id: string;
@@ -33,7 +45,7 @@ export async function savePhotoToCloud(photo: {
   eventSlug?: string;
 }): Promise<CloudPhoto> {
   try {
-    const response = await fetch(`${API_URL}/api/photos/upload/public`, {
+    const response = await fetch(`${getApiUrl()}/api/photos/upload/public`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -82,7 +94,7 @@ export async function savePhotoToCloud(photo: {
  */
 export async function getPhotoByShareCode(shareCode: string): Promise<CloudPhoto | null> {
   try {
-    const response = await fetch(`${API_URL}/api/photos/${shareCode}`);
+    const response = await fetch(`${getApiUrl()}/api/photos/${shareCode}`);
     
     if (!response.ok) {
       if (response.status === 404) {
@@ -118,7 +130,7 @@ export async function getPhotoByShareCode(shareCode: string): Promise<CloudPhoto
  */
 export async function getAllPhotosFromCloud(): Promise<CloudPhoto[]> {
   try {
-    const response = await fetch(`${API_URL}/api/photos`);
+    const response = await fetch(`${getApiUrl()}/api/photos`);
     
     if (!response.ok) {
       throw new Error(`Failed to fetch photos: ${response.statusText}`);
@@ -136,7 +148,7 @@ export async function getAllPhotosFromCloud(): Promise<CloudPhoto[]> {
  */
 export async function deletePhotoFromCloud(id: string): Promise<boolean> {
   try {
-    const response = await fetch(`${API_URL}/api/photos/${id}`, {
+    const response = await fetch(`${getApiUrl()}/api/photos/${id}`, {
       method: 'DELETE',
     });
     

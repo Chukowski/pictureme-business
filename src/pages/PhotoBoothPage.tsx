@@ -346,7 +346,7 @@ export const PhotoBoothPage = () => {
           processedImageBase64: processedBase64,
           backgroundId: selectedBackground.id,
           backgroundName: selectedBackground.name,
-          prompt: selectedBackground.prompt,
+          prompt: promptToUse, // Use the actual prompt used for processing
           userSlug: config.user_slug || userSlug,
           eventSlug: config.slug || eventSlug,
         });
