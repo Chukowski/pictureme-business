@@ -1517,15 +1517,15 @@ async def get_event(user_slug: str, event_slug: str):
         # Still not found? Try searching all events with matching slug and user_slug
         if not event_doc:
             try:
-                # Query CouchDB directly for events with matching user_slug
-                result = couch.events_db.find({
-                    "selector": {
+                # Query CouchDB directly for events with matching user_slug using the service method
+                docs = couch._find_documents(
+                    couch.events_db_name,
+                    {
                         "user_slug": user_slug,
                         "slug": event_slug
                     },
-                    "limit": 1
-                })
-                docs = list(result)
+                    limit=1
+                )
                 if docs:
                     event_doc = docs[0]
             except Exception as e:
@@ -1588,14 +1588,14 @@ async def get_event_photos_by_slug(user_slug: str, event_slug: str, limit: int =
     # If not found, try searching by user_slug in CouchDB
     if not event_doc:
         try:
-            result = couch.events_db.find({
-                "selector": {
+            docs = couch._find_documents(
+                couch.events_db_name,
+                {
                     "user_slug": user_slug,
                     "slug": event_slug
                 },
-                "limit": 1
-            })
-            docs = list(result)
+                limit=1
+            )
             if docs:
                 event_doc = docs[0]
         except Exception as e:
