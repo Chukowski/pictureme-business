@@ -240,11 +240,44 @@ export async function processImageWithAI(
       const dimensions = getImageDimensions(aspectRatio);
       console.log(`📐 Using aspect ratio: ${aspectRatio} (${dimensions.width}x${dimensions.height})`);
       
-      // For Seedream, we need to be very explicit about the person in the image
-      // Add specific instructions about preserving the person's features
-      const enhancedPrompt = `IMPORTANT: The person in the provided images is the MAIN SUBJECT. ${backgroundPrompt}. 
+      // Detect if this is a style transformation (LEGO, Pixar, anime, etc.)
+      const promptLower = backgroundPrompt.toLowerCase();
+      const isStyleTransform = 
+        promptLower.includes('lego') || 
+        promptLower.includes('pixar') || 
+        promptLower.includes('anime') || 
+        promptLower.includes('cartoon') ||
+        promptLower.includes('clay') ||
+        promptLower.includes('3d render') ||
+        promptLower.includes('minifigure') ||
+        promptLower.includes('toy') ||
+        promptLower.includes('plastic');
+      
+      let enhancedPrompt: string;
+      
+      if (isStyleTransform) {
+        // For style transformations, DON'T ask to preserve skin tone, etc.
+        // Instead, focus on the transformation while keeping pose/composition
+        enhancedPrompt = `You have 2 images:
+- Image 1: Photo of person(s) - this is the SUBJECT to transform
+- Image 2: Background scene - use this as the setting
+
+YOUR TASK: ${backgroundPrompt}
+
+IMPORTANT INSTRUCTIONS:
+1. Transform the person(s) from Image 1 according to the style instructions above
+2. Keep the same pose, position, and composition as the original
+3. Place the transformed subject in the scene from Image 2
+4. Match the number of people (if there are 2 people, create 2 characters)
+5. The style transformation should be complete - do NOT mix real human features with the new style`;
+        console.log("🎨 Style transformation detected - using style-focused prompt");
+      } else {
+        // For non-style transformations, preserve identity
+        enhancedPrompt = `IMPORTANT: The person in the provided images is the MAIN SUBJECT. ${backgroundPrompt}. 
 You MUST preserve the person's key features: their hair (color, length, style), face shape, skin tone, and overall appearance. 
 Transform them while keeping their identity recognizable.`;
+        console.log("👤 Identity preservation mode - keeping person's features");
+      }
       
       console.log("📝 Enhanced prompt for Seedream:", enhancedPrompt);
       
