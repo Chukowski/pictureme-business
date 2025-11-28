@@ -113,6 +113,7 @@ async def send_album_email(request: SendAlbumEmailRequest):
     logger.info(f"📧 Attempting to send album email to {request.to_email}")
     logger.info(f"📧 Album URL: {request.album_url}")
     logger.info(f"📧 Event: {request.event_name}")
+    logger.info(f"📧 Event Logo URL: {request.event_logo_url}")
     
     if not is_email_configured():
         logger.error("❌ Email service not configured")

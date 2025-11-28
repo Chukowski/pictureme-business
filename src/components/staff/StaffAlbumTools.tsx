@@ -147,6 +147,8 @@ export function StaffAlbumTools({
     try {
       const albumUrl = getAlbumUrl(selectedAlbumCode);
       
+      console.log('📧 Sending email with logo:', eventLogoUrl);
+      
       await sendAlbumEmail(
         emailAddress,
         albumUrl,

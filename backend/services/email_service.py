@@ -221,10 +221,18 @@ def send_album_share_email(
                         <td style="background-color: #0f0f0f; border-radius: 0 0 16px 16px; padding: 25px 30px; text-align: center;">
                             <table role="presentation" style="width: 100%; border-collapse: collapse;">
                                 <tr>
-                                    <td align="center">
-                                        <a href="https://pictureme.now" style="text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
-                                            <img src="{akito_url}" alt="Akito" style="width: 28px; height: 28px; vertical-align: middle;" />
-                                            <span style="color: #a1a1aa; font-size: 13px;">Powered by <strong style="color: #06B6D4;">PictureMe.Now</strong></span>
+                                    <td align="center" style="vertical-align: middle;">
+                                        <a href="https://pictureme.now" style="text-decoration: none;">
+                                            <table role="presentation" style="border-collapse: collapse; display: inline-table;">
+                                                <tr>
+                                                    <td style="vertical-align: middle; padding-right: 8px;">
+                                                        <img src="{akito_url}" alt="Akito" width="24" height="24" style="display: block; width: 24px; height: 24px;" />
+                                                    </td>
+                                                    <td style="vertical-align: middle;">
+                                                        <span style="color: #a1a1aa; font-size: 13px;">Powered by <strong style="color: #06B6D4;">PictureMe.Now</strong></span>
+                                                    </td>
+                                                </tr>
+                                            </table>
                                         </a>
                                     </td>
                                 </tr>
