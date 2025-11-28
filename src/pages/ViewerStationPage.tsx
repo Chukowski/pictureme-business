@@ -48,14 +48,15 @@ export function ViewerStationPage() {
   const navigate = useNavigate();
   const { config, loading: configLoading, error: configError } = useEventConfig(userSlug!, eventSlug!);
 
-  const [state, setState] = useState<ViewerState>('pin');
+  // Start directly in scan mode - no PIN required for viewer station
+  const [state, setState] = useState<ViewerState>('scan');
   const [album, setAlbum] = useState<Album | MockAlbum | null>(null);
   const [photos, setPhotos] = useState<AlbumPhoto[]>([]);
-  const [showQRScanner, setShowQRScanner] = useState(false);
+  const [showQRScanner, setShowQRScanner] = useState(true); // Start with scanner open
   const [manualCode, setManualCode] = useState('');
   const [isUnlocking, setIsUnlocking] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
-  const [isPinVerified, setIsPinVerified] = useState(false);
+  const [isPinVerified, setIsPinVerified] = useState(true); // Auto-verified for viewer
 
   // Check for album code in URL
   const albumCode = searchParams.get('album');
@@ -117,11 +118,15 @@ export function ViewerStationPage() {
     }
   };
 
-  // Handle QR scan
+  // Handle QR scan - also sends to Big Screen Display
   const handleScan = (code: string) => {
     setShowQRScanner(false);
     navigate(`/${userSlug}/${eventSlug}/viewer?album=${code}${stationId ? `&station=${stationId}` : ''}`);
     loadAlbum(code);
+    
+    // Send album to Big Screen Display via localStorage
+    localStorage.setItem(`display_album_${eventSlug}`, code);
+    console.log(`📺 Sent album ${code} to Big Screen Display`);
   };
 
   // Handle manual code entry
@@ -151,10 +156,11 @@ export function ViewerStationPage() {
     // TODO: Implement print queue API
   };
 
-  // Handle big screen
+  // Handle big screen - open display page
   const handleBigScreen = () => {
-    const bigScreenUrl = `/${userSlug}/${eventSlug}/bigscreen?album=${album?.code}`;
-    window.open(bigScreenUrl, '_blank');
+    const displayUrl = `${window.location.origin}/${userSlug}/${eventSlug}/display?album=${album?.code}`;
+    window.open(displayUrl, 'bigscreen', 'width=1920,height=1080');
+    toast.success('Big Screen Display opened!');
   };
 
   // Loading state
@@ -336,6 +342,21 @@ export function ViewerStationPage() {
 
                 {/* Action buttons */}
                 <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-zinc-800">
+                  {/* Scan Another - Primary action for viewer station */}
+                  <Button
+                    onClick={() => {
+                      setAlbum(null);
+                      setPhotos([]);
+                      setShowQRScanner(true);
+                      setState('scan');
+                      navigate(`/${userSlug}/${eventSlug}/viewer`);
+                    }}
+                    variant="outline"
+                    className="border-cyan-500/50 text-cyan-400 hover:bg-cyan-500/10"
+                  >
+                    <QrCode className="w-4 h-4 mr-2" />
+                    Scan Another
+                  </Button>
                   {isLocked && (
                     <Button
                       onClick={handleUnlock}
@@ -350,13 +371,9 @@ export function ViewerStationPage() {
                       Unlock Album
                     </Button>
                   )}
-                  <Button variant="outline" onClick={handlePrintQueue} className="border-zinc-700">
-                    <Printer className="w-4 h-4 mr-2" />
-                    Print Queue
-                  </Button>
                   <Button variant="outline" onClick={handleBigScreen} className="border-zinc-700">
                     <Monitor className="w-4 h-4 mr-2" />
-                    Big Screen
+                    Show on Big Screen
                   </Button>
                   <Button
                     variant="outline"
