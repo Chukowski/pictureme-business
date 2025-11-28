@@ -9,7 +9,14 @@ import { ENV } from "@/config/env";
 // Helper function to get API URL dynamically with HTTPS enforcement
 // This ensures window.ENV is available when the URL is needed
 function getApiUrl(): string {
-  let url = ENV.API_URL || '';
+  // Debug: Log what we're getting
+  const windowEnvUrl = typeof window !== 'undefined' && window.ENV?.VITE_API_URL;
+  const envApiUrl = ENV.API_URL;
+  
+  console.log('🔍 [getApiUrl] window.ENV?.VITE_API_URL:', windowEnvUrl);
+  console.log('🔍 [getApiUrl] ENV.API_URL:', envApiUrl);
+  
+  let url = envApiUrl || '';
   
   // Force HTTPS for production (non-localhost) URLs
   if (url && url.startsWith('http://') && !url.includes('localhost') && !url.includes('127.0.0.1')) {
@@ -17,6 +24,7 @@ function getApiUrl(): string {
     url = url.replace('http://', 'https://');
   }
   
+  console.log('🔍 [getApiUrl] Final URL:', url);
   return url;
 }
 
