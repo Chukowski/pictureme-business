@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import {
@@ -25,7 +26,7 @@ import {
   QrCode, Eye, EyeOff, Printer, Video, Sparkles, Mail, MessageSquare, 
   BadgeCheck, LayoutGrid, Moon, Sun, PartyPopper, Building2, Baby, Gift,
   Info, ChevronRight, Crown, Library, Loader2, MapPin, Camera, Gamepad2, 
-  MonitorPlay, GripVertical, BookOpen, Ratio
+  MonitorPlay, GripVertical, BookOpen, Ratio, Link2, Check
 } from "lucide-react";
 import {
   Dialog,
@@ -47,6 +48,9 @@ import { getDefaultTemplates } from "@/services/adminStorage";
 import { uploadTemplateImage, exportTemplates, importTemplates } from "@/services/templateStorage";
 // MediaLibrary removed - using simplified inline image management
 import { PromptHelper } from "@/components/PromptHelper";
+import { getStationUrl, copyToClipboard, openInNewTab } from "@/lib/eventUrl";
+import { TemplateStationAssignment } from "@/components/templates";
+import { BadgeTemplateEditor, BadgeTemplateConfig, DEFAULT_BADGE_CONFIG } from "@/components/templates/BadgeTemplateEditor";
 
 export default function AdminEventForm() {
   const navigate = useNavigate();
@@ -69,6 +73,15 @@ export default function AdminEventForm() {
   const [showLibraryModal, setShowLibraryModal] = useState(false);
   const [libraryTemplates, setLibraryTemplates] = useState<any[]>([]);
   const [isLoadingLibrary, setIsLoadingLibrary] = useState(false);
+  
+  // Station URL copy state
+  const [copiedStationId, setCopiedStationId] = useState<string | null>(null);
+  
+  // Template station assignment modal state
+  const [stationAssignmentModal, setStationAssignmentModal] = useState<{
+    open: boolean;
+    templateIndex: number | null;
+  }>({ open: false, templateIndex: null });
 
   // Event mode types
   type EventMode = 'free' | 'lead_capture' | 'pay_per_photo' | 'pay_per_album';
@@ -134,7 +147,7 @@ export default function AdminEventForm() {
       },
     },
     
-    // Badge Creator settings
+    // Badge Creator settings (legacy - kept for backward compatibility)
     badgeCreator: {
       enabled: false,
       mode: "simple" as "simple" | "ai",
@@ -149,6 +162,9 @@ export default function AdminEventForm() {
         customField2: "",
       },
     },
+    
+    // New Badge Template (with AI pipeline support)
+    badgeTemplate: { ...DEFAULT_BADGE_CONFIG } as BadgeTemplateConfig,
     
     // Sharing settings
     sharing: {
@@ -261,6 +277,48 @@ export default function AdminEventForm() {
           moderationEnabled: event.settings?.moderationEnabled ?? prev.settings.moderationEnabled,
           maxPhotosPerSession: event.settings?.maxPhotosPerSession || prev.settings.maxPhotosPerSession,
         },
+        // Album Tracking - ensure full hydration from saved event data
+        albumTracking: event.albumTracking ? {
+          enabled: event.albumTracking.enabled ?? false,
+          albumType: event.albumTracking.albumType || prev.albumTracking.albumType,
+          stations: event.albumTracking.stations || [],
+          rules: {
+            ...prev.albumTracking.rules,
+            ...(event.albumTracking.rules || {}),
+          },
+          badgeIntegration: {
+            ...prev.albumTracking.badgeIntegration,
+            ...(event.albumTracking.badgeIntegration || {}),
+          },
+        } : prev.albumTracking,
+        // Sharing Overrides - ensure full hydration from saved event data
+        sharingOverrides: event.sharingOverrides ? {
+          enabled: event.sharingOverrides.enabled ?? false,
+          defaultAspectRatio: event.sharingOverrides.defaultAspectRatio || prev.sharingOverrides.defaultAspectRatio,
+          availableRatios: event.sharingOverrides.availableRatios || prev.sharingOverrides.availableRatios,
+          shareTemplateId: event.sharingOverrides.shareTemplateId || '',
+        } : prev.sharingOverrides,
+        // Badge Template - ensure full hydration from saved event data
+        badgeTemplate: (event as any).badgeTemplate ? {
+          ...DEFAULT_BADGE_CONFIG,
+          ...(event as any).badgeTemplate,
+          aiPipeline: {
+            ...DEFAULT_BADGE_CONFIG.aiPipeline,
+            ...((event as any).badgeTemplate?.aiPipeline || {}),
+          },
+          fields: {
+            ...DEFAULT_BADGE_CONFIG.fields,
+            ...((event as any).badgeTemplate?.fields || {}),
+          },
+          qrCode: {
+            ...DEFAULT_BADGE_CONFIG.qrCode,
+            ...((event as any).badgeTemplate?.qrCode || {}),
+          },
+          photoPlacement: {
+            ...DEFAULT_BADGE_CONFIG.photoPlacement,
+            ...((event as any).badgeTemplate?.photoPlacement || {}),
+          },
+        } : prev.badgeTemplate,
         templates: event.templates || [],
       }));
     } catch (error: any) {
@@ -997,219 +1055,7 @@ export default function AdminEventForm() {
                 </CardContent>
               </Card>
 
-              {/* Badge Creator Settings - Only show when enabled */}
-              {formData.rules.enableBadgeCreator && (
-                <Card className="bg-zinc-900/50 border-amber-500/20 backdrop-blur-sm">
-                  <CardHeader>
-                    <CardTitle className="text-white flex items-center gap-2">
-                      <BadgeCheck className="w-5 h-5 text-amber-400" />
-                      Badge Creator Settings
-                    </CardTitle>
-                    <CardDescription className="text-zinc-400">
-                      Configure how badges are generated for this event
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-6">
-                    {/* Badge Mode */}
-                    <div className="space-y-3">
-                      <Label className="text-zinc-300">Badge Mode</Label>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <button
-                          type="button"
-                          onClick={() => setFormData({
-                            ...formData,
-                            badgeCreator: { ...formData.badgeCreator, mode: 'simple' }
-                          })}
-                          className={`p-4 rounded-xl border text-left transition-all ${
-                            formData.badgeCreator.mode === 'simple'
-                              ? 'border-amber-500 bg-amber-500/10 ring-1 ring-amber-500'
-                              : 'border-white/10 bg-black/20 hover:border-white/20'
-                          }`}
-                        >
-                          <div className="flex items-start gap-3">
-                            <div className={`p-2 rounded-lg ${formData.badgeCreator.mode === 'simple' ? 'bg-amber-500/20' : 'bg-zinc-800'}`}>
-                              <ImageIcon className={`w-5 h-5 ${formData.badgeCreator.mode === 'simple' ? 'text-amber-400' : 'text-zinc-500'}`} />
-                            </div>
-                            <div>
-                              <div className="font-semibold text-white">Simple Mode</div>
-                              <p className="text-xs text-zinc-400 mt-1">Original photo + badge overlay + text. Fast, no extra tokens.</p>
-                            </div>
-                          </div>
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (hasFeature(currentUser?.role, 'badgeCreatorAI')) {
-                              setFormData({
-                                ...formData,
-                                badgeCreator: { ...formData.badgeCreator, mode: 'ai' }
-                              });
-                            }
-                          }}
-                          disabled={!hasFeature(currentUser?.role, 'badgeCreatorAI')}
-                          className={`p-4 rounded-xl border text-left transition-all relative ${
-                            formData.badgeCreator.mode === 'ai'
-                              ? 'border-purple-500 bg-purple-500/10 ring-1 ring-purple-500'
-                              : 'border-white/10 bg-black/20 hover:border-white/20'
-                          } ${!hasFeature(currentUser?.role, 'badgeCreatorAI') ? 'opacity-60 cursor-not-allowed' : ''}`}
-                        >
-                          <div className="absolute -top-2 right-2">
-                            <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30">
-                              {hasFeature(currentUser?.role, 'badgeCreatorAI') ? (
-                                <>
-                                  <Crown className="w-3 h-3 inline mr-1" />
-                                  Premium
-                                </>
-                              ) : (
-                                <>
-                                  <Lock className="w-3 h-3 inline mr-1" />
-                                  Masters
-                                </>
-                              )}
-                            </span>
-                          </div>
-                          <div className="flex items-start gap-3">
-                            <div className={`p-2 rounded-lg ${formData.badgeCreator.mode === 'ai' ? 'bg-purple-500/20' : 'bg-zinc-800'}`}>
-                              <Sparkles className={`w-5 h-5 ${formData.badgeCreator.mode === 'ai' ? 'text-purple-400' : 'text-zinc-500'}`} />
-                            </div>
-                            <div>
-                              <div className="font-semibold text-white">AI Mode</div>
-                              <p className="text-xs text-zinc-400 mt-1">Transform into character (LEGO, superhero, etc.) then insert in badge. Uses tokens.</p>
-                            </div>
-                          </div>
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Badge Layout */}
-                    <div className="space-y-3">
-                      <Label className="text-zinc-300">Badge Layout</Label>
-                      <div className="flex gap-3">
-                        {(['portrait', 'landscape', 'square'] as const).map((layout) => (
-                          <button
-                            key={layout}
-                            type="button"
-                            onClick={() => setFormData({
-                              ...formData,
-                              badgeCreator: { ...formData.badgeCreator, layout }
-                            })}
-                            className={`flex-1 p-3 rounded-lg border transition-all ${
-                              formData.badgeCreator.layout === layout
-                                ? 'border-amber-500 bg-amber-500/10'
-                                : 'border-white/10 bg-black/20 hover:border-white/20'
-                            }`}
-                          >
-                            <div className={`mx-auto mb-2 border-2 ${
-                              formData.badgeCreator.layout === layout ? 'border-amber-400' : 'border-zinc-600'
-                            } ${
-                              layout === 'portrait' ? 'w-6 h-8' :
-                              layout === 'landscape' ? 'w-8 h-6' : 'w-7 h-7'
-                            } rounded`} />
-                            <span className={`text-xs capitalize ${
-                              formData.badgeCreator.layout === layout ? 'text-amber-300' : 'text-zinc-400'
-                            }`}>{layout}</span>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Badge Fields */}
-                    <div className="space-y-3">
-                      <Label className="text-zinc-300">Badge Fields</Label>
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                        <div className="flex items-center justify-between p-3 rounded-lg bg-black/30 border border-white/5">
-                          <span className="text-sm text-zinc-300">Name</span>
-                          <Switch
-                            checked={formData.badgeCreator.fields.showName}
-                            onCheckedChange={(checked) => setFormData({
-                              ...formData,
-                              badgeCreator: { 
-                                ...formData.badgeCreator, 
-                                fields: { ...formData.badgeCreator.fields, showName: checked }
-                              }
-                            })}
-                            className="data-[state=checked]:bg-amber-600"
-                          />
-                        </div>
-                        <div className="flex items-center justify-between p-3 rounded-lg bg-black/30 border border-white/5">
-                          <span className="text-sm text-zinc-300">Date</span>
-                          <Switch
-                            checked={formData.badgeCreator.fields.showDate}
-                            onCheckedChange={(checked) => setFormData({
-                              ...formData,
-                              badgeCreator: { 
-                                ...formData.badgeCreator, 
-                                fields: { ...formData.badgeCreator.fields, showDate: checked }
-                              }
-                            })}
-                            className="data-[state=checked]:bg-amber-600"
-                          />
-                        </div>
-                        <div className="flex items-center justify-between p-3 rounded-lg bg-black/30 border border-white/5">
-                          <span className="text-sm text-zinc-300">Event</span>
-                          <Switch
-                            checked={formData.badgeCreator.fields.showEventName}
-                            onCheckedChange={(checked) => setFormData({
-                              ...formData,
-                              badgeCreator: { 
-                                ...formData.badgeCreator, 
-                                fields: { ...formData.badgeCreator.fields, showEventName: checked }
-                              }
-                            })}
-                            className="data-[state=checked]:bg-amber-600"
-                          />
-                        </div>
-                        <div className="flex items-center justify-between p-3 rounded-lg bg-black/30 border border-white/5">
-                          <span className="text-sm text-zinc-300">QR Code</span>
-                          <Switch
-                            checked={formData.badgeCreator.includeQR}
-                            onCheckedChange={(checked) => setFormData({
-                              ...formData,
-                              badgeCreator: { ...formData.badgeCreator, includeQR: checked }
-                            })}
-                            className="data-[state=checked]:bg-amber-600"
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Custom Fields */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label className="text-zinc-400 text-xs">Custom Field 1</Label>
-                        <Input
-                          value={formData.badgeCreator.fields.customField1}
-                          onChange={(e) => setFormData({
-                            ...formData,
-                            badgeCreator: { 
-                              ...formData.badgeCreator, 
-                              fields: { ...formData.badgeCreator.fields, customField1: e.target.value }
-                            }
-                          })}
-                          placeholder="e.g., Company, Role, VIP..."
-                          className="bg-black/40 border-white/10 text-white"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-zinc-400 text-xs">Custom Field 2</Label>
-                        <Input
-                          value={formData.badgeCreator.fields.customField2}
-                          onChange={(e) => setFormData({
-                            ...formData,
-                            badgeCreator: { 
-                              ...formData.badgeCreator, 
-                              fields: { ...formData.badgeCreator.fields, customField2: e.target.value }
-                            }
-                          })}
-                          placeholder="e.g., Booth Number, Access Level..."
-                          className="bg-black/40 border-white/10 text-white"
-                        />
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
+              {/* Badge Creator Settings - Legacy removed (moved to Templates tab) */}
 
               {/* Album Tracking Section (Event Pro+ only) */}
               {hasFeature(currentUser?.role, 'albumTracking') && (
@@ -1397,6 +1243,66 @@ export default function AdminEventForm() {
                                     <Trash2 className="w-4 h-4" />
                                   </Button>
                                 </div>
+                                
+                                {/* Station URL */}
+                                {isEdit && currentUser?.slug && formData.slug && (
+                                  <div className="flex items-center gap-2 mt-2 pt-2 border-t border-white/5">
+                                    <Link2 className="w-3 h-3 text-zinc-500 flex-shrink-0" />
+                                    <Input
+                                      value={getStationUrl({
+                                        userSlug: currentUser.slug,
+                                        eventSlug: formData.slug,
+                                        stationId: station.id,
+                                        stationType: station.type,
+                                      })}
+                                      readOnly
+                                      className="h-7 text-xs bg-black/40 border-white/5 text-zinc-400 font-mono flex-1"
+                                    />
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-7 px-2"
+                                      onClick={async () => {
+                                        const url = getStationUrl({
+                                          userSlug: currentUser.slug,
+                                          eventSlug: formData.slug,
+                                          stationId: station.id,
+                                          stationType: station.type,
+                                        });
+                                        const success = await copyToClipboard(url);
+                                        if (success) {
+                                          setCopiedStationId(station.id);
+                                          toast.success('URL copied to clipboard');
+                                          setTimeout(() => setCopiedStationId(null), 2000);
+                                        }
+                                      }}
+                                    >
+                                      {copiedStationId === station.id ? (
+                                        <Check className="w-3 h-3 text-green-400" />
+                                      ) : (
+                                        <Copy className="w-3 h-3" />
+                                      )}
+                                    </Button>
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-7 px-2"
+                                      onClick={() => {
+                                        const url = getStationUrl({
+                                          userSlug: currentUser.slug,
+                                          eventSlug: formData.slug,
+                                          stationId: station.id,
+                                          stationType: station.type,
+                                        });
+                                        openInNewTab(url);
+                                      }}
+                                    >
+                                      <ExternalLink className="w-3 h-3" />
+                                    </Button>
+                                  </div>
+                                )}
                               </div>
                             ))}
                           </div>
@@ -1556,13 +1462,359 @@ export default function AdminEventForm() {
                                 className="data-[state=checked]:bg-amber-600"
                               />
                             </div>
-                          </div>
+                            </div>
                         )}
                       </div>
                     </CardContent>
                   )}
                 </Card>
               )}
+
+              {/* Sharing Mode Override Section (Event Pro+ only) */}
+              {hasFeature(currentUser?.role, 'sharingOverride') && (
+                <Card className="bg-zinc-900/50 border-white/10 backdrop-blur-sm">
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <CardTitle className="text-white flex items-center gap-2">
+                          <Ratio className="w-5 h-5 text-orange-400" />
+                          Sharing Mode Override
+                          <Badge variant="outline" className="text-xs bg-orange-500/10 text-orange-400 border-orange-500/30">
+                            Pro+
+                          </Badge>
+                        </CardTitle>
+                        <CardDescription className="text-zinc-400">
+                          Override default sharing aspect ratios and export settings
+                        </CardDescription>
+                      </div>
+                      <Switch
+                        checked={formData.sharingOverrides.enabled}
+                        onCheckedChange={(checked) => setFormData({
+                          ...formData,
+                          sharingOverrides: { ...formData.sharingOverrides, enabled: checked }
+                        })}
+                        className="data-[state=checked]:bg-orange-600"
+                      />
+                    </div>
+                  </CardHeader>
+                  
+                  {formData.sharingOverrides.enabled && (
+                    <CardContent className="space-y-6">
+                      {/* Sharing Mode Selection */}
+                      <div className="space-y-3">
+                        <Label className="text-zinc-300">Sharing Mode</Label>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                          <button
+                            type="button"
+                            onClick={() => setFormData({
+                              ...formData,
+                              rules: { ...formData.rules, feedEnabled: true, requirePaymentBeforeDownload: false }
+                            })}
+                            className={`p-4 rounded-xl border text-left transition-all ${
+                              formData.rules.feedEnabled && !formData.rules.requirePaymentBeforeDownload
+                                ? 'border-green-500 bg-green-500/10 ring-1 ring-green-500'
+                                : 'border-white/10 bg-black/20 hover:border-white/20'
+                            }`}
+                          >
+                            <Eye className="w-5 h-5 text-green-400 mb-2" />
+                            <p className="text-sm font-medium text-white">Default</p>
+                            <p className="text-xs text-zinc-500">Full access to all</p>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setFormData({
+                              ...formData,
+                              rules: { ...formData.rules, feedEnabled: true, requirePaymentBeforeDownload: false },
+                              sharing: { ...formData.sharing, groupPhotosIntoAlbums: true }
+                            })}
+                            className={`p-4 rounded-xl border text-left transition-all ${
+                              formData.sharing.groupPhotosIntoAlbums
+                                ? 'border-cyan-500 bg-cyan-500/10 ring-1 ring-cyan-500'
+                                : 'border-white/10 bg-black/20 hover:border-white/20'
+                            }`}
+                          >
+                            <BookOpen className="w-5 h-5 text-cyan-400 mb-2" />
+                            <p className="text-sm font-medium text-white">Album Mode</p>
+                            <p className="text-xs text-zinc-500">Group into albums</p>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setFormData({
+                              ...formData,
+                              rules: { ...formData.rules, allowPrintStation: true, feedEnabled: false }
+                            })}
+                            className={`p-4 rounded-xl border text-left transition-all ${
+                              formData.rules.allowPrintStation && !formData.rules.feedEnabled
+                                ? 'border-purple-500 bg-purple-500/10 ring-1 ring-purple-500'
+                                : 'border-white/10 bg-black/20 hover:border-white/20'
+                            }`}
+                          >
+                            <Printer className="w-5 h-5 text-purple-400 mb-2" />
+                            <p className="text-sm font-medium text-white">Print-Only</p>
+                            <p className="text-xs text-zinc-500">No digital download</p>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setFormData({
+                              ...formData,
+                              rules: { ...formData.rules, feedEnabled: true, requirePaymentBeforeDownload: true, hardWatermarkOnPreviews: true }
+                            })}
+                            className={`p-4 rounded-xl border text-left transition-all ${
+                              formData.rules.requirePaymentBeforeDownload && formData.rules.hardWatermarkOnPreviews
+                                ? 'border-amber-500 bg-amber-500/10 ring-1 ring-amber-500'
+                                : 'border-white/10 bg-black/20 hover:border-white/20'
+                            }`}
+                          >
+                            <EyeOff className="w-5 h-5 text-amber-400 mb-2" />
+                            <p className="text-sm font-medium text-white">No-Download</p>
+                            <p className="text-xs text-zinc-500">View only, pay to download</p>
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Aspect Ratio Override */}
+                      <div className="space-y-3">
+                        <Label className="text-zinc-300">Default Export Aspect Ratio</Label>
+                        <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
+                          {['auto', '1:1', '4:5', '3:2', '16:9', '9:16'].map((ratio) => (
+                            <button
+                              key={ratio}
+                              type="button"
+                              onClick={() => setFormData({
+                                ...formData,
+                                sharingOverrides: { 
+                                  ...formData.sharingOverrides, 
+                                  defaultAspectRatio: ratio as AspectRatio 
+                                }
+                              })}
+                              className={`p-3 rounded-lg border text-center transition-all ${
+                                formData.sharingOverrides.defaultAspectRatio === ratio
+                                  ? 'border-orange-500 bg-orange-500/10 ring-1 ring-orange-500'
+                                  : 'border-white/10 bg-black/20 hover:border-white/20'
+                              }`}
+                            >
+                              <span className="text-sm font-medium text-white">{ratio === 'auto' ? 'Auto' : ratio}</span>
+                            </button>
+                          ))}
+                        </div>
+                        <p className="text-xs text-zinc-500">
+                          Auto uses the template's native aspect ratio. Others will crop/pad as needed.
+                        </p>
+                      </div>
+                    </CardContent>
+                  )}
+                </Card>
+              )}
+
+              {/* Rules Matrix Section */}
+              <Card className="bg-zinc-900/50 border-white/10 backdrop-blur-sm">
+                <CardHeader>
+                  <CardTitle className="text-white flex items-center gap-2">
+                    <Settings className="w-5 h-5 text-slate-400" />
+                    Advanced Rules
+                  </CardTitle>
+                  <CardDescription className="text-zinc-400">
+                    Fine-tune event behavior and privacy settings
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {/* Display & Privacy Rules */}
+                  <div className="space-y-3">
+                    <h4 className="text-sm font-medium text-zinc-300 flex items-center gap-2">
+                      <Eye className="w-4 h-4" />
+                      Display & Privacy
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div className="flex items-center justify-between p-3 rounded-lg bg-black/30 border border-white/5">
+                        <div>
+                          <span className="text-sm text-white">Enable Feed</span>
+                          <p className="text-xs text-zinc-500">Show public photo feed</p>
+                        </div>
+                        <Switch
+                          checked={formData.rules.feedEnabled}
+                          onCheckedChange={(checked) => setFormData({
+                            ...formData,
+                            rules: { ...formData.rules, feedEnabled: checked }
+                          })}
+                        />
+                      </div>
+                      <div className="flex items-center justify-between p-3 rounded-lg bg-black/30 border border-white/5">
+                        <div>
+                          <span className="text-sm text-white">Hard Watermark</span>
+                          <p className="text-xs text-zinc-500">Permanent watermark on previews</p>
+                        </div>
+                        <Switch
+                          checked={formData.rules.hardWatermarkOnPreviews}
+                          onCheckedChange={(checked) => setFormData({
+                            ...formData,
+                            rules: { ...formData.rules, hardWatermarkOnPreviews: checked }
+                          })}
+                        />
+                      </div>
+                      <div className="flex items-center justify-between p-3 rounded-lg bg-black/30 border border-white/5">
+                        <div>
+                          <span className="text-sm text-white">Timeline Split View</span>
+                          <p className="text-xs text-zinc-500">Show before/after comparison</p>
+                        </div>
+                        <Switch
+                          checked={formData.rules.allowTimelineSplitView}
+                          onCheckedChange={(checked) => setFormData({
+                            ...formData,
+                            rules: { ...formData.rules, allowTimelineSplitView: checked }
+                          })}
+                        />
+                      </div>
+                      <div className="flex items-center justify-between p-3 rounded-lg bg-black/30 border border-white/5">
+                        <div>
+                          <span className="text-sm text-white">Staff-Only Mode</span>
+                          <p className="text-xs text-zinc-500">Require staff PIN for booth</p>
+                        </div>
+                        <Switch
+                          checked={formData.rules.staffOnlyMode}
+                          onCheckedChange={(checked) => setFormData({
+                            ...formData,
+                            rules: { ...formData.rules, staffOnlyMode: checked }
+                          })}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Payment Rules */}
+                  <div className="space-y-3">
+                    <h4 className="text-sm font-medium text-zinc-300 flex items-center gap-2">
+                      <CreditCard className="w-4 h-4" />
+                      Payment Rules
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div className="flex items-center justify-between p-3 rounded-lg bg-black/30 border border-white/5">
+                        <div>
+                          <span className="text-sm text-white">Pay Before Download</span>
+                          <p className="text-xs text-zinc-500">Require payment for high-res</p>
+                        </div>
+                        <Switch
+                          checked={formData.rules.requirePaymentBeforeDownload}
+                          onCheckedChange={(checked) => setFormData({
+                            ...formData,
+                            rules: { ...formData.rules, requirePaymentBeforeDownload: checked }
+                          })}
+                        />
+                      </div>
+                      <div className="flex items-center justify-between p-3 rounded-lg bg-black/30 border border-white/5">
+                        <div>
+                          <span className="text-sm text-white">QR to Payment</span>
+                          <p className="text-xs text-zinc-500">QR links to payment page</p>
+                        </div>
+                        <Switch
+                          checked={formData.rules.enableQRToPayment}
+                          onCheckedChange={(checked) => setFormData({
+                            ...formData,
+                            rules: { ...formData.rules, enableQRToPayment: checked }
+                          })}
+                        />
+                      </div>
+                      <div className="flex items-center justify-between p-3 rounded-lg bg-black/30 border border-white/5">
+                        <div>
+                          <span className="text-sm text-white">Stripe Code Payment</span>
+                          <p className="text-xs text-zinc-500">Use Stripe payment links</p>
+                        </div>
+                        <Switch
+                          checked={formData.rules.useStripeCodeForPayment}
+                          onCheckedChange={(checked) => setFormData({
+                            ...formData,
+                            rules: { ...formData.rules, useStripeCodeForPayment: checked }
+                          })}
+                        />
+                      </div>
+                      <div className="flex items-center justify-between p-3 rounded-lg bg-black/30 border border-white/5">
+                        <div>
+                          <span className="text-sm text-white">Allow Free Preview</span>
+                          <p className="text-xs text-zinc-500">Show watermarked preview free</p>
+                        </div>
+                        <Switch
+                          checked={formData.rules.allowFreePreview}
+                          onCheckedChange={(checked) => setFormData({
+                            ...formData,
+                            rules: { ...formData.rules, allowFreePreview: checked }
+                          })}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Lead Capture Rules */}
+                  <div className="space-y-3">
+                    <h4 className="text-sm font-medium text-zinc-300 flex items-center gap-2">
+                      <Mail className="w-4 h-4" />
+                      Lead Capture
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div className="flex items-center justify-between p-3 rounded-lg bg-black/30 border border-white/5">
+                        <div>
+                          <span className="text-sm text-white">Enable Lead Capture</span>
+                          <p className="text-xs text-zinc-500">Collect email before download</p>
+                        </div>
+                        <Switch
+                          checked={formData.rules.leadCaptureEnabled}
+                          onCheckedChange={(checked) => setFormData({
+                            ...formData,
+                            rules: { ...formData.rules, leadCaptureEnabled: checked }
+                          })}
+                        />
+                      </div>
+                      <div className="flex items-center justify-between p-3 rounded-lg bg-black/30 border border-white/5">
+                        <div>
+                          <span className="text-sm text-white">Email After Purchase</span>
+                          <p className="text-xs text-zinc-500">Send photo via email after buy</p>
+                        </div>
+                        <Switch
+                          checked={formData.sharing.emailAfterBuy}
+                          onCheckedChange={(checked) => setFormData({
+                            ...formData,
+                            sharing: { ...formData.sharing, emailAfterBuy: checked }
+                          })}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Print & Hardware */}
+                  <div className="space-y-3">
+                    <h4 className="text-sm font-medium text-zinc-300 flex items-center gap-2">
+                      <Printer className="w-4 h-4" />
+                      Print & Hardware
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div className="flex items-center justify-between p-3 rounded-lg bg-black/30 border border-white/5">
+                        <div>
+                          <span className="text-sm text-white">Print Station</span>
+                          <p className="text-xs text-zinc-500">Enable on-site printing</p>
+                        </div>
+                        <Switch
+                          checked={formData.rules.allowPrintStation}
+                          onCheckedChange={(checked) => setFormData({
+                            ...formData,
+                            rules: { ...formData.rules, allowPrintStation: checked }
+                          })}
+                        />
+                      </div>
+                      <div className="flex items-center justify-between p-3 rounded-lg bg-black/30 border border-white/5">
+                        <div>
+                          <span className="text-sm text-white">Badge Creator</span>
+                          <p className="text-xs text-zinc-500">Enable badge generation</p>
+                        </div>
+                        <Switch
+                          checked={formData.rules.enableBadgeCreator}
+                          onCheckedChange={(checked) => setFormData({
+                            ...formData,
+                            rules: { ...formData.rules, enableBadgeCreator: checked }
+                          })}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             </TabsContent>
 
             {/* Branding Tab */}
@@ -2424,6 +2676,35 @@ export default function AdminEventForm() {
 
             {/* Templates Tab */}
             <TabsContent value="templates" className="space-y-6 mt-6">
+              {/* Badge Template Editor (Event Pro+ only) */}
+              {hasFeature(currentUser?.role, 'albumTracking') && formData.albumTracking.enabled && (
+                <Card className="bg-zinc-900/50 border-white/10 backdrop-blur-sm">
+                  <CardHeader>
+                    <CardTitle className="text-white flex items-center gap-2">
+                      <BadgeCheck className="w-5 h-5 text-amber-400" />
+                      Badge Template
+                      {formData.badgeTemplate.aiPipeline?.enabled && (
+                        <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30 ml-2">
+                          <Sparkles className="w-3 h-3 mr-1" />
+                          AI Enhanced
+                        </Badge>
+                      )}
+                    </CardTitle>
+                    <CardDescription className="text-zinc-400">
+                      Configure the badge design for visitor registration. Enable AI to enhance visitor photos.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <BadgeTemplateEditor
+                      config={formData.badgeTemplate}
+                      onChange={(badgeTemplate) => setFormData({ ...formData, badgeTemplate })}
+                      eventName={formData.title}
+                      disabled={isLoading}
+                    />
+                  </CardContent>
+                </Card>
+              )}
+
               <Card className="bg-zinc-900/50 border-white/10 backdrop-blur-sm">
                 <CardHeader>
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -2506,6 +2787,12 @@ export default function AdminEventForm() {
                               <span className="font-semibold text-white">{template.name}</span>
                               {!template.active && (
                                 <span className="text-xs px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-400">Inactive</span>
+                              )}
+                              {/* Station assignment badge */}
+                              {formData.albumTracking.enabled && template.stationsAssigned && template.stationsAssigned !== 'all' && (
+                                <Badge variant="outline" className="text-xs border-cyan-500/30 text-cyan-400">
+                                  {template.stationsAssigned.length} station{template.stationsAssigned.length !== 1 ? 's' : ''}
+                                </Badge>
                               )}
                             </div>
                           </AccordionTrigger>
@@ -2800,6 +3087,33 @@ export default function AdminEventForm() {
                                 <p className="text-xs text-zinc-500">
                                   💡 Toggle "Include All Overlays" to disable all branding for this template. Individual toggles control specific elements.
                                 </p>
+                                
+                                {/* Station Assignment (only when Album Tracking is enabled) */}
+                                {formData.albumTracking.enabled && formData.albumTracking.stations.length > 0 && (
+                                  <div className="border-t border-white/10 pt-4 mt-4">
+                                    <div className="flex items-center justify-between">
+                                      <div>
+                                        <Label className="text-sm font-semibold text-white">Station Assignment</Label>
+                                        <p className="text-xs text-zinc-400 mt-1">
+                                          {template.stationsAssigned === 'all' || !template.stationsAssigned
+                                            ? 'Available at all stations'
+                                            : `Assigned to ${template.stationsAssigned.length} station${template.stationsAssigned.length !== 1 ? 's' : ''}`
+                                          }
+                                        </p>
+                                      </div>
+                                      <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setStationAssignmentModal({ open: true, templateIndex: index })}
+                                        className="border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/10"
+                                      >
+                                        <MapPin className="w-4 h-4 mr-1" />
+                                        Assign Stations
+                                      </Button>
+                                    </div>
+                                  </div>
+                                )}
                               </div>
 
                               {/* Generation Pipeline */}
@@ -3153,6 +3467,29 @@ export default function AdminEventForm() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Template Station Assignment Modal */}
+      {stationAssignmentModal.templateIndex !== null && (
+        <TemplateStationAssignment
+          open={stationAssignmentModal.open}
+          onOpenChange={(open) => setStationAssignmentModal({ ...stationAssignmentModal, open })}
+          templateName={formData.templates[stationAssignmentModal.templateIndex]?.name || 'Template'}
+          stations={formData.albumTracking.stations.map(s => ({
+            id: s.id,
+            name: s.name,
+            type: s.type,
+          }))}
+          currentAssignment={
+            formData.templates[stationAssignmentModal.templateIndex]?.stationsAssigned || 'all'
+          }
+          onSave={(assignment) => {
+            if (stationAssignmentModal.templateIndex !== null) {
+              updateTemplate(stationAssignmentModal.templateIndex, { stationsAssigned: assignment });
+            }
+            setStationAssignmentModal({ open: false, templateIndex: null });
+          }}
+        />
+      )}
     </div>
   );
 }

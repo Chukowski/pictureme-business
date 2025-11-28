@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { getCurrentUser, logoutUser, updateUser } from "@/services/eventsApi";
-import { LogOut, User, Sparkles, Clock, ShieldAlert, Edit2, Loader2, Upload, X, Camera, Settings, Users, ChevronDown, ExternalLink } from "lucide-react";
+import { LogOut, User, Sparkles, Clock, ShieldAlert, Edit2, Loader2, Upload, X, Camera, Settings, Users, ChevronDown, ExternalLink, Building2 } from "lucide-react";
 import { ENV } from "@/config/env";
 import IndividualDashboard from "@/components/dashboard/IndividualDashboard";
 import BusinessDashboard from "@/components/dashboard/BusinessDashboard";
@@ -375,6 +375,17 @@ export default function AdminDashboard() {
                   <span>View profile</span>
                 </DropdownMenuItem>
                 
+                {/* Business Settings - only for business users */}
+                {userRole.startsWith('business') && userRole !== 'business_pending' && (
+                  <DropdownMenuItem 
+                    onClick={() => navigate('/admin/business')}
+                    className="flex items-center gap-3 px-3 py-2.5 cursor-pointer hover:bg-white/5 rounded-lg text-indigo-400"
+                  >
+                    <Building2 className="w-4 h-4" />
+                    <span>Business Settings</span>
+                  </DropdownMenuItem>
+                )}
+
                 <DropdownMenuItem 
                   onClick={() => {
                     setEditForm({
@@ -420,7 +431,7 @@ export default function AdminDashboard() {
         </div>
 
         {/* Dashboard Content */}
-        <div className="flex-1 min-h-0">
+        <div className="flex-1 min-h-0 overflow-y-auto scrollbar-hide">
           {(isSuperAdmin ? dashboardMode === 'business' : userRole.startsWith('business')) ? (
             <BusinessDashboard currentUser={currentUser} />
           ) : (

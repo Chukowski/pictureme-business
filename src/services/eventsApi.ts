@@ -134,6 +134,7 @@ export interface EventConfig {
     feedEnabled?: boolean;
     moderationEnabled?: boolean;
     maxPhotosPerSession?: number;
+    staffAccessCode?: string;
   };
   // Album Tracking (Business: Event Pro+)
   albumTracking?: AlbumTrackingConfig;
@@ -181,6 +182,10 @@ export interface Template {
     disableDownloads?: boolean;
     allowFreePreview?: boolean;
   };
+  
+  // Station Assignment (Business: Event Pro+)
+  // "all" = available at all stations, or array of specific station IDs
+  stationsAssigned?: 'all' | string[];
 }
 
 export interface PhotoFeed {
@@ -541,3 +546,165 @@ export const updateUser = async (data: Partial<User> & { password?: string }): P
 
   return response.json();
 };
+
+// Organization Types
+export interface Organization {
+  id: string;
+  name: string;
+  slug: string;
+  owner_user_id: number;
+  plan: string;
+  created_at: string;
+}
+
+export interface OrganizationMember {
+  id: string;
+  organization_id: string;
+  user_id: number;
+  role: 'owner' | 'admin' | 'staff';
+  status: 'active' | 'invited' | 'removed';
+  created_at: string;
+}
+
+// Album Types (Backend)
+export interface Album {
+  id: string;
+  event_id: number;
+  organization_id?: string;
+  code: string;
+  status: 'in_progress' | 'completed' | 'paid' | 'archived';
+  payment_status: 'unpaid' | 'processing' | 'paid';
+  owner_name?: string;
+  owner_email?: string;
+  created_at: string;
+}
+
+export interface AlbumPhoto {
+  id: string;
+  album_id: string;
+  photo_id: string;
+  station_type: string;
+  created_at: string;
+}
+
+// Organization API
+export async function getUserOrganizations(): Promise<Organization[]> {
+  const token = getAuthToken();
+  if (!token) return [];
+  
+  const response = await fetch(`${API_URL}/api/organizations/me`, {
+    headers: { 'Authorization': `Bearer ${token}` }
+  });
+  
+  if (!response.ok) throw new Error('Failed to fetch organizations');
+  return response.json();
+}
+
+export async function getOrganizationMembers(orgId: string): Promise<OrganizationMember[]> {
+  const token = getAuthToken();
+  const response = await fetch(`${API_URL}/api/organizations/${orgId}/members`, {
+    headers: { 'Authorization': `Bearer ${token}` }
+  });
+  return response.json();
+}
+
+export async function inviteMember(orgId: string, email: string, role: string = 'staff'): Promise<void> {
+  const token = getAuthToken();
+  const response = await fetch(`${API_URL}/api/organizations/${orgId}/invite`, {
+    method: 'POST',
+    headers: { 
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}` 
+    },
+    body: JSON.stringify({ email, role })
+  });
+  
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.detail || 'Failed to invite member');
+  }
+}
+
+// Album API
+export async function createAlbum(eventId: number, orgId?: string, ownerName?: string, ownerEmail?: string): Promise<Album> {
+  // Can be public or authenticated
+  const token = getAuthToken();
+  const headers: any = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  
+  // Validate eventId
+  if (!eventId || eventId <= 0) {
+    throw new Error('Invalid event ID');
+  }
+  
+  const response = await fetch(`${API_URL}/api/albums`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ 
+      event_id: eventId, 
+      organization_id: orgId,
+      owner_name: ownerName,
+      owner_email: ownerEmail
+    })
+  });
+  
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ detail: 'Failed to create album' }));
+    console.error('Create album error:', error);
+    throw new Error(error.detail || 'Failed to create album');
+  }
+  return response.json();
+}
+
+export async function getAlbum(code: string): Promise<Album> {
+  const response = await fetch(`${API_URL}/api/albums/${code}`);
+  if (!response.ok) throw new Error('Album not found');
+  return response.json();
+}
+
+export async function getAlbumPhotos(code: string): Promise<AlbumPhoto[]> {
+  const response = await fetch(`${API_URL}/api/albums/${code}/photos`);
+  if (!response.ok) return [];
+  return response.json();
+}
+
+export async function addAlbumPhoto(code: string, photoId: string, stationType: string): Promise<AlbumPhoto> {
+  const response = await fetch(`${API_URL}/api/albums/${code}/photos`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ photo_id: photoId, station_type: stationType })
+  });
+  
+  if (!response.ok) throw new Error('Failed to add photo to album');
+  return response.json();
+}
+
+export async function getEventAlbums(eventId: number): Promise<Album[]> {
+  const token = getAuthToken();
+  const response = await fetch(`${API_URL}/api/albums/event/${eventId}`, {
+    headers: { 'Authorization': `Bearer ${token}` }
+  });
+  if (!response.ok) return [];
+  return response.json();
+}
+
+export async function updateAlbumStatus(albumCode: string, status: 'in_progress' | 'completed' | 'paid' | 'archived'): Promise<void> {
+  const token = getAuthToken();
+  const response = await fetch(`${API_URL}/api/albums/${albumCode}/status?status=${status}`, {
+    method: 'PUT',
+    headers: { 
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    }
+  });
+  if (!response.ok) throw new Error('Failed to update album status');
+}
+
+export async function createAlbumCheckout(albumId: string): Promise<{ checkout_url: string }> {
+  const response = await fetch(`${API_URL}/api/billing/albums/${albumId}/checkout`, {
+    method: 'POST'
+  });
+  
+  if (!response.ok) throw new Error('Failed to create checkout');
+  return response.json();
+}

@@ -38,6 +38,17 @@ async def run_migrations():
             '../server/migrations/002_add_roles_and_applications.sql',
             'migrations/003_add_billing_and_tokens.sql',
             'migrations/004_add_profile_fields.sql',
+            'migrations/005_add_profile_details.sql',
+            'migrations/005_enterprise_custom_pricing.sql',
+            'migrations/006_fix_duplicate_models.sql',
+            'migrations/007_add_public_profile_fields.sql',
+            'migrations/008_business_plans_and_contracts.sql',
+            'migrations/009_create_pachecodes_user.sql',
+            'migrations/010_create_pachecodes_better_auth.sql',
+            'migrations/011_stripe_connect.sql',
+            'migrations/012_marketplace_templates_structure.sql',
+            'migrations/013_user_library_couchdb.sql',
+            'migrations/014_organizations_and_albums.sql',
         ]
 
         for migration_file in migration_paths:

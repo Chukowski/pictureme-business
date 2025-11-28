@@ -5,14 +5,14 @@
  * Accessible via /:userSlug/:eventSlug/staff
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useEventConfig } from '@/hooks/useEventConfig';
 import {
   Loader2, ArrowLeft, QrCode, Users, Camera, BookOpen,
   CheckCircle2, XCircle, Clock, Settings, RefreshCw,
   MonitorPlay, Printer, Mail, MessageSquare, Lock, Unlock,
-  Search, Filter, MoreVertical, Eye
+  Search, Filter, MoreVertical, Eye, BarChart3, Copy, Download
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -29,7 +29,9 @@ import {
 import { toast } from 'sonner';
 import { EventNotFound } from '@/components/EventNotFound';
 import { ScanAlbumQR } from '@/components/album';
-import { StaffAlbumTools } from '@/components/staff';
+import { StaffAlbumTools, StaffStationAnalytics } from '@/components/staff';
+import { getEventAlbums, updateAlbumStatus } from '@/services/eventsApi';
+import { ENV } from '@/config/env';
 
 // Mock data types
 interface Album {
@@ -70,34 +72,145 @@ export default function StaffDashboard() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showScanner, setShowScanner] = useState(false);
   const [bigScreenMode, setBigScreenMode] = useState(false);
+  
+  // Auth state
+  const [pin, setPin] = useState('');
+  const [isAuthorized, setIsAuthorized] = useState(false);
+  
+  // Polling state
+  const [isPolling, setIsPolling] = useState(true);
+  const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
+  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const POLLING_INTERVAL = 10000; // 10 seconds
 
-  // Load mock data
+  // Load albums function (memoized for polling)
+  const loadAlbums = useCallback(async () => {
+    if (!config?.postgres_event_id) return;
+    
+    try {
+      const data = await getEventAlbums(config.postgres_event_id);
+      const mappedAlbums: Album[] = data.map((a: any) => ({
+        id: a.code,
+        visitorName: a.owner_name,
+        visitorNumber: 0,
+        photoCount: a.photo_count || 0,
+        maxPhotos: config.albumTracking?.rules?.maxPhotosPerAlbum || 5,
+        isComplete: a.status === 'completed',
+        isPaid: a.payment_status === 'paid',
+        createdAt: new Date(a.created_at),
+        lastPhotoAt: a.updated_at ? new Date(a.updated_at) : new Date(a.created_at),
+      }));
+
+      setAlbums(mappedAlbums);
+      
+      const totalPhotos = mappedAlbums.reduce((sum, a) => sum + a.photoCount, 0);
+      setStats({
+        totalAlbums: mappedAlbums.length,
+        completedAlbums: mappedAlbums.filter(a => a.isComplete).length,
+        pendingApproval: 0, // TODO: implement pending approval count
+        totalPhotos,
+        activeVisitors: mappedAlbums.filter(a => !a.isComplete).length,
+      });
+      setLastRefresh(new Date());
+      setIsLoading(false);
+    } catch (error) {
+      console.error(error);
+      // Don't show error toast on polling failures to avoid spam
+      if (isLoading) {
+        toast.error('Failed to load albums');
+      }
+      setIsLoading(false);
+    }
+  }, [config, isLoading]);
+
+  // Initial load and auth check
   useEffect(() => {
     if (!config) return;
+    
+    // Auto-authorize if no PIN set
+    if (!config.settings?.staffAccessCode) {
+      setIsAuthorized(true);
+    }
 
-    // Mock albums data
-    const mockAlbums: Album[] = Array.from({ length: 15 }, (_, i) => ({
-      id: `ALBUM-${String(i + 1).padStart(4, '0')}`,
-      visitorName: i % 3 === 0 ? `Visitor ${i + 1}` : undefined,
-      visitorNumber: i + 1,
-      photoCount: Math.floor(Math.random() * 5) + 1,
-      maxPhotos: config.albumTracking?.rules?.maxPhotosPerAlbum || 5,
-      isComplete: Math.random() > 0.6,
-      isPaid: Math.random() > 0.5,
-      createdAt: new Date(Date.now() - Math.random() * 1000 * 60 * 60 * 3),
-      lastPhotoAt: Math.random() > 0.3 ? new Date(Date.now() - Math.random() * 1000 * 60 * 30) : undefined,
-    }));
-
-    setAlbums(mockAlbums);
-    setStats({
-      totalAlbums: mockAlbums.length,
-      completedAlbums: mockAlbums.filter(a => a.isComplete).length,
-      pendingApproval: Math.floor(Math.random() * 5),
-      totalPhotos: mockAlbums.reduce((sum, a) => sum + a.photoCount, 0),
-      activeVisitors: mockAlbums.filter(a => !a.isComplete).length,
-    });
-    setIsLoading(false);
+    if (config.postgres_event_id) {
+      loadAlbums();
+    }
   }, [config]);
+
+  // Polling effect
+  useEffect(() => {
+    if (!isAuthorized || !config?.postgres_event_id || !isPolling) {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+        pollingIntervalRef.current = null;
+      }
+      return;
+    }
+
+    // Start polling
+    pollingIntervalRef.current = setInterval(() => {
+      loadAlbums();
+    }, POLLING_INTERVAL);
+
+    // Cleanup on unmount
+    return () => {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+        pollingIntervalRef.current = null;
+      }
+    };
+  }, [isAuthorized, config?.postgres_event_id, isPolling, loadAlbums]);
+
+  // Manual refresh
+  const handleRefresh = () => {
+    setIsLoading(true);
+    loadAlbums();
+    toast.success('Data refreshed');
+  };
+
+  // Album actions
+  const handleMarkComplete = async (albumId: string) => {
+    try {
+      await updateAlbumStatus(albumId, 'completed');
+      toast.success('Album marked as complete');
+      loadAlbums();
+    } catch (error) {
+      toast.error('Failed to update album');
+    }
+  };
+
+  const handleSendEmail = async (albumId: string) => {
+    // TODO: Implement email sending
+    toast.info('Email feature coming soon');
+  };
+
+  const handleSendWhatsApp = async (albumId: string) => {
+    // TODO: Implement WhatsApp sharing
+    toast.info('WhatsApp feature coming soon');
+  };
+
+  const handleCopyAlbumCode = async (albumId: string) => {
+    try {
+      await navigator.clipboard.writeText(albumId);
+      toast.success('Album code copied to clipboard');
+    } catch {
+      toast.error('Failed to copy album code');
+    }
+  };
+
+  const getAlbumUrl = (albumId: string) => {
+    const baseUrl = window.location.origin;
+    return `${baseUrl}/${userSlug}/${eventSlug}/album/${albumId}`;
+  };
+
+  const handleCopyAlbumUrl = async (albumId: string) => {
+    try {
+      await navigator.clipboard.writeText(getAlbumUrl(albumId));
+      toast.success('Album URL copied to clipboard');
+    } catch {
+      toast.error('Failed to copy URL');
+    }
+  };
 
   // Handle album scan
   const handleAlbumScan = (albumId: string) => {
@@ -166,6 +279,39 @@ export default function StaffDashboard() {
 
   const primaryColor = config.theme?.primaryColor || '#06B6D4';
 
+  // PIN Check
+  if (config.settings?.staffAccessCode && !isAuthorized) {
+      return (
+          <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-4">
+              <Card className="w-full max-w-sm bg-zinc-900 border-zinc-800">
+                  <CardHeader>
+                      <CardTitle className="text-white">Staff Access</CardTitle>
+                      <CardDescription>Enter event PIN to continue</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                      <Input 
+                          type="password" 
+                          value={pin} 
+                          onChange={e => setPin(e.target.value)}
+                          placeholder="Enter PIN"
+                          className="bg-zinc-800 border-zinc-700 text-white text-center tracking-widest text-2xl"
+                      />
+                      <Button 
+                          onClick={() => {
+                              if (pin === config.settings.staffAccessCode) setIsAuthorized(true);
+                              else toast.error("Incorrect PIN");
+                          }}
+                          className="w-full"
+                          style={{ backgroundColor: primaryColor }}
+                      >
+                          Access Dashboard
+                      </Button>
+                  </CardContent>
+              </Card>
+          </div>
+      );
+  }
+
   // Show QR Scanner
   if (showScanner) {
     return (
@@ -205,6 +351,21 @@ export default function StaffDashboard() {
           </div>
           
           <div className="flex items-center gap-3">
+            {/* Polling indicator */}
+            <div className="flex items-center gap-2 text-xs text-zinc-500">
+              <div className={`w-2 h-2 rounded-full ${isPolling ? 'bg-green-500 animate-pulse' : 'bg-zinc-600'}`} />
+              {lastRefresh && (
+                <span>Updated {lastRefresh.toLocaleTimeString()}</span>
+              )}
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsPolling(!isPolling)}
+              className={`border-white/20 ${isPolling ? 'text-green-400' : 'text-zinc-400'}`}
+            >
+              {isPolling ? 'Live' : 'Paused'}
+            </Button>
             <Button
               onClick={() => setShowScanner(true)}
               style={{ backgroundColor: primaryColor }}
@@ -216,14 +377,11 @@ export default function StaffDashboard() {
             <Button
               variant="outline"
               size="icon"
-              onClick={() => {
-                setIsLoading(true);
-                setTimeout(() => setIsLoading(false), 500);
-                toast.success('Data refreshed');
-              }}
+              onClick={handleRefresh}
               className="border-white/20 text-zinc-300"
+              disabled={isLoading}
             >
-              <RefreshCw className="w-4 h-4" />
+              <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
             </Button>
           </div>
         </div>
@@ -278,6 +436,9 @@ export default function StaffDashboard() {
             <TabsTrigger value="tools" className="data-[state=active]:bg-white/10">
               Tools
             </TabsTrigger>
+            <TabsTrigger value="analytics" className="data-[state=active]:bg-white/10">
+              Analytics
+            </TabsTrigger>
             <TabsTrigger value="display" className="data-[state=active]:bg-white/10">
               Display
             </TabsTrigger>
@@ -320,22 +481,81 @@ export default function StaffDashboard() {
                       </div>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="text-zinc-400">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="text-zinc-400"
+                            onClick={(e) => e.stopPropagation()}
+                          >
                             <MoreVertical className="w-4 h-4" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="bg-zinc-900 border-white/10">
-                          <DropdownMenuItem className="text-zinc-300">
+                          <DropdownMenuItem 
+                            className="text-zinc-300"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(`/${userSlug}/${eventSlug}/album/${album.id}`);
+                            }}
+                          >
                             <Eye className="w-4 h-4 mr-2" />
                             View Album
                           </DropdownMenuItem>
-                          <DropdownMenuItem className="text-zinc-300">
+                          {!album.isComplete && (
+                            <DropdownMenuItem 
+                              className="text-zinc-300"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleMarkComplete(album.id);
+                              }}
+                            >
+                              <CheckCircle2 className="w-4 h-4 mr-2" />
+                              Mark Complete
+                            </DropdownMenuItem>
+                          )}
+                          <DropdownMenuItem 
+                            className="text-zinc-300"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleSendEmail(album.id);
+                            }}
+                          >
                             <Mail className="w-4 h-4 mr-2" />
                             Send Email
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            className="text-zinc-300"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleSendWhatsApp(album.id);
+                            }}
+                          >
+                            <MessageSquare className="w-4 h-4 mr-2" />
+                            WhatsApp
                           </DropdownMenuItem>
                           <DropdownMenuItem className="text-zinc-300">
                             <Printer className="w-4 h-4 mr-2" />
                             Print
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            className="text-zinc-300"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleCopyAlbumCode(album.id);
+                            }}
+                          >
+                            <Copy className="w-4 h-4 mr-2" />
+                            Copy Album Code
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            className="text-zinc-300"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleCopyAlbumUrl(album.id);
+                            }}
+                          >
+                            <QrCode className="w-4 h-4 mr-2" />
+                            Copy Album URL
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -400,10 +620,15 @@ export default function StaffDashboard() {
               eventName={config.title}
               stats={stats}
               primaryColor={primaryColor}
-              onRefresh={() => {
-                setIsLoading(true);
-                setTimeout(() => setIsLoading(false), 500);
-              }}
+              onRefresh={handleRefresh}
+            />
+          </TabsContent>
+
+          {/* Analytics Tab */}
+          <TabsContent value="analytics">
+            <StaffStationAnalytics 
+              eventId={config.postgres_event_id}
+              className="space-y-6"
             />
           </TabsContent>
 

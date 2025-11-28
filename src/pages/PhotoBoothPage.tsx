@@ -1,6 +1,6 @@
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { useEventConfig } from '@/hooks/useEventConfig';
-import { Loader2 } from 'lucide-react';
+import { Loader2, AlertTriangle } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
 import { CameraCapture } from '@/components/CameraCapture';
 import { BackgroundSelector } from '@/components/BackgroundSelector';
@@ -11,12 +11,14 @@ import { CustomPromptModal } from '@/components/CustomPromptModal';
 import ShaderBackground from '@/components/ShaderBackground';
 import { processImageWithAI, downloadImageAsBase64 } from '@/services/aiProcessor';
 import { toast } from 'sonner';
-import { Template } from '@/services/eventsApi';
+import { Template, getAlbum, addAlbumPhoto, getAlbumPhotos } from '@/services/eventsApi';
 import { saveProcessedPhoto, getAllPhotos } from '@/services/localStorage';
 import { EventNotFound } from '@/components/EventNotFound';
-import { ScanBadgePrompt, AlbumProgress, AlbumResultActions } from '@/components/album';
+import { ScanBadgePrompt, AlbumProgress, AlbumResultActions, ScanAlbumQR, RegistrationBadgeFlow } from '@/components/album';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 
-type AppState = 'select' | 'camera' | 'processing' | 'result' | 'custom-prompt' | 'scan-badge';
+type AppState = 'select' | 'camera' | 'processing' | 'result' | 'custom-prompt' | 'scan-badge' | 'registration';
 
 // Mock album data - will be replaced with real API calls
 interface AlbumData {
@@ -36,6 +38,17 @@ export const PhotoBoothPage = () => {
 
   // Album Tracking
   const albumId = searchParams.get('album');
+  const stationId = searchParams.get('station');
+  
+  // Detect station type from URL path
+  const pathname = window.location.pathname;
+  const stationType = useMemo(() => {
+    if (pathname.endsWith('/registration')) return 'registration';
+    if (pathname.endsWith('/booth')) return 'booth';
+    if (pathname.endsWith('/playground')) return 'playground';
+    if (pathname.endsWith('/viewer')) return 'viewer';
+    return null;
+  }, [pathname]);
   
   // Mock album data - in production, this would come from an API
   const [albumData, setAlbumData] = useState<AlbumData | null>(null);
@@ -49,6 +62,7 @@ export const PhotoBoothPage = () => {
   const [showCustomPromptModal, setShowCustomPromptModal] = useState(false);
   const [customPrompt, setCustomPrompt] = useState<string>('');
   const [customImages, setCustomImages] = useState<string[]>([]);
+  const [showQRScanner, setShowQRScanner] = useState(false);
 
   // Memoized values - MUST be before any conditional returns
   const isAlbumMode = useMemo(() => {
@@ -60,23 +74,66 @@ export const PhotoBoothPage = () => {
     return albumData.currentPhotos < albumData.maxPhotos;
   }, [isAlbumMode, albumData]);
 
+  // Filter templates based on station assignment
+  const filteredTemplates = useMemo(() => {
+    if (!config?.templates) return [];
+    
+    // If no station ID, return all active templates
+    if (!stationId) {
+      return config.templates.filter(t => t.active);
+    }
+    
+    // Filter templates assigned to this station
+    return config.templates.filter(template => {
+      if (!template.active) return false;
+      
+      // If no stationsAssigned or "all", include template
+      if (!template.stationsAssigned || template.stationsAssigned === 'all') {
+        return true;
+      }
+      
+      // Check if this station is in the assigned list
+      return template.stationsAssigned.includes(stationId);
+    });
+  }, [config?.templates, stationId]);
+
   // Initialize album mode
   useEffect(() => {
+    const loadAlbum = async () => {
+      if (!albumId) return;
+      try {
+        const album = await getAlbum(albumId);
+        const photos = await getAlbumPhotos(albumId);
+        setAlbumData({
+          id: album.code,
+          visitorName: album.owner_name,
+          visitorNumber: 0,
+          currentPhotos: photos.length,
+          maxPhotos: config?.albumTracking?.rules?.maxPhotosPerAlbum || 5,
+          currentStation: stationType || 'Photo Booth',
+        });
+        setState('select');
+      } catch (error) {
+        console.error("Failed to load album:", error);
+        toast.error("Invalid or expired album code");
+        setState('scan-badge');
+      }
+    };
+
+    // Registration station NEVER scans - it creates albums
+    if (stationType === 'registration' && isAlbumMode) {
+      setState('registration');
+      return;
+    }
+
     if (isAlbumMode && !albumId) {
       // Album tracking enabled but no album ID - show scan badge prompt
       setState('scan-badge');
     } else if (isAlbumMode && albumId) {
-      // Load album data (mock for now)
-      setAlbumData({
-        id: albumId,
-        visitorNumber: Math.floor(Math.random() * 1000) + 1,
-        currentPhotos: 0,
-        maxPhotos: config?.albumTracking?.rules?.maxPhotosPerAlbum || 5,
-        currentStation: 'Photo Booth',
-      });
-      setState('select');
+      // Load album data
+      loadAlbum();
     }
-  }, [isAlbumMode, albumId, config]);
+  }, [isAlbumMode, albumId, config, stationType]);
 
   // Fire celebratory confetti when the AI result is ready
   useEffect(() => {
@@ -282,6 +339,7 @@ export const PhotoBoothPage = () => {
         processedBase64 = await downloadImageAsBase64(result.url);
       }
 
+      let photoShareCode = '';
       try {
         const savedPhoto = await saveProcessedPhoto({
           originalImageBase64: imageData,
@@ -299,7 +357,8 @@ export const PhotoBoothPage = () => {
           setProcessedPhoto(processedBase64);
         }
 
-        setShareCode(savedPhoto.shareCode || "");
+        photoShareCode = savedPhoto.shareCode || "";
+        setShareCode(photoShareCode);
         toast.success("Your photo is ready! 🎉");
       } catch (storageError) {
         console.warn("Storage error:", storageError);
@@ -311,11 +370,17 @@ export const PhotoBoothPage = () => {
       }
 
       // Update album data if in album mode
-      if (isAlbumMode && albumData) {
-        setAlbumData({
-          ...albumData,
-          currentPhotos: albumData.currentPhotos + 1,
-        });
+      if (isAlbumMode && albumData && photoShareCode) {
+        try {
+          await addAlbumPhoto(albumData.id, photoShareCode, "booth");
+          setAlbumData(prev => prev ? ({
+            ...prev,
+            currentPhotos: prev.currentPhotos + 1,
+          }) : null);
+        } catch (albumError) {
+          console.error("Failed to add photo to album:", albumError);
+          toast.warning("Photo saved, but could not add to album.");
+        }
       }
 
       setState("result");
@@ -346,12 +411,62 @@ export const PhotoBoothPage = () => {
 
   return (
     <div className="min-h-screen bg-zinc-950 relative">
+      {/* QR Scanner Modal */}
+      {showQRScanner && (
+        <ScanAlbumQR
+          onScan={(code) => {
+            setShowQRScanner(false);
+            navigate(`/${userSlug}/${eventSlug}?album=${code}`);
+          }}
+          onCancel={() => setShowQRScanner(false)}
+          title="Scan Your Badge"
+          subtitle="Point your camera at the QR code on your badge"
+          primaryColor={config.theme?.primaryColor}
+        />
+      )}
+
+      {/* Registration Flow - Registration Station creates albums */}
+      {state === 'registration' && config.postgres_event_id ? (
+        <RegistrationBadgeFlow
+          eventId={config.postgres_event_id}
+          eventName={config.title}
+          userSlug={userSlug!}
+          eventSlug={eventSlug!}
+          primaryColor={config.theme?.primaryColor}
+          badgeTemplate={(config as any).badgeTemplate}
+          onComplete={(albumCode) => {
+            // Navigate to booth with the new album
+            navigate(`/${userSlug}/${eventSlug}/booth?album=${albumCode}`);
+          }}
+        />
+      ) : state === 'registration' && !config.postgres_event_id ? (
+        <div className="flex items-center justify-center min-h-screen p-4">
+          <Card className="max-w-md bg-zinc-900/90 border-white/10">
+            <CardContent className="p-6 text-center space-y-4">
+              <AlertTriangle className="w-12 h-12 text-amber-500 mx-auto" />
+              <h2 className="text-xl font-semibold text-white">Registration Not Available</h2>
+              <p className="text-zinc-400">
+                This event is not properly configured for registration. Please contact the event organizer.
+              </p>
+              <Button 
+                onClick={() => setState('select')}
+                variant="outline"
+                className="border-zinc-700"
+              >
+                Go Back
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      ) : null}
+
       {/* Scan Badge Prompt - Album Mode without album ID */}
-      {state === 'scan-badge' && (
+      {state === 'scan-badge' && !showQRScanner && (
         <ScanBadgePrompt
           eventName={config.title}
           brandName={config.theme?.brandName || 'PictureMe.Now'}
           primaryColor={config.theme?.primaryColor}
+          onScanQR={() => setShowQRScanner(true)}
           onManualEntry={() => {
             const code = prompt('Enter your album code:');
             if (code) {
@@ -390,7 +505,7 @@ export const PhotoBoothPage = () => {
       {state === 'select' && (
         <BackgroundSelector
           onSelectBackground={handleBackgroundSelect}
-          templates={config.templates}
+          templates={filteredTemplates}
         />
       )}
 

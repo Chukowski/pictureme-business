@@ -32,10 +32,21 @@ import {
   ArrowDownRight,
   Package,
   Loader2,
-  CreditCard
+  CreditCard,
+  BarChart3
 } from "lucide-react";
 import { User } from "@/services/eventsApi";
-import { ENV } from "@/config/env";
+import { 
+  getTokenStats, 
+  getTokenTransactions, 
+  getTokenPackages, 
+  getUsageByEvent,
+  getUsageByType,
+  purchaseTokens,
+  type TokenTransaction as ApiTokenTransaction,
+  type TokenPackage as ApiTokenPackage,
+  type UsageByType
+} from "@/services/billingApi";
 import { toast } from "sonner";
 
 interface TokensTabProps {
@@ -72,6 +83,7 @@ export default function TokensTab({ currentUser }: TokensTabProps) {
   const [transactions, setTransactions] = useState<TokenTransaction[]>([]);
   const [packages, setPackages] = useState<TokenPackage[]>([]);
   const [eventUsage, setEventUsage] = useState<EventTokenUsage[]>([]);
+  const [usageByType, setUsageByType] = useState<UsageByType[]>([]);
   const [stats, setStats] = useState({
     current_tokens: 0,
     tokens_used_month: 0,
@@ -88,19 +100,17 @@ export default function TokensTab({ currentUser }: TokensTabProps) {
   const fetchTokenData = async () => {
     try {
       setIsLoading(true);
-      const token = localStorage.getItem("auth_token");
-      const headers = { Authorization: `Bearer ${token}` };
 
-      // Fetch token stats
-      const [statsRes, transactionsRes, packagesRes, usageRes] = await Promise.all([
-        fetch(`${ENV.API_URL}/api/tokens/stats`, { headers }),
-        fetch(`${ENV.API_URL}/api/tokens/transactions?limit=20`, { headers }),
-        fetch(`${ENV.API_URL}/api/tokens/packages`, { headers }),
-        fetch(`${ENV.API_URL}/api/tokens/usage-by-event`, { headers })
+      // Fetch all token data using billingApi service
+      const [statsData, transactionsData, packagesData, usageData, usageTypeData] = await Promise.all([
+        getTokenStats().catch(() => null),
+        getTokenTransactions(20).catch(() => []),
+        getTokenPackages().catch(() => []),
+        getUsageByEvent().catch(() => []),
+        getUsageByType().catch(() => [])
       ]);
 
-      if (statsRes.ok) {
-        const statsData = await statsRes.json();
+      if (statsData) {
         setStats(statsData);
       } else {
         // Fallback to user data
@@ -112,12 +122,10 @@ export default function TokensTab({ currentUser }: TokensTabProps) {
         });
       }
 
-      if (transactionsRes.ok) {
-        setTransactions(await transactionsRes.json());
-      }
+      setTransactions(transactionsData as TokenTransaction[]);
 
-      if (packagesRes.ok) {
-        setPackages(await packagesRes.json());
+      if (packagesData.length > 0) {
+        setPackages(packagesData);
       } else {
         // Default packages
         setPackages([
@@ -128,9 +136,8 @@ export default function TokensTab({ currentUser }: TokensTabProps) {
         ]);
       }
 
-      if (usageRes.ok) {
-        setEventUsage(await usageRes.json());
-      }
+      setEventUsage(usageData);
+      setUsageByType(usageTypeData);
     } catch (error) {
       console.error("Error fetching token data:", error);
       // Use fallback data
@@ -148,28 +155,15 @@ export default function TokensTab({ currentUser }: TokensTabProps) {
   const handlePurchase = async (pkg: TokenPackage) => {
     setIsPurchasing(true);
     try {
-      const token = localStorage.getItem("auth_token");
-      const response = await fetch(`${ENV.API_URL}/api/tokens/purchase`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({ package_id: pkg.id })
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.checkout_url) {
-          window.location.href = data.checkout_url;
-        } else {
-          toast.success(`Purchased ${pkg.tokens.toLocaleString()} tokens!`);
-          fetchTokenData();
-        }
+      const data = await purchaseTokens(pkg.id);
+      if (data.checkout_url) {
+        window.location.href = data.checkout_url;
       } else {
-        toast.error("Failed to initiate purchase");
+        toast.success(`Purchased ${pkg.tokens.toLocaleString()} tokens!`);
+        fetchTokenData();
       }
     } catch (error) {
+      console.error("Purchase error:", error);
       toast.error("Purchase failed. Please try again.");
     } finally {
       setIsPurchasing(false);
@@ -358,6 +352,44 @@ export default function TokensTab({ currentUser }: TokensTabProps) {
           </CardContent>
         </Card>
       </div>
+
+      {/* Usage by Type (Station) */}
+      {usageByType.length > 0 && (
+        <Card className="bg-zinc-900/50 border-white/10">
+          <CardHeader>
+            <CardTitle className="text-white flex items-center gap-2">
+              <BarChart3 className="w-5 h-5 text-cyan-400" />
+              Usage by Generation Type
+            </CardTitle>
+            <CardDescription className="text-zinc-400">
+              Token consumption breakdown by station type
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {usageByType.map((item, index) => {
+                const totalUsage = usageByType.reduce((sum, u) => sum + u.tokens_used, 0);
+                const percentage = totalUsage > 0 ? (item.tokens_used / totalUsage) * 100 : 0;
+                return (
+                  <div key={index} className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-white capitalize">{item.generation_type.replace('_', ' ')}</span>
+                      <span className="text-sm text-zinc-400">{item.tokens_used.toLocaleString()} tokens</span>
+                    </div>
+                    <div className="h-2 bg-zinc-800 rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-gradient-to-r from-cyan-500 to-indigo-500 rounded-full transition-all"
+                        style={{ width: `${percentage}%` }}
+                      />
+                    </div>
+                    <p className="text-xs text-zinc-500">{item.count} generations ({percentage.toFixed(1)}%)</p>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Usage by Event */}
       {eventUsage.length > 0 && (

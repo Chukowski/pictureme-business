@@ -12,6 +12,7 @@ interface ScanBadgePromptProps {
   eventName?: string;
   brandName?: string;
   primaryColor?: string;
+  onScanQR?: () => void;
   onManualEntry?: () => void;
   className?: string;
 }
@@ -20,6 +21,7 @@ export function ScanBadgePrompt({
   eventName = "Event",
   brandName = "PictureMe.Now",
   primaryColor = "#6366F1",
+  onScanQR,
   onManualEntry,
   className = "",
 }: ScanBadgePromptProps) {
@@ -82,16 +84,28 @@ export function ScanBadgePrompt({
           </div>
         </div>
 
-        {/* Manual Entry Option */}
-        {onManualEntry && (
-          <Button
-            variant="outline"
-            onClick={onManualEntry}
-            className="border-white/20 text-zinc-300 hover:text-white hover:bg-white/10"
-          >
-            Enter Code Manually
-          </Button>
-        )}
+        {/* Action Buttons */}
+        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+          {onScanQR && (
+            <Button
+              onClick={onScanQR}
+              style={{ backgroundColor: primaryColor }}
+              className="text-white"
+            >
+              <QrCode className="w-4 h-4 mr-2" />
+              Scan QR Code
+            </Button>
+          )}
+          {onManualEntry && (
+            <Button
+              variant="outline"
+              onClick={onManualEntry}
+              className="border-white/20 text-zinc-300 hover:text-white hover:bg-white/10"
+            >
+              Enter Code Manually
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* CSS for scan animation */}

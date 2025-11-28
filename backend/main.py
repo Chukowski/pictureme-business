@@ -123,6 +123,30 @@ except Exception as e:
     import traceback
     traceback.print_exc()
 
+# Organizations Router
+try:
+    from routers import organizations
+    app.include_router(organizations.router)
+    print("✅ Organizations router included successfully")
+except Exception as e:
+    print(f"⚠️  Warning: Could not include organizations router: {e}")
+
+# Albums Router
+try:
+    from routers import albums
+    app.include_router(albums.router)
+    print("✅ Albums router included successfully")
+except Exception as e:
+    print(f"⚠️  Warning: Could not include albums router: {e}")
+
+# Analytics Router
+try:
+    from routers import analytics
+    app.include_router(analytics.router)
+    print("✅ Analytics router included successfully")
+except Exception as e:
+    print(f"⚠️  Warning: Could not include analytics router: {e}")
+
 # CopilotKit Integration
 try:
     from routers.copilotkit_endpoint import sdk
@@ -145,10 +169,13 @@ async def startup():
     
     # Connect routers to db_pool
     try:
-        from routers import tokens, billing, marketplace
+        from routers import tokens, billing, marketplace, organizations, albums, analytics
         tokens.set_db_pool(db_pool)
         billing.set_db_pool(db_pool)
         marketplace.set_db_pool(db_pool)
+        organizations.set_db_pool(db_pool)
+        albums.set_db_pool(db_pool)
+        analytics.set_db_pool(db_pool)
         print("✅ Routers connected to database pool")
     except Exception as e:
         print(f"⚠️  Warning: Could not connect routers to db_pool: {e}")
@@ -1154,7 +1181,42 @@ async def get_user_events(current_user: dict = Depends(get_current_user)):
     """Get all events for the current user (from CouchDB)"""
     try:
         couch = get_couch_service()
-        events = couch.get_events_by_user(str(current_user["id"]))
+        user_id = str(current_user["id"])
+        
+        # Get user events
+        events = couch.get_events_by_user(user_id)
+        
+        # Get organization events if any
+        try:
+            async with db_pool.acquire() as conn:
+                org_ids = await conn.fetch("""
+                    SELECT organization_id FROM organization_members 
+                    WHERE user_id = $1 AND status = 'active'
+                    UNION
+                    SELECT id FROM organizations WHERE owner_user_id = $1
+                """, int(user_id)) # user_id is int in Postgres
+                
+            for row in org_ids:
+                # In UNION, the column name is from first query 'organization_id' or 'id' aliased?
+                # Wait, UNION column names are from the first query.
+                # First query: SELECT organization_id ...
+                # Second query: SELECT id ...
+                # So column name is organization_id.
+                org_id_val = row[0] # access by index or key
+                if org_id_val:
+                    org_events = couch.get_events_by_organization(str(org_id_val))
+                    # Merge events, avoiding duplicates
+                    existing_ids = {e.get("_id") for e in events}
+                    for evt in org_events:
+                        if evt.get("_id") not in existing_ids:
+                            events.append(evt)
+                            existing_ids.add(evt.get("_id"))
+        except Exception as db_err:
+            print(f"⚠️ Error fetching orgs for events: {db_err}")
+        
+        # Sort merged list
+        events.sort(key=lambda doc: doc.get("created_at", ""), reverse=True)
+        
         # Ensure we always return a list, even if empty
         return events if events is not None else []
     except Exception as e:
@@ -1167,6 +1229,14 @@ async def create_event(event: EventCreate, current_user: dict = Depends(get_curr
     """Create a new event (stored in CouchDB)"""
     couch = get_couch_service()
     
+    # Check for organization ownership
+    org_id = None
+    try:
+        async with db_pool.acquire() as conn:
+            org_id = await conn.fetchval("SELECT id FROM organizations WHERE owner_user_id = $1", current_user["id"])
+    except Exception as e:
+        print(f"⚠️ Error checking organization: {e}")
+    
     # Check if slug already exists for this user
     existing = couch.get_event_by_slug(str(current_user["id"]), event.slug)
     if existing:
@@ -1175,6 +1245,7 @@ async def create_event(event: EventCreate, current_user: dict = Depends(get_curr
     # Prepare event data
     event_data = {
         "user_id": str(current_user["id"]),
+        "organization_id": str(org_id) if org_id else None,
         "user_slug": current_user.get("slug"),
         "username": current_user.get("username"),
         "user_full_name": current_user.get("full_name"),
@@ -1198,8 +1269,8 @@ async def create_event(event: EventCreate, current_user: dict = Depends(get_curr
         async with db_pool.acquire() as conn:
             postgres_event = await conn.fetchrow(
                 """
-                INSERT INTO events (user_id, slug, title, description, start_date, end_date, is_active, theme, templates, branding, settings)
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9::jsonb, $10::jsonb, $11::jsonb)
+                INSERT INTO events (user_id, slug, title, description, start_date, end_date, is_active, theme, templates, branding, settings, organization_id)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9::jsonb, $10::jsonb, $11::jsonb, $12)
                 ON CONFLICT (user_id, slug)
                 DO UPDATE SET
                     title = EXCLUDED.title,
@@ -1211,6 +1282,7 @@ async def create_event(event: EventCreate, current_user: dict = Depends(get_curr
                     templates = EXCLUDED.templates,
                     branding = EXCLUDED.branding,
                     settings = EXCLUDED.settings,
+                    organization_id = EXCLUDED.organization_id,
                     updated_at = NOW()
                 RETURNING id
                 """,
@@ -1224,7 +1296,8 @@ async def create_event(event: EventCreate, current_user: dict = Depends(get_curr
                 json.dumps(event.theme or {}),
                 json.dumps(event.templates or []),
                 json.dumps(event.branding or {}),
-                json.dumps(event.settings or {})
+                json.dumps(event.settings or {}),
+                org_id
             )
 
             if postgres_event:

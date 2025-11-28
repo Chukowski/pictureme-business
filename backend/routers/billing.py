@@ -10,6 +10,7 @@ from typing import Optional, List
 from datetime import datetime
 from pydantic import BaseModel
 import os
+import json
 
 router = APIRouter(
     prefix="/api/billing",
@@ -477,3 +478,84 @@ async def get_connect_dashboard_link(request: Request):
             "success": True,
             "dashboard_url": login_link.url
         }
+
+
+@router.post("/albums/{album_id}/checkout")
+async def create_album_checkout(album_id: str, request: Request):
+    """Create checkout session for purchasing an album"""
+    stripe = get_stripe()
+    
+    async with db_pool.acquire() as conn:
+        # Verify album exists (by UUID)
+        album = await conn.fetchrow("SELECT * FROM albums WHERE id = $1", album_id)
+        if not album:
+             raise HTTPException(status_code=404, detail="Album not found")
+        
+        if album["payment_status"] == "paid":
+             raise HTTPException(status_code=400, detail="Album already paid")
+             
+        # Fetch event to get pricing settings
+        event = await conn.fetchrow("SELECT settings FROM events WHERE id = $1", album["event_id"])
+        settings = json.loads(event["settings"]) if event and event["settings"] else {}
+        price = settings.get("albumPrice", 19.99)
+        
+        frontend_url = os.getenv("FRONTEND_URL", "http://localhost:8080")
+        
+        session = stripe.checkout.Session.create(
+            payment_method_types=["card"],
+            line_items=[{
+                "price_data": {
+                    "currency": "usd",
+                    "product_data": {
+                        "name": f"Album {album['code']}",
+                        "description": "Digital download of all photos",
+                    },
+                    "unit_amount": int(float(price) * 100),
+                },
+                "quantity": 1,
+            }],
+            mode="payment",
+            success_url=f"{frontend_url}/album/{album['code']}?success=true",
+            cancel_url=f"{frontend_url}/album/{album['code']}?canceled=true",
+            metadata={
+                "album_id": str(album_id),
+                "type": "album_purchase"
+            }
+        )
+        
+        return {
+            "success": True,
+            "checkout_url": session.url,
+            "session_id": session.id
+        }
+
+
+@router.post("/webhook")
+async def stripe_webhook(request: Request):
+    """Handle Stripe webhooks for billing"""
+    import stripe
+    stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
+    # Use dedicated webhook secret for billing if available, else shared
+    webhook_secret = os.getenv("STRIPE_BILLING_WEBHOOK_SECRET") or os.getenv("STRIPE_WEBHOOK_SECRET")
+    
+    payload = await request.body()
+    sig_header = request.headers.get("stripe-signature")
+    
+    try:
+        event = stripe.Webhook.construct_event(payload, sig_header, webhook_secret)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    
+    if event["type"] == "checkout.session.completed":
+        session = event["data"]["object"]
+        metadata = session.get("metadata", {})
+        
+        # Handle Album Purchase
+        if metadata.get("type") == "album_purchase":
+            album_id = metadata.get("album_id")
+            if album_id:
+                async with db_pool.acquire() as conn:
+                    await conn.execute("UPDATE albums SET payment_status = 'paid', status = 'paid' WHERE id = $1", album_id)
+            return {"status": "success"}
+            
+    return {"status": "success"}

@@ -2,13 +2,12 @@ import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { User } from "@/services/eventsApi";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FolderKanban, BarChart3, Coins, CreditCard, ShoppingBag, Palette, BookOpen } from "lucide-react";
+import { FolderKanban, BarChart3, ShoppingBag, BookOpen, Gamepad2 } from "lucide-react";
 import AdminEventsTab from "@/components/admin/AdminEventsTab";
 import AdminAnalyticsTab from "@/components/admin/AdminAnalyticsTab";
-import TokensTab from "./TokensTab";
-import BillingTab from "./BillingTab";
 import MarketplaceTab from "./MarketplaceTab";
 import AlbumsTab from "./AlbumsTab";
+import PlaygroundTab from "./PlaygroundTab";
 import { hasFeature } from "@/lib/planFeatures";
 
 interface BusinessDashboardProps {
@@ -17,14 +16,14 @@ interface BusinessDashboardProps {
 }
 
 // Map URL paths to tab values
+// Note: Billing and Tokens are now in Business Settings (/admin/business)
 const pathToTab: Record<string, string> = {
     '/admin': 'events',
     '/admin/events': 'events',
-    '/admin/billing': 'billing',
-    '/admin/tokens': 'tokens',
     '/admin/marketplace': 'marketplace',
     '/admin/analytics': 'analytics',
     '/admin/albums': 'albums',
+    '/admin/playground': 'playground',
 };
 
 export default function BusinessDashboard({ currentUser, initialTab }: BusinessDashboardProps) {
@@ -52,16 +51,16 @@ export default function BusinessDashboard({ currentUser, initialTab }: BusinessD
     const hasAlbumTracking = hasFeature(currentUser?.role, 'albumTracking');
 
     // Update URL when tab changes (optional - for bookmarkable URLs)
+    // Note: Billing and Tokens are now in Business Settings (/admin/business)
     const handleTabChange = (tab: string) => {
         setActiveTab(tab);
         // Optionally update URL
         const pathForTab: Record<string, string> = {
             'events': '/admin/events',
-            'billing': '/admin/billing',
-            'tokens': '/admin/tokens',
             'marketplace': '/admin/marketplace',
             'analytics': '/admin/analytics',
             'albums': '/admin/albums',
+            'playground': '/admin/playground',
         };
         if (pathForTab[tab] && location.pathname !== pathForTab[tab]) {
             navigate(pathForTab[tab], { replace: true });
@@ -88,25 +87,18 @@ export default function BusinessDashboard({ currentUser, initialTab }: BusinessD
                         <span>Analytics</span>
                     </TabsTrigger>
                     <TabsTrigger
-                        value="tokens"
-                        className="flex items-center gap-2 px-4 py-2 sm:px-6 sm:py-3 rounded-xl data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-zinc-400 transition-all"
-                    >
-                        <Coins className="w-4 h-4" />
-                        <span>Tokens</span>
-                    </TabsTrigger>
-                    <TabsTrigger
-                        value="billing"
-                        className="flex items-center gap-2 px-4 py-2 sm:px-6 sm:py-3 rounded-xl data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-zinc-400 transition-all"
-                    >
-                        <CreditCard className="w-4 h-4" />
-                        <span>Billing</span>
-                    </TabsTrigger>
-                    <TabsTrigger
                         value="marketplace"
                         className="flex items-center gap-2 px-4 py-2 sm:px-6 sm:py-3 rounded-xl data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-zinc-400 transition-all"
                     >
                         <ShoppingBag className="w-4 h-4" />
                         <span>Marketplace</span>
+                    </TabsTrigger>
+                    <TabsTrigger
+                        value="playground"
+                        className="flex items-center gap-2 px-4 py-2 sm:px-6 sm:py-3 rounded-xl data-[state=active]:bg-purple-600 data-[state=active]:text-white text-zinc-400 transition-all"
+                    >
+                        <Gamepad2 className="w-4 h-4" />
+                        <span>Playground</span>
                     </TabsTrigger>
                     {hasAlbumTracking && (
                         <TabsTrigger
@@ -129,19 +121,14 @@ export default function BusinessDashboard({ currentUser, initialTab }: BusinessD
                     <AdminAnalyticsTab currentUser={currentUser} />
                 </TabsContent>
 
-                {/* Tokens Tab */}
-                <TabsContent value="tokens" className="mt-0 focus-visible:outline-none">
-                    <TokensTab currentUser={currentUser} />
-                </TabsContent>
-
-                {/* Billing Tab */}
-                <TabsContent value="billing" className="mt-0 focus-visible:outline-none">
-                    <BillingTab currentUser={currentUser} />
-                </TabsContent>
-
                 {/* Marketplace Tab */}
                 <TabsContent value="marketplace" className="mt-0 focus-visible:outline-none">
                     <MarketplaceTab currentUser={currentUser} />
+                </TabsContent>
+
+                {/* Playground Tab */}
+                <TabsContent value="playground" className="mt-0 focus-visible:outline-none">
+                    <PlaygroundTab currentUser={currentUser} />
                 </TabsContent>
 
                 {/* Albums Tab (Event Pro+ only) */}

@@ -34,6 +34,10 @@ import PublicProfile from "./pages/PublicProfile";
 import AccountSettings from "./pages/AccountSettings";
 import AlbumFeedPage from "./pages/AlbumFeedPage";
 import StaffDashboard from "./pages/StaffDashboard";
+import OrganizationSettingsPage from "./pages/OrganizationSettingsPage";
+import BusinessSettingsPage from "./pages/BusinessSettingsPage";
+import ViewerStationPage from "./pages/ViewerStationPage";
+import BigScreenPage from "./pages/BigScreenPage";
 
 // CopilotKit imports (self-hosted, no cloud required)
 import { CopilotKit } from "@copilotkit/react-core";
@@ -125,12 +129,16 @@ const App = () => (
             <Route path="/admin/events/edit/:eventId" element={<AdminEventForm />} />
             <Route path="/admin/events/:eventId/photos" element={<AdminEventPhotos />} />
             <Route path="/admin/settings" element={<AccountSettings />} />
-            <Route path="/admin/billing" element={<AdminDashboard />} />
-            <Route path="/admin/tokens" element={<AdminDashboard />} />
+            {/* Billing and Tokens now redirect to Business Settings */}
+            <Route path="/admin/billing" element={<Navigate to="/admin/business" replace />} />
+            <Route path="/admin/tokens" element={<Navigate to="/admin/business" replace />} />
             <Route path="/admin/marketplace" element={<AdminDashboard />} />
+            <Route path="/admin/playground" element={<AdminDashboard />} />
             <Route path="/admin/analytics" element={<AdminDashboard />} />
             <Route path="/admin/studio" element={<AdminDashboard />} />
             <Route path="/admin/albums" element={<AdminDashboard />} />
+            <Route path="/admin/organization" element={<OrganizationSettingsPage />} />
+            <Route path="/admin/business" element={<BusinessSettingsPage />} />
             {/* Catch-all for unknown admin routes - show 404 */}
             <Route path="/admin/*" element={<NotFound />} />
 
@@ -142,6 +150,13 @@ const App = () => (
             <Route path="/:userSlug/:eventSlug/feed" element={<EventFeedPage />} />
             <Route path="/:userSlug/:eventSlug/album/:albumId" element={<AlbumFeedPage />} />
             <Route path="/:userSlug/:eventSlug/staff" element={<StaffDashboard />} />
+            
+            {/* Station-specific routes for multi-station flow */}
+            <Route path="/:userSlug/:eventSlug/registration" element={<PhotoBoothPage />} />
+            <Route path="/:userSlug/:eventSlug/booth" element={<PhotoBoothPage />} />
+            <Route path="/:userSlug/:eventSlug/playground" element={<PhotoBoothPage />} />
+            <Route path="/:userSlug/:eventSlug/viewer" element={<ViewerStationPage />} />
+            <Route path="/:userSlug/:eventSlug/bigscreen" element={<BigScreenPage />} />
 
             {/* Legacy Index page (if needed) */}
             <Route path="/legacy" element={<Index />} />

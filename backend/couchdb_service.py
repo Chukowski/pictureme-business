@@ -83,6 +83,7 @@ class CouchDBService:
             self._create_index(self.events_db_name, ["type", "created_at"], "idx_events_created")
             self._create_index(self.events_db_name, ["type", "user_id", "slug", "updated_at"], "idx_events_user_slug_updated")
             self._create_index(self.events_db_name, ["type", "postgres_event_id"], "idx_events_postgres_id")
+            self._create_index(self.events_db_name, ["type", "organization_id"], "idx_events_org")
 
             # Photos indexes
             self._create_index(self.photos_db_name, ["type", "event_id"], "idx_photos_event")
@@ -204,7 +205,23 @@ class CouchDBService:
             selector,
             limit=500
         )
-        # Deduplicate by slug, keeping the most recently updated event
+        return self._deduplicate_events(docs)
+
+    def get_events_by_organization(self, organization_id: str) -> List[Dict[str, Any]]:
+        """Get all events for an organization"""
+        selector = {
+            "type": "event",
+            "organization_id": organization_id
+        }
+        docs = self._find_documents(
+            self.events_db_name,
+            selector,
+            limit=500
+        )
+        return self._deduplicate_events(docs)
+
+    def _deduplicate_events(self, docs: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Helper to deduplicate events by slug"""
         deduped: Dict[str, Dict[str, Any]] = {}
         for doc in docs:
             slug = doc.get("slug") or doc.get("_id")
