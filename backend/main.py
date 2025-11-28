@@ -1211,6 +1211,7 @@ async def get_prompt_suggestions_by_category(category: str):
 # ===== Event Endpoints =====
 
 @app.get("/api/events")
+@app.get("/api/events/")
 async def get_user_events(current_user: dict = Depends(get_current_user)):
     """Get all events for the current user (from CouchDB)"""
     try:
@@ -1259,6 +1260,7 @@ async def get_user_events(current_user: dict = Depends(get_current_user)):
         return []
 
 @app.post("/api/events")
+@app.post("/api/events/")
 async def create_event(event: EventCreate, current_user: dict = Depends(get_current_user)):
     """Create a new event (stored in CouchDB)"""
     couch = get_couch_service()
