@@ -26,7 +26,7 @@ import {
   QrCode, Eye, EyeOff, Printer, Video, Sparkles, Mail, MessageSquare, 
   BadgeCheck, LayoutGrid, Moon, Sun, PartyPopper, Building2, Baby, Gift,
   Info, ChevronRight, Crown, Library, Loader2, MapPin, Camera, Gamepad2, 
-  MonitorPlay, GripVertical, BookOpen, Ratio, Link2, Check
+  MonitorPlay, GripVertical, BookOpen, Ratio, Link2, Check, AlertTriangle
 } from "lucide-react";
 import {
   Dialog,
@@ -3273,6 +3273,31 @@ export default function AdminEventForm() {
                                       <option value="fal-ai/bytedance/seedream/v4/edit">Seedream v4 — Best for LEGO/artistic</option>
                                       <option value="fal-ai/flux/dev">Flux Dev — Photorealistic</option>
                                     </select>
+                                  </div>
+
+                                  {/* Force Instructions */}
+                                  <div className="space-y-2">
+                                    <div className="flex items-center justify-between">
+                                      <Label className="text-zinc-400 text-xs flex items-center gap-1">
+                                        <AlertTriangle className="w-3 h-3 text-amber-400" />
+                                        Force Instructions
+                                      </Label>
+                                      <Switch
+                                        checked={template.pipelineConfig?.forceInstructions || false}
+                                        onCheckedChange={(checked) => updateTemplate(index, {
+                                          pipelineConfig: {
+                                            ...template.pipelineConfig,
+                                            forceInstructions: checked
+                                          }
+                                        })}
+                                        className="data-[state=checked]:bg-amber-600"
+                                      />
+                                    </div>
+                                    <p className="text-[10px] text-zinc-500">
+                                      {template.pipelineConfig?.forceInstructions 
+                                        ? 'Adds extra context to help AI understand images'
+                                        : 'Prompt sent as-is (recommended)'}
+                                    </p>
                                   </div>
 
                                   {/* Aspect Ratio */}

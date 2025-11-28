@@ -362,6 +362,7 @@ export const PhotoBoothPage = () => {
         watermark: watermarkConfig,
         aspectRatio: selectedBackground.aspectRatio || '9:16', // Use template aspect ratio
         aiModel: selectedBackground.pipelineConfig?.imageModel, // Use template's AI model
+        forceInstructions: selectedBackground.pipelineConfig?.forceInstructions, // Use template's force instructions setting
         onProgress: (status) => {
           if (status === "queued") {
             setProcessingStatus("Waiting in queue...");

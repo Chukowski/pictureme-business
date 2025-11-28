@@ -182,6 +182,7 @@ export interface Template {
   // Pipeline Configuration
   pipelineConfig?: {
     imageModel?: string; // e.g., 'seedream-t2i', 'nano-banana', 'flux-realism'
+    forceInstructions?: boolean; // Add extra context to help AI understand images
     faceswapEnabled?: boolean;
     faceswapModel?: string;
     videoEnabled?: boolean;
