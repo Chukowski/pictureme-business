@@ -335,19 +335,10 @@ INSTRUCTIONS:
 6. Keep the person recognizable despite any style changes
 
 Output a single cohesive image.`;
-        console.log("📝 Prompt with FORCED instructions:", finalPrompt);
-      } else if (hasBackgroundImages) {
-        // Always add minimal context about the images to help the model understand
-        // This is less verbose than force instructions but helps with style transfer
-        finalPrompt = `[Image 1: person/people to transform] [Image 2: background scene]
-
-${backgroundPrompt}
-
-Transform the person(s) from Image 1 according to the instructions above and place them in the scene from Image 2.`;
-        console.log("📝 Prompt with minimal context:", finalPrompt);
+        console.log("📝 Prompt with FORCED instructions added");
       } else {
-        // No background images, use prompt as-is
-        console.log("📝 Using user prompt as-is:", finalPrompt);
+        // Force Instructions OFF - send prompt exactly as written by user
+        console.log("📝 Using prompt AS-IS (no modifications)");
       }
       
       const isFlux2Pro = modelToUse.includes("flux-2-pro");
