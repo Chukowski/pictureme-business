@@ -395,11 +395,27 @@ export default function AlbumsTab({ currentUser }: AlbumsTabProps) {
               </button>
               <button
                 onClick={() => navigate(`/admin/events/edit/${selectedEvent._id}`)}
-                className="h-auto py-4 flex flex-col items-center gap-2 rounded-xl bg-zinc-900/50 border border-white/10 text-zinc-300 hover:text-white hover:bg-zinc-800/50 hover:border-amber-500/30 transition-all"
+                className="h-auto py-4 flex flex-col items-center gap-2 rounded-xl bg-zinc-900/50 border border-white/10 text-zinc-300 hover:text-white hover:bg-zinc-800/50 hover:border-zinc-500/30 transition-all"
                 title="Edit event settings"
               >
-                <Settings className="w-6 h-6 text-amber-400" />
+                <Settings className="w-6 h-6 text-zinc-400" />
                 <span className="text-xs">Edit Event</span>
+              </button>
+            </div>
+            
+            {/* Big Screen Display Button */}
+            <div className="mt-4">
+              <button
+                onClick={() => {
+                  const displayUrl = `${window.location.origin}/${currentUser.slug}/${selectedEvent.slug}/display`;
+                  window.open(displayUrl, 'bigscreen', 'width=1920,height=1080');
+                  toast.success('Display window opened! Move it to your big screen.');
+                }}
+                className="w-full h-auto py-3 flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500/20 to-purple-500/20 border border-cyan-500/30 text-cyan-400 hover:from-cyan-500/30 hover:to-purple-500/30 transition-all"
+                title="Open big screen display for viewer station"
+              >
+                <ExternalLink className="w-5 h-5" />
+                <span className="text-sm font-medium">Open Big Screen Display</span>
               </button>
             </div>
           </div>

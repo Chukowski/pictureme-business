@@ -389,102 +389,154 @@ export default function AlbumFeedPage() {
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Photo Grid */}
-          <div className="lg:col-span-3">
-            {/* Payment Banner */}
-            {requiresPayment && (
-              <Card className="mb-6 bg-gradient-to-r from-amber-500/20 to-orange-500/20 border-amber-500/30">
-                <CardContent className="p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-amber-500/20">
-                      <Lock className="w-6 h-6 text-amber-400" />
+          <div 
+            className="lg:col-span-3"
+            onContextMenu={(e) => requiresPayment && e.preventDefault()} // Prevent right-click when payment required
+          >
+            {/* Payment Wall - Stack Preview */}
+            {requiresPayment && photos.length > 0 && (
+              <div className="mb-8">
+                {/* Stacked Photos Preview */}
+                <div className="relative flex justify-center items-center py-12">
+                  {/* Background cards (stacked effect) */}
+                  {photos.slice(0, Math.min(3, photos.length)).map((photo, index) => (
+                    <div
+                      key={photo.id}
+                      className="absolute rounded-2xl overflow-hidden shadow-2xl"
+                      style={{
+                        width: '280px',
+                        height: '350px',
+                        transform: `rotate(${(index - 1) * 8}deg) translateY(${index * 5}px)`,
+                        zIndex: 3 - index,
+                        opacity: 1 - (index * 0.15),
+                      }}
+                    >
+                      <img
+                        src={photo.url}
+                        alt="Preview"
+                        className="w-full h-full object-cover blur-lg brightness-75"
+                        draggable={false}
+                        onDragStart={(e) => e.preventDefault()}
+                      />
+                      {/* Heavy blur overlay */}
+                      <div className="absolute inset-0 backdrop-blur-xl bg-black/30" />
                     </div>
-                    <div>
-                      <h3 className="font-semibold text-white">Unlock Your Album</h3>
-                      <p className="text-sm text-amber-200/80">
-                        Purchase to download high-resolution photos without watermarks
-                      </p>
-                    </div>
-                  </div>
-                  <Button
-                    onClick={handleUnlockAlbum}
-                    disabled={isProcessingPayment}
-                    className="bg-amber-500 hover:bg-amber-600 text-black font-semibold"
-                  >
-                    {isProcessingPayment ? (
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    ) : (
-                      <ShoppingCart className="w-4 h-4 mr-2" />
-                    )}
-                    Unlock Album
-                  </Button>
-                </CardContent>
-              </Card>
-            )}
-
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              {photos.map((photo) => (
-                <div
-                  key={photo.id}
-                  className={`relative group rounded-xl overflow-hidden border-2 transition-all cursor-pointer ${
-                    selectedPhoto === photo.id 
-                      ? 'border-cyan-500 ring-2 ring-cyan-500/50' 
-                      : 'border-white/10 hover:border-white/20'
-                  } ${!photo.approved && 'opacity-60'}`}
-                  onClick={() => setSelectedPhoto(photo.id === selectedPhoto ? null : photo.id)}
-                >
-                  <img
-                    src={photo.url}
-                    alt={photo.templateName}
-                    className={`w-full aspect-[3/4] object-cover ${requiresPayment ? 'blur-sm' : ''}`}
-                  />
+                  ))}
                   
-                  {/* Watermark Overlay */}
-                  {applyHardWatermark && (
-                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                      <div 
-                        className="text-white/30 text-2xl font-bold transform -rotate-45 select-none"
-                        style={{ textShadow: '0 0 10px rgba(0,0,0,0.5)' }}
-                      >
-                        {config?.branding?.watermark?.text || config?.theme?.brandName || 'PREVIEW'}
-                      </div>
+                  {/* Lock Icon Overlay */}
+                  <div className="relative z-10 text-center p-8 rounded-2xl bg-black/60 backdrop-blur-md border border-white/20">
+                    <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-amber-500/20 flex items-center justify-center">
+                      <Lock className="w-10 h-10 text-amber-400" />
                     </div>
-                  )}
-                  
-                  {/* Overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
-                    <div className="absolute bottom-0 left-0 right-0 p-3">
-                      <p className="text-white text-sm font-medium">{photo.templateName}</p>
-                      <p className="text-zinc-400 text-xs">{photo.stationName}</p>
-                    </div>
-                  </div>
-
-                  {/* Approval badge */}
-                  {isStaff && (
-                    <div className="absolute top-2 right-2">
-                      {photo.approved ? (
-                        <Badge className="bg-green-500/80 text-white text-xs">
-                          <CheckCircle2 className="w-3 h-3" />
-                        </Badge>
+                    <h3 className="text-2xl font-bold text-white mb-2">
+                      {photos.length} Photos Ready!
+                    </h3>
+                    <p className="text-zinc-400 mb-6 max-w-xs">
+                      Your photos are waiting for you. Unlock to view and download in full quality.
+                    </p>
+                    <Button
+                      onClick={handleUnlockAlbum}
+                      disabled={isProcessingPayment}
+                      size="lg"
+                      className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-black font-bold px-8"
+                    >
+                      {isProcessingPayment ? (
+                        <Loader2 className="w-5 h-5 mr-2 animate-spin" />
                       ) : (
-                        <Badge className="bg-amber-500/80 text-white text-xs">
-                          Pending
-                        </Badge>
+                        <CreditCard className="w-5 h-5 mr-2" />
                       )}
+                      Unlock Album
+                    </Button>
+                    <p className="text-xs text-zinc-500 mt-4">
+                      Secure payment • Instant access
+                    </p>
+                  </div>
+                </div>
+                
+                {/* Blurred thumbnail strip */}
+                <div className="mt-8 flex justify-center gap-2 overflow-hidden">
+                  {photos.slice(0, 6).map((photo, index) => (
+                    <div 
+                      key={photo.id}
+                      className="w-16 h-20 rounded-lg overflow-hidden opacity-40"
+                    >
+                      <img
+                        src={photo.url}
+                        alt=""
+                        className="w-full h-full object-cover blur-md"
+                        draggable={false}
+                      />
                     </div>
-                  )}
-
-                  {/* Payment lock overlay */}
-                  {requiresPayment && (
-                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                      <div className="text-center">
-                        <Lock className="w-8 h-8 text-white/70 mx-auto mb-2" />
-                        <span className="text-xs text-white/70">Unlock to view</span>
-                      </div>
+                  ))}
+                  {photos.length > 6 && (
+                    <div className="w-16 h-20 rounded-lg bg-zinc-800 flex items-center justify-center">
+                      <span className="text-zinc-500 text-sm">+{photos.length - 6}</span>
                     </div>
                   )}
                 </div>
-              ))}
-            </div>
+              </div>
+            )}
+
+            {/* Regular Photo Grid - Only shown when NOT requiring payment */}
+            {!requiresPayment && (
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                {photos.map((photo) => (
+                  <div
+                    key={photo.id}
+                    className={`relative group rounded-xl overflow-hidden border-2 transition-all cursor-pointer ${
+                      selectedPhoto === photo.id 
+                        ? 'border-cyan-500 ring-2 ring-cyan-500/50' 
+                        : 'border-white/10 hover:border-white/20'
+                    } ${!photo.approved && 'opacity-60'}`}
+                    onClick={() => setSelectedPhoto(photo.id === selectedPhoto ? null : photo.id)}
+                    onContextMenu={(e) => e.preventDefault()}
+                  >
+                    <img
+                      src={photo.url}
+                      alt={photo.templateName}
+                      className="w-full aspect-[3/4] object-cover"
+                      draggable={false}
+                      onDragStart={(e) => e.preventDefault()}
+                    />
+                    
+                    {/* Watermark Overlay */}
+                    {applyHardWatermark && (
+                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                        <div 
+                          className="text-white/30 text-2xl font-bold transform -rotate-45 select-none"
+                          style={{ textShadow: '0 0 10px rgba(0,0,0,0.5)' }}
+                        >
+                          {config?.branding?.watermark?.text || config?.theme?.brandName || 'PREVIEW'}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="absolute bottom-0 left-0 right-0 p-3">
+                        <p className="text-white text-sm font-medium">{photo.templateName}</p>
+                        <p className="text-zinc-400 text-xs">{photo.stationName}</p>
+                      </div>
+                    </div>
+
+                    {/* Approval badge */}
+                    {isStaff && (
+                      <div className="absolute top-2 right-2">
+                        {photo.approved ? (
+                          <Badge className="bg-green-500/80 text-white text-xs">
+                            <CheckCircle2 className="w-3 h-3" />
+                          </Badge>
+                        ) : (
+                          <Badge className="bg-amber-500/80 text-white text-xs">
+                            Pending
+                          </Badge>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
 
             {photos.length === 0 && (
               <div className="text-center py-16 text-zinc-500">

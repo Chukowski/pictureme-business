@@ -34,6 +34,7 @@ import PublicProfile from "./pages/PublicProfile";
 import AccountSettings from "./pages/AccountSettings";
 import AlbumFeedPage from "./pages/AlbumFeedPage";
 import StaffDashboard from "./pages/StaffDashboard";
+import ViewerDisplayPage from "./pages/ViewerDisplayPage";
 import OrganizationSettingsPage from "./pages/OrganizationSettingsPage";
 import BusinessSettingsPage from "./pages/BusinessSettingsPage";
 import ViewerStationPage from "./pages/ViewerStationPage";
@@ -203,6 +204,7 @@ const AppContent = () => {
             <Route path="/:userSlug/:eventSlug/feed" element={<EventFeedPage />} />
             <Route path="/:userSlug/:eventSlug/album/:albumId" element={<AlbumFeedPage />} />
             <Route path="/:userSlug/:eventSlug/staff" element={<StaffDashboard />} />
+            <Route path="/:userSlug/:eventSlug/display" element={<ViewerDisplayPage />} />
             
             {/* Station-specific routes for multi-station flow */}
             <Route path="/:userSlug/:eventSlug/registration" element={<PhotoBoothPage />} />

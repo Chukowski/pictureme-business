@@ -681,21 +681,72 @@ export default function StaffDashboard() {
                 </div>
 
                 {bigScreenMode && (
-                  <div className="grid grid-cols-2 gap-4">
-                    <Button
-                      variant="outline"
-                      className="h-auto py-4 flex-col gap-2 border-white/10"
-                    >
-                      <MonitorPlay className="w-6 h-6 text-cyan-400" />
-                      <span className="text-zinc-300">Open Display Window</span>
-                    </Button>
-                    <Button
-                      variant="outline"
-                      className="h-auto py-4 flex-col gap-2 border-white/10"
-                    >
-                      <QrCode className="w-6 h-6 text-purple-400" />
-                      <span className="text-zinc-300">Display QR Code</span>
-                    </Button>
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <Button
+                        variant="outline"
+                        className="h-auto py-4 flex-col gap-2 border-white/10 hover:bg-cyan-500/10 hover:border-cyan-500/30"
+                        onClick={() => {
+                          const displayUrl = `${window.location.origin}/${userSlug}/${eventSlug}/display`;
+                          window.open(displayUrl, 'bigscreen', 'width=1920,height=1080');
+                          toast.success('Display window opened! Move it to your big screen.');
+                        }}
+                      >
+                        <MonitorPlay className="w-6 h-6 text-cyan-400" />
+                        <span className="text-zinc-300">Open Display Window</span>
+                      </Button>
+                      <Button
+                        variant="outline"
+                        className="h-auto py-4 flex-col gap-2 border-white/10 hover:bg-purple-500/10 hover:border-purple-500/30"
+                        onClick={() => {
+                          const registrationUrl = `${window.location.origin}/${userSlug}/${eventSlug}/registration`;
+                          navigator.clipboard.writeText(registrationUrl);
+                          toast.success('Registration URL copied!');
+                        }}
+                      >
+                        <QrCode className="w-6 h-6 text-purple-400" />
+                        <span className="text-zinc-300">Copy Registration URL</span>
+                      </Button>
+                    </div>
+                    
+                    {/* Send Album to Display */}
+                    <div className="p-4 rounded-lg bg-black/30 border border-white/5">
+                      <p className="text-sm text-zinc-400 mb-3">Send an album to the big screen:</p>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          placeholder="Enter album code..."
+                          className="flex-1 px-3 py-2 rounded-lg bg-zinc-800 border border-white/10 text-white placeholder:text-zinc-500"
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              const input = e.target as HTMLInputElement;
+                              if (input.value) {
+                                localStorage.setItem(`display_album_${eventSlug}`, input.value);
+                                toast.success(`Sending album ${input.value} to display...`);
+                                input.value = '';
+                              }
+                            }
+                          }}
+                        />
+                        <Button
+                          className="bg-cyan-600 hover:bg-cyan-500 text-white"
+                          onClick={(e) => {
+                            const input = (e.target as HTMLElement).parentElement?.querySelector('input');
+                            if (input?.value) {
+                              localStorage.setItem(`display_album_${eventSlug}`, input.value);
+                              toast.success(`Sending album ${input.value} to display...`);
+                              input.value = '';
+                            }
+                          }}
+                        >
+                          <MonitorPlay className="w-4 h-4 mr-2" />
+                          Send
+                        </Button>
+                      </div>
+                      <p className="text-xs text-zinc-500 mt-2">
+                        Tip: Scan a visitor's QR code to auto-fill the album code
+                      </p>
+                    </div>
                   </div>
                 )}
               </CardContent>
