@@ -75,13 +75,24 @@ interface PlaygroundTabProps {
   currentUser: UserType;
 }
 
-// Sample test images for template testing
-const SAMPLE_IMAGES = [
+// Sample test images for template testing - Individual portraits
+const SAMPLE_IMAGES_INDIVIDUAL = [
   "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop&crop=face",
   "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=400&fit=crop&crop=face",
   "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=400&h=400&fit=crop&crop=face",
   "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400&h=400&fit=crop&crop=face",
 ];
+
+// Sample test images for template testing - Group photos
+const SAMPLE_IMAGES_GROUP = [
+  "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=600&h=400&fit=crop", // Group of friends
+  "https://images.unsplash.com/photo-1543269865-cbf427effbad?w=600&h=400&fit=crop", // Three women
+  "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=600&h=400&fit=crop", // Team meeting
+  "https://images.unsplash.com/photo-1511632765486-a01980e01a18?w=600&h=400&fit=crop", // Family
+];
+
+// Combined for backwards compatibility
+const SAMPLE_IMAGES = SAMPLE_IMAGES_INDIVIDUAL;
 
 type PlaygroundMode = 'event' | 'template' | 'badge' | 'booth';
 type ProcessingStatus = 'idle' | 'queued' | 'processing' | 'applying_branding' | 'complete' | 'error';
@@ -129,6 +140,9 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
 
   // AI Model selection
   const [selectedAiModel, setSelectedAiModel] = useState<AIModelKey>('nanoBanana');
+  
+  // Group photo toggle
+  const [isGroupPhoto, setIsGroupPhoto] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
@@ -271,9 +285,14 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
     try {
       toast.info("Starting AI processing... This will use tokens.", { duration: 3000 });
 
+      // Use group prompt if group mode is selected and available
+      const promptToUse = isGroupPhoto && selectedTemplate.groupPrompt 
+        ? selectedTemplate.groupPrompt 
+        : selectedTemplate.prompt || 'Create a professional photo';
+      
       const result = await processImageWithAI({
         userPhotoBase64: testImageBase64,
-        backgroundPrompt: selectedTemplate.prompt || 'Create a professional photo',
+        backgroundPrompt: promptToUse,
         backgroundImageUrls: selectedTemplate.images || [],
         includeBranding: false,
         aspectRatio: selectedTemplate.aspectRatio || '9:16',
@@ -930,7 +949,10 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
                   <Label className="text-zinc-300">Template</Label>
                   <Select
                     value={selectedTemplateId}
-                    onValueChange={setSelectedTemplateId}
+                    onValueChange={(id) => {
+                      setSelectedTemplateId(id);
+                      setIsGroupPhoto(false); // Reset to individual when changing template
+                    }}
                     disabled={templates.length === 0}
                   >
                     <SelectTrigger className="bg-zinc-800 border-zinc-700">
@@ -950,10 +972,7 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
                 </div>
 
                 {/* Upload */}
-                <div
-                  className="border-2 border-dashed border-zinc-700 rounded-xl p-6 text-center cursor-pointer hover:border-purple-500/50 transition-colors"
-                  onClick={() => fileInputRef.current?.click()}
-                >
+                <div className="space-y-3">
                   <input
                     ref={fileInputRef}
                     type="file"
@@ -962,36 +981,78 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
                     onChange={handleImageUpload}
                   />
                   {testImage ? (
-                    <div className="relative inline-block">
-                      <img src={testImage} alt="Test" className="w-32 h-32 mx-auto rounded-lg object-cover" />
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          resetState();
-                        }}
-                        className="absolute -top-2 -right-2 p-1 rounded-full bg-red-500 hover:bg-red-600"
-                      >
-                        <X className="w-3 h-3 text-white" />
-                      </button>
+                    <div className="flex items-center gap-4 p-4 bg-black/20 rounded-xl border border-white/10">
+                      <img src={testImage} alt="Test" className="w-24 h-24 rounded-lg object-cover" />
+                      <div className="flex-1">
+                        <p className="text-sm text-zinc-300 mb-2">Test image loaded</p>
+                        <div className="flex gap-2">
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={() => fileInputRef.current?.click()}
+                            className="border-white/20 text-zinc-300"
+                          >
+                            <Upload className="w-3 h-3 mr-1" />
+                            Change
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={resetState}
+                            className="border-red-500/30 text-red-400 hover:bg-red-500/10"
+                          >
+                            <X className="w-3 h-3 mr-1" />
+                            Remove
+                          </Button>
+                        </div>
+                      </div>
                     </div>
                   ) : (
-                    <>
+                    <div
+                      className="border-2 border-dashed border-zinc-700 rounded-xl p-6 text-center cursor-pointer hover:border-purple-500/50 transition-colors"
+                      onClick={() => fileInputRef.current?.click()}
+                    >
                       <Upload className="w-10 h-10 mx-auto mb-2 text-zinc-500" />
-                      <p className="text-sm text-zinc-400">Click to upload or drag & drop</p>
-                    </>
+                      <p className="text-sm text-zinc-400">Click to upload your own photo</p>
+                      <p className="text-xs text-zinc-500 mt-1">or select a sample below</p>
+                    </div>
                   )}
                 </div>
 
-                {/* Sample Images */}
+                {/* Sample Images - Individual */}
                 <div className="space-y-2">
-                  <Label className="text-zinc-300">Or use a sample:</Label>
+                  <Label className="text-zinc-300 flex items-center gap-2">
+                    <span>👤</span> Individual Samples
+                  </Label>
                   <div className="grid grid-cols-4 gap-2">
-                    {SAMPLE_IMAGES.map((url, i) => (
+                    {SAMPLE_IMAGES_INDIVIDUAL.map((url, i) => (
                       <img
                         key={i}
                         src={url}
-                        alt={`Sample ${i + 1}`}
+                        alt={`Individual ${i + 1}`}
                         className={`w-full aspect-square rounded-lg object-cover cursor-pointer border-2 transition-all ${
+                          testImage === url ? 'border-cyan-500' : 'border-transparent hover:border-cyan-500/50'
+                        }`}
+                        onClick={() => useSampleImage(url)}
+                      />
+                    ))}
+                  </div>
+                </div>
+                
+                {/* Sample Images - Group */}
+                <div className="space-y-2">
+                  <Label className="text-zinc-300 flex items-center gap-2">
+                    <span>👥</span> Group Samples
+                  </Label>
+                  <div className="grid grid-cols-4 gap-2">
+                    {SAMPLE_IMAGES_GROUP.map((url, i) => (
+                      <img
+                        key={i}
+                        src={url}
+                        alt={`Group ${i + 1}`}
+                        className={`w-full aspect-[3/2] rounded-lg object-cover cursor-pointer border-2 transition-all ${
                           testImage === url ? 'border-purple-500' : 'border-transparent hover:border-purple-500/50'
                         }`}
                         onClick={() => useSampleImage(url)}
@@ -1031,6 +1092,42 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
                     {AI_MODELS[selectedAiModel].description}
                   </p>
                 </div>
+
+                {/* Individual/Group Toggle */}
+                {selectedTemplate?.groupPrompt && (
+                  <div className="space-y-2">
+                    <Label className="text-zinc-300">Photo Type</Label>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setIsGroupPhoto(false)}
+                        className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border transition-all ${
+                          !isGroupPhoto 
+                            ? 'bg-cyan-500/20 border-cyan-500/50 text-cyan-400' 
+                            : 'bg-black/20 border-white/10 text-zinc-400 hover:text-zinc-300'
+                        }`}
+                      >
+                        <span className="text-lg">👤</span>
+                        <span className="text-sm font-medium">Individual</span>
+                      </button>
+                      <button
+                        onClick={() => setIsGroupPhoto(true)}
+                        className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border transition-all ${
+                          isGroupPhoto 
+                            ? 'bg-purple-500/20 border-purple-500/50 text-purple-400' 
+                            : 'bg-black/20 border-white/10 text-zinc-400 hover:text-zinc-300'
+                        }`}
+                      >
+                        <span className="text-lg">👥</span>
+                        <span className="text-sm font-medium">Group</span>
+                      </button>
+                    </div>
+                    <p className="text-xs text-zinc-500">
+                      {isGroupPhoto 
+                        ? '📝 Using group prompt for multiple people' 
+                        : '📝 Using individual prompt for single person'}
+                    </p>
+                  </div>
+                )}
 
                 {/* Process Button */}
                 <Button
