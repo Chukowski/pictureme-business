@@ -46,6 +46,7 @@ class SendAlbumEmailRequest(BaseModel):
     brand_name: Optional[str] = None
     primary_color: Optional[str] = "#06B6D4"
     photos_count: Optional[int] = 0
+    event_logo_url: Optional[str] = None
 
 
 class SendBulkAlbumEmailsRequest(BaseModel):
@@ -127,6 +128,7 @@ async def send_album_email(request: SendAlbumEmailRequest):
         brand_name=request.brand_name,
         primary_color=request.primary_color or "#06B6D4",
         photos_count=request.photos_count or 0,
+        event_logo_url=request.event_logo_url,
     )
     
     if not success:

@@ -130,6 +130,7 @@ def send_album_share_email(
     brand_name: Optional[str] = None,
     primary_color: str = "#06B6D4",
     photos_count: int = 0,
+    event_logo_url: Optional[str] = None,
 ) -> bool:
     """
     Send album share email to visitor
@@ -142,10 +143,34 @@ def send_album_share_email(
         brand_name: Custom brand name (optional, defaults to PictureMe.Now)
         primary_color: Brand primary color for email styling
         photos_count: Number of photos in the album
+        event_logo_url: URL to the event logo (optional)
     """
     
     greeting = f"Hi {visitor_name}," if visitor_name else "Hi there,"
     brand = brand_name or "PictureMe.Now"
+    
+    # Akito mascot SVG (inline for email compatibility)
+    akito_svg = '''<svg width="60" height="60" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="50" cy="50" r="45" fill="#06B6D4"/>
+        <circle cx="35" cy="40" r="8" fill="white"/>
+        <circle cx="65" cy="40" r="8" fill="white"/>
+        <circle cx="35" cy="40" r="4" fill="#1a1a1a"/>
+        <circle cx="65" cy="40" r="4" fill="#1a1a1a"/>
+        <path d="M 30 60 Q 50 80 70 60" stroke="white" stroke-width="4" fill="none" stroke-linecap="round"/>
+        <ellipse cx="25" cy="55" rx="6" ry="4" fill="#f472b6" opacity="0.6"/>
+        <ellipse cx="75" cy="55" rx="6" ry="4" fill="#f472b6" opacity="0.6"/>
+    </svg>'''
+    
+    # Event logo section
+    logo_section = ""
+    if event_logo_url:
+        logo_section = f'''
+        <tr>
+            <td align="center" style="padding: 20px 0 0 0;">
+                <img src="{event_logo_url}" alt="{event_name}" style="max-width: 150px; max-height: 80px; object-fit: contain;" />
+            </td>
+        </tr>
+        '''
     
     subject = f"Your photos from {event_name} are ready! 📸"
     
@@ -162,11 +187,15 @@ def send_album_share_email(
         <tr>
             <td align="center" style="padding: 40px 20px;">
                 <table role="presentation" style="width: 100%; max-width: 600px; border-collapse: collapse;">
-                    <!-- Header -->
+                    {logo_section}
+                    <!-- Header with Akito -->
                     <tr>
-                        <td style="background: linear-gradient(135deg, {primary_color} 0%, #7c3aed 100%); border-radius: 16px 16px 0 0; padding: 40px 30px; text-align: center;">
-                            <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 700;">
-                                📸 Your Photos Are Ready!
+                        <td style="background: linear-gradient(135deg, {primary_color} 0%, #7c3aed 100%); border-radius: 16px 16px 0 0; padding: 30px 30px 40px 30px; text-align: center;">
+                            <div style="margin-bottom: 15px;">
+                                {akito_svg}
+                            </div>
+                            <h1 style="margin: 0; color: #ffffff; font-size: 26px; font-weight: 700;">
+                                Your Photos Are Ready! 📸
                             </h1>
                         </td>
                     </tr>
@@ -179,7 +208,7 @@ def send_album_share_email(
                             </p>
                             <p style="margin: 0 0 30px; color: #a1a1aa; font-size: 16px; line-height: 1.6;">
                                 Your photos from <strong style="color: #fafafa;">{event_name}</strong> are ready to view and download!
-                                {f'You have <strong style="color: {primary_color};">{photos_count} photos</strong> waiting for you.' if photos_count > 0 else ''}
+                                {f' You have <strong style="color: {primary_color};">{photos_count} photos</strong> waiting for you.' if photos_count > 0 else ''}
                             </p>
                             
                             <!-- CTA Button -->

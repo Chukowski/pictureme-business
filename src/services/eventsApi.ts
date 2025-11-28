@@ -837,7 +837,8 @@ export async function sendAlbumEmail(
   visitorName?: string,
   brandName?: string,
   primaryColor?: string,
-  photosCount?: number
+  photosCount?: number,
+  eventLogoUrl?: string
 ): Promise<{ success: boolean; message: string }> {
   const response = await fetch(`${getApiUrl()}/api/email/send/album`, {
     method: 'POST',
@@ -850,6 +851,7 @@ export async function sendAlbumEmail(
       brand_name: brandName,
       primary_color: primaryColor,
       photos_count: photosCount,
+      event_logo_url: eventLogoUrl,
     }),
   });
   

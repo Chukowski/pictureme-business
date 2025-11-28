@@ -109,7 +109,7 @@ export function StaffAlbumTools({
 
   const getAlbumUrl = (code: string) => {
     const baseUrl = window.location.origin;
-    return `${baseUrl}/${userSlug || 'album'}/${eventSlug || 'view'}/${code}`;
+    return `${baseUrl}/${userSlug}/${eventSlug}/album/${code}`;
   };
 
   const getRegistrationUrl = () => {
