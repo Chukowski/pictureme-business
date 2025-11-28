@@ -399,13 +399,14 @@ export async function createEvent(eventData: {
   console.log('🔐 Creating event...');
   console.log('   Token exists:', !!token);
   console.log('   API URL:', getApiUrl());
-  console.log('   Full URL:', `${getApiUrl()}/api/events`);
+  console.log('   Full URL:', `${getApiUrl()}/api/events/`);
 
   if (!token) {
     throw new Error('Not authenticated - please login again');
   }
 
-  const response = await fetch(`${getApiUrl()}/api/events`, {
+  // Note: trailing slash required to avoid 307 redirect
+  const response = await fetch(`${getApiUrl()}/api/events/`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -439,7 +440,8 @@ export async function getUserEvents(): Promise<EventConfig[]> {
   }
 
   try {
-    const response = await fetch(`${getApiUrl()}/api/events`, {
+    // Note: trailing slash required to avoid 307 redirect
+    const response = await fetch(`${getApiUrl()}/api/events/`, {
       headers: {
         'Authorization': `Bearer ${token}`,
       },
@@ -672,7 +674,8 @@ export async function createAlbum(eventId: number, orgId?: string, ownerName?: s
     throw new Error('Invalid event ID');
   }
   
-  const response = await fetch(`${getApiUrl()}/api/albums`, {
+  // Note: trailing slash is required to avoid 307 redirect from FastAPI
+  const response = await fetch(`${getApiUrl()}/api/albums/`, {
     method: 'POST',
     headers,
     body: JSON.stringify({ 
