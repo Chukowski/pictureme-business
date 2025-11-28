@@ -177,10 +177,16 @@ export async function processImageWithAI(
       const dimensions = getImageDimensions(aspectRatio);
       console.log(`📐 Using aspect ratio: ${aspectRatio} (${dimensions.width}x${dimensions.height})`);
       
+      // For Seedream, enhance the prompt to explicitly reference the first image as the person
+      // This helps Seedream understand that image 1 is the subject and image 2 is the background
+      const enhancedPrompt = `Using the person from the FIRST image as the main subject: ${backgroundPrompt}. The person in the first image must be the basis for the character - preserve their likeness, features, and appearance.`;
+      
+      console.log("📝 Enhanced prompt for Seedream:", enhancedPrompt);
+      
       // Seedream v4 Edit model - send both images
       result = await fal.subscribe(modelToUse, {
         input: {
-          prompt: backgroundPrompt,
+          prompt: enhancedPrompt,
           image_urls: imageUrls, // User photo + background to combine
           num_images: 1,
           output_format: "jpeg",
