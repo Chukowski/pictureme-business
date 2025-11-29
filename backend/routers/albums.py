@@ -228,9 +228,16 @@ async def delete_album(code: str, request: Request):
     
     async with db_pool.acquire() as conn:
         # Get album details
-        album = await conn.fetchrow("SELECT id, event_id, photo_count FROM albums WHERE code = $1", code)
+        album = await conn.fetchrow("SELECT id, event_id FROM albums WHERE code = $1", code)
         if not album:
             raise HTTPException(status_code=404, detail="Album not found")
+        
+        # Count photos in this album
+        photo_count_row = await conn.fetchrow(
+            "SELECT COUNT(*) as count FROM album_photos WHERE album_id = $1", 
+            album["id"]
+        )
+        photo_count = photo_count_row["count"] if photo_count_row else 0
         
         # Get event to check access
         event = await conn.fetchrow(
@@ -262,7 +269,7 @@ async def delete_album(code: str, request: Request):
         return {
             "status": "success", 
             "message": f"Album {code} deleted successfully",
-            "photos_deleted": album["photo_count"] or 0
+            "photos_deleted": photo_count
         }
 
 @router.put("/{album_code}/status")
