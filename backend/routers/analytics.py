@@ -109,7 +109,7 @@ async def get_station_analytics(request: Request, event_id: int = None, days: in
                 ORDER BY photo_count DESC
             """, event_id, since_date)
         else:
-            # Get all events for user - check both UUID and legacy ID
+            # Get all events for user - check both UUID and legacy ID (compare as text)
             rows = await conn.fetch("""
                 SELECT 
                     ap.station_type,
@@ -120,11 +120,11 @@ async def get_station_analytics(request: Request, event_id: int = None, days: in
                 FROM album_photos ap
                 JOIN albums a ON ap.album_id = a.id
                 JOIN events e ON a.event_id = e.id
-                WHERE (e.user_id::text = $1 OR ($2::integer IS NOT NULL AND e.user_id = $2))
+                WHERE (e.user_id::text = $1 OR e.user_id::text = $2)
                   AND ap.created_at >= $3
                 GROUP BY ap.station_type
                 ORDER BY photo_count DESC
-            """, uuid_id, legacy_id, since_date)
+            """, uuid_id, str(legacy_id) if legacy_id else '', since_date)
         
         return [
             {
@@ -182,6 +182,8 @@ async def get_album_summary(request: Request, event_id: int = None, days: int = 
                 WHERE event_id = $1 AND created_at >= $2
             """, event_id, since_date)
         else:
+            # Compare user_id as text to handle both UUID and integer IDs
+            legacy_id_str = str(legacy_id) if legacy_id else ''
             row = await conn.fetchrow("""
                 SELECT 
                     COUNT(*) as total_albums,
@@ -190,12 +192,12 @@ async def get_album_summary(request: Request, event_id: int = None, days: int = 
                     COUNT(*) FILTER (WHERE a.payment_status = 'paid') as paid_albums,
                     (SELECT COUNT(*) FROM album_photos ap JOIN albums alb ON ap.album_id = alb.id 
                      JOIN events e ON alb.event_id = e.id 
-                     WHERE e.user_id::text = $1 OR ($2::integer IS NOT NULL AND e.user_id = $2)) as total_photos
+                     WHERE e.user_id::text = $1 OR e.user_id::text = $2) as total_photos
                 FROM albums a
                 JOIN events e ON a.event_id = e.id
-                WHERE (e.user_id::text = $1 OR ($2::integer IS NOT NULL AND e.user_id = $2))
+                WHERE (e.user_id::text = $1 OR e.user_id::text = $2)
                   AND a.created_at >= $3
-            """, uuid_id, legacy_id, since_date)
+            """, uuid_id, legacy_id_str, since_date)
         
         return {
             "total_albums": row["total_albums"],

@@ -279,8 +279,9 @@ async def get_token_usage_by_event(request: Request):
     
     async with db_pool.acquire() as conn:
         legacy_id, uuid_id = await get_user_id_for_queries(conn, user)
+        legacy_id_str = str(legacy_id) if legacy_id else ''
         
-        # events.user_id can be either integer or UUID string, so we check both
+        # events.user_id can be either integer or UUID string, compare as text
         usage = await conn.fetch(
             """
             SELECT 
@@ -290,13 +291,13 @@ async def get_token_usage_by_event(request: Request):
                 MAX(tt.created_at) as last_used
             FROM events e
             LEFT JOIN token_transactions tt ON e.id = tt.event_id AND tt.amount < 0
-            WHERE e.user_id::text = $1 OR ($2::integer IS NOT NULL AND e.user_id::text = $2::text)
+            WHERE e.user_id::text = $1 OR e.user_id::text = $2
             GROUP BY e.id, e.title
             HAVING COALESCE(SUM(ABS(tt.amount)), 0) > 0
             ORDER BY tokens_used DESC
             LIMIT 10
             """,
-            uuid_id, legacy_id
+            uuid_id, legacy_id_str
         )
         
         return [
