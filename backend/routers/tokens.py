@@ -506,6 +506,35 @@ async def _ensure_legacy_user(conn, ba_user: dict, logger) -> Optional[int]:
     return None
 
 
+def _normalize_model_id(model_id: str) -> list[str]:
+    """
+    Convert full FAL.ai model paths to short names and vice versa.
+    Returns a list of possible model names to search for (in order of preference).
+    This handles the mismatch between frontend model IDs and database entries.
+    """
+    # Mapping from full FAL paths to short DB names
+    FAL_TO_SHORT = {
+        "fal-ai/nano-banana/edit": ["nano-banana", "fal-ai/nano-banana/edit"],
+        "fal-ai/bytedance/seedream/v4/edit": ["seedream-edit", "seedream-v4", "fal-ai/bytedance/seedream/v4/edit"],
+        "fal-ai/flux-2-pro/edit": ["flux-2-pro", "fal-ai/flux-2-pro/edit"],
+        "fal-ai/flux/dev": ["flux-dev", "fal-ai/flux/dev"],
+        "fal-ai/kling-video/v1/standard/text-to-video": ["kling-standard", "kling-pro"],
+        "fal-ai/minimax/video-01-live/image-to-video": ["minimax-video", "minimax-live"],
+    }
+    
+    # If it's a full FAL path, return short names first
+    if model_id in FAL_TO_SHORT:
+        return FAL_TO_SHORT[model_id]
+    
+    # If it's already a short name, also check the full path
+    for full_path, short_names in FAL_TO_SHORT.items():
+        if model_id in short_names:
+            return [model_id] + [n for n in short_names if n != model_id] + [full_path]
+    
+    # Unknown model - just return the original
+    return [model_id]
+
+
 async def _get_token_cost_for_model(conn, legacy_user_id: int, model_id: Optional[str]) -> int:
     """Determine how many tokens to charge for a given model/user combination"""
     import logging
@@ -515,44 +544,58 @@ async def _get_token_cost_for_model(conn, legacy_user_id: int, model_id: Optiona
         logger.info("🪙 No model_id provided, using default cost: 10")
         return 10
     
+    # Get all possible model names to search for
+    model_names = _normalize_model_id(model_id)
+    logger.info(f"🪙 Looking up pricing for model '{model_id}' -> checking: {model_names}")
+    
     # 1. First check for custom user pricing (enterprise/custom pricing)
-    try:
-        custom_row = await conn.fetchrow("""
-            SELECT token_cost FROM custom_user_pricing 
-            WHERE user_id = $1 AND model_id = $2 AND is_active = TRUE
-        """, legacy_user_id, model_id)
-        
-        if custom_row and custom_row.get("token_cost"):
-            cost = int(custom_row["token_cost"])
-            logger.info(f"🪙 Using CUSTOM user pricing for model {model_id}: {cost} tokens (user_id={legacy_user_id})")
-            return cost
-    except Exception as e:
-        logger.warning(f"🪙 custom_user_pricing lookup failed: {e}")
+    for name in model_names:
+        try:
+            custom_row = await conn.fetchrow("""
+                SELECT token_cost FROM custom_user_pricing 
+                WHERE user_id = $1 AND model_id = $2 AND is_active = TRUE
+            """, legacy_user_id, name)
+            
+            if custom_row and custom_row.get("token_cost"):
+                cost = int(custom_row["token_cost"])
+                logger.info(f"🪙 Using CUSTOM user pricing for model '{name}': {cost} tokens (user_id={legacy_user_id})")
+                return cost
+        except Exception as e:
+            logger.warning(f"🪙 custom_user_pricing lookup failed for '{name}': {e}")
     
     # 2. Check default pricing from ai_generation_costs table
-    try:
-        default_row = await conn.fetchrow(
-            "SELECT cost_per_generation FROM ai_generation_costs WHERE model_name = $1 AND is_active = TRUE",
-            model_id
-        )
-        if default_row and default_row.get("cost_per_generation"):
-            cost = int(default_row["cost_per_generation"])
-            logger.info(f"🪙 Using DEFAULT pricing for model {model_id}: {cost} tokens")
-            return cost
-    except Exception as e:
-        logger.warning(f"🪙 ai_generation_costs lookup failed: {e}")
+    for name in model_names:
+        try:
+            default_row = await conn.fetchrow(
+                "SELECT cost_per_generation FROM ai_generation_costs WHERE model_name = $1 AND is_active = TRUE",
+                name
+            )
+            if default_row and default_row.get("cost_per_generation"):
+                cost = int(default_row["cost_per_generation"])
+                logger.info(f"🪙 Using DEFAULT pricing for model '{name}': {cost} tokens")
+                return cost
+        except Exception as e:
+            logger.warning(f"🪙 ai_generation_costs lookup failed for '{name}': {e}")
     
     # 3. Fallback hardcoded costs (in case tables don't exist or no data)
     model_costs = {
         "fal-ai/nano-banana/edit": 10,
+        "nano-banana": 10,
         "fal-ai/bytedance/seedream/v4/edit": 15,
+        "seedream-edit": 10,
         "fal-ai/flux-2-pro/edit": 20,
         "fal-ai/flux/dev": 15,
     }
     
-    cost = model_costs.get(model_id, 10)
-    logger.info(f"🪙 Using FALLBACK cost for model {model_id}: {cost} tokens")
-    return cost
+    # Check fallback for any of the model names
+    for name in model_names:
+        if name in model_costs:
+            cost = model_costs[name]
+            logger.info(f"🪙 Using FALLBACK cost for model '{name}': {cost} tokens")
+            return cost
+    
+    logger.info(f"🪙 Using DEFAULT FALLBACK cost for unknown model '{model_id}': 10 tokens")
+    return 10
 
 
 @router.post("/charge")
