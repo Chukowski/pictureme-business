@@ -596,7 +596,7 @@ export function StaffAlbumTools({
                   />
                   <Button
                     onClick={handleCopyUrl}
-                    className="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-white/10"
+                    className="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white border border-white/10"
                   >
                     {copiedUrl ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                   </Button>
@@ -666,14 +666,14 @@ export function StaffAlbumTools({
               <div className="grid grid-cols-2 gap-3">
                 <Button
                   onClick={handleExportAll}
-                  className="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-white/10"
+                  className="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white border border-white/10"
                 >
                   <Download className="w-4 h-4 mr-2" />
                   Export All
                 </Button>
                 <Button
                   onClick={handlePrintQueue}
-                  className="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-white/10"
+                  className="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white border border-white/10"
                 >
                   <Printer className="w-4 h-4 mr-2" />
                   Print Queue
@@ -717,14 +717,14 @@ export function StaffAlbumTools({
                 <div className="grid grid-cols-2 gap-3">
                   <Button
                     onClick={handleOpenDisplay}
-                    className="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-white/10"
+                    className="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white border border-white/10"
                   >
                     <Laptop className="w-4 h-4 mr-2" />
                     Open Display
                   </Button>
                   <Button
                     onClick={() => setShowQR(!showQR)}
-                    className="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-white/10"
+                    className="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white border border-white/10"
                   >
                     <QrCode className="w-4 h-4 mr-2" />
                     QR for Display
@@ -777,7 +777,7 @@ export function StaffAlbumTools({
 
               <Button
                 onClick={onRefresh}
-                className="w-full bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-white/10"
+                className="w-full bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white border border-white/10"
               >
                 <RefreshCw className="w-4 h-4 mr-2" />
                 Refresh Data
@@ -786,7 +786,7 @@ export function StaffAlbumTools({
               {userSlug && eventSlug && (
                 <Button
                   onClick={() => window.open(`/${userSlug}/${eventSlug}/registration`, '_blank')}
-                  className="w-full bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-white/10"
+                  className="w-full bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white border border-white/10"
                 >
                   <ExternalLink className="w-4 h-4 mr-2" />
                   Open Registration Page

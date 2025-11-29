@@ -32,7 +32,7 @@ import { toast } from 'sonner';
 import { EventNotFound } from '@/components/EventNotFound';
 import { ScanAlbumQR } from '@/components/album';
 import { StaffAlbumTools, StaffStationAnalytics } from '@/components/staff';
-import { getEventAlbums, updateAlbumStatus, sendAlbumEmailByCode, getEmailStatus } from '@/services/eventsApi';
+import { getEventAlbums, updateAlbumStatus, sendAlbumEmailByCode, getEmailStatus, getCurrentUser } from '@/services/eventsApi';
 import { ENV } from '@/config/env';
 
 // Mock data types
@@ -102,6 +102,13 @@ export default function StaffDashboard() {
   // Auth state - check sessionStorage first
   const [pin, setPin] = useState('');
   const [isAuthorized, setIsAuthorized] = useState(false);
+  
+  // Check if current user is the event owner (has admin access)
+  const currentUser = getCurrentUser();
+  const isEventOwner = currentUser && config && (
+    config.user_id === currentUser.id || 
+    config.user_slug === currentUser.slug
+  );
   
   // Polling state
   const [isPolling, setIsPolling] = useState(true);
@@ -410,11 +417,12 @@ export default function StaffDashboard() {
                       >
                           Access Dashboard
                       </Button>
-                      {isAdminRoute && (
+                      {/* Only show Back to Admin for event owners */}
+                      {isEventOwner && (
                         <Button 
                           variant="ghost"
                           onClick={() => navigate('/admin')}
-                          className="w-full text-zinc-400 hover:text-white"
+                          className="w-full text-zinc-400 hover:text-white hover:bg-zinc-800"
                         >
                           <ArrowLeft className="w-4 h-4 mr-2" />
                           Back to Admin
@@ -463,12 +471,13 @@ export default function StaffDashboard() {
               </h1>
               <p className="text-sm text-zinc-400">{config.title}</p>
             </div>
-            {isAdminRoute && (
+            {/* Only show Admin Area button to the event owner */}
+            {isEventOwner && (
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => navigate('/admin')}
-                className="ml-4 border-white/20 text-zinc-300 hover:text-white"
+                className="ml-4 border-white/20 text-zinc-300 hover:text-white hover:bg-zinc-800"
               >
                 <LayoutDashboard className="w-4 h-4 mr-2" />
                 Admin Area
@@ -488,7 +497,7 @@ export default function StaffDashboard() {
               variant="outline"
               size="sm"
               onClick={() => setIsPolling(!isPolling)}
-              className={`border-white/20 ${isPolling ? 'text-green-400' : 'text-zinc-400'}`}
+              className={`border-white/20 hover:bg-zinc-800 ${isPolling ? 'text-green-400 hover:text-green-300' : 'text-zinc-400 hover:text-white'}`}
             >
               {isPolling ? 'Live' : 'Paused'}
             </Button>
@@ -504,7 +513,7 @@ export default function StaffDashboard() {
               variant="outline"
               size="icon"
               onClick={handleRefresh}
-              className="border-white/20 text-zinc-300"
+              className="border-white/20 text-zinc-300 hover:text-white hover:bg-zinc-800"
               disabled={isLoading}
             >
               <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
@@ -556,16 +565,28 @@ export default function StaffDashboard() {
         {/* Main Content */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="bg-zinc-900/50 border border-white/10">
-            <TabsTrigger value="overview" className="data-[state=active]:bg-white/10">
+            <TabsTrigger 
+              value="overview" 
+              className="text-zinc-400 data-[state=active]:bg-white/10 data-[state=active]:text-white"
+            >
               Albums
             </TabsTrigger>
-            <TabsTrigger value="tools" className="data-[state=active]:bg-white/10">
+            <TabsTrigger 
+              value="tools" 
+              className="text-zinc-400 data-[state=active]:bg-white/10 data-[state=active]:text-white"
+            >
               Tools
             </TabsTrigger>
-            <TabsTrigger value="analytics" className="data-[state=active]:bg-white/10">
+            <TabsTrigger 
+              value="analytics" 
+              className="text-zinc-400 data-[state=active]:bg-white/10 data-[state=active]:text-white"
+            >
               Analytics
             </TabsTrigger>
-            <TabsTrigger value="display" className="data-[state=active]:bg-white/10">
+            <TabsTrigger 
+              value="display" 
+              className="text-zinc-400 data-[state=active]:bg-white/10 data-[state=active]:text-white"
+            >
               Display
             </TabsTrigger>
           </TabsList>
@@ -583,7 +604,7 @@ export default function StaffDashboard() {
                   className="pl-10 bg-zinc-900/50 border-white/10 text-white"
                 />
               </div>
-              <Button variant="outline" className="border-white/20 text-zinc-300">
+              <Button variant="outline" className="border-white/20 text-zinc-300 hover:text-white hover:bg-zinc-800">
                 <Filter className="w-4 h-4 mr-2" />
                 Filter
               </Button>
@@ -755,9 +776,13 @@ export default function StaffDashboard() {
           <TabsContent value="tools">
             <StaffAlbumTools
               eventId={config._id}
+              postgresEventId={config.postgres_event_id}
               eventName={config.title}
+              userSlug={effectiveUserSlug}
+              eventSlug={effectiveEventSlug}
               stats={stats}
               primaryColor={primaryColor}
+              eventLogoUrl={config.branding?.logoPath}
               onRefresh={handleRefresh}
             />
           </TabsContent>
@@ -805,7 +830,7 @@ export default function StaffDashboard() {
                     <div className="grid grid-cols-2 gap-4">
                       <Button
                         variant="outline"
-                        className="h-auto py-4 flex-col gap-2 border-white/10 hover:bg-cyan-500/10 hover:border-cyan-500/30"
+                        className="h-auto py-4 flex-col gap-2 bg-zinc-900/50 border-white/10 hover:bg-cyan-500/20 hover:border-cyan-500/30 text-zinc-300 hover:text-white"
                         onClick={() => {
                           const displayUrl = `${window.location.origin}/${effectiveUserSlug}/${effectiveEventSlug}/display`;
                           window.open(displayUrl, 'bigscreen', 'width=1920,height=1080');
@@ -813,11 +838,11 @@ export default function StaffDashboard() {
                         }}
                       >
                         <MonitorPlay className="w-6 h-6 text-cyan-400" />
-                        <span className="text-zinc-300">Open Display Window</span>
+                        <span>Open Display Window</span>
                       </Button>
                       <Button
                         variant="outline"
-                        className="h-auto py-4 flex-col gap-2 border-white/10 hover:bg-purple-500/10 hover:border-purple-500/30"
+                        className="h-auto py-4 flex-col gap-2 bg-zinc-900/50 border-white/10 hover:bg-purple-500/20 hover:border-purple-500/30 text-zinc-300 hover:text-white"
                         onClick={() => {
                           const registrationUrl = `${window.location.origin}/${effectiveUserSlug}/${effectiveEventSlug}/registration`;
                           navigator.clipboard.writeText(registrationUrl);
@@ -825,7 +850,7 @@ export default function StaffDashboard() {
                         }}
                       >
                         <QrCode className="w-6 h-6 text-purple-400" />
-                        <span className="text-zinc-300">Copy Registration URL</span>
+                        <span>Copy Registration URL</span>
                       </Button>
                     </div>
                     

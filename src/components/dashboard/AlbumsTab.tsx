@@ -247,7 +247,7 @@ export default function AlbumsTab({ currentUser }: AlbumsTabProps) {
                 {/* Staff Access PIN */}
                 {selectedEvent.settings?.staffAccessCode && (
                   <div className="mb-6 p-4 rounded-lg bg-amber-500/10 border border-amber-500/20">
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-3">
                         <Key className="w-5 h-5 text-amber-400" />
                         <div>
@@ -279,6 +279,35 @@ export default function AlbumsTab({ currentUser }: AlbumsTabProps) {
                           {copiedPin ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
                         </button>
                       </div>
+                    </div>
+                    {/* Staff Dashboard Link */}
+                    <div className="flex gap-2 pt-3 border-t border-amber-500/20">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          const staffUrl = `${window.location.origin}/${selectedEvent.user_slug}/${selectedEvent.slug}/staff`;
+                          const message = `Staff Dashboard Access\n\nURL: ${staffUrl}\nPIN: ${selectedEvent.settings?.staffAccessCode}\n\nUse this PIN to access the staff dashboard.`;
+                          navigator.clipboard.writeText(message);
+                          toast.success('Staff access info copied! Ready to share.');
+                        }}
+                        className="flex-1 bg-amber-600/20 border-amber-500/30 text-amber-400 hover:bg-amber-600/30 hover:text-amber-300"
+                      >
+                        <Copy className="w-4 h-4 mr-2" />
+                        Copy Staff Access Info
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          const staffUrl = `${window.location.origin}/${selectedEvent.user_slug}/${selectedEvent.slug}/staff`;
+                          window.open(staffUrl, '_blank');
+                        }}
+                        className="bg-zinc-800 border-white/10 text-zinc-300 hover:bg-zinc-700 hover:text-white"
+                      >
+                        <ExternalLink className="w-4 h-4 mr-2" />
+                        Open
+                      </Button>
                     </div>
                   </div>
                 )}
