@@ -29,6 +29,13 @@ import {
     DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
 import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+import {
     MoreHorizontal,
     Search,
     Filter,
@@ -44,30 +51,37 @@ import {
     Plus,
     X,
     Settings2,
-    Building2
+    Building2,
+    RefreshCw,
+    Loader2,
+    Shield,
+    User,
+    Crown
 } from "lucide-react";
 import { toast } from "sonner";
 import { ENV } from "@/config/env";
 
 interface User {
-    user_id: number;
+    id: string | number;
+    user_id?: number;
     email: string;
-    username: string;
-    name: string;
+    username?: string;
+    name?: string;
+    full_name?: string;
     role: string;
-    tokens_remaining: number;
-    subscription_tier: string;
-    is_active: boolean;
-    created_at: string;
-    uses_custom_pricing: boolean;
-    default_price_per_token: number;
-    credit_limit: number;
-    current_credit_used: number;
-    billing_cycle: string;
-    contract_start_date: string;
-    contract_end_date: string;
-    custom_pricing_count: number;
-    custom_packages_count: number;
+    tokens_remaining?: number;
+    subscription_tier?: string;
+    is_active?: boolean;
+    created_at?: string;
+    uses_custom_pricing?: boolean;
+    default_price_per_token?: number;
+    credit_limit?: number;
+    current_credit_used?: number;
+    billing_cycle?: string;
+    contract_start_date?: string;
+    contract_end_date?: string;
+    custom_pricing_count?: number;
+    custom_packages_count?: number;
 }
 
 interface ModelPricing {
@@ -97,21 +111,38 @@ interface EnterpriseSettings {
     billing_contact_name: string;
 }
 
+const ROLE_OPTIONS = [
+    { value: 'user', label: 'User', color: 'border-zinc-500 text-zinc-400' },
+    { value: 'business', label: 'Business', color: 'border-blue-500 text-blue-400 bg-blue-500/10' },
+    { value: 'business_masters', label: 'Business Masters', color: 'border-indigo-500 text-indigo-400 bg-indigo-500/10' },
+    { value: 'enterprise', label: 'Enterprise', color: 'border-purple-500 text-purple-400 bg-purple-500/10' },
+    { value: 'admin', label: 'Admin', color: 'border-orange-500 text-orange-400 bg-orange-500/10' },
+    { value: 'superadmin', label: 'Super Admin', color: 'border-red-500 text-red-400 bg-red-500/10' },
+];
+
 export default function SuperAdminUsers() {
     const [searchTerm, setSearchTerm] = useState("");
     const [users, setUsers] = useState<User[]>([]);
-    const [allUsers, setAllUsers] = useState<User[]>([]);
+    const [enterpriseUsers, setEnterpriseUsers] = useState<User[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
     const [isPricingDialogOpen, setIsPricingDialogOpen] = useState(false);
     const [isTokensDialogOpen, setIsTokensDialogOpen] = useState(false);
+    const [isEditUserDialogOpen, setIsEditUserDialogOpen] = useState(false);
     const [modelPricing, setModelPricing] = useState<ModelPricing[]>([]);
     const [enterpriseSettings, setEnterpriseSettings] = useState<EnterpriseSettings | null>(null);
     const [isSaving, setIsSaving] = useState(false);
     const [tokensToAdd, setTokensToAdd] = useState(0);
     const [tokenReason, setTokenReason] = useState("");
+    const [activeTab, setActiveTab] = useState("all");
 
-    // Fetch all users
+    // Edit user form
+    const [editForm, setEditForm] = useState({
+        role: "",
+        is_active: true,
+        tokens_remaining: 0
+    });
+
     useEffect(() => {
         fetchUsers();
     }, []);
@@ -121,24 +152,24 @@ export default function SuperAdminUsers() {
             setIsLoading(true);
             const token = localStorage.getItem("auth_token");
             
+            // Fetch all users
+            const allUsersRes = await fetch(`${ENV.API_URL}/api/admin/users?limit=100`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            
+            if (allUsersRes.ok) {
+                const data = await allUsersRes.json();
+                setUsers(data.users || []);
+            }
+
             // Fetch enterprise users
             const enterpriseRes = await fetch(`${ENV.API_URL}/api/admin/enterprise/users`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             
             if (enterpriseRes.ok) {
-                const enterpriseUsers = await enterpriseRes.json();
-                setUsers(enterpriseUsers);
-            }
-
-            // Also fetch all users for the "All Users" tab
-            const allUsersRes = await fetch(`${ENV.API_URL}/api/admin/users`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            
-            if (allUsersRes.ok) {
-                const allUsersData = await allUsersRes.json();
-                setAllUsers(allUsersData);
+                const enterpriseData = await enterpriseRes.json();
+                setEnterpriseUsers(enterpriseData);
             }
         } catch (error) {
             console.error("Error fetching users:", error);
@@ -149,12 +180,13 @@ export default function SuperAdminUsers() {
     };
 
     const openPricingDialog = async (user: User) => {
+        const userId = user.user_id || user.id;
         setSelectedUser(user);
         setIsPricingDialogOpen(true);
         
         try {
             const token = localStorage.getItem("auth_token");
-            const response = await fetch(`${ENV.API_URL}/api/admin/enterprise/users/${user.user_id}/pricing`, {
+            const response = await fetch(`${ENV.API_URL}/api/admin/enterprise/users/${userId}/pricing`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             
@@ -187,6 +219,16 @@ export default function SuperAdminUsers() {
         setIsTokensDialogOpen(true);
     };
 
+    const openEditUserDialog = (user: User) => {
+        setSelectedUser(user);
+        setEditForm({
+            role: user.role || 'user',
+            is_active: user.is_active !== false,
+            tokens_remaining: user.tokens_remaining || 0
+        });
+        setIsEditUserDialogOpen(true);
+    };
+
     const handlePricingChange = (modelId: string, field: string, value: number | string) => {
         setModelPricing(prev => prev.map(p => {
             if (p.model_id === modelId) {
@@ -202,6 +244,7 @@ export default function SuperAdminUsers() {
 
     const savePricing = async () => {
         if (!selectedUser) return;
+        const userId = (selectedUser as any).user_id || selectedUser.id;
         
         setIsSaving(true);
         try {
@@ -211,7 +254,7 @@ export default function SuperAdminUsers() {
             const customPricing = modelPricing
                 .filter(p => p.has_custom_pricing && p.custom_cost !== null)
                 .map(p => ({
-                    user_id: selectedUser.user_id,
+                    user_id: userId,
                     ai_model_id: p.model_id,
                     ai_model_type: p.model_type,
                     token_cost: p.custom_cost || p.effective_cost,
@@ -221,7 +264,7 @@ export default function SuperAdminUsers() {
 
             if (customPricing.length > 0) {
                 const response = await fetch(
-                    `${ENV.API_URL}/api/admin/enterprise/users/${selectedUser.user_id}/pricing/bulk`,
+                    `${ENV.API_URL}/api/admin/enterprise/users/${userId}/pricing/bulk`,
                     {
                         method: 'POST',
                         headers: {
@@ -240,7 +283,7 @@ export default function SuperAdminUsers() {
             // Save enterprise settings
             if (enterpriseSettings) {
                 const settingsResponse = await fetch(
-                    `${ENV.API_URL}/api/admin/enterprise/users/${selectedUser.user_id}/settings`,
+                    `${ENV.API_URL}/api/admin/enterprise/users/${userId}/settings`,
                     {
                         method: 'PUT',
                         headers: {
@@ -258,7 +301,7 @@ export default function SuperAdminUsers() {
 
             toast.success("Pricing saved successfully");
             setIsPricingDialogOpen(false);
-            fetchUsers(); // Refresh the list
+            fetchUsers();
         } catch (error) {
             console.error("Error saving pricing:", error);
             toast.error("Failed to save pricing");
@@ -269,12 +312,13 @@ export default function SuperAdminUsers() {
 
     const addTokens = async () => {
         if (!selectedUser || tokensToAdd === 0) return;
+        const userId = (selectedUser as any).user_id || selectedUser.id;
         
         setIsSaving(true);
         try {
             const token = localStorage.getItem("auth_token");
             const response = await fetch(
-                `${ENV.API_URL}/api/admin/enterprise/users/${selectedUser.user_id}/tokens?tokens=${tokensToAdd}&reason=${encodeURIComponent(tokenReason || 'Admin adjustment')}`,
+                `${ENV.API_URL}/api/admin/enterprise/users/${userId}/tokens?tokens=${tokensToAdd}&reason=${encodeURIComponent(tokenReason || 'Admin adjustment')}`,
                 {
                     method: 'POST',
                     headers: { Authorization: `Bearer ${token}` }
@@ -297,10 +341,70 @@ export default function SuperAdminUsers() {
         }
     };
 
+    const saveUserEdit = async () => {
+        if (!selectedUser) return;
+        const userId = (selectedUser as any).user_id || selectedUser.id;
+        
+        setIsSaving(true);
+        try {
+            const token = localStorage.getItem("auth_token");
+            const response = await fetch(
+                `${ENV.API_URL}/api/admin/users/${userId}`,
+                {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Bearer ${token}`
+                    },
+                    body: JSON.stringify(editForm)
+                }
+            );
+
+            if (!response.ok) {
+                throw new Error('Failed to update user');
+            }
+
+            toast.success("User updated successfully");
+            setIsEditUserDialogOpen(false);
+            fetchUsers();
+        } catch (error) {
+            console.error("Error updating user:", error);
+            toast.error("Failed to update user");
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const getRoleBadge = (role: string) => {
+        const roleConfig = ROLE_OPTIONS.find(r => r.value === role) || ROLE_OPTIONS[0];
+        return (
+            <Badge variant="outline" className={roleConfig.color}>
+                {roleConfig.label}
+            </Badge>
+        );
+    };
+
+    const getRoleIcon = (role: string) => {
+        switch (role) {
+            case 'superadmin': return <Crown className="w-4 h-4 text-red-400" />;
+            case 'admin': return <Shield className="w-4 h-4 text-orange-400" />;
+            case 'enterprise': return <Building2 className="w-4 h-4 text-purple-400" />;
+            case 'business_masters':
+            case 'business': return <UserCog className="w-4 h-4 text-indigo-400" />;
+            default: return <User className="w-4 h-4 text-zinc-400" />;
+        }
+    };
+
     const filteredUsers = users.filter(user =>
-        user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (user.name || user.full_name || '')?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.username?.toLowerCase().includes(searchTerm.toLowerCase())
+        (user.username || '')?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    const filteredEnterpriseUsers = enterpriseUsers.filter(user =>
+        (user.name || '')?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (user.username || '')?.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     const imageModels = modelPricing.filter(p => p.model_type === 'image');
@@ -310,8 +414,8 @@ export default function SuperAdminUsers() {
         <div className="space-y-6">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight mb-2">Enterprise Users</h1>
-                    <p className="text-zinc-400">Manage enterprise/business users and their custom pricing.</p>
+                    <h1 className="text-3xl font-bold tracking-tight mb-2">User Management</h1>
+                    <p className="text-zinc-400">Manage all users, tokens, and enterprise pricing.</p>
                 </div>
                 <div className="flex items-center gap-2">
                     <div className="relative w-full md:w-64">
@@ -323,129 +427,326 @@ export default function SuperAdminUsers() {
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
                     </div>
-                    <Button variant="outline" className="border-white/10 bg-zinc-900/50">
-                        <Filter className="w-4 h-4 mr-2" />
-                        Filter
+                    <Button 
+                        variant="outline" 
+                        className="border-white/10 bg-zinc-900/50"
+                        onClick={fetchUsers}
+                    >
+                        <RefreshCw className="w-4 h-4" />
                     </Button>
                 </div>
             </div>
 
-            <div className="rounded-xl border border-white/10 bg-zinc-900/50 backdrop-blur-sm overflow-hidden">
-                <Table>
-                    <TableHeader className="bg-white/5">
-                        <TableRow className="border-white/10 hover:bg-transparent">
-                            <TableHead className="text-zinc-400">User Info</TableHead>
-                            <TableHead className="text-zinc-400">Role/Tier</TableHead>
-                            <TableHead className="text-zinc-400">Tokens</TableHead>
-                            <TableHead className="text-zinc-400">Custom Pricing</TableHead>
-                            <TableHead className="text-zinc-400">Contract</TableHead>
-                            <TableHead className="text-right text-zinc-400">Actions</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {isLoading ? (
-                            <TableRow>
-                                <TableCell colSpan={6} className="text-center py-8 text-zinc-500">
-                                    Loading users...
-                                </TableCell>
-                            </TableRow>
-                        ) : filteredUsers.length === 0 ? (
-                            <TableRow>
-                                <TableCell colSpan={6} className="text-center py-8 text-zinc-500">
-                                    No enterprise users found
-                                </TableCell>
-                            </TableRow>
-                        ) : (
-                            filteredUsers.map((user) => (
-                                <TableRow key={user.user_id} className="border-white/10 hover:bg-white/5 transition-colors">
-                                    <TableCell>
-                                        <div className="flex flex-col">
-                                            <span className="font-medium text-white">{user.name || 'No name'}</span>
-                                            <span className="text-xs text-zinc-500">{user.email}</span>
-                                            <span className="text-xs text-zinc-500">@{user.username}</span>
-                                        </div>
-                                    </TableCell>
-                                    <TableCell>
-                                        <div className="flex flex-col gap-1">
-                                            <Badge variant="outline" className={`w-fit
-                                                ${user.role === 'enterprise' ? 'border-purple-500 text-purple-400 bg-purple-500/10' :
-                                                user.role === 'business' ? 'border-indigo-500 text-indigo-400 bg-indigo-500/10' :
-                                                user.role === 'admin' ? 'border-red-500 text-red-400 bg-red-500/10' :
-                                                'border-zinc-700 text-zinc-400'}
-                                            `}>
-                                                {user.role}
-                                            </Badge>
-                                            <span className="text-xs text-zinc-500">{user.subscription_tier || 'Free'}</span>
-                                        </div>
-                                    </TableCell>
-                                    <TableCell>
-                                        <div className="flex items-center gap-1 font-mono text-yellow-400">
-                                            <Coins className="w-3 h-3" />
-                                            {(user.tokens_remaining || 0).toLocaleString()}
-                                        </div>
-                                    </TableCell>
-                                    <TableCell>
-                                        {user.uses_custom_pricing ? (
-                                            <div className="flex flex-col gap-1">
-                                                <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 w-fit">
-                                                    Custom Pricing
-                                                </Badge>
-                                                <span className="text-xs text-zinc-500">
-                                                    {user.custom_pricing_count} model(s)
-                                                </span>
-                                            </div>
-                                        ) : (
-                                            <span className="text-xs text-zinc-500">Standard pricing</span>
-                                        )}
-                                    </TableCell>
-                                    <TableCell>
-                                        {user.contract_end_date ? (
-                                            <div className="text-xs text-zinc-500">
-                                                <p>Ends: {new Date(user.contract_end_date).toLocaleDateString()}</p>
-                                                <p className="text-zinc-600">{user.billing_cycle}</p>
-                                            </div>
-                                        ) : (
-                                            <span className="text-xs text-zinc-600">No contract</span>
-                                        )}
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <Button variant="ghost" className="h-8 w-8 p-0 hover:bg-white/10">
-                                                    <span className="sr-only">Open menu</span>
-                                                    <MoreHorizontal className="h-4 w-4" />
-                                                </Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end" className="bg-zinc-900 border-white/10 text-white">
-                                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                                <DropdownMenuItem 
-                                                    onClick={() => openPricingDialog(user)} 
-                                                    className="focus:bg-white/10 cursor-pointer"
-                                                >
-                                                    <DollarSign className="mr-2 h-4 w-4" /> Set Custom Pricing
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem 
-                                                    onClick={() => openTokensDialog(user)} 
-                                                    className="focus:bg-white/10 cursor-pointer"
-                                                >
-                                                    <Coins className="mr-2 h-4 w-4" /> Add Tokens
-                                                </DropdownMenuItem>
-                                                <DropdownMenuSeparator className="bg-white/10" />
-                                                <DropdownMenuItem className="focus:bg-white/10 cursor-pointer">
-                                                    <UserCog className="mr-2 h-4 w-4" /> View Details
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem className="focus:bg-white/10 cursor-pointer">
-                                                    <FileText className="mr-2 h-4 w-4" /> View Transactions
-                                                </DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
-                                    </TableCell>
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+                <TabsList className="bg-zinc-900 border border-white/10">
+                    <TabsTrigger value="all">All Users ({users.length})</TabsTrigger>
+                    <TabsTrigger value="enterprise">Enterprise ({enterpriseUsers.length})</TabsTrigger>
+                </TabsList>
+
+                {/* All Users Tab */}
+                <TabsContent value="all" className="space-y-4">
+                    <div className="rounded-xl border border-white/10 bg-zinc-900/50 backdrop-blur-sm overflow-hidden">
+                        <Table>
+                            <TableHeader className="bg-white/5">
+                                <TableRow className="border-white/10 hover:bg-transparent">
+                                    <TableHead className="text-zinc-400">User</TableHead>
+                                    <TableHead className="text-zinc-400">Role</TableHead>
+                                    <TableHead className="text-zinc-400">Tokens</TableHead>
+                                    <TableHead className="text-zinc-400">Status</TableHead>
+                                    <TableHead className="text-zinc-400">Joined</TableHead>
+                                    <TableHead className="text-right text-zinc-400">Actions</TableHead>
                                 </TableRow>
-                            ))
-                        )}
-                    </TableBody>
-                </Table>
-            </div>
+                            </TableHeader>
+                            <TableBody>
+                                {isLoading ? (
+                                    <TableRow>
+                                        <TableCell colSpan={6} className="text-center py-8 text-zinc-500">
+                                            <Loader2 className="w-6 h-6 animate-spin mx-auto" />
+                                        </TableCell>
+                                    </TableRow>
+                                ) : filteredUsers.length === 0 ? (
+                                    <TableRow>
+                                        <TableCell colSpan={6} className="text-center py-8 text-zinc-500">
+                                            No users found
+                                        </TableCell>
+                                    </TableRow>
+                                ) : (
+                                    filteredUsers.map((user) => (
+                                        <TableRow key={user.id} className="border-white/10 hover:bg-white/5 transition-colors">
+                                            <TableCell>
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center">
+                                                        {getRoleIcon(user.role)}
+                                                    </div>
+                                                    <div className="flex flex-col">
+                                                        <span className="font-medium text-white">
+                                                            {user.name || user.full_name || 'No name'}
+                                                        </span>
+                                                        <span className="text-xs text-zinc-500">{user.email}</span>
+                                                    </div>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>{getRoleBadge(user.role)}</TableCell>
+                                            <TableCell>
+                                                <div className="flex items-center gap-1 font-mono text-yellow-400">
+                                                    <Coins className="w-3 h-3" />
+                                                    {(user.tokens_remaining || 0).toLocaleString()}
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Badge 
+                                                    variant="outline" 
+                                                    className={user.is_active !== false 
+                                                        ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                                                        : "bg-red-500/10 text-red-400 border-red-500/20"
+                                                    }
+                                                >
+                                                    {user.is_active !== false ? 'Active' : 'Inactive'}
+                                                </Badge>
+                                            </TableCell>
+                                            <TableCell>
+                                                <span className="text-xs text-zinc-500">
+                                                    {user.created_at ? new Date(user.created_at).toLocaleDateString() : '-'}
+                                                </span>
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                        <Button variant="ghost" className="h-8 w-8 p-0 hover:bg-white/10">
+                                                            <MoreHorizontal className="h-4 w-4" />
+                                                        </Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent align="end" className="bg-zinc-900 border-white/10 text-white">
+                                                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                                        <DropdownMenuItem 
+                                                            onClick={() => openTokensDialog(user)} 
+                                                            className="focus:bg-white/10 cursor-pointer"
+                                                        >
+                                                            <Coins className="mr-2 h-4 w-4 text-yellow-400" /> Add/Remove Tokens
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem 
+                                                            onClick={() => openEditUserDialog(user)} 
+                                                            className="focus:bg-white/10 cursor-pointer"
+                                                        >
+                                                            <UserCog className="mr-2 h-4 w-4" /> Edit User
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuSeparator className="bg-white/10" />
+                                                        <DropdownMenuItem 
+                                                            onClick={() => openPricingDialog(user)} 
+                                                            className="focus:bg-white/10 cursor-pointer"
+                                                        >
+                                                            <DollarSign className="mr-2 h-4 w-4 text-emerald-400" /> Custom Pricing
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem className="focus:bg-white/10 cursor-pointer">
+                                                            <FileText className="mr-2 h-4 w-4" /> View Transactions
+                                                        </DropdownMenuItem>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))
+                                )}
+                            </TableBody>
+                        </Table>
+                    </div>
+                </TabsContent>
+
+                {/* Enterprise Users Tab */}
+                <TabsContent value="enterprise" className="space-y-4">
+                    <div className="rounded-xl border border-white/10 bg-zinc-900/50 backdrop-blur-sm overflow-hidden">
+                        <Table>
+                            <TableHeader className="bg-white/5">
+                                <TableRow className="border-white/10 hover:bg-transparent">
+                                    <TableHead className="text-zinc-400">User Info</TableHead>
+                                    <TableHead className="text-zinc-400">Role/Tier</TableHead>
+                                    <TableHead className="text-zinc-400">Tokens</TableHead>
+                                    <TableHead className="text-zinc-400">Custom Pricing</TableHead>
+                                    <TableHead className="text-zinc-400">Contract</TableHead>
+                                    <TableHead className="text-right text-zinc-400">Actions</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {isLoading ? (
+                                    <TableRow>
+                                        <TableCell colSpan={6} className="text-center py-8 text-zinc-500">
+                                            <Loader2 className="w-6 h-6 animate-spin mx-auto" />
+                                        </TableCell>
+                                    </TableRow>
+                                ) : filteredEnterpriseUsers.length === 0 ? (
+                                    <TableRow>
+                                        <TableCell colSpan={6} className="text-center py-8 text-zinc-500">
+                                            No enterprise users found
+                                        </TableCell>
+                                    </TableRow>
+                                ) : (
+                                    filteredEnterpriseUsers.map((user) => (
+                                        <TableRow key={user.user_id || user.id} className="border-white/10 hover:bg-white/5 transition-colors">
+                                            <TableCell>
+                                                <div className="flex flex-col">
+                                                    <span className="font-medium text-white">{user.name || 'No name'}</span>
+                                                    <span className="text-xs text-zinc-500">{user.email}</span>
+                                                    <span className="text-xs text-zinc-600">@{user.username}</span>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>
+                                                <div className="flex flex-col gap-1">
+                                                    {getRoleBadge(user.role)}
+                                                    <span className="text-xs text-zinc-500">{user.subscription_tier || 'Free'}</span>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>
+                                                <div className="flex items-center gap-1 font-mono text-yellow-400">
+                                                    <Coins className="w-3 h-3" />
+                                                    {(user.tokens_remaining || 0).toLocaleString()}
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>
+                                                {user.uses_custom_pricing ? (
+                                                    <div className="flex flex-col gap-1">
+                                                        <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 w-fit">
+                                                            Custom Pricing
+                                                        </Badge>
+                                                        <span className="text-xs text-zinc-500">
+                                                            {user.custom_pricing_count} model(s)
+                                                        </span>
+                                                    </div>
+                                                ) : (
+                                                    <span className="text-xs text-zinc-500">Standard pricing</span>
+                                                )}
+                                            </TableCell>
+                                            <TableCell>
+                                                {user.contract_end_date ? (
+                                                    <div className="text-xs text-zinc-500">
+                                                        <p>Ends: {new Date(user.contract_end_date).toLocaleDateString()}</p>
+                                                        <p className="text-zinc-600">{user.billing_cycle}</p>
+                                                    </div>
+                                                ) : (
+                                                    <span className="text-xs text-zinc-600">No contract</span>
+                                                )}
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                        <Button variant="ghost" className="h-8 w-8 p-0 hover:bg-white/10">
+                                                            <MoreHorizontal className="h-4 w-4" />
+                                                        </Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent align="end" className="bg-zinc-900 border-white/10 text-white">
+                                                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                                        <DropdownMenuItem 
+                                                            onClick={() => openPricingDialog(user)} 
+                                                            className="focus:bg-white/10 cursor-pointer"
+                                                        >
+                                                            <DollarSign className="mr-2 h-4 w-4" /> Set Custom Pricing
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem 
+                                                            onClick={() => openTokensDialog(user)} 
+                                                            className="focus:bg-white/10 cursor-pointer"
+                                                        >
+                                                            <Coins className="mr-2 h-4 w-4" /> Add Tokens
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuSeparator className="bg-white/10" />
+                                                        <DropdownMenuItem className="focus:bg-white/10 cursor-pointer">
+                                                            <UserCog className="mr-2 h-4 w-4" /> View Details
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem className="focus:bg-white/10 cursor-pointer">
+                                                            <FileText className="mr-2 h-4 w-4" /> View Transactions
+                                                        </DropdownMenuItem>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))
+                                )}
+                            </TableBody>
+                        </Table>
+                    </div>
+                </TabsContent>
+            </Tabs>
+
+            {/* Edit User Dialog */}
+            <Dialog open={isEditUserDialogOpen} onOpenChange={setIsEditUserDialogOpen}>
+                <DialogContent className="bg-zinc-900 border-white/10 text-white">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                            <UserCog className="w-5 h-5 text-indigo-400" />
+                            Edit User: {selectedUser?.name || selectedUser?.email}
+                        </DialogTitle>
+                        <DialogDescription className="text-zinc-400">
+                            Update user role, status, and token balance.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="space-y-4 py-4">
+                        <div className="space-y-2">
+                            <Label className="text-zinc-400">Role</Label>
+                            <Select 
+                                value={editForm.role} 
+                                onValueChange={(value) => setEditForm({ ...editForm, role: value })}
+                            >
+                                <SelectTrigger className="bg-zinc-950 border-white/10">
+                                    <SelectValue placeholder="Select role" />
+                                </SelectTrigger>
+                                <SelectContent className="bg-zinc-900 border-white/10">
+                                    {ROLE_OPTIONS.map(role => (
+                                        <SelectItem key={role.value} value={role.value}>
+                                            {role.label}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label className="text-zinc-400">Token Balance</Label>
+                            <Input
+                                type="number"
+                                value={editForm.tokens_remaining}
+                                onChange={(e) => setEditForm({ ...editForm, tokens_remaining: parseInt(e.target.value) || 0 })}
+                                className="bg-zinc-950 border-white/10"
+                            />
+                            <p className="text-xs text-zinc-500">
+                                Set the exact token balance for this user
+                            </p>
+                        </div>
+
+                        <div className="flex items-center justify-between p-3 rounded-lg bg-white/5">
+                            <div>
+                                <Label className="text-white">Account Active</Label>
+                                <p className="text-xs text-zinc-500">Inactive users cannot log in</p>
+                            </div>
+                            <Button
+                                variant={editForm.is_active ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => setEditForm({ ...editForm, is_active: !editForm.is_active })}
+                                className={editForm.is_active 
+                                    ? "bg-emerald-600 hover:bg-emerald-700" 
+                                    : "border-red-500/50 text-red-400"
+                                }
+                            >
+                                {editForm.is_active ? 'Active' : 'Inactive'}
+                            </Button>
+                        </div>
+                    </div>
+
+                    <DialogFooter>
+                        <Button 
+                            variant="outline" 
+                            onClick={() => setIsEditUserDialogOpen(false)}
+                            className="border-white/10"
+                        >
+                            Cancel
+                        </Button>
+                        <Button 
+                            onClick={saveUserEdit}
+                            disabled={isSaving}
+                            className="bg-indigo-600 hover:bg-indigo-700"
+                        >
+                            {isSaving ? 'Saving...' : 'Save Changes'}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
 
             {/* Custom Pricing Dialog */}
             <Dialog open={isPricingDialogOpen} onOpenChange={setIsPricingDialogOpen}>
@@ -453,10 +754,10 @@ export default function SuperAdminUsers() {
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2">
                             <Building2 className="w-5 h-5 text-indigo-400" />
-                            Custom Pricing for {selectedUser?.name || selectedUser?.username}
+                            Custom Pricing for {selectedUser?.name || selectedUser?.email}
                         </DialogTitle>
                         <DialogDescription className="text-zinc-400">
-                            Set custom token costs per model for this enterprise user.
+                            Set custom token costs per model for this user.
                         </DialogDescription>
                     </DialogHeader>
 
@@ -702,7 +1003,7 @@ export default function SuperAdminUsers() {
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2">
                             <Coins className="w-5 h-5 text-yellow-400" />
-                            Add Tokens to {selectedUser?.name || selectedUser?.username}
+                            Add Tokens to {selectedUser?.name || selectedUser?.email}
                         </DialogTitle>
                         <DialogDescription className="text-zinc-400">
                             Current balance: {selectedUser?.tokens_remaining?.toLocaleString() || 0} tokens
@@ -735,7 +1036,7 @@ export default function SuperAdminUsers() {
                         
                         {/* Quick add buttons */}
                         <div className="flex flex-wrap gap-2">
-                            {[1000, 5000, 10000, 50000].map((amount) => (
+                            {[100, 500, 1000, 5000, 10000, 50000].map((amount) => (
                                 <Button
                                     key={amount}
                                     variant="outline"
@@ -747,6 +1048,16 @@ export default function SuperAdminUsers() {
                                 </Button>
                             ))}
                         </div>
+
+                        {tokensToAdd !== 0 && (
+                            <div className={`p-3 rounded-lg ${tokensToAdd > 0 ? 'bg-emerald-500/10 border border-emerald-500/20' : 'bg-red-500/10 border border-red-500/20'}`}>
+                                <p className="text-sm">
+                                    New balance will be: <strong className={tokensToAdd > 0 ? 'text-emerald-400' : 'text-red-400'}>
+                                        {((selectedUser?.tokens_remaining || 0) + tokensToAdd).toLocaleString()} tokens
+                                    </strong>
+                                </p>
+                            </div>
+                        )}
                     </div>
 
                     <DialogFooter>
@@ -760,9 +1071,9 @@ export default function SuperAdminUsers() {
                         <Button 
                             onClick={addTokens}
                             disabled={isSaving || tokensToAdd === 0}
-                            className="bg-emerald-600 hover:bg-emerald-700"
+                            className={tokensToAdd >= 0 ? "bg-emerald-600 hover:bg-emerald-700" : "bg-red-600 hover:bg-red-700"}
                         >
-                            {isSaving ? 'Adding...' : `Add ${tokensToAdd.toLocaleString()} Tokens`}
+                            {isSaving ? 'Processing...' : tokensToAdd >= 0 ? `Add ${tokensToAdd.toLocaleString()} Tokens` : `Remove ${Math.abs(tokensToAdd).toLocaleString()} Tokens`}
                         </Button>
                     </DialogFooter>
                 </DialogContent>

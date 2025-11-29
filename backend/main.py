@@ -2492,44 +2492,101 @@ async def get_admin_stats(current_user: dict = Depends(require_superadmin)):
         total_users = await conn.fetchval("SELECT COUNT(*) FROM users")
         active_users = await conn.fetchval("SELECT COUNT(*) FROM users WHERE is_active = TRUE")
         
+        # Also count Better Auth users
+        try:
+            ba_users = await conn.fetchval('SELECT COUNT(*) FROM "user"')
+            total_users = total_users + (ba_users or 0)
+        except:
+            pass
+        
         # Application stats
-        pending_apps = await conn.fetchval("SELECT COUNT(*) FROM enterprise_applications WHERE status = 'pending'")
+        try:
+            pending_apps = await conn.fetchval("SELECT COUNT(*) FROM enterprise_applications WHERE status = 'pending'")
+        except:
+            pending_apps = 0
         
         # Photo stats (PostgreSQL)
-        total_photos = await conn.fetchval("SELECT COUNT(*) FROM processed_photos")
-        photos_today = await conn.fetchval("SELECT COUNT(*) FROM processed_photos WHERE created_at >= $1", int((datetime.now() - timedelta(days=1)).timestamp() * 1000))
+        try:
+            total_photos = await conn.fetchval("SELECT COUNT(*) FROM processed_photos")
+            photos_today = await conn.fetchval(
+                "SELECT COUNT(*) FROM processed_photos WHERE created_at >= $1", 
+                int((datetime.now() - timedelta(days=1)).timestamp() * 1000)
+            )
+        except:
+            total_photos = 0
+            photos_today = 0
+        
+        # Album photos count (alternative)
+        try:
+            album_photos = await conn.fetchval("SELECT COUNT(*) FROM album_photos")
+            total_photos = max(total_photos, album_photos or 0)
+        except:
+            pass
 
-    # CouchDB stats (Events)
-    couch = get_couch_service()
-    # This is expensive in CouchDB without a view, but for now we can just count from Postgres sync
-    async with db_pool.acquire() as conn:
+        # Event stats
         total_events = await conn.fetchval("SELECT COUNT(*) FROM events")
         active_events = await conn.fetchval("SELECT COUNT(*) FROM events WHERE is_active = TRUE")
+        
+        # Token stats
+        try:
+            tokens_used_total = await conn.fetchval(
+                "SELECT COALESCE(SUM(ABS(amount)), 0) FROM token_transactions WHERE amount < 0"
+            )
+            tokens_used_today = await conn.fetchval(
+                """SELECT COALESCE(SUM(ABS(amount)), 0) FROM token_transactions 
+                   WHERE amount < 0 AND created_at >= $1""",
+                datetime.now() - timedelta(days=1)
+            )
+            avg_tokens_per_day = await conn.fetchval(
+                """SELECT COALESCE(SUM(ABS(amount)), 0) / 30.0 FROM token_transactions 
+                   WHERE amount < 0 AND created_at >= $1""",
+                datetime.now() - timedelta(days=30)
+            )
+        except:
+            tokens_used_total = 0
+            tokens_used_today = 0
+            avg_tokens_per_day = 0
+        
+        # Album stats
+        try:
+            total_albums = await conn.fetchval("SELECT COUNT(*) FROM albums")
+            completed_albums = await conn.fetchval("SELECT COUNT(*) FROM albums WHERE status = 'completed'")
+            pending_payment = await conn.fetchval("SELECT COUNT(*) FROM albums WHERE payment_status = 'pending'")
+        except:
+            total_albums = 0
+            completed_albums = 0
+            pending_payment = 0
 
     return {
         "users": {
-            "total": total_users,
-            "active": active_users,
-            "new_today": 0 # Placeholder
+            "total": total_users or 0,
+            "active": active_users or 0,
+            "new_today": 0
         },
         "events": {
-            "total": total_events,
-            "active": active_events
+            "total": total_events or 0,
+            "active": active_events or 0
         },
         "photos": {
-            "total": total_photos,
-            "today": photos_today
+            "total": total_photos or 0,
+            "today": photos_today or 0
+        },
+        "tokens": {
+            "total_used": int(tokens_used_total or 0),
+            "used_today": int(tokens_used_today or 0),
+            "avg_per_day": round(float(avg_tokens_per_day or 0), 1)
+        },
+        "albums": {
+            "total": total_albums or 0,
+            "completed": completed_albums or 0,
+            "pending_payment": pending_payment or 0
         },
         "revenue": {
-            "total": 12500.00, # Mock
-            "growth": 15.5 # Mock
+            "total": 0,
+            "today": 0,
+            "month": 0
         },
-        "system": {
-            "status": "healthy",
-            "cpu_usage": 45, # Mock
-            "memory_usage": 60 # Mock
-        },
-        "pending_applications": pending_apps
+        "pending_applications": pending_apps or 0
     }
 
 @app.get("/api/admin/users")
@@ -2727,6 +2784,257 @@ async def get_admin_models(current_user: dict = Depends(require_superadmin)):
             {"id": "runway-gen3", "name": "Runway Gen-3", "provider": "Runway", "cost_per_gen": 12, "is_active": True},
         ]
     }
+
+
+# ============================================================================
+# SUPER ADMIN - TOKEN PACKAGES MANAGEMENT
+# ============================================================================
+
+class TokenPackageCreate(BaseModel):
+    name: str
+    description: Optional[str] = None
+    tokens: int
+    price_usd: float
+    is_active: bool = True
+    stripe_price_id: Optional[str] = None
+
+
+class TokenPackageUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    tokens: Optional[int] = None
+    price_usd: Optional[float] = None
+    is_active: Optional[bool] = None
+    stripe_price_id: Optional[str] = None
+
+
+@app.get("/api/admin/token-packages")
+async def get_token_packages(current_user: dict = Depends(require_superadmin)):
+    """Get all token packages (admin view - includes inactive)"""
+    async with db_pool.acquire() as conn:
+        try:
+            packages = await conn.fetch("""
+                SELECT id, name, description, tokens, price_usd, is_active, stripe_price_id, created_at
+                FROM token_packages
+                ORDER BY tokens ASC
+            """)
+            return [dict(p) for p in packages]
+        except Exception as e:
+            # Table might not exist, return defaults
+            return [
+                {"id": 1, "name": "Starter Pack", "tokens": 100, "price_usd": 10.0, "is_active": True},
+                {"id": 2, "name": "Basic Pack", "tokens": 500, "price_usd": 40.0, "is_active": True},
+                {"id": 3, "name": "Pro Pack", "tokens": 1000, "price_usd": 70.0, "is_active": True},
+                {"id": 4, "name": "Enterprise Pack", "tokens": 5000, "price_usd": 300.0, "is_active": True},
+            ]
+
+
+@app.post("/api/admin/token-packages")
+async def create_token_package(package: TokenPackageCreate, current_user: dict = Depends(require_superadmin)):
+    """Create a new token package"""
+    async with db_pool.acquire() as conn:
+        try:
+            row = await conn.fetchrow("""
+                INSERT INTO token_packages (name, description, tokens, price_usd, is_active, stripe_price_id)
+                VALUES ($1, $2, $3, $4, $5, $6)
+                RETURNING *
+            """, package.name, package.description, package.tokens, package.price_usd, 
+                package.is_active, package.stripe_price_id)
+            return {"success": True, "package": dict(row)}
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.put("/api/admin/token-packages/{package_id}")
+async def update_token_package(package_id: int, update: TokenPackageUpdate, current_user: dict = Depends(require_superadmin)):
+    """Update a token package"""
+    async with db_pool.acquire() as conn:
+        # Build dynamic update
+        updates = []
+        params = []
+        param_idx = 1
+        
+        if update.name is not None:
+            updates.append(f"name = ${param_idx}")
+            params.append(update.name)
+            param_idx += 1
+        
+        if update.description is not None:
+            updates.append(f"description = ${param_idx}")
+            params.append(update.description)
+            param_idx += 1
+        
+        if update.tokens is not None:
+            updates.append(f"tokens = ${param_idx}")
+            params.append(update.tokens)
+            param_idx += 1
+        
+        if update.price_usd is not None:
+            updates.append(f"price_usd = ${param_idx}")
+            params.append(update.price_usd)
+            param_idx += 1
+        
+        if update.is_active is not None:
+            updates.append(f"is_active = ${param_idx}")
+            params.append(update.is_active)
+            param_idx += 1
+        
+        if update.stripe_price_id is not None:
+            updates.append(f"stripe_price_id = ${param_idx}")
+            params.append(update.stripe_price_id)
+            param_idx += 1
+        
+        if not updates:
+            raise HTTPException(status_code=400, detail="No fields to update")
+        
+        params.append(package_id)
+        
+        query = f"""
+            UPDATE token_packages 
+            SET {', '.join(updates)}, updated_at = CURRENT_TIMESTAMP
+            WHERE id = ${param_idx}
+            RETURNING *
+        """
+        
+        row = await conn.fetchrow(query, *params)
+        
+        if not row:
+            raise HTTPException(status_code=404, detail="Package not found")
+        
+        return {"success": True, "package": dict(row)}
+
+
+@app.delete("/api/admin/token-packages/{package_id}")
+async def delete_token_package(package_id: int, current_user: dict = Depends(require_superadmin)):
+    """Deactivate a token package (soft delete)"""
+    async with db_pool.acquire() as conn:
+        row = await conn.fetchrow("""
+            UPDATE token_packages 
+            SET is_active = FALSE, updated_at = CURRENT_TIMESTAMP
+            WHERE id = $1
+            RETURNING *
+        """, package_id)
+        
+        if not row:
+            raise HTTPException(status_code=404, detail="Package not found")
+        
+        return {"success": True, "message": "Package deactivated"}
+
+
+@app.get("/api/admin/token-transactions")
+async def get_admin_token_transactions(
+    limit: int = 20, 
+    offset: int = 0,
+    current_user: dict = Depends(require_superadmin)
+):
+    """Get all token transactions (admin view)"""
+    async with db_pool.acquire() as conn:
+        try:
+            transactions = await conn.fetch("""
+                SELECT 
+                    tt.id,
+                    u.email as user_email,
+                    tt.amount,
+                    tt.transaction_type,
+                    tt.description as package_name,
+                    tt.created_at,
+                    CASE WHEN tt.amount > 0 THEN 'credit' ELSE 'debit' END as status
+                FROM token_transactions tt
+                LEFT JOIN users u ON tt.user_id = u.id
+                WHERE tt.transaction_type IN ('purchase', 'bonus', 'refund')
+                ORDER BY tt.created_at DESC
+                LIMIT $1 OFFSET $2
+            """, limit, offset)
+            
+            return [dict(t) for t in transactions]
+        except Exception as e:
+            return []
+
+
+# ============================================================================
+# SUPER ADMIN - SYSTEM SETTINGS
+# ============================================================================
+
+class SystemSettingsUpdate(BaseModel):
+    maintenance_mode: Optional[bool] = None
+    registration_enabled: Optional[bool] = None
+    free_trial_enabled: Optional[bool] = None
+    free_trial_tokens: Optional[int] = None
+    default_user_role: Optional[str] = None
+    max_events_per_user: Optional[int] = None
+    max_photos_per_event: Optional[int] = None
+
+
+# In-memory settings cache (in production, use Redis or database)
+_system_settings = {
+    "maintenance_mode": False,
+    "registration_enabled": True,
+    "free_trial_enabled": True,
+    "free_trial_tokens": 50,
+    "default_user_role": "user",
+    "max_events_per_user": 10,
+    "max_photos_per_event": 1000
+}
+
+
+@app.get("/api/admin/settings")
+async def get_system_settings(current_user: dict = Depends(require_superadmin)):
+    """Get system settings"""
+    async with db_pool.acquire() as conn:
+        try:
+            # Try to load from database
+            row = await conn.fetchrow("SELECT settings FROM system_settings WHERE id = 1")
+            if row and row['settings']:
+                import json
+                return json.loads(row['settings'])
+        except:
+            pass
+    
+    return _system_settings
+
+
+@app.put("/api/admin/settings")
+async def update_system_settings(
+    settings: SystemSettingsUpdate,
+    current_user: dict = Depends(require_superadmin)
+):
+    """Update system settings"""
+    global _system_settings
+    
+    # Update in-memory cache
+    if settings.maintenance_mode is not None:
+        _system_settings["maintenance_mode"] = settings.maintenance_mode
+    if settings.registration_enabled is not None:
+        _system_settings["registration_enabled"] = settings.registration_enabled
+    if settings.free_trial_enabled is not None:
+        _system_settings["free_trial_enabled"] = settings.free_trial_enabled
+    if settings.free_trial_tokens is not None:
+        _system_settings["free_trial_tokens"] = settings.free_trial_tokens
+    if settings.default_user_role is not None:
+        _system_settings["default_user_role"] = settings.default_user_role
+    if settings.max_events_per_user is not None:
+        _system_settings["max_events_per_user"] = settings.max_events_per_user
+    if settings.max_photos_per_event is not None:
+        _system_settings["max_photos_per_event"] = settings.max_photos_per_event
+    
+    # Try to persist to database
+    async with db_pool.acquire() as conn:
+        try:
+            import json
+            settings_json = json.dumps(_system_settings)
+            await conn.execute("""
+                INSERT INTO system_settings (id, settings, updated_at)
+                VALUES (1, $1, CURRENT_TIMESTAMP)
+                ON CONFLICT (id) DO UPDATE SET 
+                    settings = $1,
+                    updated_at = CURRENT_TIMESTAMP
+            """, settings_json)
+        except Exception as e:
+            # Table might not exist, that's okay - settings are in memory
+            print(f"Could not persist settings to DB: {e}")
+    
+    return {"success": True, "settings": _system_settings}
+
 
 if __name__ == "__main__":
     import uvicorn
