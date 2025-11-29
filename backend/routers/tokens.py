@@ -376,13 +376,16 @@ async def _resolve_legacy_user_id(
     event_row = None
     if event_id:
         event_row = await conn.fetchrow(
-            "SELECT id, user_id, user_slug FROM events WHERE id::text = $1",
+            "SELECT id, user_id FROM events WHERE id::text = $1",
             str(event_id)
         )
         logger.info(f"🪙 Event lookup by id={event_id}: {dict(event_row) if event_row else 'Not found'}")
     elif user_slug and event_slug:
+        # Look up event by joining with users table to match user_slug
         event_row = await conn.fetchrow(
-            "SELECT id, user_id, user_slug FROM events WHERE user_slug = $1 AND slug = $2",
+            """SELECT e.id, e.user_id FROM events e 
+               JOIN users u ON e.user_id = u.id 
+               WHERE u.slug = $1 AND e.slug = $2""",
             user_slug,
             event_slug
         )
