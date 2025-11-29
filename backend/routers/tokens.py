@@ -508,28 +508,37 @@ async def _ensure_legacy_user(conn, ba_user: dict, logger) -> Optional[int]:
 
 async def _get_token_cost_for_model(conn, legacy_user_id: int, model_id: Optional[str]) -> int:
     """Determine how many tokens to charge for a given model/user combination"""
+    import logging
+    logger = logging.getLogger(__name__)
+    
     if not model_id:
+        logger.info("🪙 No model_id provided, using default cost: 10")
         return 10
     
-    # Try custom pricing via helper function
-    cost_row = await conn.fetchrow(
-        "SELECT get_effective_token_cost($1, $2) AS cost",
-        legacy_user_id,
-        model_id
-    )
-    if cost_row and cost_row.get("cost"):
-        return int(cost_row["cost"])
+    # Try to get cost from ai_generation_costs table
+    try:
+        default_row = await conn.fetchrow(
+            "SELECT cost_per_generation FROM ai_generation_costs WHERE model_name = $1",
+            model_id
+        )
+        if default_row and default_row.get("cost_per_generation"):
+            cost = int(default_row["cost_per_generation"])
+            logger.info(f"🪙 Found cost for model {model_id}: {cost}")
+            return cost
+    except Exception as e:
+        logger.warning(f"🪙 ai_generation_costs table lookup failed: {e}")
     
-    # Fall back to default model cost
-    default_row = await conn.fetchrow(
-        "SELECT cost_per_generation FROM ai_generation_costs WHERE model_name = $1",
-        model_id
-    )
-    if default_row and default_row.get("cost_per_generation"):
-        return int(default_row["cost_per_generation"])
+    # Default costs by model type
+    model_costs = {
+        "fal-ai/nano-banana/edit": 10,
+        "fal-ai/bytedance/seedream/v4/edit": 15,
+        "fal-ai/flux-2-pro/edit": 20,
+        "fal-ai/flux/dev": 15,
+    }
     
-    # Absolute fallback
-    return 10
+    cost = model_costs.get(model_id, 10)
+    logger.info(f"🪙 Using hardcoded cost for model {model_id}: {cost}")
+    return cost
 
 
 @router.post("/charge")
