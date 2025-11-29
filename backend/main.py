@@ -2645,6 +2645,144 @@ async def get_admin_stats(current_user: dict = Depends(require_superadmin)):
         ]
     }
 
+
+@app.get("/api/admin/events")
+async def get_admin_events(
+    limit: int = 100,
+    offset: int = 0,
+    search: Optional[str] = None,
+    current_user: dict = Depends(require_superadmin)
+):
+    """Get all events across the platform with stats"""
+    async with db_pool.acquire() as conn:
+        search_filter = f"%{search}%" if search else None
+        
+        # Build query with CTEs for stats
+        query = """
+            WITH album_stats AS (
+                SELECT 
+                    event_id,
+                    COUNT(*) as album_count,
+                    SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed_albums
+                FROM albums
+                GROUP BY event_id
+            ),
+            photo_stats AS (
+                SELECT 
+                    a.event_id,
+                    COUNT(ap.id) as photo_count
+                FROM albums a
+                JOIN album_photos ap ON a.id = ap.album_id
+                GROUP BY a.event_id
+            ),
+            token_stats AS (
+                SELECT 
+                    CAST(metadata->>'event_id' AS INTEGER) as event_id,
+                    SUM(ABS(amount)) as tokens_used
+                FROM token_transactions
+                WHERE amount < 0 AND metadata->>'event_id' IS NOT NULL
+                GROUP BY metadata->>'event_id'
+            )
+            SELECT 
+                e.id,
+                e.title,
+                e.slug,
+                e.user_slug,
+                e.is_active,
+                e.created_at,
+                e.event_date,
+                e.end_date,
+                COALESCE(u.email, ba.email) as owner_email,
+                COALESCE(u.full_name, u.username, ba.name) as owner_name,
+                COALESCE(u.subscription_tier, 'free') as tier,
+                COALESCE(ast.album_count, 0) as album_count,
+                COALESCE(ast.completed_albums, 0) as completed_albums,
+                COALESCE(pst.photo_count, 0) as photo_count,
+                COALESCE(tst.tokens_used, 0) as tokens_used
+            FROM events e
+            LEFT JOIN users u ON e.user_id::text = u.id::text
+            LEFT JOIN "user" ba ON e.user_id::text = ba.id::text
+            LEFT JOIN album_stats ast ON ast.event_id = e.id
+            LEFT JOIN photo_stats pst ON pst.event_id = e.id
+            LEFT JOIN token_stats tst ON tst.event_id = e.id
+        """
+        
+        params = []
+        if search_filter:
+            query += " WHERE e.title ILIKE $1 OR COALESCE(u.email, ba.email) ILIKE $1"
+            params.append(search_filter)
+        
+        query += " ORDER BY e.created_at DESC"
+        query += f" LIMIT {limit} OFFSET {offset}"
+        
+        rows = await conn.fetch(query, *params)
+        
+        # Get total count
+        count_query = "SELECT COUNT(*) FROM events"
+        if search_filter:
+            count_query += " WHERE title ILIKE $1"
+        total = await conn.fetchval(count_query, *params[:1] if params else [])
+        
+        events = []
+        for row in rows:
+            # Format dates
+            event_date = None
+            end_date = None
+            if row["event_date"]:
+                event_date = row["event_date"].strftime("%b %d") if hasattr(row["event_date"], 'strftime') else str(row["event_date"])
+            if row["end_date"]:
+                end_date = row["end_date"].strftime("%b %d") if hasattr(row["end_date"], 'strftime') else str(row["end_date"])
+            
+            dates = event_date or "No date"
+            if end_date and end_date != event_date:
+                dates = f"{event_date} - {end_date}"
+            
+            events.append({
+                "id": row["id"],
+                "name": row["title"],
+                "slug": row["slug"],
+                "user_slug": row["user_slug"],
+                "owner": row["owner_email"] or "Unknown",
+                "owner_name": row["owner_name"],
+                "tier": row["tier"] or "free",
+                "photos": row["photo_count"],
+                "albums": row["album_count"],
+                "tokens": row["tokens_used"],
+                "status": "Active" if row["is_active"] else "Paused",
+                "dates": dates,
+                "created_at": row["created_at"].isoformat() if row["created_at"] else None
+            })
+        
+        return {
+            "events": events,
+            "total": total,
+            "limit": limit,
+            "offset": offset
+        }
+
+
+@app.put("/api/admin/events/{event_id}/status")
+async def toggle_event_status(
+    event_id: int,
+    current_user: dict = Depends(require_superadmin)
+):
+    """Toggle event active status"""
+    async with db_pool.acquire() as conn:
+        row = await conn.fetchrow(
+            "UPDATE events SET is_active = NOT is_active WHERE id = $1 RETURNING id, title, is_active",
+            event_id
+        )
+        if not row:
+            raise HTTPException(status_code=404, detail="Event not found")
+        
+        return {
+            "success": True,
+            "event_id": row["id"],
+            "title": row["title"],
+            "is_active": row["is_active"]
+        }
+
+
 @app.get("/api/admin/users")
 async def get_admin_users(
     limit: int = 50, 
