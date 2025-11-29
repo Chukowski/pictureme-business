@@ -166,7 +166,9 @@ export default function StaffDashboard() {
     loadEventConfig();
   }, [isAdminRoute, routeEventId]);
 
-  // Load albums function (memoized for polling)
+  // Load albums function - use ref to avoid recreating on every render
+  const loadAlbumsRef = useRef<() => Promise<void>>();
+  
   const loadAlbums = useCallback(async () => {
     if (!config?.postgres_event_id) return;
     
@@ -211,13 +213,12 @@ export default function StaffDashboard() {
       setIsLoading(false);
     } catch (error) {
       console.error(error);
-      // Don't show error toast on polling failures to avoid spam
-      if (isLoading) {
-        toast.error('Failed to load albums');
-      }
       setIsLoading(false);
     }
-  }, [config, isLoading, currentUser, authorizedPin]);
+  }, [config?.postgres_event_id, config?.albumTracking?.rules?.maxPhotosPerAlbum, currentUser, authorizedPin]);
+  
+  // Keep ref updated with latest loadAlbums function
+  loadAlbumsRef.current = loadAlbums;
 
   // Initial load and auth check
   useEffect(() => {
@@ -263,7 +264,7 @@ export default function StaffDashboard() {
     loadAlbums();
   }, [isAuthorized, config?.postgres_event_id, currentUser, authorizedPin]);
 
-  // Polling effect
+  // Polling effect - use ref to avoid dependency on loadAlbums
   useEffect(() => {
     if (!isAuthorized || !config?.postgres_event_id || !isPolling) {
       if (pollingIntervalRef.current) {
@@ -273,9 +274,9 @@ export default function StaffDashboard() {
       return;
     }
 
-    // Start polling
+    // Start polling using ref to always call latest function
     pollingIntervalRef.current = setInterval(() => {
-      loadAlbums();
+      loadAlbumsRef.current?.();
     }, POLLING_INTERVAL);
 
     // Cleanup on unmount
@@ -285,7 +286,7 @@ export default function StaffDashboard() {
         pollingIntervalRef.current = null;
       }
     };
-  }, [isAuthorized, config?.postgres_event_id, isPolling, loadAlbums]);
+  }, [isAuthorized, config?.postgres_event_id, isPolling]);
 
   // Manual refresh
   const handleRefresh = () => {
