@@ -515,20 +515,34 @@ async def _get_token_cost_for_model(conn, legacy_user_id: int, model_id: Optiona
         logger.info("🪙 No model_id provided, using default cost: 10")
         return 10
     
-    # Try to get cost from ai_generation_costs table
+    # 1. First check for custom user pricing (enterprise/custom pricing)
+    try:
+        custom_row = await conn.fetchrow("""
+            SELECT token_cost FROM custom_user_pricing 
+            WHERE user_id = $1 AND model_id = $2 AND is_active = TRUE
+        """, legacy_user_id, model_id)
+        
+        if custom_row and custom_row.get("token_cost"):
+            cost = int(custom_row["token_cost"])
+            logger.info(f"🪙 Using CUSTOM user pricing for model {model_id}: {cost} tokens (user_id={legacy_user_id})")
+            return cost
+    except Exception as e:
+        logger.warning(f"🪙 custom_user_pricing lookup failed: {e}")
+    
+    # 2. Check default pricing from ai_generation_costs table
     try:
         default_row = await conn.fetchrow(
-            "SELECT cost_per_generation FROM ai_generation_costs WHERE model_name = $1",
+            "SELECT cost_per_generation FROM ai_generation_costs WHERE model_name = $1 AND is_active = TRUE",
             model_id
         )
         if default_row and default_row.get("cost_per_generation"):
             cost = int(default_row["cost_per_generation"])
-            logger.info(f"🪙 Found cost for model {model_id}: {cost}")
+            logger.info(f"🪙 Using DEFAULT pricing for model {model_id}: {cost} tokens")
             return cost
     except Exception as e:
-        logger.warning(f"🪙 ai_generation_costs table lookup failed: {e}")
+        logger.warning(f"🪙 ai_generation_costs lookup failed: {e}")
     
-    # Default costs by model type
+    # 3. Fallback hardcoded costs (in case tables don't exist or no data)
     model_costs = {
         "fal-ai/nano-banana/edit": 10,
         "fal-ai/bytedance/seedream/v4/edit": 15,
@@ -537,7 +551,7 @@ async def _get_token_cost_for_model(conn, legacy_user_id: int, model_id: Optiona
     }
     
     cost = model_costs.get(model_id, 10)
-    logger.info(f"🪙 Using hardcoded cost for model {model_id}: {cost}")
+    logger.info(f"🪙 Using FALLBACK cost for model {model_id}: {cost} tokens")
     return cost
 
 
