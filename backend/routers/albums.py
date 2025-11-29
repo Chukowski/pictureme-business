@@ -216,6 +216,8 @@ async def delete_album_photo(code: str, photo_id: str):
 @router.delete("/{code}")
 async def delete_album(code: str, request: Request):
     """Delete an entire album and all its photos (staff action)"""
+    import json
+    
     # Try to get current user, but allow staff PIN access too
     user = None
     try:
@@ -242,8 +244,14 @@ async def delete_album(code: str, request: Request):
         else:
             # No auth - check staff PIN from query param
             staff_pin = request.query_params.get("pin")
-            event_settings = event["settings"] if event else {}
-            expected_pin = event_settings.get("staffAccessCode") if event_settings else None
+            # Parse settings JSON - it's stored as a string in the database
+            event_settings = {}
+            if event and event["settings"]:
+                try:
+                    event_settings = json.loads(event["settings"]) if isinstance(event["settings"], str) else event["settings"]
+                except:
+                    event_settings = {}
+            expected_pin = event_settings.get("staffAccessCode")
             
             if not staff_pin or staff_pin != expected_pin:
                 raise HTTPException(status_code=401, detail="Unauthorized - valid authentication or staff PIN required")
