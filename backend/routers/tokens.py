@@ -513,12 +513,22 @@ def _normalize_model_id(model_id: str) -> list[str]:
     This handles the mismatch between frontend model IDs and database entries.
     """
     # Mapping from full FAL paths to short DB names
+    # Based on ai_generation_costs table entries
     FAL_TO_SHORT = {
+        # Image models
         "fal-ai/nano-banana/edit": ["nano-banana", "fal-ai/nano-banana/edit"],
+        "fal-ai/nano-banana-pro/edit": ["nano-banana-pro", "fal-ai/nano-banana-pro/edit"],
         "fal-ai/bytedance/seedream/v4/edit": ["seedream-edit", "seedream-v4", "fal-ai/bytedance/seedream/v4/edit"],
-        "fal-ai/flux-2-pro/edit": ["flux-2-pro", "fal-ai/flux-2-pro/edit"],
+        "fal-ai/bytedance/seedream/v4": ["seedream-t2i", "seedream-v4", "fal-ai/bytedance/seedream/v4"],
+        "fal-ai/flux-realism": ["flux-realism", "fal-ai/flux-realism"],
         "fal-ai/flux/dev": ["flux-dev", "fal-ai/flux/dev"],
+        "fal-ai/flux-2-pro/edit": ["flux-2-pro", "fal-ai/flux-2-pro/edit"],
+        # Video models
+        "fal-ai/kling-video/v2.5/pro": ["kling-pro", "fal-ai/kling-video/v2.5/pro"],
         "fal-ai/kling-video/v1/standard/text-to-video": ["kling-standard", "kling-pro"],
+        "fal-ai/wan/v2.2-a14b/text-to-video": ["wan-v2", "fal-ai/wan/v2.2-a14b/text-to-video"],
+        "fal-ai/veo-3.1": ["veo-3.1", "fal-ai/veo-3.1"],
+        "fal-ai/google-video": ["google-video", "fal-ai/google-video"],
         "fal-ai/minimax/video-01-live/image-to-video": ["minimax-video", "minimax-live"],
     }
     
@@ -578,13 +588,21 @@ async def _get_token_cost_for_model(conn, legacy_user_id: int, model_id: Optiona
             logger.warning(f"🪙 ai_generation_costs lookup failed for '{name}': {e}")
     
     # 3. Fallback hardcoded costs (in case tables don't exist or no data)
+    # These should match the default ai_generation_costs values
     model_costs = {
-        "fal-ai/nano-banana/edit": 10,
-        "nano-banana": 10,
-        "fal-ai/bytedance/seedream/v4/edit": 15,
-        "seedream-edit": 10,
-        "fal-ai/flux-2-pro/edit": 20,
-        "fal-ai/flux/dev": 15,
+        # Image models
+        "nano-banana": 1,
+        "fal-ai/nano-banana/edit": 1,
+        "nano-banana-pro": 15,
+        "seedream-edit": 2,
+        "fal-ai/bytedance/seedream/v4/edit": 2,
+        "seedream-t2i": 2,
+        "flux-realism": 2,
+        # Video models
+        "kling-pro": 50,
+        "wan-v2": 40,
+        "veo-3.1": 100,
+        "google-video": 60,
     }
     
     # Check fallback for any of the model names
@@ -594,8 +612,8 @@ async def _get_token_cost_for_model(conn, legacy_user_id: int, model_id: Optiona
             logger.info(f"🪙 Using FALLBACK cost for model '{name}': {cost} tokens")
             return cost
     
-    logger.info(f"🪙 Using DEFAULT FALLBACK cost for unknown model '{model_id}': 10 tokens")
-    return 10
+    logger.info(f"🪙 Using DEFAULT FALLBACK cost for unknown model '{model_id}': 5 tokens")
+    return 5  # Conservative default
 
 
 @router.post("/charge")
