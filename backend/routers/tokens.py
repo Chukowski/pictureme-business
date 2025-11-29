@@ -10,6 +10,7 @@ from typing import Optional, List
 from datetime import datetime, timedelta
 from pydantic import BaseModel
 import os
+import json
 
 router = APIRouter(
     prefix="/api/tokens",
@@ -56,6 +57,16 @@ class TokenUsageByEvent(BaseModel):
     event_name: str
     tokens_used: int
     last_used: str
+
+
+class TokenChargeRequest(BaseModel):
+    model_id: Optional[str] = None
+    tokens: Optional[int] = None
+    event_id: Optional[int] = None
+    event_slug: Optional[str] = None
+    user_slug: Optional[str] = None
+    context: Optional[str] = None
+    description: Optional[str] = None
 
 
 async def get_current_user_from_request(request: Request) -> dict:
@@ -309,6 +320,175 @@ async def get_token_usage_by_event(request: Request):
             )
             for u in usage
         ]
+
+
+async def _resolve_legacy_user_id(
+    conn,
+    legacy_id: Optional[int],
+    event_id: Optional[int],
+    user_slug: Optional[str],
+    event_slug: Optional[str],
+) -> Optional[int]:
+    """Resolve legacy user id via event metadata when the active session is anonymous"""
+    if legacy_id:
+        return legacy_id
+    
+    event_row = None
+    if event_id:
+        event_row = await conn.fetchrow(
+            "SELECT id, user_id FROM events WHERE id::text = $1",
+            str(event_id)
+        )
+    elif user_slug and event_slug:
+        event_row = await conn.fetchrow(
+            "SELECT id, user_id FROM events WHERE user_slug = $1 AND slug = $2",
+            user_slug,
+            event_slug
+        )
+    
+    if not event_row:
+        return None
+    
+    raw_user_id = event_row["user_id"]
+    if raw_user_id is None:
+        return None
+    
+    # If it's already an integer, return it
+    try:
+        return int(raw_user_id)
+    except (ValueError, TypeError):
+        pass
+    
+    # Otherwise attempt to map UUID -> email -> legacy user id
+    ba_user = await conn.fetchrow(
+        'SELECT email FROM "user" WHERE id::text = $1',
+        str(raw_user_id)
+    )
+    if ba_user and ba_user.get("email"):
+        legacy_user = await conn.fetchrow(
+            "SELECT id FROM users WHERE email = $1",
+            ba_user["email"]
+        )
+        if legacy_user:
+            return legacy_user["id"]
+    
+    # As a final fallback, try user_slug as legacy username
+    if user_slug:
+        legacy_user = await conn.fetchrow(
+            "SELECT id FROM users WHERE username = $1",
+            user_slug
+        )
+        if legacy_user:
+            return legacy_user["id"]
+    
+    return None
+
+
+async def _get_token_cost_for_model(conn, legacy_user_id: int, model_id: Optional[str]) -> int:
+    """Determine how many tokens to charge for a given model/user combination"""
+    if not model_id:
+        return 10
+    
+    # Try custom pricing via helper function
+    cost_row = await conn.fetchrow(
+        "SELECT get_effective_token_cost($1, $2) AS cost",
+        legacy_user_id,
+        model_id
+    )
+    if cost_row and cost_row.get("cost"):
+        return int(cost_row["cost"])
+    
+    # Fall back to default model cost
+    default_row = await conn.fetchrow(
+        "SELECT cost_per_generation FROM ai_generation_costs WHERE model_name = $1",
+        model_id
+    )
+    if default_row and default_row.get("cost_per_generation"):
+        return int(default_row["cost_per_generation"])
+    
+    # Absolute fallback
+    return 10
+
+
+@router.post("/charge")
+async def charge_tokens(request: Request, payload: TokenChargeRequest):
+    """
+    Charge tokens for an AI operation. Works for both authenticated (dashboard)
+    and public stations (registration/booth) using event context.
+    """
+    user = None
+    try:
+        user = await get_current_user_from_request(request)
+    except Exception:
+        # Anonymous usage (e.g., public booth)
+        user = None
+    
+    async with db_pool.acquire() as conn:
+        legacy_id = None
+        uuid_id = None
+        if user:
+            legacy_id, uuid_id = await get_user_id_for_queries(conn, user)
+        
+        legacy_id = await _resolve_legacy_user_id(
+            conn,
+            legacy_id,
+            payload.event_id,
+            payload.user_slug,
+            payload.event_slug
+        )
+        
+        if not legacy_id:
+            raise HTTPException(status_code=400, detail="Unable to resolve user for token charge")
+        
+        tokens_to_charge = payload.tokens
+        if tokens_to_charge is None:
+            tokens_to_charge = await _get_token_cost_for_model(conn, legacy_id, payload.model_id)
+        
+        if tokens_to_charge <= 0:
+            raise HTTPException(status_code=400, detail="Invalid token amount")
+        
+        async with conn.transaction():
+            user_row = await conn.fetchrow(
+                "SELECT tokens_remaining FROM users WHERE id = $1 FOR UPDATE",
+                legacy_id
+            )
+            if not user_row:
+                raise HTTPException(status_code=404, detail="User not found for token charge")
+            
+            current_tokens = user_row["tokens_remaining"] or 0
+            new_balance = current_tokens - tokens_to_charge
+            
+            await conn.execute(
+                "UPDATE users SET tokens_remaining = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2",
+                new_balance,
+                legacy_id
+            )
+            
+            metadata = {
+                "model_id": payload.model_id,
+                "context": payload.context,
+                "description": payload.description,
+            }
+            
+            await conn.execute(
+                """
+                INSERT INTO token_transactions 
+                    (user_id, amount, transaction_type, description, event_id, balance_after, metadata)
+                VALUES ($1, $2, 'usage', $3, $4, $5, $6)
+                """,
+                legacy_id,
+                -tokens_to_charge,
+                payload.description or payload.context or f"AI usage ({payload.model_id or 'model'})",
+                payload.event_id,
+                new_balance,
+                json.dumps(metadata)
+            )
+        
+        return {
+            "success": True,
+            "tokens_charged": tokens_to_charge,
+            "new_balance": new_balance
+        }
 
 
 @router.post("/purchase")

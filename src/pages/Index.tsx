@@ -41,6 +41,7 @@ const Index = () => {
         includeBranding: true,
         includeHeader: selectedBackground.includeHeader ?? false,
         campaignText: selectedBackground.campaignText,
+        skipTokenCharge: true,
         onProgress: (status, logs) => {
           if (status === "queued") {
             setProcessingStatus("Waiting in queue...");

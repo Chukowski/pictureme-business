@@ -2556,6 +2556,47 @@ async def get_admin_stats(current_user: dict = Depends(require_superadmin)):
             total_albums = 0
             completed_albums = 0
             pending_payment = 0
+        
+        try:
+            events_summary_rows = await conn.fetch("""
+                WITH album_counts AS (
+                    SELECT event_id, COUNT(*) AS album_count
+                    FROM albums
+                    GROUP BY event_id
+                ), photo_counts AS (
+                    SELECT alb.event_id, COUNT(*) AS photo_count
+                    FROM album_photos ap
+                    JOIN albums alb ON ap.album_id = alb.id
+                    GROUP BY alb.event_id
+                ), token_usage AS (
+                    SELECT event_id, SUM(ABS(amount)) AS tokens_used
+                    FROM token_transactions
+                    WHERE amount < 0 AND event_id IS NOT NULL
+                    GROUP BY event_id
+                )
+                SELECT 
+                    e.id::text AS event_id,
+                    e.title,
+                    e.slug,
+                    e.user_slug,
+                    e.created_at,
+                    COALESCE(u.email, ba.email) AS owner_email,
+                    COALESCE(u.username, ba.name) AS owner_name,
+                    COALESCE(ac.album_count, 0) AS album_count,
+                    COALESCE(pc.photo_count, 0) AS photo_count,
+                    COALESCE(tu.tokens_used, 0) AS tokens_used
+                FROM events e
+                LEFT JOIN users u ON e.user_id::text = u.id::text
+                LEFT JOIN "user" ba ON e.user_id::text = ba.id::text
+                LEFT JOIN album_counts ac ON ac.event_id = e.id
+                LEFT JOIN photo_counts pc ON pc.event_id = e.id
+                LEFT JOIN token_usage tu ON tu.event_id = e.id
+                ORDER BY tu.tokens_used DESC NULLS LAST, ac.album_count DESC NULLS LAST, e.created_at DESC
+                LIMIT 25
+            """)
+        except Exception as e:
+            print(f"Error building events summary: {e}")
+            events_summary_rows = []
 
     return {
         "users": {
@@ -2586,7 +2627,22 @@ async def get_admin_stats(current_user: dict = Depends(require_superadmin)):
             "today": 0,
             "month": 0
         },
-        "pending_applications": pending_apps or 0
+        "pending_applications": pending_apps or 0,
+        "eventsSummary": [
+            {
+                "event_id": row["event_id"],
+                "title": row["title"],
+                "slug": row["slug"],
+                "user_slug": row["user_slug"],
+                "owner_email": row["owner_email"],
+                "owner_name": row["owner_name"],
+                "album_count": row["album_count"],
+                "photo_count": row["photo_count"],
+                "tokens_used": row["tokens_used"],
+                "created_at": row["created_at"].isoformat() if row["created_at"] else None
+            }
+            for row in events_summary_rows
+        ]
     }
 
 @app.get("/api/admin/users")
@@ -2598,77 +2654,90 @@ async def get_admin_users(
 ):
     """List all users with pagination and search - combines legacy users and Better Auth users"""
     async with db_pool.acquire() as conn:
-        all_users = []
+        search_filter = f"%{search}%" if search else None
         
-        # Get legacy users with tokens
-        try:
-            if search:
-                legacy_query = """
-                    SELECT id::text, username, email, full_name as name, role, 
-                           tokens_remaining, subscription_tier, is_active, created_at
-                    FROM users
-                    WHERE username ILIKE $1 OR email ILIKE $1 OR full_name ILIKE $1
-                    ORDER BY created_at DESC
-                    LIMIT $2 OFFSET $3
-                """
-                legacy_users = await conn.fetch(legacy_query, f"%{search}%", limit, offset)
+        legacy_params = []
+        legacy_query = """
+            SELECT id::text, username, email, full_name AS name, role, 
+                   tokens_remaining, subscription_tier, is_active, created_at
+            FROM users
+        """
+        if search_filter:
+            legacy_query += " WHERE username ILIKE $1 OR email ILIKE $1 OR full_name ILIKE $1"
+            legacy_params.append(search_filter)
+        legacy_query += " ORDER BY created_at DESC LIMIT 500"
+        legacy_rows = await conn.fetch(legacy_query, *legacy_params)
+        
+        ba_params = []
+        ba_query = """
+            SELECT id::text, name, email, role, \"createdAt\" AS created_at
+            FROM \"user\"
+        """
+        if search_filter:
+            ba_query += " WHERE name ILIKE $1 OR email ILIKE $1"
+            ba_params.append(search_filter)
+        ba_query += " ORDER BY \"createdAt\" DESC LIMIT 500"
+        ba_rows = await conn.fetch(ba_query, *ba_params)
+        
+        user_map = {}
+        for row in legacy_rows:
+            email_key = (row["email"] or f"legacy-{row['id']}").lower()
+            user_map[email_key] = {
+                "id": row["id"],
+                "username": row["username"],
+                "email": row["email"],
+                "name": row["name"],
+                "role": row["role"] or "user",
+                "tokens_remaining": row["tokens_remaining"] or 0,
+                "subscription_tier": row["subscription_tier"],
+                "is_active": row["is_active"],
+                "created_at": row["created_at"].isoformat() if row["created_at"] else None,
+                "source": "legacy"
+            }
+        
+        for row in ba_rows:
+            email = (row["email"] or f"auth-{row['id']}").lower()
+            entry = user_map.get(email)
+            created_at = row["created_at"].isoformat() if row["created_at"] else None
+            if entry:
+                entry["source"] = "hybrid"
+                entry["role"] = row["role"] or entry["role"]
+                entry["name"] = row["name"] or entry.get("name")
+                if not entry.get("created_at"):
+                    entry["created_at"] = created_at
             else:
-                legacy_query = """
-                    SELECT id::text, username, email, full_name as name, role, 
-                           tokens_remaining, subscription_tier, is_active, created_at
-                    FROM users
-                    ORDER BY created_at DESC
-                    LIMIT $1 OFFSET $2
-                """
-                legacy_users = await conn.fetch(legacy_query, limit, offset)
-            
-            for u in legacy_users:
-                user_dict = dict(u)
-                user_dict['source'] = 'legacy'
-                all_users.append(user_dict)
-        except Exception as e:
-            print(f"Error fetching legacy users: {e}")
+                user_map[email] = {
+                    "id": row["id"],
+                    "username": (row["email"] or "").split("@")[0],
+                    "email": row["email"],
+                    "name": row["name"],
+                    "role": row["role"] or "user",
+                    "tokens_remaining": 0,
+                    "subscription_tier": None,
+                    "is_active": True,
+                    "created_at": created_at,
+                    "source": "better_auth"
+                }
         
-        # Get Better Auth users
-        try:
-            if search:
-                ba_query = """
-                    SELECT id::text, name, email, role, "createdAt" as created_at
-                    FROM "user"
-                    WHERE name ILIKE $1 OR email ILIKE $1
-                    ORDER BY "createdAt" DESC
-                    LIMIT $2 OFFSET $3
-                """
-                ba_users = await conn.fetch(ba_query, f"%{search}%", limit, offset)
-            else:
-                ba_query = """
-                    SELECT id::text, name, email, role, "createdAt" as created_at
-                    FROM "user"
-                    ORDER BY "createdAt" DESC
-                    LIMIT $1 OFFSET $2
-                """
-                ba_users = await conn.fetch(ba_query, limit, offset)
-            
-            # Check if BA user already exists in legacy (by email)
-            legacy_emails = {u.get('email') for u in all_users}
-            
-            for u in ba_users:
-                user_dict = dict(u)
-                if user_dict.get('email') not in legacy_emails:
-                    user_dict['source'] = 'better_auth'
-                    user_dict['tokens_remaining'] = 0  # BA users don't have tokens in their table
-                    user_dict['is_active'] = True
-                    all_users.append(user_dict)
-        except Exception as e:
-            print(f"Error fetching Better Auth users: {e}")
+        merged_users = list(user_map.values())
         
-        # Sort by created_at
-        all_users.sort(key=lambda x: x.get('created_at') or '', reverse=True)
+        if search:
+            lowered = search.lower()
+            merged_users = [
+                u for u in merged_users
+                if (u.get("name") or "").lower().find(lowered) != -1
+                or (u.get("email") or "").lower().find(lowered) != -1
+                or (u.get("username") or "").lower().find(lowered) != -1
+            ]
         
-        total = len(all_users)
+        merged_users.sort(key=lambda u: u.get("created_at") or "", reverse=True)
+        total = len(merged_users)
+        start = max(0, offset)
+        end = start + limit
+        paged = merged_users[start:end]
             
     return {
-        "users": all_users[:limit],
+        "users": paged,
         "total": total,
         "limit": limit,
         "offset": offset

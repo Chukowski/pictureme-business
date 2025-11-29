@@ -364,6 +364,8 @@ export const PhotoBoothPage = () => {
         aiModel: selectedBackground.pipelineConfig?.imageModel, // Use template's AI model
         forceInstructions: selectedBackground.pipelineConfig?.forceInstructions, // Use template's force instructions setting
         seed: selectedBackground.pipelineConfig?.seed, // Use template's seed for reproducible results
+        eventId: config.postgres_event_id,
+        billingContext: isGroupPhoto ? 'photobooth-group' : 'photobooth-individual',
         onProgress: (status) => {
           if (status === "queued") {
             setProcessingStatus("Waiting in queue...");

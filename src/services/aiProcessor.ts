@@ -7,6 +7,48 @@ let FAL_KEY: string | undefined = undefined;
 let DEFAULT_FAL_MODEL: string = "fal-ai/nano-banana/edit"; // Default to Nano Banana (Gemini/Imagen 3)
 let configLoaded = false;
 
+async function chargeTokensForGeneration(
+  modelId: string,
+  context?: string,
+  eventId?: number,
+  tokens?: number
+) {
+  try {
+    const apiUrl = ENV.API_URL;
+    if (!apiUrl) return;
+
+    const payload: Record<string, unknown> = {
+      model_id: modelId,
+      context,
+      event_id: eventId,
+    };
+
+    if (typeof tokens === "number") {
+      payload.tokens = tokens;
+    }
+
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+
+    if (typeof window !== "undefined") {
+      const authToken = localStorage.getItem("auth_token");
+      if (authToken) {
+        headers.Authorization = `Bearer ${authToken}`;
+      }
+    }
+
+    await fetch(`${apiUrl}/api/tokens/charge`, {
+      method: "POST",
+      headers,
+      credentials: "include",
+      body: JSON.stringify(payload),
+    });
+  } catch (error) {
+    console.warn("⚠️ Failed to record token usage:", error);
+  }
+}
+
 // Available AI models for selection
 export const AI_MODELS = {
   nanoBanana: {
@@ -96,6 +138,10 @@ export interface ProcessImageOptions {
   forceInstructions?: boolean; // Add extra instructions to help model understand images
   seed?: number; // Seed for reproducible results (same seed = similar output)
   onProgress?: (status: string, logs?: string[]) => void;
+  eventId?: number;
+  billingContext?: string;
+  tokensToCharge?: number;
+  skipTokenCharge?: boolean;
 }
 
 /**
@@ -413,6 +459,15 @@ Output a single cohesive image.`;
     if (!processedUrl) {
       throw new Error("No processed image URL returned from AI");
     }
+
+  if (!options.skipTokenCharge) {
+    chargeTokensForGeneration(
+      modelToUse,
+      options.billingContext,
+      options.eventId,
+      options.tokensToCharge
+    );
+  }
 
     if (includeBranding) {
       console.log("🎨 Creating branded composition...");

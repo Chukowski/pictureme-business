@@ -9,6 +9,19 @@ import {
 import { ENV } from "@/config/env";
 import { toast } from "sonner";
 
+interface EventSummary {
+    event_id: string;
+    title: string;
+    slug?: string;
+    user_slug?: string;
+    owner_email?: string;
+    owner_name?: string;
+    album_count: number;
+    photo_count: number;
+    tokens_used: number;
+    created_at?: string;
+}
+
 interface SystemStats {
     users: {
         total: number;
@@ -39,6 +52,7 @@ interface SystemStats {
         month: number;
     };
     pending_applications: number;
+    eventsSummary?: EventSummary[];
 }
 
 export default function SuperAdminOverview() {
@@ -291,6 +305,61 @@ export default function SuperAdminOverview() {
                     </CardContent>
                 </Card>
             </div>
+
+            {stats?.eventsSummary && stats.eventsSummary.length > 0 && (
+                <Card className="bg-zinc-900/50 border-white/10">
+                    <CardHeader>
+                        <CardTitle className="flex items-center justify-between">
+                            <span>Event Analytics</span>
+                            <span className="text-xs text-zinc-500">
+                                Top {Math.min(stats.eventsSummary.length, 25)} events by tokens usage
+                            </span>
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="overflow-x-auto">
+                        <table className="w-full text-sm text-left">
+                            <thead>
+                                <tr className="text-zinc-500 text-xs uppercase tracking-wide">
+                                    <th className="py-2">Event</th>
+                                    <th className="py-2">Owner</th>
+                                    <th className="py-2 text-right">Tokens Used</th>
+                                    <th className="py-2 text-right">Albums</th>
+                                    <th className="py-2 text-right">Photos</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {stats.eventsSummary.map((event) => (
+                                    <tr key={event.event_id} className="border-t border-white/5 hover:bg-white/5 transition-colors">
+                                        <td className="py-3">
+                                            <div className="flex flex-col">
+                                                <span className="text-white font-medium">{event.title || 'Untitled Event'}</span>
+                                                <span className="text-xs text-zinc-500">
+                                                    {(event.user_slug && event.slug) ? `${event.user_slug}/${event.slug}` : `ID: ${event.event_id}`}
+                                                </span>
+                                            </div>
+                                        </td>
+                                        <td className="py-3">
+                                            <div className="flex flex-col">
+                                                <span className="text-white text-sm">{event.owner_name || event.owner_email || 'Unknown'}</span>
+                                                <span className="text-xs text-zinc-500">{event.owner_email}</span>
+                                            </div>
+                                        </td>
+                                        <td className="py-3 text-right font-mono text-yellow-400">
+                                            {event.tokens_used.toLocaleString()}
+                                        </td>
+                                        <td className="py-3 text-right text-zinc-300">
+                                            {event.album_count.toLocaleString()}
+                                        </td>
+                                        <td className="py-3 text-right text-zinc-300">
+                                            {event.photo_count.toLocaleString()}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </CardContent>
+                </Card>
+            )}
 
             {/* Info Box */}
             <div className="p-4 rounded-lg bg-indigo-500/10 border border-indigo-500/20">

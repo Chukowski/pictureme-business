@@ -321,6 +321,8 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
         aiModel: selectedTemplate.pipelineConfig?.imageModel || AI_MODELS[selectedAiModel].id,
         forceInstructions: forceInstructions,
         seed: customSeed || selectedTemplate.pipelineConfig?.seed,
+        eventId: selectedEvent?.postgres_event_id,
+        billingContext: isGroupPhoto ? 'playground-group' : 'playground-individual',
         onProgress: (status) => {
           if (status === 'queued') {
             setProcessingStatus('queued');
@@ -392,6 +394,8 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
         aiModel: badgeConfig.aiPipeline.model || AI_MODELS[selectedAiModel].id,
         forceInstructions: forceInstructions,
         seed: customSeed,
+        eventId: selectedEvent?.postgres_event_id,
+        billingContext: 'playground-badge',
         onProgress: (status) => {
           console.log('Badge processing status:', status);
         },

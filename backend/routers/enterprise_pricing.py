@@ -532,7 +532,7 @@ async def get_enterprise_users():
             LEFT JOIN enterprise_user_settings eus ON u.id = eus.user_id
             LEFT JOIN custom_user_pricing cup ON u.id = cup.user_id
             LEFT JOIN custom_user_packages cupack ON u.id = cupack.user_id
-            WHERE u.role IN ('business', 'enterprise', 'admin')
+            WHERE u.role IN ('business', 'business_masters', 'enterprise', 'admin')
             GROUP BY u.id, u.email, u.username, u.name, u.role, u.tokens_remaining, 
                      u.subscription_tier, u.is_active, u.created_at,
                      eus.uses_custom_pricing, eus.default_price_per_token, eus.credit_limit, 
