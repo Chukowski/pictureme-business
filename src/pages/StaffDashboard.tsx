@@ -5,7 +5,7 @@
  * Accessible via /admin/staff/:eventId OR /:userSlug/:eventSlug/staff (legacy)
  */
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useEventConfig } from '@/hooks/useEventConfig';
 import { getUserEvents } from '@/services/eventsApi';
@@ -122,17 +122,19 @@ export default function StaffDashboard() {
   const [authorizedPin, setAuthorizedPin] = useState<string | null>(null); // Store the validated PIN
   
   // Check if current user is the event owner (has admin access)
-  const currentUser = getCurrentUser();
-  const isEventOwner = currentUser && config && (
+  // Memoize to prevent re-renders
+  const currentUser = useMemo(() => getCurrentUser(), []);
+  const isEventOwner = useMemo(() => currentUser && config && (
     config.user_id === currentUser.id || 
     config.user_slug === currentUser.slug
-  );
+  ), [currentUser, config]);
   
   // Polling state
-  const [isPolling, setIsPolling] = useState(true);
+  const [isPolling, setIsPolling] = useState(false); // Start with polling OFF
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const POLLING_INTERVAL = 10000; // 10 seconds
+  const isLoadingRef = useRef(false); // Prevent concurrent requests
+  const POLLING_INTERVAL = 15000; // 15 seconds
   
   // Get effective user/event slugs for URLs
   const effectiveUserSlug = userSlug || config?.user_slug || '';
@@ -170,7 +172,10 @@ export default function StaffDashboard() {
   const loadAlbumsRef = useRef<() => Promise<void>>();
   
   const loadAlbums = useCallback(async () => {
-    if (!config?.postgres_event_id) return;
+    // Prevent concurrent requests
+    if (isLoadingRef.current || !config?.postgres_event_id) return;
+    
+    isLoadingRef.current = true;
     
     try {
       let data;
@@ -184,6 +189,7 @@ export default function StaffDashboard() {
       } else {
         console.warn('⚠️ No auth method available for loading albums');
         setIsLoading(false);
+        isLoadingRef.current = false;
         return;
       }
       
@@ -214,6 +220,8 @@ export default function StaffDashboard() {
     } catch (error) {
       console.error(error);
       setIsLoading(false);
+    } finally {
+      isLoadingRef.current = false;
     }
   }, [config?.postgres_event_id, config?.albumTracking?.rules?.maxPhotosPerAlbum, currentUser, authorizedPin]);
   
@@ -250,9 +258,11 @@ export default function StaffDashboard() {
     });
   }, [config, routeEventId, isEventOwner, currentUser]);
 
-  // Load albums when authorized
+  // Load albums when authorized - only run once when conditions are met
+  const hasLoadedInitial = useRef(false);
   useEffect(() => {
     if (!isAuthorized || !config?.postgres_event_id) return;
+    if (hasLoadedInitial.current) return; // Only load once
     
     // Need either currentUser (owner) or authorizedPin (staff)
     if (!currentUser && !authorizedPin) {
@@ -261,7 +271,8 @@ export default function StaffDashboard() {
       return;
     }
     
-    loadAlbums();
+    hasLoadedInitial.current = true;
+    loadAlbumsRef.current?.();
   }, [isAuthorized, config?.postgres_event_id, currentUser, authorizedPin]);
 
   // Polling effect - use ref to avoid dependency on loadAlbums
