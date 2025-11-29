@@ -22,7 +22,7 @@ import {
     TableHeader,
     TableRow
 } from "@/components/ui/table";
-import { Plus, CreditCard, Package, DollarSign, Edit2, Trash2, Save, Loader2, AlertCircle } from "lucide-react";
+import { Plus, CreditCard, Package, DollarSign, Edit2, Trash2, Save, Loader2, AlertCircle, RefreshCw, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { ENV } from "@/config/env";
 
@@ -228,6 +228,30 @@ export default function SuperAdminBilling() {
         return (pkg.price_usd / pkg.tokens).toFixed(3);
     };
 
+    const cleanupDuplicates = async () => {
+        if (!confirm("This will remove duplicate packages, keeping only one of each. Continue?")) return;
+
+        try {
+            const token = localStorage.getItem("auth_token");
+            
+            const response = await fetch(`${ENV.API_URL}/api/admin/token-packages/cleanup`, {
+                method: 'DELETE',
+                headers: { Authorization: `Bearer ${token}` }
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                toast.success(`Cleaned up duplicates. Removed: ${data.deleted}`);
+                fetchPackages();
+            } else {
+                toast.error("Failed to cleanup duplicates");
+            }
+        } catch (error) {
+            console.error("Error cleaning duplicates:", error);
+            toast.error("Failed to cleanup duplicates");
+        }
+    };
+
     return (
         <div className="space-y-6">
             <div>
@@ -245,10 +269,28 @@ export default function SuperAdminBilling() {
                 {/* Token Packages Tab */}
                 <TabsContent value="packages" className="space-y-4">
                     <div className="flex justify-between items-center">
-                        <h2 className="text-xl font-semibold">Token Packages</h2>
-                        <Button onClick={openCreateDialog} className="bg-indigo-600 hover:bg-indigo-700">
-                            <Plus className="w-4 h-4 mr-2" /> Add Package
-                        </Button>
+                        <h2 className="text-xl font-semibold">Token Packages ({packages.length})</h2>
+                        <div className="flex items-center gap-2">
+                            {packages.length > 4 && (
+                                <Button 
+                                    variant="outline" 
+                                    onClick={cleanupDuplicates}
+                                    className="border-amber-500/20 text-amber-400 hover:bg-amber-500/10"
+                                >
+                                    <Sparkles className="w-4 h-4 mr-2" /> Clean Duplicates
+                                </Button>
+                            )}
+                            <Button 
+                                variant="outline" 
+                                onClick={fetchPackages}
+                                className="border-white/10"
+                            >
+                                <RefreshCw className="w-4 h-4" />
+                            </Button>
+                            <Button onClick={openCreateDialog} className="bg-indigo-600 hover:bg-indigo-700">
+                                <Plus className="w-4 h-4 mr-2" /> Add Package
+                            </Button>
+                        </div>
                     </div>
 
                     {isLoading ? (

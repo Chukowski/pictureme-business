@@ -38,10 +38,7 @@ import {
 import {
     MoreHorizontal,
     Search,
-    Filter,
     UserCog,
-    Ban,
-    Trash2,
     Coins,
     FileText,
     DollarSign,
@@ -49,14 +46,13 @@ import {
     Video,
     Save,
     Plus,
-    X,
-    Settings2,
     Building2,
     RefreshCw,
     Loader2,
     Shield,
     User,
-    Crown
+    Crown,
+    AlertCircle
 } from "lucide-react";
 import { toast } from "sonner";
 import { ENV } from "@/config/env";
@@ -73,6 +69,7 @@ interface User {
     subscription_tier?: string;
     is_active?: boolean;
     created_at?: string;
+    source?: string;
     uses_custom_pricing?: boolean;
     default_price_per_token?: number;
     credit_limit?: number;
@@ -135,6 +132,7 @@ export default function SuperAdminUsers() {
     const [tokensToAdd, setTokensToAdd] = useState(0);
     const [tokenReason, setTokenReason] = useState("");
     const [activeTab, setActiveTab] = useState("all");
+    const [error, setError] = useState<string | null>(null);
 
     // Edit user form
     const [editForm, setEditForm] = useState({
@@ -150,29 +148,40 @@ export default function SuperAdminUsers() {
     const fetchUsers = async () => {
         try {
             setIsLoading(true);
+            setError(null);
             const token = localStorage.getItem("auth_token");
             
             // Fetch all users
-            const allUsersRes = await fetch(`${ENV.API_URL}/api/admin/users?limit=100`, {
+            const allUsersRes = await fetch(`${ENV.API_URL}/api/admin/users?limit=200`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             
             if (allUsersRes.ok) {
                 const data = await allUsersRes.json();
+                console.log("Users data:", data);
                 setUsers(data.users || []);
+            } else {
+                const errorText = await allUsersRes.text();
+                console.error("Error response:", errorText);
+                setError(`Failed to load users: ${allUsersRes.status}`);
             }
 
             // Fetch enterprise users
-            const enterpriseRes = await fetch(`${ENV.API_URL}/api/admin/enterprise/users`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            
-            if (enterpriseRes.ok) {
-                const enterpriseData = await enterpriseRes.json();
-                setEnterpriseUsers(enterpriseData);
+            try {
+                const enterpriseRes = await fetch(`${ENV.API_URL}/api/admin/enterprise/users`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                
+                if (enterpriseRes.ok) {
+                    const enterpriseData = await enterpriseRes.json();
+                    setEnterpriseUsers(enterpriseData);
+                }
+            } catch (e) {
+                console.log("Enterprise users fetch failed (may not exist):", e);
             }
         } catch (error) {
             console.error("Error fetching users:", error);
+            setError("Failed to load users");
             toast.error("Failed to load users");
         } finally {
             setIsLoading(false);
@@ -250,7 +259,6 @@ export default function SuperAdminUsers() {
         try {
             const token = localStorage.getItem("auth_token");
             
-            // Save custom pricing for models that have been modified
             const customPricing = modelPricing
                 .filter(p => p.has_custom_pricing && p.custom_cost !== null)
                 .map(p => ({
@@ -280,7 +288,6 @@ export default function SuperAdminUsers() {
                 }
             }
 
-            // Save enterprise settings
             if (enterpriseSettings) {
                 const settingsResponse = await fetch(
                     `${ENV.API_URL}/api/admin/enterprise/users/${userId}/settings`,
@@ -326,16 +333,17 @@ export default function SuperAdminUsers() {
             );
 
             if (!response.ok) {
-                throw new Error('Failed to add tokens');
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.detail || 'Failed to add tokens');
             }
 
             const data = await response.json();
             toast.success(`Added ${tokensToAdd} tokens. New balance: ${data.new_balance}`);
             setIsTokensDialogOpen(false);
             fetchUsers();
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error adding tokens:", error);
-            toast.error("Failed to add tokens");
+            toast.error(error.message || "Failed to add tokens");
         } finally {
             setIsSaving(false);
         }
@@ -415,7 +423,10 @@ export default function SuperAdminUsers() {
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight mb-2">User Management</h1>
-                    <p className="text-zinc-400">Manage all users, tokens, and enterprise pricing.</p>
+                    <p className="text-zinc-400">
+                        Manage all users, tokens, and enterprise pricing. 
+                        <span className="text-indigo-400 ml-2">{users.length} users loaded</span>
+                    </p>
                 </div>
                 <div className="flex items-center gap-2">
                     <div className="relative w-full md:w-64">
@@ -431,16 +442,28 @@ export default function SuperAdminUsers() {
                         variant="outline" 
                         className="border-white/10 bg-zinc-900/50"
                         onClick={fetchUsers}
+                        disabled={isLoading}
                     >
-                        <RefreshCw className="w-4 h-4" />
+                        {isLoading ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                            <RefreshCw className="w-4 h-4" />
+                        )}
                     </Button>
                 </div>
             </div>
 
+            {error && (
+                <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center gap-3">
+                    <AlertCircle className="w-5 h-5 text-red-400" />
+                    <p className="text-red-400">{error}</p>
+                </div>
+            )}
+
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
                 <TabsList className="bg-zinc-900 border border-white/10">
-                    <TabsTrigger value="all">All Users ({users.length})</TabsTrigger>
-                    <TabsTrigger value="enterprise">Enterprise ({enterpriseUsers.length})</TabsTrigger>
+                    <TabsTrigger value="all">All Users ({filteredUsers.length})</TabsTrigger>
+                    <TabsTrigger value="enterprise">Enterprise ({filteredEnterpriseUsers.length})</TabsTrigger>
                 </TabsList>
 
                 {/* All Users Tab */}
@@ -452,7 +475,7 @@ export default function SuperAdminUsers() {
                                     <TableHead className="text-zinc-400">User</TableHead>
                                     <TableHead className="text-zinc-400">Role</TableHead>
                                     <TableHead className="text-zinc-400">Tokens</TableHead>
-                                    <TableHead className="text-zinc-400">Status</TableHead>
+                                    <TableHead className="text-zinc-400">Source</TableHead>
                                     <TableHead className="text-zinc-400">Joined</TableHead>
                                     <TableHead className="text-right text-zinc-400">Actions</TableHead>
                                 </TableRow>
@@ -461,13 +484,16 @@ export default function SuperAdminUsers() {
                                 {isLoading ? (
                                     <TableRow>
                                         <TableCell colSpan={6} className="text-center py-8 text-zinc-500">
-                                            <Loader2 className="w-6 h-6 animate-spin mx-auto" />
+                                            <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
+                                            <p>Loading users...</p>
                                         </TableCell>
                                     </TableRow>
                                 ) : filteredUsers.length === 0 ? (
                                     <TableRow>
                                         <TableCell colSpan={6} className="text-center py-8 text-zinc-500">
-                                            No users found
+                                            <User className="w-8 h-8 mx-auto mb-2 text-zinc-600" />
+                                            <p>No users found</p>
+                                            {searchTerm && <p className="text-xs mt-1">Try a different search term</p>}
                                         </TableCell>
                                     </TableRow>
                                 ) : (
@@ -480,28 +506,30 @@ export default function SuperAdminUsers() {
                                                     </div>
                                                     <div className="flex flex-col">
                                                         <span className="font-medium text-white">
-                                                            {user.name || user.full_name || 'No name'}
+                                                            {user.name || user.full_name || user.username || 'No name'}
                                                         </span>
                                                         <span className="text-xs text-zinc-500">{user.email}</span>
                                                     </div>
                                                 </div>
                                             </TableCell>
-                                            <TableCell>{getRoleBadge(user.role)}</TableCell>
+                                            <TableCell>{getRoleBadge(user.role || 'user')}</TableCell>
                                             <TableCell>
-                                                <div className="flex items-center gap-1 font-mono text-yellow-400">
-                                                    <Coins className="w-3 h-3" />
-                                                    {(user.tokens_remaining || 0).toLocaleString()}
+                                                <div className="flex items-center gap-1 font-mono">
+                                                    <Coins className="w-3 h-3 text-yellow-400" />
+                                                    <span className={user.tokens_remaining && user.tokens_remaining > 0 ? 'text-yellow-400' : 'text-zinc-500'}>
+                                                        {(user.tokens_remaining || 0).toLocaleString()}
+                                                    </span>
                                                 </div>
                                             </TableCell>
                                             <TableCell>
                                                 <Badge 
                                                     variant="outline" 
-                                                    className={user.is_active !== false 
-                                                        ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-                                                        : "bg-red-500/10 text-red-400 border-red-500/20"
+                                                    className={user.source === 'better_auth' 
+                                                        ? "bg-blue-500/10 text-blue-400 border-blue-500/20 text-xs"
+                                                        : "bg-zinc-500/10 text-zinc-400 border-zinc-500/20 text-xs"
                                                     }
                                                 >
-                                                    {user.is_active !== false ? 'Active' : 'Inactive'}
+                                                    {user.source === 'better_auth' ? 'Auth' : 'Legacy'}
                                                 </Badge>
                                             </TableCell>
                                             <TableCell>
@@ -575,7 +603,9 @@ export default function SuperAdminUsers() {
                                 ) : filteredEnterpriseUsers.length === 0 ? (
                                     <TableRow>
                                         <TableCell colSpan={6} className="text-center py-8 text-zinc-500">
-                                            No enterprise users found
+                                            <Building2 className="w-8 h-8 mx-auto mb-2 text-zinc-600" />
+                                            <p>No enterprise users found</p>
+                                            <p className="text-xs mt-1">Enterprise users are those with business, enterprise, or admin roles</p>
                                         </TableCell>
                                     </TableRow>
                                 ) : (
@@ -768,112 +798,96 @@ export default function SuperAdminUsers() {
                             <TabsTrigger value="settings">Settings</TabsTrigger>
                         </TabsList>
 
-                        {/* Model Pricing Tab */}
                         <TabsContent value="pricing" className="space-y-6 mt-4">
-                            {/* Image Models */}
-                            <div className="space-y-3">
-                                <h3 className="text-sm font-medium text-zinc-300 flex items-center gap-2">
-                                    <Image className="w-4 h-4 text-emerald-400" />
-                                    Image Models
-                                </h3>
-                                <div className="grid gap-3">
-                                    {imageModels.map((model) => (
-                                        <div 
-                                            key={model.model_id} 
-                                            className="flex items-center justify-between p-3 rounded-lg bg-zinc-800/50 border border-white/5"
-                                        >
-                                            <div className="flex-1">
-                                                <p className="font-medium text-white">{model.model_id}</p>
-                                                <p className="text-xs text-zinc-500">{model.description}</p>
-                                                <p className="text-xs text-zinc-600">Default: {model.default_cost} tokens</p>
-                                            </div>
-                                            <div className="flex items-center gap-4">
-                                                <div className="flex flex-col items-end gap-1">
-                                                    <div className="flex items-center gap-2">
-                                                        <Label className="text-xs text-zinc-500">Tokens:</Label>
-                                                        <Input
-                                                            type="number"
-                                                            value={model.custom_cost ?? model.default_cost}
-                                                            onChange={(e) => handlePricingChange(model.model_id, 'custom_cost', parseInt(e.target.value) || 0)}
-                                                            className="w-20 h-8 bg-zinc-950 border-white/10 text-center"
-                                                        />
+                            {imageModels.length === 0 && videoModels.length === 0 ? (
+                                <div className="p-8 text-center text-zinc-500">
+                                    <DollarSign className="w-8 h-8 mx-auto mb-2 text-zinc-600" />
+                                    <p>No AI models configured</p>
+                                    <p className="text-xs mt-1">Add models in AI Models section first</p>
+                                </div>
+                            ) : (
+                                <>
+                                    <div className="space-y-3">
+                                        <h3 className="text-sm font-medium text-zinc-300 flex items-center gap-2">
+                                            <Image className="w-4 h-4 text-emerald-400" />
+                                            Image Models ({imageModels.length})
+                                        </h3>
+                                        <div className="grid gap-3">
+                                            {imageModels.map((model) => (
+                                                <div 
+                                                    key={model.model_id} 
+                                                    className="flex items-center justify-between p-3 rounded-lg bg-zinc-800/50 border border-white/5"
+                                                >
+                                                    <div className="flex-1">
+                                                        <p className="font-medium text-white">{model.model_id}</p>
+                                                        <p className="text-xs text-zinc-500">{model.description}</p>
+                                                        <p className="text-xs text-zinc-600">Default: {model.default_cost} tokens</p>
                                                     </div>
-                                                    <div className="flex items-center gap-2">
-                                                        <Label className="text-xs text-zinc-500">$/token:</Label>
-                                                        <Input
-                                                            type="number"
-                                                            step="0.01"
-                                                            value={model.price_per_token ?? ''}
-                                                            placeholder="0.20"
-                                                            onChange={(e) => handlePricingChange(model.model_id, 'price_per_token', parseFloat(e.target.value) || 0)}
-                                                            className="w-20 h-8 bg-zinc-950 border-white/10 text-center"
-                                                        />
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="flex flex-col items-end gap-1">
+                                                            <div className="flex items-center gap-2">
+                                                                <Label className="text-xs text-zinc-500">Tokens:</Label>
+                                                                <Input
+                                                                    type="number"
+                                                                    value={model.custom_cost ?? model.default_cost}
+                                                                    onChange={(e) => handlePricingChange(model.model_id, 'custom_cost', parseInt(e.target.value) || 0)}
+                                                                    className="w-20 h-8 bg-zinc-950 border-white/10 text-center"
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                        {model.has_custom_pricing && (
+                                                            <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20">
+                                                                Custom
+                                                            </Badge>
+                                                        )}
                                                     </div>
                                                 </div>
-                                                {model.has_custom_pricing && (
-                                                    <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20">
-                                                        Custom
-                                                    </Badge>
-                                                )}
-                                            </div>
+                                            ))}
                                         </div>
-                                    ))}
-                                </div>
-                            </div>
+                                    </div>
 
-                            {/* Video Models */}
-                            <div className="space-y-3">
-                                <h3 className="text-sm font-medium text-zinc-300 flex items-center gap-2">
-                                    <Video className="w-4 h-4 text-purple-400" />
-                                    Video Models
-                                </h3>
-                                <div className="grid gap-3">
-                                    {videoModels.map((model) => (
-                                        <div 
-                                            key={model.model_id} 
-                                            className="flex items-center justify-between p-3 rounded-lg bg-zinc-800/50 border border-white/5"
-                                        >
-                                            <div className="flex-1">
-                                                <p className="font-medium text-white">{model.model_id}</p>
-                                                <p className="text-xs text-zinc-500">{model.description}</p>
-                                                <p className="text-xs text-zinc-600">Default: {model.default_cost} tokens</p>
-                                            </div>
-                                            <div className="flex items-center gap-4">
-                                                <div className="flex flex-col items-end gap-1">
-                                                    <div className="flex items-center gap-2">
-                                                        <Label className="text-xs text-zinc-500">Tokens:</Label>
-                                                        <Input
-                                                            type="number"
-                                                            value={model.custom_cost ?? model.default_cost}
-                                                            onChange={(e) => handlePricingChange(model.model_id, 'custom_cost', parseInt(e.target.value) || 0)}
-                                                            className="w-20 h-8 bg-zinc-950 border-white/10 text-center"
-                                                        />
+                                    <div className="space-y-3">
+                                        <h3 className="text-sm font-medium text-zinc-300 flex items-center gap-2">
+                                            <Video className="w-4 h-4 text-purple-400" />
+                                            Video Models ({videoModels.length})
+                                        </h3>
+                                        <div className="grid gap-3">
+                                            {videoModels.map((model) => (
+                                                <div 
+                                                    key={model.model_id} 
+                                                    className="flex items-center justify-between p-3 rounded-lg bg-zinc-800/50 border border-white/5"
+                                                >
+                                                    <div className="flex-1">
+                                                        <p className="font-medium text-white">{model.model_id}</p>
+                                                        <p className="text-xs text-zinc-500">{model.description}</p>
+                                                        <p className="text-xs text-zinc-600">Default: {model.default_cost} tokens</p>
                                                     </div>
-                                                    <div className="flex items-center gap-2">
-                                                        <Label className="text-xs text-zinc-500">$/token:</Label>
-                                                        <Input
-                                                            type="number"
-                                                            step="0.01"
-                                                            value={model.price_per_token ?? ''}
-                                                            placeholder="0.20"
-                                                            onChange={(e) => handlePricingChange(model.model_id, 'price_per_token', parseFloat(e.target.value) || 0)}
-                                                            className="w-20 h-8 bg-zinc-950 border-white/10 text-center"
-                                                        />
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="flex flex-col items-end gap-1">
+                                                            <div className="flex items-center gap-2">
+                                                                <Label className="text-xs text-zinc-500">Tokens:</Label>
+                                                                <Input
+                                                                    type="number"
+                                                                    value={model.custom_cost ?? model.default_cost}
+                                                                    onChange={(e) => handlePricingChange(model.model_id, 'custom_cost', parseInt(e.target.value) || 0)}
+                                                                    className="w-20 h-8 bg-zinc-950 border-white/10 text-center"
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                        {model.has_custom_pricing && (
+                                                            <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20">
+                                                                Custom
+                                                            </Badge>
+                                                        )}
                                                     </div>
                                                 </div>
-                                                {model.has_custom_pricing && (
-                                                    <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20">
-                                                        Custom
-                                                    </Badge>
-                                                )}
-                                            </div>
+                                            ))}
                                         </div>
-                                    ))}
-                                </div>
-                            </div>
+                                    </div>
+                                </>
+                            )}
                         </TabsContent>
 
-                        {/* Token Packages Tab */}
                         <TabsContent value="packages" className="space-y-4 mt-4">
                             <div className="flex items-center justify-between">
                                 <p className="text-sm text-zinc-400">Custom token packages for this user</p>
@@ -888,7 +902,6 @@ export default function SuperAdminUsers() {
                             </div>
                         </TabsContent>
 
-                        {/* Settings Tab */}
                         <TabsContent value="settings" className="space-y-4 mt-4">
                             {enterpriseSettings && (
                                 <div className="grid gap-4">
@@ -1003,56 +1016,63 @@ export default function SuperAdminUsers() {
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2">
                             <Coins className="w-5 h-5 text-yellow-400" />
-                            Add Tokens to {selectedUser?.name || selectedUser?.email}
+                            Manage Tokens: {selectedUser?.name || selectedUser?.email}
                         </DialogTitle>
                         <DialogDescription className="text-zinc-400">
-                            Current balance: {selectedUser?.tokens_remaining?.toLocaleString() || 0} tokens
+                            Current balance: <span className="text-yellow-400 font-mono">{selectedUser?.tokens_remaining?.toLocaleString() || 0}</span> tokens
                         </DialogDescription>
                     </DialogHeader>
 
                     <div className="space-y-4 py-4">
                         <div className="space-y-2">
-                            <Label className="text-zinc-400">Tokens to Add</Label>
+                            <Label className="text-zinc-400">Tokens to Add/Remove</Label>
                             <Input
                                 type="number"
                                 value={tokensToAdd}
                                 onChange={(e) => setTokensToAdd(parseInt(e.target.value) || 0)}
-                                className="bg-zinc-950 border-white/10"
+                                className="bg-zinc-950 border-white/10 text-lg font-mono"
                                 placeholder="10000"
                             />
                             <p className="text-xs text-zinc-500">
                                 Use negative numbers to subtract tokens
                             </p>
                         </div>
+                        
                         <div className="space-y-2">
-                            <Label className="text-zinc-400">Reason</Label>
+                            <Label className="text-zinc-400">Reason (for audit log)</Label>
                             <Input
                                 value={tokenReason}
                                 onChange={(e) => setTokenReason(e.target.value)}
                                 className="bg-zinc-950 border-white/10"
-                                placeholder="Enterprise package purchase"
+                                placeholder="Business tier upgrade, manual adjustment, etc."
                             />
                         </div>
                         
                         {/* Quick add buttons */}
-                        <div className="flex flex-wrap gap-2">
-                            {[100, 500, 1000, 5000, 10000, 50000].map((amount) => (
-                                <Button
-                                    key={amount}
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => setTokensToAdd(amount)}
-                                    className="border-white/10 hover:bg-white/5"
-                                >
-                                    +{amount.toLocaleString()}
-                                </Button>
-                            ))}
+                        <div className="space-y-2">
+                            <Label className="text-zinc-400 text-xs">Quick Add</Label>
+                            <div className="flex flex-wrap gap-2">
+                                {[100, 500, 1000, 5000, 10000, 50000].map((amount) => (
+                                    <Button
+                                        key={amount}
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setTokensToAdd(amount)}
+                                        className="border-white/10 hover:bg-emerald-500/10 hover:border-emerald-500/20"
+                                    >
+                                        +{amount.toLocaleString()}
+                                    </Button>
+                                ))}
+                            </div>
                         </div>
 
                         {tokensToAdd !== 0 && (
-                            <div className={`p-3 rounded-lg ${tokensToAdd > 0 ? 'bg-emerald-500/10 border border-emerald-500/20' : 'bg-red-500/10 border border-red-500/20'}`}>
-                                <p className="text-sm">
-                                    New balance will be: <strong className={tokensToAdd > 0 ? 'text-emerald-400' : 'text-red-400'}>
+                            <div className={`p-4 rounded-lg ${tokensToAdd > 0 ? 'bg-emerald-500/10 border border-emerald-500/20' : 'bg-red-500/10 border border-red-500/20'}`}>
+                                <p className="text-sm text-zinc-300">
+                                    {tokensToAdd > 0 ? 'Adding' : 'Removing'} <span className="font-mono font-bold">{Math.abs(tokensToAdd).toLocaleString()}</span> tokens
+                                </p>
+                                <p className="text-lg mt-1">
+                                    New balance: <strong className={tokensToAdd > 0 ? 'text-emerald-400' : 'text-red-400'}>
                                         {((selectedUser?.tokens_remaining || 0) + tokensToAdd).toLocaleString()} tokens
                                     </strong>
                                 </p>
@@ -1073,7 +1093,10 @@ export default function SuperAdminUsers() {
                             disabled={isSaving || tokensToAdd === 0}
                             className={tokensToAdd >= 0 ? "bg-emerald-600 hover:bg-emerald-700" : "bg-red-600 hover:bg-red-700"}
                         >
-                            {isSaving ? 'Processing...' : tokensToAdd >= 0 ? `Add ${tokensToAdd.toLocaleString()} Tokens` : `Remove ${Math.abs(tokensToAdd).toLocaleString()} Tokens`}
+                            {isSaving ? (
+                                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                            ) : null}
+                            {tokensToAdd >= 0 ? `Add ${Math.abs(tokensToAdd).toLocaleString()} Tokens` : `Remove ${Math.abs(tokensToAdd).toLocaleString()} Tokens`}
                         </Button>
                     </DialogFooter>
                 </DialogContent>

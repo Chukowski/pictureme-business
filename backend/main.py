@@ -2596,33 +2596,79 @@ async def get_admin_users(
     search: Optional[str] = None,
     current_user: dict = Depends(require_superadmin)
 ):
-    """List all users with pagination and search"""
+    """List all users with pagination and search - combines legacy users and Better Auth users"""
     async with db_pool.acquire() as conn:
-        if search:
-            query = """
-                SELECT id, username, email, full_name, role, is_active, created_at, last_login
-                FROM users
-                WHERE username ILIKE $1 OR email ILIKE $1 OR full_name ILIKE $1
-                ORDER BY created_at DESC
-                LIMIT $2 OFFSET $3
-            """
-            users = await conn.fetch(query, f"%{search}%", limit, offset)
-            total = await conn.fetchval(
-                "SELECT COUNT(*) FROM users WHERE username ILIKE $1 OR email ILIKE $1 OR full_name ILIKE $1",
-                f"%{search}%"
-            )
-        else:
-            query = """
-                SELECT id, username, email, full_name, role, is_active, created_at, last_login
-                FROM users
-                ORDER BY created_at DESC
-                LIMIT $1 OFFSET $2
-            """
-            users = await conn.fetch(query, limit, offset)
-            total = await conn.fetchval("SELECT COUNT(*) FROM users")
+        all_users = []
+        
+        # Get legacy users with tokens
+        try:
+            if search:
+                legacy_query = """
+                    SELECT id::text, username, email, full_name as name, role, 
+                           tokens_remaining, subscription_tier, is_active, created_at
+                    FROM users
+                    WHERE username ILIKE $1 OR email ILIKE $1 OR full_name ILIKE $1
+                    ORDER BY created_at DESC
+                    LIMIT $2 OFFSET $3
+                """
+                legacy_users = await conn.fetch(legacy_query, f"%{search}%", limit, offset)
+            else:
+                legacy_query = """
+                    SELECT id::text, username, email, full_name as name, role, 
+                           tokens_remaining, subscription_tier, is_active, created_at
+                    FROM users
+                    ORDER BY created_at DESC
+                    LIMIT $1 OFFSET $2
+                """
+                legacy_users = await conn.fetch(legacy_query, limit, offset)
+            
+            for u in legacy_users:
+                user_dict = dict(u)
+                user_dict['source'] = 'legacy'
+                all_users.append(user_dict)
+        except Exception as e:
+            print(f"Error fetching legacy users: {e}")
+        
+        # Get Better Auth users
+        try:
+            if search:
+                ba_query = """
+                    SELECT id::text, name, email, role, "createdAt" as created_at
+                    FROM "user"
+                    WHERE name ILIKE $1 OR email ILIKE $1
+                    ORDER BY "createdAt" DESC
+                    LIMIT $2 OFFSET $3
+                """
+                ba_users = await conn.fetch(ba_query, f"%{search}%", limit, offset)
+            else:
+                ba_query = """
+                    SELECT id::text, name, email, role, "createdAt" as created_at
+                    FROM "user"
+                    ORDER BY "createdAt" DESC
+                    LIMIT $1 OFFSET $2
+                """
+                ba_users = await conn.fetch(ba_query, limit, offset)
+            
+            # Check if BA user already exists in legacy (by email)
+            legacy_emails = {u.get('email') for u in all_users}
+            
+            for u in ba_users:
+                user_dict = dict(u)
+                if user_dict.get('email') not in legacy_emails:
+                    user_dict['source'] = 'better_auth'
+                    user_dict['tokens_remaining'] = 0  # BA users don't have tokens in their table
+                    user_dict['is_active'] = True
+                    all_users.append(user_dict)
+        except Exception as e:
+            print(f"Error fetching Better Auth users: {e}")
+        
+        # Sort by created_at
+        all_users.sort(key=lambda x: x.get('created_at') or '', reverse=True)
+        
+        total = len(all_users)
             
     return {
-        "users": [dict(u) for u in users],
+        "users": all_users[:limit],
         "total": total,
         "limit": limit,
         "offset": offset
@@ -2818,15 +2864,29 @@ async def get_token_packages(current_user: dict = Depends(require_superadmin)):
                 FROM token_packages
                 ORDER BY tokens ASC
             """)
+            # Return actual data from DB (even if empty)
             return [dict(p) for p in packages]
         except Exception as e:
-            # Table might not exist, return defaults
-            return [
-                {"id": 1, "name": "Starter Pack", "tokens": 100, "price_usd": 10.0, "is_active": True},
-                {"id": 2, "name": "Basic Pack", "tokens": 500, "price_usd": 40.0, "is_active": True},
-                {"id": 3, "name": "Pro Pack", "tokens": 1000, "price_usd": 70.0, "is_active": True},
-                {"id": 4, "name": "Enterprise Pack", "tokens": 5000, "price_usd": 300.0, "is_active": True},
-            ]
+            print(f"Error fetching token packages: {e}")
+            # Table doesn't exist - return empty array
+            return []
+
+
+@app.delete("/api/admin/token-packages/cleanup")
+async def cleanup_duplicate_packages(current_user: dict = Depends(require_superadmin)):
+    """Remove duplicate token packages, keeping only one of each name"""
+    async with db_pool.acquire() as conn:
+        # Find and delete duplicates, keeping the one with lowest ID
+        result = await conn.execute("""
+            DELETE FROM token_packages 
+            WHERE id NOT IN (
+                SELECT MIN(id) 
+                FROM token_packages 
+                GROUP BY name, tokens
+            )
+        """)
+        deleted_count = result.split()[-1] if result else "0"
+        return {"success": True, "deleted": deleted_count}
 
 
 @app.post("/api/admin/token-packages")
