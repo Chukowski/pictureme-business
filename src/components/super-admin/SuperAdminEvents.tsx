@@ -114,15 +114,30 @@ export default function SuperAdminEvents() {
         switch (tier?.toLowerCase()) {
             case 'masters':
             case 'business_masters':
+            case 'superadmin':
                 return 'bg-purple-500/10 text-purple-400 border-purple-500/20';
             case 'eventpro':
             case 'event_pro':
+            case 'business_pro':
                 return 'bg-blue-500/10 text-blue-400 border-blue-500/20';
             case 'spark':
+            case 'business_spark':
                 return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
-            default:
+            case 'individual':
+            case 'free':
                 return 'bg-zinc-500/10 text-zinc-400 border-zinc-500/20';
+            default:
+                return 'bg-amber-500/10 text-amber-400 border-amber-500/20';
         }
+    };
+
+    const formatTier = (tier: string) => {
+        if (!tier) return 'Free';
+        // Convert snake_case to Title Case
+        return tier
+            .split('_')
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+            .join(' ');
     };
 
     const getModeColor = (mode: string) => {
@@ -219,7 +234,7 @@ export default function SuperAdminEvents() {
                                             <div className="flex flex-col gap-1">
                                                 <span className="text-sm text-zinc-300">{event.owner}</span>
                                                 <Badge variant="outline" className={`w-fit text-[10px] ${getTierColor(event.tier)}`}>
-                                                    {event.tier || 'Free'}
+                                                    {formatTier(event.tier)}
                                                 </Badge>
                                             </div>
                                         </TableCell>

@@ -2688,7 +2688,7 @@ async def get_admin_events(
         for event_doc in paginated_events:
             postgres_id = event_doc.get("postgres_event_id")
             
-            # Get album/photo stats if we have postgres_id
+            # Get album/photo/token stats if we have postgres_id
             album_count = 0
             photo_count = 0
             tokens_used = 0
@@ -2703,37 +2703,46 @@ async def get_admin_events(
                             COALESCE((SELECT COUNT(*) FROM albums WHERE event_id = $1), 0) as album_count,
                             COALESCE((SELECT COUNT(*) FROM album_photos ap 
                                       JOIN albums a ON ap.album_id = a.id 
-                                      WHERE a.event_id = $1), 0) as photo_count
+                                      WHERE a.event_id = $1), 0) as photo_count,
+                            COALESCE((SELECT SUM(ABS(amount)) FROM token_transactions 
+                                      WHERE event_id = $1 AND amount < 0), 0) as tokens_used
                     """, postgres_id)
                     if stats:
                         album_count = stats["album_count"]
                         photo_count = stats["photo_count"]
-                except:
-                    pass
+                        tokens_used = int(stats["tokens_used"] or 0)
+                except Exception as e:
+                    print(f"⚠️ Error getting event stats for {postgres_id}: {e}")
             
             # Get owner info
             user_id = event_doc.get("user_id")
-            if user_id:
+            user_slug = event_doc.get("user_slug")
+            
+            if user_id or user_slug:
                 try:
-                    # Try legacy users first
-                    user_row = await conn.fetchrow("""
-                        SELECT email, full_name, username, subscription_tier 
-                        FROM users WHERE id::text = $1 OR slug = $1
-                    """, str(user_id))
-                    if user_row:
-                        owner_email = user_row["email"] or "Unknown"
-                        owner_name = user_row["full_name"] or user_row["username"] or ""
-                        tier = user_row["subscription_tier"] or "free"
+                    # Try Better Auth users first (they have role field)
+                    ba_row = await conn.fetchrow("""
+                        SELECT email, name, role FROM "user" 
+                        WHERE id::text = $1 OR slug = $2
+                    """, str(user_id) if user_id else "", user_slug or "")
+                    
+                    if ba_row:
+                        owner_email = ba_row["email"] or "Unknown"
+                        owner_name = ba_row["name"] or ""
+                        tier = ba_row["role"] or "free"
                     else:
-                        # Try Better Auth users
-                        ba_row = await conn.fetchrow("""
-                            SELECT email, name FROM "user" WHERE id::text = $1
-                        """, str(user_id))
-                        if ba_row:
-                            owner_email = ba_row["email"] or "Unknown"
-                            owner_name = ba_row["name"] or ""
-                except:
-                    pass
+                        # Try legacy users
+                        user_row = await conn.fetchrow("""
+                            SELECT email, full_name, username, role, subscription_tier 
+                            FROM users WHERE id::text = $1 OR slug = $2
+                        """, str(user_id) if user_id else "", user_slug or "")
+                        if user_row:
+                            owner_email = user_row["email"] or "Unknown"
+                            owner_name = user_row["full_name"] or user_row["username"] or ""
+                            # Use role first, then subscription_tier
+                            tier = user_row["role"] or user_row["subscription_tier"] or "free"
+                except Exception as e:
+                    print(f"⚠️ Error getting owner info: {e}")
             
             # Determine event mode
             event_mode = event_doc.get("eventMode", "free")
