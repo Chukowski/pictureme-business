@@ -75,25 +75,56 @@ async def get_current_user_from_request(request: Request) -> dict:
     return await get_current_user(request, credentials)
 
 
+async def get_user_id_for_queries(conn, user: dict) -> tuple:
+    """
+    Get user IDs for database queries.
+    Returns (legacy_user_id, uuid_user_id) where legacy is integer and uuid is string.
+    Some tables use integer IDs (legacy), some use UUID strings (Better Auth).
+    """
+    user_id = user["id"]
+    email = user.get("email")
+    
+    # Try to find legacy integer ID
+    legacy_id = None
+    if email:
+        legacy_user = await conn.fetchrow(
+            "SELECT id FROM users WHERE email = $1",
+            email
+        )
+        if legacy_user:
+            legacy_id = legacy_user["id"]
+    
+    # If user_id looks like an integer, use it directly
+    try:
+        legacy_id = legacy_id or int(user_id)
+    except (ValueError, TypeError):
+        pass
+    
+    return legacy_id, str(user_id)
+
+
 @router.get("/stats", response_model=TokenStats)
 async def get_token_stats(request: Request):
     """Get token statistics for the current user"""
     user = await get_current_user_from_request(request)
-    user_id = user["id"]
     
     async with db_pool.acquire() as conn:
+        legacy_id, uuid_id = await get_user_id_for_queries(conn, user)
+        
         # Get current tokens and plan info - try legacy users table first
-        user_data = await conn.fetchrow(
-            """
-            SELECT 
-                u.tokens_remaining,
-                COALESCE(bp.included_tokens, 1000) as tokens_total
-            FROM users u
-            LEFT JOIN business_plans bp ON u.plan_id = bp.slug
-            WHERE u.id = $1
-            """,
-            user_id
-        )
+        user_data = None
+        if legacy_id:
+            user_data = await conn.fetchrow(
+                """
+                SELECT 
+                    u.tokens_remaining,
+                    COALESCE(bp.included_tokens, 1000) as tokens_total
+                FROM users u
+                LEFT JOIN business_plans bp ON u.plan_id = bp.slug
+                WHERE u.id = $1
+                """,
+                legacy_id
+            )
         
         # If not found in legacy users, check Better Auth user table
         if not user_data:
@@ -107,41 +138,47 @@ async def get_token_stats(request: Request):
                     ) as tokens_remaining,
                     1000 as tokens_total
                 FROM "user" u
-                WHERE u.id = $1
+                WHERE u.id = $1::uuid
                 """,
-                user_id
+                uuid_id
             )
         
         current_tokens = user_data["tokens_remaining"] if user_data else 0
         tokens_total = user_data["tokens_total"] if user_data else 1000
         
-        # Get tokens used this month
+        # Get tokens used this month - use legacy_id if available
         first_of_month = datetime.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-        usage_result = await conn.fetchrow(
-            """
-            SELECT COALESCE(SUM(ABS(amount)), 0) as tokens_used
-            FROM token_transactions
-            WHERE user_id = $1 
-              AND amount < 0 
-              AND created_at >= $2
-            """,
-            user_id, first_of_month
-        )
-        tokens_used_month = int(usage_result["tokens_used"]) if usage_result else 0
+        tokens_used_month = 0
+        
+        if legacy_id:
+            usage_result = await conn.fetchrow(
+                """
+                SELECT COALESCE(SUM(ABS(amount)), 0) as tokens_used
+                FROM token_transactions
+                WHERE user_id = $1 
+                  AND amount < 0 
+                  AND created_at >= $2
+                """,
+                legacy_id, first_of_month
+            )
+            tokens_used_month = int(usage_result["tokens_used"]) if usage_result else 0
         
         # Calculate average daily usage (last 30 days)
         thirty_days_ago = datetime.now() - timedelta(days=30)
-        daily_usage = await conn.fetchrow(
-            """
-            SELECT COALESCE(SUM(ABS(amount)), 0) / 30.0 as avg_daily
-            FROM token_transactions
-            WHERE user_id = $1 
-              AND amount < 0 
-              AND created_at >= $2
-            """,
-            user_id, thirty_days_ago
-        )
-        avg_daily_usage = float(daily_usage["avg_daily"]) if daily_usage else 0
+        avg_daily_usage = 0.0
+        
+        if legacy_id:
+            daily_usage = await conn.fetchrow(
+                """
+                SELECT COALESCE(SUM(ABS(amount)), 0) / 30.0 as avg_daily
+                FROM token_transactions
+                WHERE user_id = $1 
+                  AND amount < 0 
+                  AND created_at >= $2
+                """,
+                legacy_id, thirty_days_ago
+            )
+            avg_daily_usage = float(daily_usage["avg_daily"]) if daily_usage else 0
         
         # Forecast days remaining
         forecast_days = int(current_tokens / avg_daily_usage) if avg_daily_usage > 0 else 999
@@ -159,9 +196,14 @@ async def get_token_stats(request: Request):
 async def get_token_transactions(request: Request, limit: int = 20):
     """Get recent token transactions"""
     user = await get_current_user_from_request(request)
-    user_id = user["id"]
     
     async with db_pool.acquire() as conn:
+        legacy_id, uuid_id = await get_user_id_for_queries(conn, user)
+        
+        if not legacy_id:
+            # No legacy user, return empty list
+            return []
+        
         transactions = await conn.fetch(
             """
             SELECT 
@@ -178,7 +220,7 @@ async def get_token_transactions(request: Request, limit: int = 20):
             ORDER BY tt.created_at DESC
             LIMIT $2
             """,
-            user_id, limit
+            legacy_id, limit
         )
         
         return [
@@ -234,9 +276,11 @@ async def get_token_packages():
 async def get_token_usage_by_event(request: Request):
     """Get token usage breakdown by event"""
     user = await get_current_user_from_request(request)
-    user_id = user["id"]
     
     async with db_pool.acquire() as conn:
+        legacy_id, uuid_id = await get_user_id_for_queries(conn, user)
+        
+        # events.user_id can be either integer or UUID string, so we check both
         usage = await conn.fetch(
             """
             SELECT 
@@ -246,13 +290,13 @@ async def get_token_usage_by_event(request: Request):
                 MAX(tt.created_at) as last_used
             FROM events e
             LEFT JOIN token_transactions tt ON e.id = tt.event_id AND tt.amount < 0
-            WHERE e.user_id = $1
+            WHERE e.user_id::text = $1 OR ($2::integer IS NOT NULL AND e.user_id::text = $2::text)
             GROUP BY e.id, e.title
             HAVING COALESCE(SUM(ABS(tt.amount)), 0) > 0
             ORDER BY tokens_used DESC
             LIMIT 10
             """,
-            user_id
+            uuid_id, legacy_id
         )
         
         return [

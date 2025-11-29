@@ -33,12 +33,41 @@ async def get_current_user_from_request(request: Request) -> dict:
     return await get_current_user(request, credentials)
 
 
+async def get_user_id_for_queries(conn, user: dict) -> tuple:
+    """
+    Get user IDs for database queries.
+    Returns (legacy_user_id, uuid_user_id) where legacy is integer and uuid is string.
+    """
+    user_id = user["id"]
+    email = user.get("email")
+    
+    # Try to find legacy integer ID
+    legacy_id = None
+    if email:
+        legacy_user = await conn.fetchrow(
+            "SELECT id FROM users WHERE email = $1",
+            email
+        )
+        if legacy_user:
+            legacy_id = legacy_user["id"]
+    
+    # If user_id looks like an integer, use it directly
+    try:
+        legacy_id = legacy_id or int(user_id)
+    except (ValueError, TypeError):
+        pass
+    
+    return legacy_id, str(user_id)
+
+
 @router.get("/stations")
 async def get_station_analytics(request: Request, event_id: int = None, days: int = 30):
     """Get station usage analytics aggregated by station_type"""
     user = await get_current_user_from_request(request)
     
     async with db_pool.acquire() as conn:
+        legacy_id, uuid_id = await get_user_id_for_queries(conn, user)
+        
         # Build query based on whether event_id is provided
         since_date = datetime.utcnow() - timedelta(days=days)
         
@@ -50,16 +79,17 @@ async def get_station_analytics(request: Request, event_id: int = None, days: in
             if not event:
                 raise HTTPException(status_code=404, detail="Event not found")
             
-            has_access = event["user_id"] == user["id"]
+            # Compare as strings to handle both integer and UUID
+            has_access = str(event["user_id"]) == uuid_id or (legacy_id and event["user_id"] == legacy_id)
             if not has_access and event["organization_id"]:
                 is_owner = await conn.fetchval(
-                    "SELECT 1 FROM organizations WHERE id = $1 AND owner_user_id = $2",
-                    event["organization_id"], user["id"]
+                    "SELECT 1 FROM organizations WHERE id = $1 AND owner_user_id::text = $2",
+                    event["organization_id"], uuid_id
                 )
                 is_member = await conn.fetchval("""
                     SELECT 1 FROM organization_members 
-                    WHERE organization_id = $1 AND user_id = $2 AND status = 'active'
-                """, event["organization_id"], user["id"])
+                    WHERE organization_id = $1 AND user_id::text = $2 AND status = 'active'
+                """, event["organization_id"], uuid_id)
                 has_access = is_owner or is_member
             
             if not has_access:
@@ -79,7 +109,7 @@ async def get_station_analytics(request: Request, event_id: int = None, days: in
                 ORDER BY photo_count DESC
             """, event_id, since_date)
         else:
-            # Get all events for user
+            # Get all events for user - check both UUID and legacy ID
             rows = await conn.fetch("""
                 SELECT 
                     ap.station_type,
@@ -90,10 +120,11 @@ async def get_station_analytics(request: Request, event_id: int = None, days: in
                 FROM album_photos ap
                 JOIN albums a ON ap.album_id = a.id
                 JOIN events e ON a.event_id = e.id
-                WHERE e.user_id = $1 AND ap.created_at >= $2
+                WHERE (e.user_id::text = $1 OR ($2::integer IS NOT NULL AND e.user_id = $2))
+                  AND ap.created_at >= $3
                 GROUP BY ap.station_type
                 ORDER BY photo_count DESC
-            """, user["id"], since_date)
+            """, uuid_id, legacy_id, since_date)
         
         return [
             {
@@ -113,6 +144,7 @@ async def get_album_summary(request: Request, event_id: int = None, days: int = 
     user = await get_current_user_from_request(request)
     
     async with db_pool.acquire() as conn:
+        legacy_id, uuid_id = await get_user_id_for_queries(conn, user)
         since_date = datetime.utcnow() - timedelta(days=days)
         
         if event_id:
@@ -123,16 +155,16 @@ async def get_album_summary(request: Request, event_id: int = None, days: int = 
             if not event:
                 raise HTTPException(status_code=404, detail="Event not found")
             
-            has_access = event["user_id"] == user["id"]
+            has_access = str(event["user_id"]) == uuid_id or (legacy_id and event["user_id"] == legacy_id)
             if not has_access and event["organization_id"]:
                 is_owner = await conn.fetchval(
-                    "SELECT 1 FROM organizations WHERE id = $1 AND owner_user_id = $2",
-                    event["organization_id"], user["id"]
+                    "SELECT 1 FROM organizations WHERE id = $1 AND owner_user_id::text = $2",
+                    event["organization_id"], uuid_id
                 )
                 is_member = await conn.fetchval("""
                     SELECT 1 FROM organization_members 
-                    WHERE organization_id = $1 AND user_id = $2 AND status = 'active'
-                """, event["organization_id"], user["id"])
+                    WHERE organization_id = $1 AND user_id::text = $2 AND status = 'active'
+                """, event["organization_id"], uuid_id)
                 has_access = is_owner or is_member
             
             if not has_access:
@@ -157,11 +189,13 @@ async def get_album_summary(request: Request, event_id: int = None, days: int = 
                     COUNT(*) FILTER (WHERE a.status = 'in_progress') as in_progress_albums,
                     COUNT(*) FILTER (WHERE a.payment_status = 'paid') as paid_albums,
                     (SELECT COUNT(*) FROM album_photos ap JOIN albums alb ON ap.album_id = alb.id 
-                     JOIN events e ON alb.event_id = e.id WHERE e.user_id = $1) as total_photos
+                     JOIN events e ON alb.event_id = e.id 
+                     WHERE e.user_id::text = $1 OR ($2::integer IS NOT NULL AND e.user_id = $2)) as total_photos
                 FROM albums a
                 JOIN events e ON a.event_id = e.id
-                WHERE e.user_id = $1 AND a.created_at >= $2
-            """, user["id"], since_date)
+                WHERE (e.user_id::text = $1 OR ($2::integer IS NOT NULL AND e.user_id = $2))
+                  AND a.created_at >= $3
+            """, uuid_id, legacy_id, since_date)
         
         return {
             "total_albums": row["total_albums"],
@@ -179,7 +213,12 @@ async def get_token_usage_by_type(request: Request, days: int = 30):
     user = await get_current_user_from_request(request)
     
     async with db_pool.acquire() as conn:
+        legacy_id, uuid_id = await get_user_id_for_queries(conn, user)
         since_date = datetime.utcnow() - timedelta(days=days)
+        
+        if not legacy_id:
+            # No legacy user, return empty list
+            return []
         
         rows = await conn.fetch("""
             SELECT 
@@ -192,7 +231,7 @@ async def get_token_usage_by_type(request: Request, days: int = 30):
               AND created_at >= $2
             GROUP BY COALESCE(description, 'generation')
             ORDER BY tokens_used DESC
-        """, user["id"], since_date)
+        """, legacy_id, since_date)
         
         return [
             {
