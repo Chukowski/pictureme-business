@@ -113,19 +113,16 @@ const getUserProperties = () => {
 // Get API URL with HTTPS enforcement for production
 // This is a function to ensure it's evaluated when needed, not at module load time
 const getApiUrl = (): string => {
-  // Try window.ENV first (runtime config from config.js)
-  let url = '';
+  // Always use ENV.API_URL which has built-in HTTPS enforcement
+  // The ENV getter in env.ts handles all the logic including:
+  // 1. Reading from window.ENV
+  // 2. Deriving from current origin if not set
+  // 3. Enforcing HTTPS for production URLs
+  let url = ENV.API_URL;
   
-  if (typeof window !== 'undefined' && window.ENV?.VITE_API_URL) {
-    url = window.ENV.VITE_API_URL;
-  } else {
-    url = ENV.API_URL || (import.meta.env.DEV ? "http://localhost:3001" : "");
-  }
-  
-  // Enforce HTTPS in production (non-localhost)
-  if (url && url.startsWith('http://') && !url.includes('localhost') && !url.includes('127.0.0.1')) {
-    console.warn('🔒 [App] Forcing HTTPS for API URL:', url);
-    url = url.replace('http://', 'https://');
+  // Fallback for dev only
+  if (!url && import.meta.env.DEV) {
+    url = "http://localhost:3001";
   }
   
   return url;

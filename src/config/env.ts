@@ -24,19 +24,22 @@ declare global {
 
 /**
  * Upgrade HTTP to HTTPS for production URLs
+ * This is critical to prevent Mixed Content errors in browsers
  */
 function enforceHttps(url: string): string {
   if (!url) return url;
   
-  // Skip localhost and local IPs
-  if (url.includes('localhost') || url.includes('127.0.0.1')) {
+  // Skip localhost and local IPs - these don't need HTTPS
+  if (url.includes('localhost') || url.includes('127.0.0.1') || url.includes('192.168.')) {
     return url;
   }
   
-  // Upgrade http to https for production
+  // Always upgrade http:// to https:// for non-local URLs
+  // This prevents Mixed Content errors when the site is served over HTTPS
   if (url.startsWith('http://')) {
-    console.warn('🔒 Upgrading URL to HTTPS:', url);
-    return url.replace('http://', 'https://');
+    const httpsUrl = url.replace('http://', 'https://');
+    console.warn('🔒 [ENV] Upgraded URL to HTTPS:', url, '->', httpsUrl);
+    return httpsUrl;
   }
   
   return url;

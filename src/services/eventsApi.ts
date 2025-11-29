@@ -7,26 +7,13 @@
 import { ENV } from "@/config/env";
 import type { BadgeTemplateConfig } from "@/components/templates/BadgeTemplateEditor";
 
-// Helper function to get API URL dynamically with HTTPS enforcement
-// This ensures window.ENV is available when the URL is needed
+// Helper function to get API URL dynamically
+// Uses ENV.API_URL which already handles:
+// - Reading from window.ENV
+// - Deriving production URLs from current origin
+// - Enforcing HTTPS for non-localhost URLs
 function getApiUrl(): string {
-  // Debug: Log what we're getting
-  const windowEnvUrl = typeof window !== 'undefined' && window.ENV?.VITE_API_URL;
-  const envApiUrl = ENV.API_URL;
-  
-  console.log('🔍 [getApiUrl] window.ENV?.VITE_API_URL:', windowEnvUrl);
-  console.log('🔍 [getApiUrl] ENV.API_URL:', envApiUrl);
-  
-  let url = envApiUrl || '';
-  
-  // Force HTTPS for production (non-localhost) URLs
-  if (url && url.startsWith('http://') && !url.includes('localhost') && !url.includes('127.0.0.1')) {
-    console.warn('🔒 [eventsApi] Forcing HTTPS for API URL:', url);
-    url = url.replace('http://', 'https://');
-  }
-  
-  console.log('🔍 [getApiUrl] Final URL:', url);
-  return url;
+  return ENV.API_URL;
 }
 
 export interface User {
