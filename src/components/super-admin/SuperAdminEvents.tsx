@@ -15,7 +15,8 @@ import { toast } from "sonner";
 import { ENV } from "@/config/env";
 
 interface Event {
-    id: number;
+    id: string;
+    postgres_id?: number;
     name: string;
     slug: string;
     user_slug: string;
@@ -27,6 +28,7 @@ interface Event {
     tokens: number;
     status: string;
     dates: string;
+    event_mode: string;
     created_at: string;
 }
 
@@ -35,7 +37,7 @@ export default function SuperAdminEvents() {
     const [events, setEvents] = useState<Event[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [total, setTotal] = useState(0);
-    const [togglingId, setTogglingId] = useState<number | null>(null);
+    const [togglingId, setTogglingId] = useState<string | null>(null);
 
     useEffect(() => {
         fetchEvents();
@@ -69,7 +71,7 @@ export default function SuperAdminEvents() {
         }
     };
 
-    const toggleStatus = async (id: number) => {
+    const toggleStatus = async (id: string) => {
         setTogglingId(id);
         try {
             const token = localStorage.getItem("auth_token");
@@ -123,9 +125,26 @@ export default function SuperAdminEvents() {
         }
     };
 
+    const getModeColor = (mode: string) => {
+        switch (mode?.toLowerCase()) {
+            case 'album tracking':
+                return 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20';
+            case 'lead capture':
+                return 'bg-blue-500/10 text-blue-400 border-blue-500/20';
+            case 'pay per photo':
+                return 'bg-amber-500/10 text-amber-400 border-amber-500/20';
+            case 'pay per album':
+                return 'bg-purple-500/10 text-purple-400 border-purple-500/20';
+            case 'free':
+            default:
+                return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
+        }
+    };
+
     const filteredEvents = events.filter(e => 
         e.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        e.owner.toLowerCase().includes(searchTerm.toLowerCase())
+        e.owner.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (e.event_mode || '').toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     return (
@@ -171,6 +190,7 @@ export default function SuperAdminEvents() {
                             <TableRow className="border-white/10 hover:bg-transparent">
                                 <TableHead className="text-zinc-400">Event Name</TableHead>
                                 <TableHead className="text-zinc-400">Owner</TableHead>
+                                <TableHead className="text-zinc-400">Mode</TableHead>
                                 <TableHead className="text-zinc-400">Stats</TableHead>
                                 <TableHead className="text-zinc-400">Status</TableHead>
                                 <TableHead className="text-zinc-400">Dates</TableHead>
@@ -180,7 +200,7 @@ export default function SuperAdminEvents() {
                         <TableBody>
                             {filteredEvents.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={6} className="text-center py-10 text-zinc-500">
+                                    <TableCell colSpan={7} className="text-center py-10 text-zinc-500">
                                         {searchTerm ? "No events found matching your search" : "No events yet"}
                                     </TableCell>
                                 </TableRow>
@@ -202,6 +222,11 @@ export default function SuperAdminEvents() {
                                                     {event.tier || 'Free'}
                                                 </Badge>
                                             </div>
+                                        </TableCell>
+                                        <TableCell>
+                                            <Badge variant="secondary" className={`text-[10px] ${getModeColor(event.event_mode)}`}>
+                                                {event.event_mode || 'Free'}
+                                            </Badge>
                                         </TableCell>
                                         <TableCell>
                                             <div className="text-xs space-y-0.5">

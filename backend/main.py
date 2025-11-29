@@ -2653,104 +2653,137 @@ async def get_admin_events(
     search: Optional[str] = None,
     current_user: dict = Depends(require_superadmin)
 ):
-    """Get all events across the platform with stats"""
+    """Get all events across the platform with stats - from CouchDB"""
+    from couchdb_service import get_couch_service
+    
+    couch = get_couch_service()
+    
+    # Get ALL events from CouchDB
+    selector = {"type": "event"}
+    all_events_docs = couch._find_documents(
+        couch.events_db_name,
+        selector,
+        limit=500,
+        sort=[{"created_at": "desc"}]
+    )
+    
+    # Filter by search if provided
+    if search:
+        search_lower = search.lower()
+        all_events_docs = [
+            e for e in all_events_docs
+            if search_lower in (e.get("title") or "").lower()
+            or search_lower in (e.get("slug") or "").lower()
+            or search_lower in (e.get("user_slug") or "").lower()
+        ]
+    
+    total = len(all_events_docs)
+    
+    # Apply pagination
+    paginated_events = all_events_docs[offset:offset + limit]
+    
+    # Get stats from PostgreSQL for each event
     async with db_pool.acquire() as conn:
-        search_filter = f"%{search}%" if search else None
-        
-        # Build query with CTEs for stats
-        query = """
-            WITH album_stats AS (
-                SELECT 
-                    event_id,
-                    COUNT(*) as album_count,
-                    SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed_albums
-                FROM albums
-                GROUP BY event_id
-            ),
-            photo_stats AS (
-                SELECT 
-                    a.event_id,
-                    COUNT(ap.id) as photo_count
-                FROM albums a
-                JOIN album_photos ap ON a.id = ap.album_id
-                GROUP BY a.event_id
-            ),
-            token_stats AS (
-                SELECT 
-                    CAST(metadata->>'event_id' AS INTEGER) as event_id,
-                    SUM(ABS(amount)) as tokens_used
-                FROM token_transactions
-                WHERE amount < 0 AND metadata->>'event_id' IS NOT NULL
-                GROUP BY metadata->>'event_id'
-            )
-            SELECT 
-                e.id,
-                e.title,
-                e.slug,
-                e.user_slug,
-                e.is_active,
-                e.created_at,
-                e.event_date,
-                e.end_date,
-                COALESCE(u.email, ba.email) as owner_email,
-                COALESCE(u.full_name, u.username, ba.name) as owner_name,
-                COALESCE(u.subscription_tier, 'free') as tier,
-                COALESCE(ast.album_count, 0) as album_count,
-                COALESCE(ast.completed_albums, 0) as completed_albums,
-                COALESCE(pst.photo_count, 0) as photo_count,
-                COALESCE(tst.tokens_used, 0) as tokens_used
-            FROM events e
-            LEFT JOIN users u ON e.user_id::text = u.id::text
-            LEFT JOIN "user" ba ON e.user_id::text = ba.id::text
-            LEFT JOIN album_stats ast ON ast.event_id = e.id
-            LEFT JOIN photo_stats pst ON pst.event_id = e.id
-            LEFT JOIN token_stats tst ON tst.event_id = e.id
-        """
-        
-        params = []
-        if search_filter:
-            query += " WHERE e.title ILIKE $1 OR COALESCE(u.email, ba.email) ILIKE $1"
-            params.append(search_filter)
-        
-        query += " ORDER BY e.created_at DESC"
-        query += f" LIMIT {limit} OFFSET {offset}"
-        
-        rows = await conn.fetch(query, *params)
-        
-        # Get total count
-        count_query = "SELECT COUNT(*) FROM events"
-        if search_filter:
-            count_query += " WHERE title ILIKE $1"
-        total = await conn.fetchval(count_query, *params[:1] if params else [])
-        
         events = []
-        for row in rows:
-            # Format dates
-            event_date = None
-            end_date = None
-            if row["event_date"]:
-                event_date = row["event_date"].strftime("%b %d") if hasattr(row["event_date"], 'strftime') else str(row["event_date"])
-            if row["end_date"]:
-                end_date = row["end_date"].strftime("%b %d") if hasattr(row["end_date"], 'strftime') else str(row["end_date"])
+        for event_doc in paginated_events:
+            postgres_id = event_doc.get("postgres_event_id")
             
-            dates = event_date or "No date"
-            if end_date and end_date != event_date:
-                dates = f"{event_date} - {end_date}"
+            # Get album/photo stats if we have postgres_id
+            album_count = 0
+            photo_count = 0
+            tokens_used = 0
+            owner_email = "Unknown"
+            owner_name = ""
+            tier = "free"
+            
+            if postgres_id:
+                try:
+                    stats = await conn.fetchrow("""
+                        SELECT 
+                            COALESCE((SELECT COUNT(*) FROM albums WHERE event_id = $1), 0) as album_count,
+                            COALESCE((SELECT COUNT(*) FROM album_photos ap 
+                                      JOIN albums a ON ap.album_id = a.id 
+                                      WHERE a.event_id = $1), 0) as photo_count
+                    """, postgres_id)
+                    if stats:
+                        album_count = stats["album_count"]
+                        photo_count = stats["photo_count"]
+                except:
+                    pass
+            
+            # Get owner info
+            user_id = event_doc.get("user_id")
+            if user_id:
+                try:
+                    # Try legacy users first
+                    user_row = await conn.fetchrow("""
+                        SELECT email, full_name, username, subscription_tier 
+                        FROM users WHERE id::text = $1 OR slug = $1
+                    """, str(user_id))
+                    if user_row:
+                        owner_email = user_row["email"] or "Unknown"
+                        owner_name = user_row["full_name"] or user_row["username"] or ""
+                        tier = user_row["subscription_tier"] or "free"
+                    else:
+                        # Try Better Auth users
+                        ba_row = await conn.fetchrow("""
+                            SELECT email, name FROM "user" WHERE id::text = $1
+                        """, str(user_id))
+                        if ba_row:
+                            owner_email = ba_row["email"] or "Unknown"
+                            owner_name = ba_row["name"] or ""
+                except:
+                    pass
+            
+            # Determine event mode
+            event_mode = event_doc.get("eventMode", "free")
+            album_tracking_enabled = event_doc.get("albumTracking", {}).get("enabled", False)
+            
+            if album_tracking_enabled:
+                mode_display = "Album Tracking"
+            elif event_mode == "lead_capture":
+                mode_display = "Lead Capture"
+            elif event_mode == "pay_per_photo":
+                mode_display = "Pay Per Photo"
+            elif event_mode == "pay_per_album":
+                mode_display = "Pay Per Album"
+            else:
+                mode_display = "Free"
+            
+            # Format dates
+            start_date = event_doc.get("start_date") or event_doc.get("event_date")
+            end_date = event_doc.get("end_date")
+            
+            dates = "No date"
+            if start_date:
+                try:
+                    from datetime import datetime as dt
+                    if isinstance(start_date, str):
+                        start_dt = dt.fromisoformat(start_date.replace('Z', '+00:00'))
+                        dates = start_dt.strftime("%b %d")
+                        if end_date:
+                            end_dt = dt.fromisoformat(end_date.replace('Z', '+00:00'))
+                            if end_dt.date() != start_dt.date():
+                                dates = f"{start_dt.strftime('%b %d')} - {end_dt.strftime('%b %d')}"
+                except:
+                    dates = str(start_date)[:10] if start_date else "No date"
             
             events.append({
-                "id": row["id"],
-                "name": row["title"],
-                "slug": row["slug"],
-                "user_slug": row["user_slug"],
-                "owner": row["owner_email"] or "Unknown",
-                "owner_name": row["owner_name"],
-                "tier": row["tier"] or "free",
-                "photos": row["photo_count"],
-                "albums": row["album_count"],
-                "tokens": row["tokens_used"],
-                "status": "Active" if row["is_active"] else "Paused",
+                "id": event_doc.get("_id"),
+                "postgres_id": postgres_id,
+                "name": event_doc.get("title", "Untitled"),
+                "slug": event_doc.get("slug", ""),
+                "user_slug": event_doc.get("user_slug", ""),
+                "owner": owner_email,
+                "owner_name": owner_name,
+                "tier": tier,
+                "photos": photo_count,
+                "albums": album_count,
+                "tokens": tokens_used,
+                "status": "Active" if event_doc.get("is_active", True) else "Paused",
                 "dates": dates,
-                "created_at": row["created_at"].isoformat() if row["created_at"] else None
+                "event_mode": mode_display,
+                "created_at": event_doc.get("created_at")
             })
         
         return {
@@ -2763,24 +2796,37 @@ async def get_admin_events(
 
 @app.put("/api/admin/events/{event_id}/status")
 async def toggle_event_status(
-    event_id: int,
+    event_id: str,
     current_user: dict = Depends(require_superadmin)
 ):
-    """Toggle event active status"""
-    async with db_pool.acquire() as conn:
-        row = await conn.fetchrow(
-            "UPDATE events SET is_active = NOT is_active WHERE id = $1 RETURNING id, title, is_active",
-            event_id
-        )
-        if not row:
-            raise HTTPException(status_code=404, detail="Event not found")
-        
-        return {
-            "success": True,
-            "event_id": row["id"],
-            "title": row["title"],
-            "is_active": row["is_active"]
-        }
+    """Toggle event active status - works with CouchDB event IDs"""
+    from couchdb_service import get_couch_service
+    
+    couch = get_couch_service()
+    
+    # Get event from CouchDB
+    try:
+        event_doc = couch.events_db.get(event_id)
+    except:
+        event_doc = None
+    
+    if not event_doc:
+        raise HTTPException(status_code=404, detail="Event not found")
+    
+    # Toggle status
+    new_status = not event_doc.get("is_active", True)
+    event_doc["is_active"] = new_status
+    event_doc["updated_at"] = datetime.now().isoformat()
+    
+    # Save back to CouchDB
+    couch.events_db.save(event_doc)
+    
+    return {
+        "success": True,
+        "event_id": event_id,
+        "title": event_doc.get("title", "Untitled"),
+        "is_active": new_status
+    }
 
 
 @app.get("/api/admin/users")
