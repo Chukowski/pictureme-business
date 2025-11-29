@@ -372,7 +372,8 @@ export default function StaffDashboard() {
     
     setIsDeleting(true);
     try {
-      const result = await deleteAlbum(deleteConfirm.album.id);
+      // Pass the staff PIN if we're using PIN-based auth (not the owner)
+      const result = await deleteAlbum(deleteConfirm.album.id, authorizedPin || undefined);
       toast.success(`Album deleted successfully (${result.photosDeleted} photos removed)`);
       setDeleteConfirm({ open: false, album: null });
       loadAlbums(); // Refresh the list

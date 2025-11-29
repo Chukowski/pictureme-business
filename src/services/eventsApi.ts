@@ -739,15 +739,26 @@ export async function deleteAlbumPhoto(albumCode: string, photoId: string): Prom
 
 /**
  * Delete an entire album and all its photos
+ * @param albumCode - The album code to delete
+ * @param staffPin - Optional staff PIN for non-authenticated staff access
  */
-export async function deleteAlbum(albumCode: string): Promise<{ photosDeleted: number }> {
+export async function deleteAlbum(albumCode: string, staffPin?: string): Promise<{ photosDeleted: number }> {
   const token = getAuthToken();
-  const response = await fetch(`${getApiUrl()}/api/albums/${albumCode}`, {
+  
+  // Build URL with optional PIN parameter
+  let url = `${getApiUrl()}/api/albums/${albumCode}`;
+  if (staffPin) {
+    url += `?pin=${encodeURIComponent(staffPin)}`;
+  }
+  
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  
+  const response = await fetch(url, {
     method: 'DELETE',
-    headers: { 
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
-    }
+    headers
   });
   
   if (!response.ok) {

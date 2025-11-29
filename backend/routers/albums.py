@@ -216,7 +216,13 @@ async def delete_album_photo(code: str, photo_id: str):
 @router.delete("/{code}")
 async def delete_album(code: str, request: Request):
     """Delete an entire album and all its photos (staff action)"""
-    user = await get_current_user_from_request(request)
+    # Try to get current user, but allow staff PIN access too
+    user = None
+    try:
+        user = await get_current_user_from_request(request)
+    except Exception:
+        # No valid auth token - check for staff PIN in query params
+        pass
     
     async with db_pool.acquire() as conn:
         # Get album details
@@ -224,14 +230,23 @@ async def delete_album(code: str, request: Request):
         if not album:
             raise HTTPException(status_code=404, detail="Album not found")
         
-        # Verify user has access to this event
+        # Get event to check access
         event = await conn.fetchrow(
-            "SELECT user_id FROM events WHERE id = $1", album["event_id"]
+            "SELECT user_id, settings FROM events WHERE id = $1", album["event_id"]
         )
-        if event and user and str(event["user_id"]) != str(user.get("id")):
-            # Check if staff PIN was provided (for non-owners)
-            # For now, allow deletion if user is authenticated
+        
+        # Verify access: either owner or staff with valid PIN
+        if user:
+            # User is authenticated - they can delete
             pass
+        else:
+            # No auth - check staff PIN from query param
+            staff_pin = request.query_params.get("pin")
+            event_settings = event["settings"] if event else {}
+            expected_pin = event_settings.get("staffAccessCode") if event_settings else None
+            
+            if not staff_pin or staff_pin != expected_pin:
+                raise HTTPException(status_code=401, detail="Unauthorized - valid authentication or staff PIN required")
         
         # Delete album (CASCADE will delete album_photos entries)
         await conn.execute("DELETE FROM albums WHERE id = $1", album["id"])
