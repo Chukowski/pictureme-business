@@ -198,6 +198,8 @@ export function RegistrationBadgeFlow({
             aiModel: badgeTemplate.aiPipeline.model, // Use badge template's AI model
             eventId,
             billingContext: "registration-badge",
+            eventSlug,
+            userSlug,
             onProgress: (status) => {
               if (status === 'queued') {
                 setProcessingStatus('Waiting in queue...');

@@ -366,6 +366,8 @@ export const PhotoBoothPage = () => {
         seed: selectedBackground.pipelineConfig?.seed, // Use template's seed for reproducible results
         eventId: config.postgres_event_id,
         billingContext: isGroupPhoto ? 'photobooth-group' : 'photobooth-individual',
+        eventSlug: config.slug,
+        userSlug: config.user_slug,
         onProgress: (status) => {
           if (status === "queued") {
             setProcessingStatus("Waiting in queue...");

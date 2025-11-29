@@ -323,6 +323,8 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
         seed: customSeed || selectedTemplate.pipelineConfig?.seed,
         eventId: selectedEvent?.postgres_event_id,
         billingContext: isGroupPhoto ? 'playground-group' : 'playground-individual',
+        eventSlug: selectedEvent?.slug,
+        userSlug: selectedEvent?.user_slug,
         onProgress: (status) => {
           if (status === 'queued') {
             setProcessingStatus('queued');
@@ -396,6 +398,8 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
         seed: customSeed,
         eventId: selectedEvent?.postgres_event_id,
         billingContext: 'playground-badge',
+        eventSlug: selectedEvent?.slug,
+        userSlug: selectedEvent?.user_slug,
         onProgress: (status) => {
           console.log('Badge processing status:', status);
         },

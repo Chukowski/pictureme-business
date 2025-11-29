@@ -11,7 +11,9 @@ async function chargeTokensForGeneration(
   modelId: string,
   context?: string,
   eventId?: number,
-  tokens?: number
+  tokens?: number,
+  eventSlug?: string,
+  userSlug?: string
 ) {
   try {
     const apiUrl = ENV.API_URL;
@@ -21,6 +23,8 @@ async function chargeTokensForGeneration(
       model_id: modelId,
       context,
       event_id: eventId,
+      event_slug: eventSlug,
+      user_slug: userSlug,
     };
 
     if (typeof tokens === "number") {
@@ -142,6 +146,8 @@ export interface ProcessImageOptions {
   billingContext?: string;
   tokensToCharge?: number;
   skipTokenCharge?: boolean;
+  eventSlug?: string;
+  userSlug?: string;
 }
 
 /**
@@ -461,11 +467,13 @@ Output a single cohesive image.`;
     }
 
   if (!options.skipTokenCharge) {
-    chargeTokensForGeneration(
+    await chargeTokensForGeneration(
       modelToUse,
       options.billingContext,
       options.eventId,
-      options.tokensToCharge
+      options.tokensToCharge,
+      options.eventSlug,
+      options.userSlug
     );
   }
 
