@@ -361,7 +361,10 @@ export const PhotoBoothPage = () => {
         headerBackgroundColor: wantsHeader ? config?.branding?.headerBackgroundColor : undefined,
         watermark: watermarkConfig,
         aspectRatio: selectedBackground.aspectRatio || '9:16', // Use template aspect ratio
-        aiModel: selectedBackground.pipelineConfig?.imageModel, // Use template's AI model
+        // Use groupImageModel for group photos if configured, otherwise fall back to imageModel
+        aiModel: isGroupPhoto && selectedBackground.pipelineConfig?.groupImageModel 
+          ? selectedBackground.pipelineConfig.groupImageModel 
+          : selectedBackground.pipelineConfig?.imageModel,
         forceInstructions: selectedBackground.pipelineConfig?.forceInstructions, // Use template's force instructions setting
         seed: selectedBackground.pipelineConfig?.seed, // Use template's seed for reproducible results
         eventId: config.postgres_event_id,

@@ -3321,10 +3321,13 @@ export default function AdminEventForm() {
                                   </div>
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                  {/* Base Image Model */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                  {/* Individual Prompt Model */}
                                   <div className="space-y-2">
-                                    <Label className="text-zinc-400 text-xs">AI Model</Label>
+                                    <Label className="text-zinc-400 text-xs flex items-center gap-2">
+                                      <span className="w-4 h-4 rounded-full bg-cyan-500/20 flex items-center justify-center text-[10px]">👤</span>
+                                      AI Model (Individual)
+                                    </Label>
                                     <select
                                       value={template.pipelineConfig?.imageModel || 'fal-ai/nano-banana/edit'}
                                       onChange={(e) => updateTemplate(index, {
@@ -3335,13 +3338,40 @@ export default function AdminEventForm() {
                                       })}
                                       className="w-full h-10 px-3 rounded-lg bg-black/40 border border-white/10 text-white text-sm"
                                     >
-                                      <option value="fal-ai/nano-banana/edit">Nano Banana (Gemini/Imagen 3) — Fast, good quality</option>
-                                      <option value="fal-ai/bytedance/seedream/v4/edit">Seedream v4 — Best for LEGO/artistic</option>
-                                      <option value="fal-ai/flux-2-pro/edit">Flux 2 Pro Edit — Professional image editing</option>
-                                      <option value="fal-ai/flux/dev">Flux Dev — Photorealistic (text-to-image)</option>
+                                      <option value="fal-ai/nano-banana/edit">Nano Banana (Gemini/Imagen 3) — Fast</option>
+                                      <option value="fal-ai/bytedance/seedream/v4/edit">Seedream v4 — Artistic/LEGO</option>
+                                      <option value="fal-ai/flux-2-pro/edit">Flux 2 Pro Edit — Professional</option>
+                                      <option value="fal-ai/flux/dev">Flux Dev — Photorealistic</option>
                                     </select>
+                                    <p className="text-xs text-zinc-500">Used for single person photos</p>
                                   </div>
 
+                                  {/* Group Prompt Model */}
+                                  <div className="space-y-2">
+                                    <Label className="text-zinc-400 text-xs flex items-center gap-2">
+                                      <span className="w-4 h-4 rounded-full bg-purple-500/20 flex items-center justify-center text-[10px]">👥</span>
+                                      AI Model (Group)
+                                    </Label>
+                                    <select
+                                      value={template.pipelineConfig?.groupImageModel || template.pipelineConfig?.imageModel || 'fal-ai/nano-banana/edit'}
+                                      onChange={(e) => updateTemplate(index, {
+                                        pipelineConfig: {
+                                          ...template.pipelineConfig,
+                                          groupImageModel: e.target.value
+                                        }
+                                      })}
+                                      className="w-full h-10 px-3 rounded-lg bg-black/40 border border-purple-500/20 text-white text-sm"
+                                    >
+                                      <option value="fal-ai/nano-banana/edit">Nano Banana (Gemini/Imagen 3) — Fast</option>
+                                      <option value="fal-ai/bytedance/seedream/v4/edit">Seedream v4 — Artistic/LEGO</option>
+                                      <option value="fal-ai/flux-2-pro/edit">Flux 2 Pro Edit — Professional</option>
+                                      <option value="fal-ai/flux/dev">Flux Dev — Photorealistic</option>
+                                    </select>
+                                    <p className="text-xs text-zinc-500">Used for group photos (if different)</p>
+                                  </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                   {/* Aspect Ratio */}
                                   <div className="space-y-2">
                                     <Label className="text-zinc-400 text-xs flex items-center gap-1">
@@ -3398,6 +3428,28 @@ export default function AdminEventForm() {
                                         <option value="high-quality">High Quality</option>
                                       </select>
                                     )}
+                                  </div>
+
+                                  {/* Use Same Model Toggle */}
+                                  <div className="space-y-2">
+                                    <div className="flex items-center justify-between">
+                                      <Label className="text-zinc-400 text-xs">Same Model for Both</Label>
+                                      <Switch
+                                        checked={!template.pipelineConfig?.groupImageModel || template.pipelineConfig?.groupImageModel === template.pipelineConfig?.imageModel}
+                                        onCheckedChange={(checked) => updateTemplate(index, {
+                                          pipelineConfig: {
+                                            ...template.pipelineConfig,
+                                            groupImageModel: checked ? undefined : (template.pipelineConfig?.imageModel || 'fal-ai/nano-banana/edit')
+                                          }
+                                        })}
+                                        className="data-[state=checked]:bg-indigo-600"
+                                      />
+                                    </div>
+                                    <p className="text-xs text-zinc-500">
+                                      {!template.pipelineConfig?.groupImageModel || template.pipelineConfig?.groupImageModel === template.pipelineConfig?.imageModel
+                                        ? 'Using same model for individual & group'
+                                        : 'Using different models'}
+                                    </p>
                                   </div>
                                 </div>
 

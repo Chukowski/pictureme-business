@@ -117,10 +117,15 @@ async def get_user_id_for_queries(conn, user: dict) -> tuple:
 @router.get("/stats", response_model=TokenStats)
 async def get_token_stats(request: Request):
     """Get token statistics for the current user"""
+    import logging
+    logger = logging.getLogger(__name__)
+    
     user = await get_current_user_from_request(request)
+    logger.info(f"🪙 /stats called for user: {user.get('email')}")
     
     async with db_pool.acquire() as conn:
         legacy_id, uuid_id = await get_user_id_for_queries(conn, user)
+        logger.info(f"🪙 /stats legacy_id={legacy_id}, uuid_id={uuid_id}")
         
         # Get current tokens and plan info - try legacy users table first
         user_data = None
@@ -136,23 +141,50 @@ async def get_token_stats(request: Request):
                 """,
                 legacy_id
             )
+            logger.info(f"🪙 /stats legacy user_data: {dict(user_data) if user_data else 'Not found'}")
         
-        # If not found in legacy users, check Better Auth user table
-        if not user_data:
-            # For Better Auth users, use default token allocation
-            user_data = await conn.fetchrow(
+        # If not found in legacy users, try to find/create by email
+        if not user_data and user.get("email"):
+            # First try to find existing legacy user by email
+            legacy_user = await conn.fetchrow(
                 """
                 SELECT 
-                    COALESCE(
-                        (SELECT tokens_remaining FROM users WHERE email = u.email),
-                        1000
-                    ) as tokens_remaining,
-                    1000 as tokens_total
-                FROM "user" u
-                WHERE u.id = $1::uuid
+                    u.id,
+                    u.tokens_remaining,
+                    COALESCE(bp.included_tokens, 1000) as tokens_total
+                FROM users u
+                LEFT JOIN business_plans bp ON u.plan_id = bp.slug
+                WHERE u.email = $1
                 """,
-                uuid_id
+                user.get("email")
             )
+            if legacy_user:
+                legacy_id = legacy_user["id"]
+                user_data = legacy_user
+                logger.info(f"🪙 /stats found legacy user by email: {dict(user_data)}")
+            else:
+                # Create legacy user for Better Auth user
+                ba_user = {
+                    "id": uuid_id,
+                    "email": user.get("email"),
+                    "name": user.get("full_name") or user.get("name"),
+                    "slug": user.get("slug")
+                }
+                new_id = await _ensure_legacy_user(conn, ba_user, logger)
+                if new_id:
+                    legacy_id = new_id
+                    user_data = await conn.fetchrow(
+                        """
+                        SELECT 
+                            u.tokens_remaining,
+                            COALESCE(bp.included_tokens, 1000) as tokens_total
+                        FROM users u
+                        LEFT JOIN business_plans bp ON u.plan_id = bp.slug
+                        WHERE u.id = $1
+                        """,
+                        new_id
+                    )
+                    logger.info(f"🪙 /stats created legacy user: id={new_id}, data={dict(user_data) if user_data else 'None'}")
         
         current_tokens = user_data["tokens_remaining"] if user_data else 0
         tokens_total = user_data["tokens_total"] if user_data else 1000
@@ -329,57 +361,144 @@ async def _resolve_legacy_user_id(
     user_slug: Optional[str],
     event_slug: Optional[str],
 ) -> Optional[int]:
-    """Resolve legacy user id via event metadata when the active session is anonymous"""
-    if legacy_id:
-        return legacy_id
+    """
+    Resolve which legacy user should be charged.
+    Priority order:
+      1. Event owner (using event_id or slug context)
+      2. Authenticated user (legacy_id)
+      3. user_slug as legacy username/slug fallback
+    """
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    logger.info(f"🪙 _resolve_legacy_user_id: legacy_id={legacy_id}, event_id={event_id}, user_slug={user_slug}, event_slug={event_slug}")
     
     event_row = None
     if event_id:
         event_row = await conn.fetchrow(
-            "SELECT id, user_id FROM events WHERE id::text = $1",
+            "SELECT id, user_id, user_slug FROM events WHERE id::text = $1",
             str(event_id)
         )
+        logger.info(f"🪙 Event lookup by id={event_id}: {dict(event_row) if event_row else 'Not found'}")
     elif user_slug and event_slug:
         event_row = await conn.fetchrow(
-            "SELECT id, user_id FROM events WHERE user_slug = $1 AND slug = $2",
+            "SELECT id, user_id, user_slug FROM events WHERE user_slug = $1 AND slug = $2",
             user_slug,
             event_slug
         )
+        logger.info(f"🪙 Event lookup by user_slug={user_slug}, event_slug={event_slug}: {dict(event_row) if event_row else 'Not found'}")
     
-    if not event_row:
-        return None
+    if event_row:
+        raw_user_id = event_row["user_id"]
+        logger.info(f"🪙 Found event with user_id={raw_user_id}")
+        if raw_user_id is not None:
+            try:
+                result = int(raw_user_id)
+                logger.info(f"🪙 user_id is integer: {result}")
+                return result
+            except (ValueError, TypeError):
+                pass
+            
+            # user_id is UUID, look up email in Better Auth user table
+            ba_user = await conn.fetchrow(
+                'SELECT id, email, name, slug FROM "user" WHERE id::text = $1',
+                str(raw_user_id)
+            )
+            logger.info(f"🪙 Better Auth user lookup: {dict(ba_user) if ba_user else 'Not found'}")
+            if ba_user and ba_user.get("email"):
+                legacy_user = await conn.fetchrow(
+                    "SELECT id FROM users WHERE email = $1",
+                    ba_user["email"]
+                )
+                logger.info(f"🪙 Legacy user by email: {dict(legacy_user) if legacy_user else 'Not found'}")
+                if legacy_user:
+                    return legacy_user["id"]
+                
+                # Create legacy user if not exists
+                legacy_user = await _ensure_legacy_user(conn, ba_user, logger)
+                if legacy_user:
+                    return legacy_user
     
-    raw_user_id = event_row["user_id"]
-    if raw_user_id is None:
-        return None
+    if legacy_id:
+        logger.info(f"🪙 Using provided legacy_id: {legacy_id}")
+        return legacy_id
     
-    # If it's already an integer, return it
-    try:
-        return int(raw_user_id)
-    except (ValueError, TypeError):
-        pass
-    
-    # Otherwise attempt to map UUID -> email -> legacy user id
-    ba_user = await conn.fetchrow(
-        'SELECT email FROM "user" WHERE id::text = $1',
-        str(raw_user_id)
-    )
-    if ba_user and ba_user.get("email"):
-        legacy_user = await conn.fetchrow(
-            "SELECT id FROM users WHERE email = $1",
-            ba_user["email"]
-        )
-        if legacy_user:
-            return legacy_user["id"]
-    
-    # As a final fallback, try user_slug as legacy username
+    # Try to find user by slug (username or slug field)
     if user_slug:
         legacy_user = await conn.fetchrow(
-            "SELECT id FROM users WHERE username = $1",
+            "SELECT id FROM users WHERE username = $1 OR slug = $1",
             user_slug
         )
+        logger.info(f"🪙 Legacy user by slug/username={user_slug}: {dict(legacy_user) if legacy_user else 'Not found'}")
         if legacy_user:
             return legacy_user["id"]
+        
+        # Try to find Better Auth user by slug and then get legacy user by email
+        # user_slug might be formatted like "christian-berenger"
+        ba_user = await conn.fetchrow(
+            'SELECT id, email, name, slug FROM "user" WHERE slug = $1 OR name ILIKE $2',
+            user_slug,
+            user_slug.replace('-', ' ')
+        )
+        logger.info(f"🪙 Better Auth user by slug={user_slug}: {dict(ba_user) if ba_user else 'Not found'}")
+        if ba_user and ba_user.get("email"):
+            legacy_user = await conn.fetchrow(
+                "SELECT id FROM users WHERE email = $1",
+                ba_user["email"]
+            )
+            logger.info(f"🪙 Legacy user by BA email: {dict(legacy_user) if legacy_user else 'Not found'}")
+            if legacy_user:
+                return legacy_user["id"]
+            
+            # Create legacy user if not exists
+            legacy_user = await _ensure_legacy_user(conn, ba_user, logger)
+            if legacy_user:
+                return legacy_user
+    
+    logger.warning(f"🪙 Could not resolve legacy user id")
+    return None
+
+
+async def _ensure_legacy_user(conn, ba_user: dict, logger) -> Optional[int]:
+    """
+    Ensure a legacy user exists for a Better Auth user.
+    Creates one if it doesn't exist, copying relevant data.
+    """
+    email = ba_user.get("email")
+    if not email:
+        return None
+    
+    # Check if legacy user already exists
+    existing = await conn.fetchrow(
+        "SELECT id FROM users WHERE email = $1",
+        email
+    )
+    if existing:
+        return existing["id"]
+    
+    # Create legacy user
+    name = ba_user.get("name") or email.split("@")[0]
+    slug = ba_user.get("slug") or name.lower().replace(" ", "-")
+    username = slug.replace("-", "_")
+    
+    try:
+        new_user = await conn.fetchrow(
+            """
+            INSERT INTO users (username, email, full_name, slug, role, tokens_remaining, is_active, created_at, updated_at)
+            VALUES ($1, $2, $3, $4, 'business_masters', 7000, TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+            ON CONFLICT (email) DO UPDATE SET updated_at = CURRENT_TIMESTAMP
+            RETURNING id
+            """,
+            username,
+            email,
+            name,
+            slug
+        )
+        if new_user:
+            logger.info(f"🪙 Created legacy user for {email}: id={new_user['id']}")
+            return new_user["id"]
+    except Exception as e:
+        logger.error(f"🪙 Failed to create legacy user for {email}: {e}")
     
     return None
 
@@ -416,11 +535,18 @@ async def charge_tokens(request: Request, payload: TokenChargeRequest):
     Charge tokens for an AI operation. Works for both authenticated (dashboard)
     and public stations (registration/booth) using event context.
     """
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    logger.info(f"🪙 Token charge request: model={payload.model_id}, event_id={payload.event_id}, event_slug={payload.event_slug}, user_slug={payload.user_slug}")
+    
     user = None
     try:
         user = await get_current_user_from_request(request)
-    except Exception:
+        logger.info(f"🪙 Authenticated user: {user.get('email') if user else 'None'}")
+    except Exception as e:
         # Anonymous usage (e.g., public booth)
+        logger.info(f"🪙 Anonymous request (no auth): {e}")
         user = None
     
     async with db_pool.acquire() as conn:
@@ -428,6 +554,7 @@ async def charge_tokens(request: Request, payload: TokenChargeRequest):
         uuid_id = None
         if user:
             legacy_id, uuid_id = await get_user_id_for_queries(conn, user)
+            logger.info(f"🪙 User IDs resolved: legacy={legacy_id}, uuid={uuid_id}")
         
         legacy_id = await _resolve_legacy_user_id(
             conn,
@@ -437,7 +564,10 @@ async def charge_tokens(request: Request, payload: TokenChargeRequest):
             payload.event_slug
         )
         
+        logger.info(f"🪙 Final legacy_id for charge: {legacy_id}")
+        
         if not legacy_id:
+            logger.error("🪙 Unable to resolve user for token charge")
             raise HTTPException(status_code=400, detail="Unable to resolve user for token charge")
         
         tokens_to_charge = payload.tokens
@@ -483,6 +613,8 @@ async def charge_tokens(request: Request, payload: TokenChargeRequest):
                 new_balance,
                 json.dumps(metadata)
             )
+        
+        logger.info(f"🪙 ✅ Token charge complete: user={legacy_id}, charged={tokens_to_charge}, new_balance={new_balance}")
         
         return {
             "success": True,

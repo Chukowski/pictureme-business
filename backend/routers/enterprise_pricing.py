@@ -140,7 +140,7 @@ async def get_user_pricing(user_id: int):
     async with pool.acquire() as conn:
         # Get user info
         user = await conn.fetchrow(
-            "SELECT id, email, username, name, role FROM users WHERE id = $1",
+            "SELECT id, email, username, full_name AS name, role FROM users WHERE id = $1",
             user_id
         )
         

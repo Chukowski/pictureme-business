@@ -689,8 +689,8 @@ export default function LandingPage() {
             <span className="text-zinc-600 text-xs ml-2 border-l border-zinc-800 pl-2">by Akitá</span>
           </div>
           <div className="flex gap-8">
-            <a href="#" className="hover:text-white transition-colors">Privacy</a>
-            <a href="#" className="hover:text-white transition-colors">Terms</a>
+            <button onClick={() => navigate("/privacy")} className="hover:text-white transition-colors">Privacy</button>
+            <button onClick={() => navigate("/terms")} className="hover:text-white transition-colors">Terms</button>
             <a href="#" className="hover:text-white transition-colors">Twitter</a>
             <a href="#" className="hover:text-white transition-colors">Instagram</a>
           </div>

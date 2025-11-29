@@ -1003,8 +1003,8 @@ export function BadgeTemplateEditor({
                   >
                     {/* Photo placeholder - use custom positions if enabled */}
                     {config.useCustomPositions && config.customPositions?.photo ? (
-                      <div
-                        className={cn(
+                    <div
+                      className={cn(
                           "absolute bg-white/10 border-2 border-dashed border-white/30 flex items-center justify-center",
                           config.photoPlacement.shape === 'circle' && "rounded-full",
                           config.photoPlacement.shape === 'rounded' && "rounded-lg"
@@ -1023,17 +1023,17 @@ export function BadgeTemplateEditor({
                       <div
                         className={cn(
                           "absolute bg-white/10 border-2 border-dashed border-white/30 flex items-center justify-center",
-                          config.photoPlacement.shape === 'circle' && "rounded-full",
-                          config.photoPlacement.shape === 'rounded' && "rounded-lg",
-                          config.photoPlacement.position === 'top' && "top-4 left-1/2 -translate-x-1/2",
-                          config.photoPlacement.position === 'center' && "top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2",
-                          config.photoPlacement.position === 'left' && "top-1/2 left-4 -translate-y-1/2",
-                          config.photoPlacement.position === 'right' && "top-1/2 right-4 -translate-y-1/2"
-                        )}
-                        style={{ width: photoSize, height: photoSize }}
-                      >
+                        config.photoPlacement.shape === 'circle' && "rounded-full",
+                        config.photoPlacement.shape === 'rounded' && "rounded-lg",
+                        config.photoPlacement.position === 'top' && "top-4 left-1/2 -translate-x-1/2",
+                        config.photoPlacement.position === 'center' && "top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2",
+                        config.photoPlacement.position === 'left' && "top-1/2 left-4 -translate-y-1/2",
+                        config.photoPlacement.position === 'right' && "top-1/2 right-4 -translate-y-1/2"
+                      )}
+                      style={{ width: photoSize, height: photoSize }}
+                    >
                         <User className="w-6 h-6 text-white/50" />
-                      </div>
+                    </div>
                     )}
 
                     {/* AI badge indicator */}
@@ -1062,22 +1062,22 @@ export function BadgeTemplateEditor({
                           <QrCode className="w-full h-full text-zinc-800" />
                         </div>
                       ) : (
-                        <div
-                          className={cn(
-                            "absolute bg-white p-1 rounded",
-                            config.qrCode.position === 'top-left' && "top-2 left-2",
-                            config.qrCode.position === 'top-right' && "top-2 right-2",
-                            config.qrCode.position === 'bottom-left' && "bottom-2 left-2",
-                            config.qrCode.position === 'bottom-right' && "bottom-2 right-2",
-                            config.qrCode.position === 'center' && "top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
-                          )}
-                          style={{
-                            width: config.qrCode.size === 'small' ? 30 : config.qrCode.size === 'medium' ? 40 : 50,
-                            height: config.qrCode.size === 'small' ? 30 : config.qrCode.size === 'medium' ? 40 : 50,
-                          }}
-                        >
+                      <div
+                        className={cn(
+                          "absolute bg-white p-1 rounded",
+                          config.qrCode.position === 'top-left' && "top-2 left-2",
+                          config.qrCode.position === 'top-right' && "top-2 right-2",
+                          config.qrCode.position === 'bottom-left' && "bottom-2 left-2",
+                          config.qrCode.position === 'bottom-right' && "bottom-2 right-2",
+                          config.qrCode.position === 'center' && "top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
+                        )}
+                        style={{
+                          width: config.qrCode.size === 'small' ? 30 : config.qrCode.size === 'medium' ? 40 : 50,
+                          height: config.qrCode.size === 'small' ? 30 : config.qrCode.size === 'medium' ? 40 : 50,
+                        }}
+                      >
                           <QrCode className="w-full h-full text-zinc-800" />
-                        </div>
+                      </div>
                       )
                     )}
 
@@ -1122,23 +1122,23 @@ export function BadgeTemplateEditor({
                         )}
                       </>
                     ) : (
-                      <div className="absolute bottom-2 left-2 right-2 space-y-0.5">
-                        {config.fields.showName && (
-                          <p className="text-xs font-semibold text-white truncate">John Doe</p>
-                        )}
-                        {config.fields.showEventName && (
+                    <div className="absolute bottom-2 left-2 right-2 space-y-0.5">
+                      {config.fields.showName && (
+                        <p className="text-xs font-semibold text-white truncate">John Doe</p>
+                      )}
+                      {config.fields.showEventName && (
                           <p className="text-[10px] text-zinc-300 truncate">{eventName}</p>
-                        )}
-                        {config.fields.showDateTime && (
+                      )}
+                      {config.fields.showDateTime && (
                           <p className="text-[10px] text-zinc-400">Nov 28, 2025 • 2:30 PM</p>
-                        )}
-                        {config.fields.customField1 && (
+                      )}
+                      {config.fields.customField1 && (
                           <p className="text-[10px] text-zinc-400 truncate">{config.fields.customField1}: <span className="text-zinc-300">Value</span></p>
-                        )}
-                        {config.fields.customField2 && (
+                      )}
+                      {config.fields.customField2 && (
                           <p className="text-[10px] text-zinc-400 truncate">{config.fields.customField2}: <span className="text-zinc-300">Value</span></p>
-                        )}
-                      </div>
+                      )}
+                    </div>
                     )}
 
                     {/* Custom positions indicator */}

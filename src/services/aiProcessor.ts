@@ -15,9 +15,19 @@ async function chargeTokensForGeneration(
   eventSlug?: string,
   userSlug?: string
 ) {
+  console.log("🪙 chargeTokensForGeneration called:", { modelId, context, eventId, tokens, eventSlug, userSlug });
+  
   try {
-    const apiUrl = ENV.API_URL;
-    if (!apiUrl) return;
+    let apiUrl = ENV.API_URL;
+    if (!apiUrl) {
+      console.warn("🪙 No API_URL configured, skipping token charge");
+      return;
+    }
+    
+    // Force HTTPS for production
+    if (apiUrl.startsWith('http://') && !apiUrl.includes('localhost') && !apiUrl.includes('127.0.0.1')) {
+      apiUrl = apiUrl.replace('http://', 'https://');
+    }
 
     const payload: Record<string, unknown> = {
       model_id: modelId,
@@ -30,6 +40,8 @@ async function chargeTokensForGeneration(
     if (typeof tokens === "number") {
       payload.tokens = tokens;
     }
+    
+    console.log("🪙 Token charge payload:", payload);
 
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
@@ -41,13 +53,53 @@ async function chargeTokensForGeneration(
         headers.Authorization = `Bearer ${authToken}`;
       }
     }
+    
+    const chargeUrl = `${apiUrl}/api/tokens/charge`;
+    console.log("🪙 Token charge URL:", chargeUrl);
 
-    await fetch(`${apiUrl}/api/tokens/charge`, {
+    const response = await fetch(chargeUrl, {
       method: "POST",
       headers,
       credentials: "include",
       body: JSON.stringify(payload),
     });
+
+    if (response.ok) {
+      const data = await response.json().catch(() => null);
+      console.log("🪙 Token charge response:", data);
+      const newBalance = data?.new_balance;
+      const tokensCharged = data?.tokens_charged;
+      if (typeof newBalance === "number") {
+        console.log(`🪙 Tokens charged: ${tokensCharged}, new balance: ${newBalance}`);
+        try {
+          const betterAuthUser = localStorage.getItem("user");
+          if (betterAuthUser) {
+            const parsed = JSON.parse(betterAuthUser);
+            parsed.tokens_remaining = newBalance;
+            localStorage.setItem("user", JSON.stringify(parsed));
+          }
+        } catch (err) {
+          console.warn("Failed to update Better Auth user tokens", err);
+        }
+
+        try {
+          const legacyUser = localStorage.getItem("current_user");
+          if (legacyUser) {
+            const parsed = JSON.parse(legacyUser);
+            parsed.tokens_remaining = newBalance;
+            localStorage.setItem("current_user", JSON.stringify(parsed));
+          }
+        } catch (err) {
+          console.warn("Failed to update legacy user tokens", err);
+        }
+        
+        // Dispatch custom event so dashboard can refresh token display
+        window.dispatchEvent(new CustomEvent("tokens-updated", { detail: { newBalance, tokensCharged } }));
+      }
+    } else {
+      const errorText = await response.text().catch(() => "Unknown error");
+      console.warn("⚠️ Token charge failed:", response.status, errorText);
+    }
   } catch (error) {
     console.warn("⚠️ Failed to record token usage:", error);
   }
@@ -466,7 +518,9 @@ Output a single cohesive image.`;
       throw new Error("No processed image URL returned from AI");
     }
 
+  console.log("🪙 skipTokenCharge:", options.skipTokenCharge);
   if (!options.skipTokenCharge) {
+    console.log("🪙 Calling chargeTokensForGeneration...");
     await chargeTokensForGeneration(
       modelToUse,
       options.billingContext,
@@ -475,6 +529,8 @@ Output a single cohesive image.`;
       options.eventSlug,
       options.userSlug
     );
+  } else {
+    console.log("🪙 Token charge SKIPPED (skipTokenCharge=true)");
   }
 
     if (includeBranding) {

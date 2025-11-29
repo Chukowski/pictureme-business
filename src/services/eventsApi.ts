@@ -182,6 +182,7 @@ export interface Template {
   // Pipeline Configuration
   pipelineConfig?: {
     imageModel?: string; // e.g., 'seedream-t2i', 'nano-banana', 'flux-realism'
+    groupImageModel?: string; // Separate model for group photos (optional)
     forceInstructions?: boolean; // Add extra context to help AI understand images
     seed?: number; // Seed for reproducible results (same seed = similar output)
     faceswapEnabled?: boolean;

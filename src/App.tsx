@@ -39,6 +39,8 @@ import OrganizationSettingsPage from "./pages/OrganizationSettingsPage";
 import BusinessSettingsPage from "./pages/BusinessSettingsPage";
 import ViewerStationPage from "./pages/ViewerStationPage";
 import BigScreenPage from "./pages/BigScreenPage";
+import { TermsPage } from "./pages/TermsPage";
+import { PrivacyPage } from "./pages/PrivacyPage";
 
 // CopilotKit imports (self-hosted, no cloud required)
 import { CopilotKit } from "@copilotkit/react-core";
@@ -152,6 +154,8 @@ const AppContent = () => {
       <Routes>
             {/* Root shows Landing Page */}
             <Route path="/" element={<LandingPage />} />
+            <Route path="/terms" element={<TermsPage />} />
+            <Route path="/privacy" element={<PrivacyPage />} />
 
             {/* Share page - no sidebar, clean display */}
             <Route path="/share/:shareCode" element={<SharePage />} />

@@ -312,13 +312,22 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
         promptToUse = selectedTemplate.prompt || 'Create a professional photo';
       }
       
+      console.log("🪙 Playground AI call params:", {
+        eventId: selectedEvent?.postgres_event_id,
+        eventSlug: selectedEvent?.slug,
+        userSlug: selectedEvent?.user_slug,
+      });
+      
       const result = await processImageWithAI({
         userPhotoBase64: testImageBase64,
         backgroundPrompt: promptToUse,
         backgroundImageUrls: selectedTemplate.images || [],
         includeBranding: false,
         aspectRatio: selectedTemplate.aspectRatio || '9:16',
-        aiModel: selectedTemplate.pipelineConfig?.imageModel || AI_MODELS[selectedAiModel].id,
+        // Use groupImageModel for group photos if configured, otherwise fall back to imageModel or selected model
+        aiModel: isGroupPhoto && selectedTemplate.pipelineConfig?.groupImageModel 
+          ? selectedTemplate.pipelineConfig.groupImageModel 
+          : (selectedTemplate.pipelineConfig?.imageModel || AI_MODELS[selectedAiModel].id),
         forceInstructions: forceInstructions,
         seed: customSeed || selectedTemplate.pipelineConfig?.seed,
         eventId: selectedEvent?.postgres_event_id,

@@ -1,9 +1,9 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { getCurrentUser, logoutUser, updateUser } from "@/services/eventsApi";
-import { LogOut, User, Sparkles, Clock, ShieldAlert, Edit2, Loader2, Upload, X, Camera, Settings, Users, ChevronDown, ExternalLink, Building2 } from "lucide-react";
+import { LogOut, User, Sparkles, Clock, ShieldAlert, Edit2, Loader2, Upload, X, Camera, Settings, Users, ChevronDown, ExternalLink, Building2, Coins } from "lucide-react";
 import { ENV } from "@/config/env";
 import IndividualDashboard from "@/components/dashboard/IndividualDashboard";
 import BusinessDashboard from "@/components/dashboard/BusinessDashboard";
@@ -68,6 +68,34 @@ export default function AdminDashboard() {
   
   // Dashboard view mode for superadmin (can switch between studio and business)
   const [dashboardMode, setDashboardMode] = useState<'studio' | 'business'>('studio');
+  const [tokenStats, setTokenStats] = useState<{ current_tokens: number; tokens_total?: number } | null>(null);
+  const [isTokenRefreshing, setIsTokenRefreshing] = useState(false);
+
+  const fetchTokenStats = useCallback(async () => {
+    const apiUrl = ENV.API_URL;
+    if (!apiUrl) return;
+    try {
+      setIsTokenRefreshing(true);
+      const authToken = localStorage.getItem('auth_token');
+      const headers: Record<string, string> = {};
+      if (authToken) {
+        headers['Authorization'] = `Bearer ${authToken}`;
+      }
+      const response = await fetch(`${apiUrl}/api/tokens/stats`, {
+        headers,
+        credentials: 'include',
+      });
+      if (!response.ok) {
+        return;
+      }
+      const data = await response.json();
+      setTokenStats(data);
+    } catch (error) {
+      console.error("Failed to load token stats", error);
+    } finally {
+      setIsTokenRefreshing(false);
+    }
+  }, []);
 
   useEffect(() => {
     if (!currentUser) {
@@ -75,6 +103,24 @@ export default function AdminDashboard() {
       return;
     }
   }, [currentUser, navigate]);
+
+  useEffect(() => {
+    fetchTokenStats();
+    const interval = setInterval(fetchTokenStats, 60000);
+    
+    // Listen for token updates from AI processing
+    const handleTokensUpdated = (e: CustomEvent<{ newBalance: number; tokensCharged: number }>) => {
+      console.log("🪙 Tokens updated event received:", e.detail);
+      setTokenStats(prev => prev ? { ...prev, current_tokens: e.detail.newBalance } : { current_tokens: e.detail.newBalance });
+    };
+    
+    window.addEventListener("tokens-updated", handleTokensUpdated as EventListener);
+    
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("tokens-updated", handleTokensUpdated as EventListener);
+    };
+  }, [fetchTokenStats]);
 
   const handleLogout = () => {
     logoutUser();
@@ -343,6 +389,13 @@ export default function AdminDashboard() {
                     </span>
                     <span className="text-[10px] text-zinc-500 leading-none mt-1 capitalize">
                       {userRole.replace('_', ' ')}
+                    </span>
+                    <span className="text-[10px] text-yellow-400 font-mono mt-1 flex items-center gap-1">
+                      <Coins className="w-3 h-3" />
+                      {(tokenStats?.current_tokens ??
+                        currentUser?.tokens_remaining ??
+                        0).toLocaleString()} tokens
+                      {isTokenRefreshing && <Loader2 className="w-3 h-3 animate-spin" />}
                     </span>
                   </div>
                   <ChevronDown className="w-4 h-4 text-zinc-400" />

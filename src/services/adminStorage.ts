@@ -16,6 +16,9 @@ export interface Template {
   // Pipeline Configuration
   pipelineConfig?: {
     imageModel?: string;
+    groupImageModel?: string; // Separate model for group photos (optional)
+    forceInstructions?: boolean;
+    seed?: number;
     faceswapEnabled?: boolean;
     faceswapModel?: string;
     videoEnabled?: boolean;
