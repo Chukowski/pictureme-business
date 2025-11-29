@@ -14,7 +14,7 @@ import {
   CheckCircle2, XCircle, Clock, Settings, RefreshCw,
   MonitorPlay, Printer, Mail, MessageSquare, Lock, Unlock,
   Search, Filter, MoreVertical, Eye, BarChart3, Copy, Download,
-  DollarSign, LayoutDashboard
+  DollarSign, LayoutDashboard, Trash2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -32,7 +32,17 @@ import { toast } from 'sonner';
 import { EventNotFound } from '@/components/EventNotFound';
 import { ScanAlbumQR } from '@/components/album';
 import { StaffAlbumTools, StaffStationAnalytics } from '@/components/staff';
-import { getEventAlbums, getEventAlbumsWithPin, updateAlbumStatus, sendAlbumEmailByCode, getEmailStatus, getCurrentUser } from '@/services/eventsApi';
+import { getEventAlbums, getEventAlbumsWithPin, updateAlbumStatus, sendAlbumEmailByCode, getEmailStatus, getCurrentUser, deleteAlbum } from '@/services/eventsApi';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { ENV } from '@/config/env';
 
 // Mock data types
@@ -98,6 +108,13 @@ export default function StaffDashboard() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showScanner, setShowScanner] = useState(false);
   const [bigScreenMode, setBigScreenMode] = useState(false);
+  
+  // Delete confirmation dialog state
+  const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; album: Album | null }>({
+    open: false,
+    album: null
+  });
+  const [isDeleting, setIsDeleting] = useState(false);
   
   // Auth state - check sessionStorage first
   const [pin, setPin] = useState('');
@@ -346,6 +363,24 @@ export default function StaffDashboard() {
       toast.success('Album URL copied to clipboard');
     } catch {
       toast.error('Failed to copy URL');
+    }
+  };
+
+  // Delete album handler
+  const handleDeleteAlbum = async () => {
+    if (!deleteConfirm.album) return;
+    
+    setIsDeleting(true);
+    try {
+      const result = await deleteAlbum(deleteConfirm.album.id);
+      toast.success(`Album deleted successfully (${result.photosDeleted} photos removed)`);
+      setDeleteConfirm({ open: false, album: null });
+      loadAlbums(); // Refresh the list
+    } catch (error: any) {
+      console.error('Delete error:', error);
+      toast.error(error.message || 'Failed to delete album');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -752,6 +787,16 @@ export default function StaffDashboard() {
                             <QrCode className="w-4 h-4 mr-2" />
                             Copy Album URL
                           </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            className="text-red-400 focus:text-red-300 focus:bg-red-500/10"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDeleteConfirm({ open: true, album });
+                            }}
+                          >
+                            <Trash2 className="w-4 h-4 mr-2" />
+                            Delete Album
+                          </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
@@ -935,6 +980,58 @@ export default function StaffDashboard() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteConfirm.open} onOpenChange={(open) => setDeleteConfirm({ open, album: open ? deleteConfirm.album : null })}>
+        <AlertDialogContent className="bg-zinc-900 border-white/10">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-white flex items-center gap-2">
+              <Trash2 className="w-5 h-5 text-red-400" />
+              Delete Album?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-zinc-400">
+              {deleteConfirm.album && (
+                <>
+                  Are you sure you want to delete album <span className="font-mono text-cyan-400">{deleteConfirm.album.id}</span>
+                  {deleteConfirm.album.visitorName && (
+                    <> belonging to <span className="text-white font-medium">{deleteConfirm.album.visitorName}</span></>
+                  )}
+                  ?
+                  <br /><br />
+                  <span className="text-red-400 font-medium">
+                    This will permanently delete {deleteConfirm.album.photoCount} photo{deleteConfirm.album.photoCount !== 1 ? 's' : ''} and cannot be undone.
+                  </span>
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel 
+              className="bg-zinc-800 border-white/10 text-zinc-300 hover:bg-zinc-700 hover:text-white"
+              disabled={isDeleting}
+            >
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteAlbum}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-500 text-white"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete Album
+                </>
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -737,6 +737,28 @@ export async function deleteAlbumPhoto(albumCode: string, photoId: string): Prom
   }
 }
 
+/**
+ * Delete an entire album and all its photos
+ */
+export async function deleteAlbum(albumCode: string): Promise<{ photosDeleted: number }> {
+  const token = getAuthToken();
+  const response = await fetch(`${getApiUrl()}/api/albums/${albumCode}`, {
+    method: 'DELETE',
+    headers: { 
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    }
+  });
+  
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ detail: 'Failed to delete album' }));
+    throw new Error(error.detail || 'Failed to delete album');
+  }
+  
+  const result = await response.json();
+  return { photosDeleted: result.photos_deleted || 0 };
+}
+
 export async function getEventAlbums(eventId: number): Promise<Album[]> {
   const token = getAuthToken();
   const response = await fetch(`${getApiUrl()}/api/albums/event/${eventId}`, {
