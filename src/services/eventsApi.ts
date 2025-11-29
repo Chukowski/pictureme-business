@@ -745,6 +745,21 @@ export async function getEventAlbums(eventId: number): Promise<Album[]> {
   return response.json();
 }
 
+/**
+ * Get event albums using staff PIN (no auth required)
+ * Used by Staff Dashboard when accessed via direct link
+ */
+export async function getEventAlbumsWithPin(eventId: number, pin: string): Promise<Album[]> {
+  const response = await fetch(`${getApiUrl()}/api/albums/event/${eventId}/staff?pin=${encodeURIComponent(pin)}`);
+  if (!response.ok) {
+    if (response.status === 403) {
+      throw new Error('Invalid staff PIN');
+    }
+    return [];
+  }
+  return response.json();
+}
+
 export interface EventAlbumStats {
   totalAlbums: number;
   completedAlbums: number;

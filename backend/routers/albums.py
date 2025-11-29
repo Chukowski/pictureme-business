@@ -343,6 +343,46 @@ async def list_event_albums(event_id: int, request: Request):
         return result
 
 
+@router.get("/event/{event_id}/staff", response_model=List[Album])
+async def list_event_albums_staff(event_id: int, pin: str = None):
+    """List all albums for an event using staff PIN (no auth required)"""
+    couch = get_couch_service()
+    
+    async with db_pool.acquire() as conn:
+        # Get event and verify PIN
+        event = await conn.fetchrow(
+            "SELECT id, settings FROM events WHERE id = $1", event_id
+        )
+        if not event:
+            raise HTTPException(status_code=404, detail="Event not found")
+        
+        # Check staff PIN from settings
+        import json
+        settings = json.loads(event["settings"]) if event["settings"] else {}
+        staff_pin = settings.get("staffAccessCode")
+        
+        if staff_pin and pin != staff_pin:
+            raise HTTPException(status_code=403, detail="Invalid staff PIN")
+        
+        rows = await conn.fetch("""
+            SELECT a.*, 
+                   (SELECT COUNT(*) FROM album_photos WHERE album_id = a.id) as photo_count
+            FROM albums a 
+            WHERE a.event_id = $1 
+            ORDER BY a.created_at DESC
+        """, event_id)
+        
+        result = []
+        for row in rows:
+            album = dict(row)
+            album["id"] = str(album["id"])
+            album["created_at"] = album["created_at"].isoformat() if album["created_at"] else None
+            album["updated_at"] = album["updated_at"].isoformat() if album.get("updated_at") else None
+            result.append(album)
+        
+        return result
+
+
 @router.get("/{code}/status")
 async def get_album_status(code: str):
     """Get album status for polling (lightweight endpoint)"""

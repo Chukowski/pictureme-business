@@ -32,7 +32,7 @@ import { toast } from 'sonner';
 import { EventNotFound } from '@/components/EventNotFound';
 import { ScanAlbumQR } from '@/components/album';
 import { StaffAlbumTools, StaffStationAnalytics } from '@/components/staff';
-import { getEventAlbums, updateAlbumStatus, sendAlbumEmailByCode, getEmailStatus, getCurrentUser } from '@/services/eventsApi';
+import { getEventAlbums, getEventAlbumsWithPin, updateAlbumStatus, sendAlbumEmailByCode, getEmailStatus, getCurrentUser } from '@/services/eventsApi';
 import { ENV } from '@/config/env';
 
 // Mock data types
@@ -102,6 +102,7 @@ export default function StaffDashboard() {
   // Auth state - check sessionStorage first
   const [pin, setPin] = useState('');
   const [isAuthorized, setIsAuthorized] = useState(false);
+  const [authorizedPin, setAuthorizedPin] = useState<string | null>(null); // Store the validated PIN
   
   // Check if current user is the event owner (has admin access)
   const currentUser = getCurrentUser();
@@ -153,7 +154,20 @@ export default function StaffDashboard() {
     if (!config?.postgres_event_id) return;
     
     try {
-      const data = await getEventAlbums(config.postgres_event_id);
+      let data;
+      
+      // If user is authenticated (event owner or team member), use regular endpoint
+      // Otherwise, use PIN-based endpoint for staff access
+      if (currentUser) {
+        data = await getEventAlbums(config.postgres_event_id);
+      } else if (authorizedPin) {
+        data = await getEventAlbumsWithPin(config.postgres_event_id, authorizedPin);
+      } else {
+        console.warn('⚠️ No auth method available for loading albums');
+        setIsLoading(false);
+        return;
+      }
+      
       const mappedAlbums: Album[] = data.map((a: any) => ({
         id: a.code,
         visitorName: a.owner_name,
@@ -186,7 +200,7 @@ export default function StaffDashboard() {
       }
       setIsLoading(false);
     }
-  }, [config, isLoading]);
+  }, [config, isLoading, currentUser, authorizedPin]);
 
   // Initial load and auth check
   useEffect(() => {
@@ -195,21 +209,42 @@ export default function StaffDashboard() {
     const eventKey = config._id || config.postgres_event_id || routeEventId;
     const sessionKey = `staff_auth_${eventKey}`;
     
-    // Auto-authorize if no PIN set
-    if (!config.settings?.staffAccessCode) {
+    // Auto-authorize if no PIN set OR if user is the event owner
+    if (!config.settings?.staffAccessCode || isEventOwner) {
       setIsAuthorized(true);
+      // For owner, we don't need PIN - they use regular auth
     } else {
       // Check if already authorized in this session
       const savedAuth = sessionStorage.getItem(sessionKey);
       if (savedAuth === config.settings.staffAccessCode) {
         setIsAuthorized(true);
+        setAuthorizedPin(savedAuth); // Store the PIN for API calls
       }
     }
 
-    if (config.postgres_event_id) {
-      loadAlbums();
+    console.log('📊 Staff Dashboard - Config loaded:', {
+      eventId: config._id,
+      postgres_event_id: config.postgres_event_id,
+      title: config.title,
+      albumTracking: config.albumTracking?.enabled,
+      isEventOwner,
+      hasCurrentUser: !!currentUser
+    });
+  }, [config, routeEventId, isEventOwner, currentUser]);
+
+  // Load albums when authorized
+  useEffect(() => {
+    if (!isAuthorized || !config?.postgres_event_id) return;
+    
+    // Need either currentUser (owner) or authorizedPin (staff)
+    if (!currentUser && !authorizedPin) {
+      console.warn('⚠️ Authorized but no auth method available');
+      setIsLoading(false);
+      return;
     }
-  }, [config, routeEventId]);
+    
+    loadAlbums();
+  }, [isAuthorized, config?.postgres_event_id, currentUser, authorizedPin]);
 
   // Polling effect
   useEffect(() => {
@@ -388,6 +423,7 @@ export default function StaffDashboard() {
           // Save to sessionStorage
           const eventKey = config._id || config.postgres_event_id || routeEventId;
           sessionStorage.setItem(`staff_auth_${eventKey}`, pin);
+          setAuthorizedPin(pin); // Store PIN for API calls
           setIsAuthorized(true);
         } else {
           toast.error("Incorrect PIN");
