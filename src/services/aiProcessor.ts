@@ -726,19 +726,25 @@ Output a single cohesive image.`;
 }
 
 /**
- * Get proxied URL for S3 images to bypass CORS
+ * Get proxied URL for S3/MinIO images to bypass CORS
  */
 function getProxiedUrl(url: string): string {
-  // Check if URL is from S3 and needs proxying
+  // Check if URL is from S3 or MinIO and needs proxying
   const s3Patterns = [
     's3.amazonaws.com/pictureme.now',
     'pictureme.now.s3.amazonaws.com'
   ];
   
-  const needsProxy = s3Patterns.some(pattern => url.includes(pattern));
+  // Also check MinIO server URL
+  const minioServerUrl = ENV.MINIO_SERVER_URL || '';
+  const minioHost = minioServerUrl.replace('https://', '').replace('http://', '');
+  
+  const needsProxy = s3Patterns.some(pattern => url.includes(pattern)) ||
+                     (minioHost && url.includes(minioHost));
   
   if (needsProxy) {
     const apiUrl = ENV.API_URL || '';
+    console.log("🔄 Proxying image URL:", url, "via", apiUrl);
     return `${apiUrl}/api/proxy/image?url=${encodeURIComponent(url)}`;
   }
   
@@ -747,33 +753,66 @@ function getProxiedUrl(url: string): string {
 
 /**
  * Helper function to convert image URL to data URI
+ * Uses fetch for better CORS handling with proxy
  */
 async function imageUrlToDataUri(url: string): Promise<string> {
   // Use proxy for S3 URLs to bypass CORS
   const proxiedUrl = getProxiedUrl(url);
+  console.log("📥 Loading image:", url, "->", proxiedUrl);
   
+  // Try fetch first (works better with proxy)
+  try {
+    const response = await fetch(proxiedUrl, {
+      mode: 'cors',
+      credentials: 'omit', // Don't send cookies to proxy
+    });
+    
+    if (response.ok) {
+      const blob = await response.blob();
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          console.log("✅ Image loaded via fetch:", url);
+          resolve(reader.result as string);
+        };
+        reader.onerror = () => reject(new Error(`Failed to read blob for: ${url}`));
+        reader.readAsDataURL(blob);
+      });
+    } else {
+      console.warn("⚠️ Fetch failed with status:", response.status, "- trying canvas fallback");
+    }
+  } catch (fetchError) {
+    console.warn("⚠️ Fetch error:", fetchError, "- trying canvas fallback");
+  }
+  
+  // Fallback to canvas method
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.crossOrigin = "anonymous"; // Enable CORS
     
     img.onload = () => {
-      const canvas = document.createElement("canvas");
-      canvas.width = img.width;
-      canvas.height = img.height;
-      
-      const ctx = canvas.getContext("2d");
-      if (!ctx) {
-        reject(new Error("Failed to get canvas context"));
-        return;
+      try {
+        const canvas = document.createElement("canvas");
+        canvas.width = img.width;
+        canvas.height = img.height;
+        
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          reject(new Error("Failed to get canvas context"));
+          return;
+        }
+        
+        ctx.drawImage(img, 0, 0);
+        const dataUri = canvas.toDataURL("image/jpeg", 0.95);
+        console.log("✅ Image loaded via canvas:", url);
+        resolve(dataUri);
+      } catch (canvasError) {
+        reject(new Error(`Canvas error for ${url}: ${canvasError}`));
       }
-      
-      ctx.drawImage(img, 0, 0);
-      const dataUri = canvas.toDataURL("image/jpeg", 0.95);
-      resolve(dataUri);
     };
     
     img.onerror = () => {
-      reject(new Error(`Failed to load image: ${url}`));
+      reject(new Error(`Failed to load image: ${url} (proxied: ${proxiedUrl})`));
     };
     
     img.src = proxiedUrl;
