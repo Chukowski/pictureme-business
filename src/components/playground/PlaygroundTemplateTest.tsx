@@ -142,7 +142,18 @@ export function PlaygroundTemplateTest({ events, currentUser, onReloadEvents }: 
         userSlug: selectedEvent.user_slug,
       });
 
-      setProcessedResult(result.imageUrl);
+      const outputUrl = result.imageUrl 
+        || (result as any).processedImageUrl 
+        || (result as any).url 
+        || (result as any).images?.[0] 
+        || (result as any).data?.image_url 
+        || (result as any).data?.images?.[0];
+
+      if (!outputUrl) {
+        throw new Error("AI returned no image URL");
+      }
+
+      setProcessedResult(outputUrl);
       setLastResultSeed(result.seed);
       setTokensUsed(prev => prev + 1);
       setProcessingStatus('complete');
@@ -477,16 +488,18 @@ export function PlaygroundTemplateTest({ events, currentUser, onReloadEvents }: 
   // --- Right Panel Content ---
   const PreviewPanel = (
     <div className="h-full flex flex-col">
-      {/* Token Warning Banner - Minimalist */}
-      <div className="bg-amber-500/10 border-b border-amber-500/20 px-4 py-2 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <AlertTriangle className="w-3 h-3 text-amber-400" />
-          <span className="text-[10px] font-medium text-amber-200">Real token usage</span>
+      {/* Token Warning Banner - placed above device preview */}
+      <div className="shrink-0 p-4 pb-0">
+        <div className="bg-amber-500/10 border border-amber-500/20 px-4 py-2 flex items-center justify-between rounded-lg">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="w-3 h-3 text-amber-400" />
+            <span className="text-[10px] font-medium text-amber-200">Real token usage</span>
+          </div>
+          <span className="text-[10px] text-amber-200/70">Session: {tokensUsed} used</span>
         </div>
-        <span className="text-[10px] text-amber-200/70">Session: {tokensUsed} used</span>
       </div>
 
-      <div className="flex-1 p-6 flex flex-col">
+      <div className="flex-1 p-6 flex flex-col min-h-0">
         <div className="flex-1 flex items-center justify-center bg-zinc-900/50 rounded-2xl border-2 border-dashed border-zinc-800 relative overflow-hidden group">
           {processedResult ? (
             <>
