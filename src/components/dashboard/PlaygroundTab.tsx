@@ -229,14 +229,17 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
     }
   };
 
-  // Get proxied URL for S3 images to bypass CORS
-  const getProxiedUrl = (url: string): string => {
-    const s3Patterns = [
+  // Get proxied URL for external images to bypass CORS
+  const getProxiedUrl = (url: string, forceProxy = false): string => {
+    // Patterns that need proxy
+    const needsProxyPatterns = [
       's3.amazonaws.com/pictureme.now',
-      'pictureme.now.s3.amazonaws.com'
+      'pictureme.now.s3.amazonaws.com',
+      'images.unsplash.com',
+      'unsplash.com'
     ];
     
-    const needsProxy = s3Patterns.some(pattern => url.includes(pattern));
+    const needsProxy = forceProxy || needsProxyPatterns.some(pattern => url.includes(pattern));
     
     if (needsProxy) {
       const apiUrl = ENV.API_URL || '';
@@ -248,25 +251,58 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
 
   // Convert image URL to base64
   const imageUrlToBase64 = async (url: string): Promise<string> => {
-    const proxiedUrl = getProxiedUrl(url);
+    // Always use proxy for external images to avoid CORS issues
+    const proxiedUrl = getProxiedUrl(url, true);
+    console.log('🔄 Converting image to base64:', { original: url, proxied: proxiedUrl });
     
-    // Try fetch first (works better with CORS for external images)
+    // Try fetch with proxy first
     try {
       const response = await fetch(proxiedUrl);
       if (response.ok) {
         const blob = await response.blob();
         return new Promise((resolve, reject) => {
           const reader = new FileReader();
-          reader.onloadend = () => resolve(reader.result as string);
+          reader.onloadend = () => {
+            const result = reader.result as string;
+            console.log('✅ Image converted via fetch, base64 length:', result.length);
+            resolve(result);
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        });
+      } else {
+        console.warn('⚠️ Proxy fetch failed with status:', response.status);
+      }
+    } catch (fetchError) {
+      console.log('⚠️ Fetch with proxy failed, trying direct fetch:', fetchError);
+    }
+    
+    // Try direct fetch (for data URLs or same-origin)
+    if (url.startsWith('data:')) {
+      console.log('✅ URL is already a data URL');
+      return url;
+    }
+    
+    try {
+      const response = await fetch(url);
+      if (response.ok) {
+        const blob = await response.blob();
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            const result = reader.result as string;
+            console.log('✅ Image converted via direct fetch, base64 length:', result.length);
+            resolve(result);
+          };
           reader.onerror = reject;
           reader.readAsDataURL(blob);
         });
       }
-    } catch (fetchError) {
-      console.log('Fetch failed, trying canvas method:', fetchError);
+    } catch (directFetchError) {
+      console.log('⚠️ Direct fetch failed, trying canvas method:', directFetchError);
     }
     
-    // Fallback to canvas method
+    // Last resort: canvas method
     return new Promise((resolve, reject) => {
       const img = new window.Image();
       img.crossOrigin = 'anonymous';
@@ -281,13 +317,15 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
             return;
           }
           ctx.drawImage(img, 0, 0);
-          resolve(canvas.toDataURL('image/jpeg', 0.95));
+          const result = canvas.toDataURL('image/jpeg', 0.95);
+          console.log('✅ Image converted via canvas, base64 length:', result.length);
+          resolve(result);
         } catch (canvasError) {
           reject(new Error(`Canvas error (likely CORS): ${canvasError}`));
         }
       };
       img.onerror = () => reject(new Error('Failed to load image'));
-      img.src = proxiedUrl;
+      img.src = url;
     });
   };
 
