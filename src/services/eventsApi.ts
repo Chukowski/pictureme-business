@@ -327,6 +327,12 @@ export async function registerUser(
  * Get current user
  */
 export function getCurrentUser(): User | null {
+  // Check if auth token exists - if not, user is not logged in
+  const authToken = localStorage.getItem('auth_token');
+  if (!authToken) {
+    return null;
+  }
+  
   // Try Better Auth user first
   const betterAuthUser = localStorage.getItem('user');
   if (betterAuthUser) {

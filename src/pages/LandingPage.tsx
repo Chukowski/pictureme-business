@@ -103,14 +103,18 @@ export default function LandingPage() {
                     <Avatar className="h-8 w-8">
                       <AvatarImage src={currentUser.avatar_url} />
                       <AvatarFallback className="bg-indigo-600 text-white text-xs">
-                        {getInitials(currentUser.full_name || currentUser.username)}
+                        {getInitials(currentUser.full_name || currentUser.name || currentUser.username || currentUser.email)}
                       </AvatarFallback>
                     </Avatar>
-                    <span className="hidden sm:inline">{currentUser.full_name || currentUser.username}</span>
+                    <span className="hidden sm:inline">{currentUser.full_name || currentUser.name || currentUser.username || currentUser.email?.split('@')[0]}</span>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48 bg-zinc-900 border-white/10">
-                  <DropdownMenuLabel className="text-zinc-400">Mi cuenta</DropdownMenuLabel>
+                <DropdownMenuContent align="end" className="w-56 bg-zinc-900 border-white/10">
+                  <DropdownMenuLabel className="text-zinc-400 flex flex-col">
+                    <span className="text-white font-medium">{currentUser.full_name || currentUser.name || currentUser.username || 'User'}</span>
+                    {currentUser.email && <span className="text-xs text-zinc-500 font-normal">{currentUser.email}</span>}
+                    {currentUser.role && <span className="text-xs text-indigo-400 font-normal capitalize mt-1">{currentUser.role.replace(/_/g, ' ')}</span>}
+                  </DropdownMenuLabel>
                   <DropdownMenuSeparator className="bg-white/10" />
                   <DropdownMenuItem 
                     className="text-zinc-300 hover:text-white hover:bg-white/5 cursor-pointer"

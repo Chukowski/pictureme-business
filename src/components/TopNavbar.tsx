@@ -27,7 +27,14 @@ export function TopNavbar() {
   const hasAlbumTracking = hasFeature(userRole, 'albumTracking');
 
   // Paths where navbar should be completely hidden
-  const isHiddenPath = [
+  const isHiddenPath = 
+    location.pathname === '/' ||
+    location.pathname === '/terms' ||
+    location.pathname === '/privacy' ||
+    location.pathname === '/apply' ||
+    location.pathname === '/admin/auth' ||
+    location.pathname === '/admin/register' ||
+    [
     '/registration',
     '/booth',
     '/viewer',
