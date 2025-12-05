@@ -679,63 +679,115 @@ export default function AlbumFeedPage() {
 
             {/* Regular Photo Grid - Only shown when album is NOT blocked */}
             {!albumIsBlocked && (
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                {photos.map((photo) => (
-                  <div
-                    key={photo.id}
-                    className={`relative group rounded-xl overflow-hidden border-2 transition-all cursor-pointer ${
-                      selectedPhoto === photo.id 
-                        ? 'border-cyan-500 ring-2 ring-cyan-500/50' 
-                        : 'border-white/10 hover:border-white/20'
-                    } ${!photo.approved && 'opacity-60'}`}
-                    onClick={() => setSelectedPhoto(photo.id === selectedPhoto ? null : photo.id)}
-                    onContextMenu={(e) => e.preventDefault()}
-                  >
-                    <img
-                      src={photo.url}
-                      alt={photo.templateName}
-                      className="w-full aspect-[3/4] object-cover"
-                      draggable={false}
-                      onDragStart={(e) => e.preventDefault()}
-                    />
+              <>
+                {/* Group photos by station type */}
+                {(() => {
+                  // Define station type labels and order
+                  const stationLabels: Record<string, { label: string; icon: string }> = {
+                    'registration': { label: '🎫 Badge Photos', icon: '🎫' },
+                    'registration-group': { label: '👥 Group Badge Photos', icon: '👥' },
+                    'booth': { label: '📸 Photo Booth', icon: '📸' },
+                    'playground': { label: '🎮 Playground', icon: '🎮' },
+                    'viewer': { label: '👁️ Viewer', icon: '👁️' },
+                  };
+                  
+                  // Group photos by station type
+                  const groupedPhotos = photos.reduce((acc, photo) => {
+                    const stationType = photo.stationName || 'booth';
+                    if (!acc[stationType]) acc[stationType] = [];
+                    acc[stationType].push(photo);
+                    return acc;
+                  }, {} as Record<string, AlbumPhoto[]>);
+                  
+                  // Define display order
+                  const stationOrder = ['registration', 'registration-group', 'booth', 'playground', 'viewer'];
+                  const sortedStations = Object.keys(groupedPhotos).sort((a, b) => {
+                    const aIndex = stationOrder.indexOf(a);
+                    const bIndex = stationOrder.indexOf(b);
+                    if (aIndex === -1 && bIndex === -1) return 0;
+                    if (aIndex === -1) return 1;
+                    if (bIndex === -1) return -1;
+                    return aIndex - bIndex;
+                  });
+                  
+                  return sortedStations.map(stationType => {
+                    const stationPhotos = groupedPhotos[stationType];
+                    const stationInfo = stationLabels[stationType] || { label: stationType, icon: '📷' };
                     
-                    {/* Watermark Overlay */}
-                    {applyHardWatermark && (
-                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                        <div 
-                          className="text-white/30 text-2xl font-bold transform -rotate-45 select-none"
-                          style={{ textShadow: '0 0 10px rgba(0,0,0,0.5)' }}
-                        >
-                          {config?.branding?.watermark?.text || config?.theme?.brandName || 'PREVIEW'}
+                    return (
+                      <div key={stationType} className="mb-8">
+                        {/* Section Header - only show if multiple station types */}
+                        {sortedStations.length > 1 && (
+                          <div className="flex items-center gap-2 mb-4">
+                            <span className="text-2xl">{stationInfo.icon}</span>
+                            <h3 className="text-lg font-semibold text-white">{stationInfo.label}</h3>
+                            <Badge variant="secondary" className="bg-zinc-800 text-zinc-400">
+                              {stationPhotos.length}
+                            </Badge>
+                          </div>
+                        )}
+                        
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                          {stationPhotos.map((photo) => (
+                            <div
+                              key={photo.id}
+                              className={`relative group rounded-xl overflow-hidden border-2 transition-all cursor-pointer ${
+                                selectedPhoto === photo.id 
+                                  ? 'border-cyan-500 ring-2 ring-cyan-500/50' 
+                                  : 'border-white/10 hover:border-white/20'
+                              } ${!photo.approved && 'opacity-60'}`}
+                              onClick={() => setSelectedPhoto(photo.id === selectedPhoto ? null : photo.id)}
+                              onContextMenu={(e) => e.preventDefault()}
+                            >
+                              <img
+                                src={photo.url}
+                                alt={photo.templateName}
+                                className="w-full aspect-[3/4] object-cover"
+                                draggable={false}
+                                onDragStart={(e) => e.preventDefault()}
+                              />
+                              
+                              {/* Watermark Overlay */}
+                              {applyHardWatermark && (
+                                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                  <div 
+                                    className="text-white/30 text-2xl font-bold transform -rotate-45 select-none"
+                                    style={{ textShadow: '0 0 10px rgba(0,0,0,0.5)' }}
+                                  >
+                                    {config?.branding?.watermark?.text || config?.theme?.brandName || 'PREVIEW'}
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {/* Overlay */}
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+                                <div className="absolute bottom-0 left-0 right-0 p-3">
+                                  <p className="text-white text-sm font-medium">{photo.templateName}</p>
+                                </div>
+                              </div>
+
+                              {/* Approval badge */}
+                              {isStaff && (
+                                <div className="absolute top-2 right-2">
+                                  {photo.approved ? (
+                                    <Badge className="bg-green-500/80 text-white text-xs">
+                                      <CheckCircle2 className="w-3 h-3" />
+                                    </Badge>
+                                  ) : (
+                                    <Badge className="bg-amber-500/80 text-white text-xs">
+                                      Pending
+                                    </Badge>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          ))}
                         </div>
                       </div>
-                    )}
-                    
-                    {/* Overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
-                      <div className="absolute bottom-0 left-0 right-0 p-3">
-                        <p className="text-white text-sm font-medium">{photo.templateName}</p>
-                        <p className="text-zinc-400 text-xs">{photo.stationName}</p>
-                      </div>
-                    </div>
-
-                    {/* Approval badge */}
-                    {isStaff && (
-                      <div className="absolute top-2 right-2">
-                        {photo.approved ? (
-                          <Badge className="bg-green-500/80 text-white text-xs">
-                            <CheckCircle2 className="w-3 h-3" />
-                          </Badge>
-                        ) : (
-                          <Badge className="bg-amber-500/80 text-white text-xs">
-                            Pending
-                          </Badge>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
+                    );
+                  });
+                })()}
+              </>
             )}
 
             {photos.length === 0 && (
