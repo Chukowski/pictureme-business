@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { getUserEvents, getEventAlbumStats, getEventAlbums, EventConfig, EventAlbumStats, Album } from "@/services/eventsApi";
+import { getUserEvents, getEventAlbumStats, getEventAlbums, deleteAlbum, EventConfig, EventAlbumStats, Album } from "@/services/eventsApi";
 import { LiveEventLayout } from "@/components/live-event/LiveEventLayout";
 import { LiveOverview } from "@/components/live-event/LiveOverview";
 import { LiveQueue } from "@/components/live-event/LiveQueue";
@@ -100,9 +100,9 @@ export default function LiveEventPage() {
           toast.info(`Share dialog for ${album.code}`);
           break;
         case 'delete':
-          if (confirm('Are you sure you want to delete this album?')) {
-             // await deleteAlbum(album.id);
-             toast.success(`Album ${album.code} deleted`);
+          if (confirm(`Are you sure you want to delete album ${album.code}? This will also delete all photos in the album.`)) {
+             const result = await deleteAlbum(album.code);
+             toast.success(`Album ${album.code} deleted (${result.photosDeleted} photos removed)`);
              loadEventData();
           }
           break;
