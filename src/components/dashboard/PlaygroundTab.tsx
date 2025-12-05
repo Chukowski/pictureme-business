@@ -250,20 +250,41 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
   const imageUrlToBase64 = async (url: string): Promise<string> => {
     const proxiedUrl = getProxiedUrl(url);
     
+    // Try fetch first (works better with CORS for external images)
+    try {
+      const response = await fetch(proxiedUrl);
+      if (response.ok) {
+        const blob = await response.blob();
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        });
+      }
+    } catch (fetchError) {
+      console.log('Fetch failed, trying canvas method:', fetchError);
+    }
+    
+    // Fallback to canvas method
     return new Promise((resolve, reject) => {
       const img = new window.Image();
       img.crossOrigin = 'anonymous';
       img.onload = () => {
-        const canvas = document.createElement('canvas');
-        canvas.width = img.width;
-        canvas.height = img.height;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) {
-          reject(new Error('Failed to get canvas context'));
-          return;
+        try {
+          const canvas = document.createElement('canvas');
+          canvas.width = img.width;
+          canvas.height = img.height;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            reject(new Error('Failed to get canvas context'));
+            return;
+          }
+          ctx.drawImage(img, 0, 0);
+          resolve(canvas.toDataURL('image/jpeg', 0.95));
+        } catch (canvasError) {
+          reject(new Error(`Canvas error (likely CORS): ${canvasError}`));
         }
-        ctx.drawImage(img, 0, 0);
-        resolve(canvas.toDataURL('image/jpeg', 0.95));
       };
       img.onerror = () => reject(new Error('Failed to load image'));
       img.src = proxiedUrl;
@@ -288,22 +309,31 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
 
   // Use sample image
   const useSampleImage = async (url: string) => {
+    console.log('📸 Loading sample image:', url);
     setTestImage(url);
     setProcessedResult(null);
     setBadgeProcessedImage(null);
     try {
       const base64 = await imageUrlToBase64(url);
+      console.log('✅ Sample image converted to base64, length:', base64?.length || 0);
       setTestImageBase64(base64);
+      toast.success('Image loaded successfully');
     } catch (error) {
-      console.error('Failed to convert image to base64:', error);
-      toast.error('Failed to load sample image');
+      console.error('❌ Failed to convert image to base64:', error);
+      toast.error('Failed to load sample image. Try uploading an image instead.');
+      setTestImageBase64(null);
     }
   };
 
   // Process image with REAL AI
   const processWithAI = async () => {
-    if (!testImageBase64 || !selectedTemplate) {
-      toast.error("Please select an image and template first");
+    if (!testImageBase64) {
+      toast.error("Please upload or select a test image first");
+      console.error("❌ processWithAI: testImageBase64 is null/empty. User needs to upload an image.");
+      return;
+    }
+    if (!selectedTemplate) {
+      toast.error("Please select a template first");
       return;
     }
 
