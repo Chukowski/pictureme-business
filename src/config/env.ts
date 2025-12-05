@@ -57,6 +57,9 @@ function isProduction(): boolean {
 /**
  * Derive production URLs from current origin
  * If window.ENV is missing values, we can infer them from the current hostname
+ * 
+ * NOTE: After Go migration, auth is handled by the same Go backend (go.pictureme.now)
+ * so AUTH_URL should point to the Go API, not a separate auth server
  */
 function deriveProductionUrl(type: 'api' | 'auth' | 'base'): string {
   if (typeof window === 'undefined') return '';
@@ -65,10 +68,11 @@ function deriveProductionUrl(type: 'api' | 'auth' | 'base'): string {
   const protocol = window.location.protocol; // Should be https: in production
   
   // For pictureme.now domain
+  // Auth is now handled by the Go backend (go.pictureme.now), not a separate auth server
   if (hostname.includes('pictureme.now')) {
     switch (type) {
-      case 'api': return `${protocol}//api.pictureme.now`;
-      case 'auth': return `${protocol}//auth.pictureme.now`;
+      case 'api': return `${protocol}//go.pictureme.now`;
+      case 'auth': return `${protocol}//go.pictureme.now`; // Same as API - Go handles auth
       case 'base': return `${protocol}//${hostname}`;
     }
   }
@@ -77,7 +81,7 @@ function deriveProductionUrl(type: 'api' | 'auth' | 'base'): string {
   if (hostname.includes('akitapr.com')) {
     switch (type) {
       case 'api': return `${protocol}//photoapi.akitapr.com`;
-      case 'auth': return `${protocol}//photoauth.akitapr.com`;
+      case 'auth': return `${protocol}//photoapi.akitapr.com`; // Same as API - Go handles auth
       case 'base': return `${protocol}//${hostname}`;
     }
   }
@@ -89,7 +93,7 @@ function deriveProductionUrl(type: 'api' | 'auth' | 'base'): string {
     const domain = parts.slice(-2).join('.');
     switch (type) {
       case 'api': return `${protocol}//api.${domain}`;
-      case 'auth': return `${protocol}//auth.${domain}`;
+      case 'auth': return `${protocol}//api.${domain}`; // Same as API - Go handles auth
       case 'base': return `${protocol}//${hostname}`;
     }
   }
