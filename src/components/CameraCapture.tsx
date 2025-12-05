@@ -224,7 +224,7 @@ export const CameraCapture = ({
 
         {/* Top Controls Bar */}
         <div className={`absolute top-0 inset-x-0 z-20 p-4 flex justify-between items-start transition-transform duration-300 ${showControls ? 'translate-y-0' : '-translate-y-full'}`}>
-          <div className="flex gap-4">
+          <div className="flex gap-4 items-center">
             {/* Back Button */}
             <button
               onClick={onBack}
@@ -232,6 +232,27 @@ export const CameraCapture = ({
             >
               <RotateCcw className="w-5 h-5" />
             </button>
+
+            {/* Camera Selector Dropdown */}
+            {availableCameras.length > 1 && (
+              <Select value={selectedCameraId} onValueChange={setSelectedCameraId}>
+                <SelectTrigger className="w-[180px] h-10 bg-zinc-900/50 backdrop-blur-xl border-white/10 text-white text-xs">
+                  <Camera className="w-4 h-4 mr-2" />
+                  <SelectValue placeholder="Select camera" />
+                </SelectTrigger>
+                <SelectContent className="bg-zinc-900 border-white/10">
+                  {availableCameras.map((camera, index) => (
+                    <SelectItem 
+                      key={camera.deviceId} 
+                      value={camera.deviceId}
+                      className="text-white hover:bg-zinc-800"
+                    >
+                      {camera.label || `Camera ${index + 1}`}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
 
             {/* Fit/Fill Toggle */}
             <button
