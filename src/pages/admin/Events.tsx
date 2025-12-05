@@ -352,11 +352,14 @@ export default function AdminEvents() {
                       <Label>AI Model</Label>
                       <select
                         className="w-full p-2 rounded-lg border border-border bg-background"
-                        value={editForm.aiModel || 'fal-ai/bytedance/seedream/v4/edit'}
+                        value={editForm.aiModel || 'fal-ai/nano-banana/edit'}
                         onChange={(e) => setEditForm({ ...editForm, aiModel: e.target.value })}
                       >
-                        <option value="fal-ai/bytedance/seedream/v4/edit">Seedream v4 Edit</option>
-                        <option value="fal-ai/gemini-25-flash-image/edit">Gemini Flash Image Edit</option>
+                        <option value="fal-ai/nano-banana/edit">Nano Banana (Fast)</option>
+                        <option value="fal-ai/nano-banana-pro/edit">Nano Banana Pro (Quality)</option>
+                        <option value="fal-ai/bytedance/seedream/v4/edit">Seedream v4</option>
+                        <option value="fal-ai/bytedance/seedream/v4.5/edit">Seedream 4.5 (Latest)</option>
+                        <option value="fal-ai/flux-2-pro/edit">Flux 2 Pro</option>
                       </select>
                     </div>
 
@@ -377,21 +380,21 @@ export default function AdminEvents() {
                           <Label>Video Model</Label>
                           <select
                             className="w-full p-2 rounded-lg border border-border bg-background"
-                            value={editForm.videoModel || 'fal-ai/google/veo-3-1/image-to-video'}
+                            value={editForm.videoModel || 'fal-ai/kling-video/v2.6/pro/image-to-video'}
                             onChange={(e) => setEditForm({ ...editForm, videoModel: e.target.value })}
                           >
+                            <option value="fal-ai/kling-video/v2.6/pro/image-to-video">Kling 2.6 Pro Image to Video (Cinematic)</option>
+                            <option value="fal-ai/kling-video/v2.6/pro/text-to-video">Kling 2.6 Pro Text to Video</option>
+                            <option value="fal-ai/kling-video/o1/video-to-video/edit">Kling O1 Video Edit</option>
                             <option value="fal-ai/google/veo-3-1/image-to-video">Veo 3.1 Image to Video</option>
-                            <option value="fal-ai/google/veo-3-1/first-last-frame-to-video">Veo 3.1 First-Last Frame to Video</option>
-                            <option value="fal-ai/openai/sora-2/image-to-video">SORA 2 Image to Video</option>
-                            <option value="fal-ai/kling-video/v1.6/standard/image-to-video">Kling Image to Video</option>
-                            <option value="fal-ai/wan/animate/v1">Wan Video to Video Animate</option>
+                            <option value="fal-ai/wan/animate/v1">Wan Video Animate (Fast)</option>
                           </select>
                           <p className="text-xs text-muted-foreground mt-2">
+                            {editForm.videoModel === 'fal-ai/kling-video/v2.6/pro/image-to-video' && 'Top-tier cinematic visuals with fluid motion and audio'}
+                            {editForm.videoModel === 'fal-ai/kling-video/v2.6/pro/text-to-video' && 'Generate video from text with cinematic quality'}
+                            {editForm.videoModel === 'fal-ai/kling-video/o1/video-to-video/edit' && 'Edit existing video with natural language instructions'}
                             {editForm.videoModel === 'fal-ai/google/veo-3-1/image-to-video' && 'Generates video from a single image with audio support'}
-                            {editForm.videoModel === 'fal-ai/google/veo-3-1/first-last-frame-to-video' && 'Creates video between two frames with audio'}
-                            {editForm.videoModel === 'fal-ai/openai/sora-2/image-to-video' && 'High-quality video generation from static image'}
-                            {editForm.videoModel === 'fal-ai/kling-video/v1.6/standard/image-to-video' && 'Fast video generation with motion control'}
-                            {editForm.videoModel === 'fal-ai/wan/animate/v1' && 'Animates video using reference image'}
+                            {editForm.videoModel === 'fal-ai/wan/animate/v1' && 'Fast video animation from reference image'}
                           </p>
                         </div>
                       )}

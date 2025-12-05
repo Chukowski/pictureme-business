@@ -32,12 +32,15 @@ function normalizeModelId(modelId?: string): string {
   if (!modelId) return 'nano-banana';
   
   // Already normalized
-  if (['nano-banana', 'seedream-v4', 'flux-realism', 'flux-2-pro'].includes(modelId)) {
+  const normalizedIds = ['nano-banana', 'nano-banana-pro', 'seedream-v4', 'seedream-v4.5', 'flux-realism', 'flux-2-pro'];
+  if (normalizedIds.includes(modelId)) {
     return modelId;
   }
   
   // Map fal.ai model IDs to simplified names
+  if (modelId.includes('nano-banana-pro')) return 'nano-banana-pro';
   if (modelId.includes('nano-banana')) return 'nano-banana';
+  if (modelId.includes('seedream/v4.5')) return 'seedream-v4.5';
   if (modelId.includes('seedream')) return 'seedream-v4';
   if (modelId.includes('flux-2-pro') || modelId.includes('flux/2')) return 'flux-2-pro';
   if (modelId.includes('flux')) return 'flux-realism';
@@ -568,7 +571,9 @@ export function EventTemplates({ formData, setFormData, onPreviewModeChange }: E
                         </SelectTrigger>
                         <SelectContent className="bg-zinc-900 border-zinc-800 text-white">
                           <SelectItem value="nano-banana">Nano Banana (Fast)</SelectItem>
-                          <SelectItem value="seedream-v4">SeeDream v4 (Quality)</SelectItem>
+                          <SelectItem value="nano-banana-pro">Nano Banana Pro (Quality)</SelectItem>
+                          <SelectItem value="seedream-v4">SeeDream v4</SelectItem>
+                          <SelectItem value="seedream-v4.5">SeeDream 4.5 (Latest)</SelectItem>
                           <SelectItem value="flux-realism">Flux Realism</SelectItem>
                           <SelectItem value="flux-2-pro">Flux 2 Pro</SelectItem>
                         </SelectContent>
@@ -615,7 +620,9 @@ export function EventTemplates({ formData, setFormData, onPreviewModeChange }: E
                         <SelectContent className="bg-zinc-900 border-zinc-800 text-white">
                           <SelectItem value="same">Same as Individual</SelectItem>
                           <SelectItem value="nano-banana">Nano Banana (Fast)</SelectItem>
-                          <SelectItem value="seedream-v4">SeeDream v4 (Quality)</SelectItem>
+                          <SelectItem value="nano-banana-pro">Nano Banana Pro (Quality)</SelectItem>
+                          <SelectItem value="seedream-v4">SeeDream v4</SelectItem>
+                          <SelectItem value="seedream-v4.5">SeeDream 4.5 (Latest)</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -684,7 +691,8 @@ export function EventTemplates({ formData, setFormData, onPreviewModeChange }: E
                           </SelectTrigger>
                           <SelectContent className="bg-zinc-900 border-zinc-800 text-white">
                             <SelectItem value="wan-v2">Wan v2 (Fast)</SelectItem>
-                            <SelectItem value="kling-pro">Kling Pro</SelectItem>
+                            <SelectItem value="kling-2.6-pro">Kling 2.6 Pro (Cinematic)</SelectItem>
+                            <SelectItem value="kling-o1-edit">Kling O1 Video Edit</SelectItem>
                             <SelectItem value="veo-3.1">Veo 3.1</SelectItem>
                           </SelectContent>
                         </Select>

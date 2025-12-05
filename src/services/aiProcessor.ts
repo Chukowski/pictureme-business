@@ -107,29 +107,79 @@ async function chargeTokensForGeneration(
 
 // Available AI models for selection
 export const AI_MODELS = {
+  // Image Editing Models
   nanoBanana: {
     id: "fal-ai/nano-banana/edit",
-    name: "Nano Banana (Gemini/Imagen 3)",
-    description: "Fast, high-quality image editing with good prompt following",
+    name: "Nano Banana (Gemini 2.5 Flash)",
+    description: "Fast, high-quality image editing",
     speed: "fast",
+    type: "image",
+    cost: 1,
+  },
+  nanoBananaPro: {
+    id: "fal-ai/nano-banana-pro/edit",
+    name: "Nano Banana Pro (Gemini 3 Pro)",
+    description: "Premium quality with advanced reasoning",
+    speed: "medium",
+    type: "image",
+    cost: 4,
   },
   seedream: {
     id: "fal-ai/bytedance/seedream/v4/edit",
     name: "Seedream v4",
     description: "Best for LEGO-style and artistic transformations",
     speed: "medium",
+    type: "image",
+    cost: 1,
+  },
+  seedream45: {
+    id: "fal-ai/bytedance/seedream/v4.5/edit",
+    name: "Seedream 4.5",
+    description: "Latest ByteDance model - unified generation and editing",
+    speed: "medium",
+    type: "image",
+    cost: 2,
   },
   flux2Pro: {
     id: "fal-ai/flux-2-pro/edit",
     name: "Flux 2 Pro Edit",
     description: "Professional-grade image editing with excellent prompt adherence",
     speed: "medium",
+    type: "image",
+    cost: 3,
   },
   flux: {
     id: "fal-ai/flux/dev",
     name: "Flux Dev",
     description: "High-quality photorealistic generation (text-to-image only)",
     speed: "slow",
+    type: "image",
+    cost: 2,
+  },
+  // Video Models
+  kling26Pro: {
+    id: "fal-ai/kling-video/v2.6/pro/image-to-video",
+    name: "Kling 2.6 Pro (Image to Video)",
+    description: "Top-tier cinematic visuals with fluid motion and audio",
+    speed: "slow",
+    type: "video",
+    cost: 150,
+  },
+  kling26Text: {
+    id: "fal-ai/kling-video/v2.6/pro/text-to-video",
+    name: "Kling 2.6 Pro (Text to Video)",
+    description: "Generate video from text with cinematic quality",
+    speed: "slow",
+    type: "video",
+    cost: 150,
+  },
+  klingO1Edit: {
+    id: "fal-ai/kling-video/o1/video-to-video/edit",
+    name: "Kling O1 Video Edit",
+    description: "Edit existing video with natural language instructions",
+    speed: "slow",
+    type: "video",
+    cost: 100,
   },
 } as const;
 

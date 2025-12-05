@@ -138,15 +138,18 @@ const CATEGORIES = [
 ];
 
 const IMAGE_MODELS = [
-  { value: 'seedream-t2i', label: 'Seedream v4', tokens: 1, description: 'Fast, supports mixing' },
-  { value: 'nano-banana', label: 'Nano Banana / Imagen 3', tokens: 1, description: 'High quality portraits' },
-  { value: 'nano-banana-pro', label: 'Nano Banana Pro', tokens: 4, description: 'Ultra high quality' },
+  { value: 'nano-banana', label: 'Nano Banana (Gemini 2.5 Flash)', tokens: 1, description: 'Fast generation' },
+  { value: 'nano-banana-pro', label: 'Nano Banana Pro (Gemini 3 Pro)', tokens: 4, description: 'Premium quality' },
+  { value: 'seedream-v4', label: 'Seedream v4', tokens: 1, description: 'Artistic, supports mixing' },
+  { value: 'seedream-v4.5', label: 'Seedream 4.5 (Latest)', tokens: 2, description: 'ByteDance latest' },
   { value: 'flux-realism', label: 'Flux Realism', tokens: 2, description: 'Photorealistic' },
+  { value: 'flux-2-pro', label: 'Flux 2 Pro', tokens: 3, description: 'Professional' },
 ];
 
 const VIDEO_MODELS = [
-  { value: 'wan-v2', label: 'Wan v2.2', tokens: 50, description: '5s video' },
-  { value: 'kling-pro', label: 'Kling Pro', tokens: 100, description: 'High quality video' },
+  { value: 'wan-v2', label: 'Wan v2.2', tokens: 50, description: '5s video - Fast' },
+  { value: 'kling-2.6-pro', label: 'Kling 2.6 Pro', tokens: 150, description: 'Cinematic with audio' },
+  { value: 'kling-o1-edit', label: 'Kling O1 Video Edit', tokens: 100, description: 'Edit existing video' },
   { value: 'veo-3.1', label: 'Veo 3.1', tokens: 150, description: 'Premium video' },
 ];
 

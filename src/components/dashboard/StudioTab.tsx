@@ -17,19 +17,21 @@ import { toast } from "sonner";
 import { Dialog, DialogContent, DialogTrigger, DialogClose } from "@/components/ui/dialog";
 import { ENV } from "@/config/env";
 
-// Mock Models Data
+// AI Models Data
 const MODELS = [
     // Video Models
-    { id: "kling-pro", name: "Kling Video v2.5 Pro", type: "video", badge: "Pro", icon: Video },
-    { id: "wan-v2", name: "Wan v2.2 Video", type: "video", badge: "New", icon: MonitorPlay },
+    { id: "kling-2.6-pro", name: "Kling 2.6 Pro (Cinematic)", type: "video", badge: "New", icon: Video },
+    { id: "kling-o1-edit", name: "Kling O1 Video Edit", type: "video", badge: "Pro", icon: Video },
+    { id: "wan-v2", name: "Wan v2.2 Video", type: "video", badge: "Fast", icon: MonitorPlay },
     { id: "google-video", name: "Google Gemini Video", type: "video", badge: "Beta", icon: Zap },
 
     // Image Models
-    { id: "seedream-t2i", name: "Seedream v4 (Text-to-Image)", type: "image", badge: "Unlimited", icon: ImageIcon },
-    { id: "seedream-edit", name: "Seedream v4 (Edit)", type: "image", badge: "Pro", icon: Wand2 },
-    { id: "nano-banana", name: "Nano Banana (Imagen 3)", type: "image", badge: "Google", icon: Sparkles },
-    { id: "nano-banana-pro", name: "Nano Banana Pro", type: "image", badge: "Google Pro", icon: Sparkles },
-    { id: "flux-realism", name: "Flux Realism", type: "image", badge: "Unlimited", icon: ImageIcon },
+    { id: "nano-banana", name: "Nano Banana (Gemini 2.5 Flash)", type: "image", badge: "Fast", icon: Sparkles },
+    { id: "nano-banana-pro", name: "Nano Banana Pro (Gemini 3 Pro)", type: "image", badge: "Quality", icon: Sparkles },
+    { id: "seedream-v4", name: "Seedream v4", type: "image", badge: "Artistic", icon: Wand2 },
+    { id: "seedream-v4.5", name: "Seedream 4.5 (Latest)", type: "image", badge: "New", icon: Wand2 },
+    { id: "flux-realism", name: "Flux Realism", type: "image", badge: "Photo", icon: ImageIcon },
+    { id: "flux-2-pro", name: "Flux 2 Pro", type: "image", badge: "Pro", icon: ImageIcon },
 ];
 
 interface HistoryItem {

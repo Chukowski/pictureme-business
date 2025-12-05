@@ -141,9 +141,12 @@ const OUTPUT_RATIOS = [
 
 // AI Models available (matching production)
 const AI_MODELS = [
-  { value: 'nano-banana', label: 'Nano Banana (Fast)', desc: 'Fast, high-quality' },
-  { value: 'seedream-v4', label: 'SeeDream v4 (Quality)', desc: 'Best for artistic styles' },
+  { value: 'nano-banana', label: 'Nano Banana (Fast)', desc: 'Gemini 2.5 Flash' },
+  { value: 'nano-banana-pro', label: 'Nano Banana Pro (Quality)', desc: 'Gemini 3 Pro' },
+  { value: 'seedream-v4', label: 'SeeDream v4', desc: 'Artistic styles' },
+  { value: 'seedream-v4.5', label: 'SeeDream 4.5 (Latest)', desc: 'ByteDance latest' },
   { value: 'flux-realism', label: 'Flux Realism', desc: 'Photorealistic' },
+  { value: 'flux-2-pro', label: 'Flux 2 Pro', desc: 'Professional' },
 ] as const;
 
 const QR_POSITIONS = [
