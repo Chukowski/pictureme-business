@@ -105,11 +105,49 @@ async function chargeTokensForGeneration(
   }
 }
 
+// Map short model IDs to full FAL.ai model IDs
+const MODEL_ID_MAP: Record<string, string> = {
+  // Image models - short names to full FAL.ai IDs
+  'nano-banana': 'fal-ai/nano-banana/edit',
+  'nano-banana-pro': 'fal-ai/nano-banana-pro/edit',
+  'seedream-v4': 'fal-ai/bytedance/seedream/v4/edit',
+  'seedream-v4.5': 'fal-ai/bytedance/seedream/v4.5/edit',
+  'seedream-t2i': 'fal-ai/bytedance/seedream/v4/edit', // Legacy alias
+  'flux-realism': 'fal-ai/flux-realism',
+  'flux-2-pro': 'fal-ai/flux-2-pro/edit',
+  // Video models
+  'wan-v2': 'fal-ai/wan/v2.2-a14b/image-to-video',
+  'kling-2.6-pro': 'fal-ai/kling-video/v2.6/pro/image-to-video',
+  'kling-o1-edit': 'fal-ai/kling-video/o1/video-to-video/edit',
+  'veo-3.1': 'fal-ai/google/veo-3-1/image-to-video',
+};
+
+/**
+ * Resolve a model ID to the full FAL.ai model ID
+ * Accepts both short names (e.g., 'nano-banana') and full IDs (e.g., 'fal-ai/nano-banana/edit')
+ */
+export function resolveModelId(modelId: string): string {
+  // If it's already a full FAL.ai ID, return as-is
+  if (modelId.startsWith('fal-ai/')) {
+    return modelId;
+  }
+  // Look up in the map
+  const resolved = MODEL_ID_MAP[modelId];
+  if (resolved) {
+    console.log(`🔄 Resolved model ID: ${modelId} → ${resolved}`);
+    return resolved;
+  }
+  // Unknown model, return as-is and hope for the best
+  console.warn(`⚠️ Unknown model ID: ${modelId}, using as-is`);
+  return modelId;
+}
+
 // Available AI models for selection
 export const AI_MODELS = {
   // Image Editing Models
   nanoBanana: {
     id: "fal-ai/nano-banana/edit",
+    shortId: "nano-banana",
     name: "Nano Banana (Gemini 2.5 Flash)",
     description: "Fast, high-quality image editing",
     speed: "fast",
@@ -118,6 +156,7 @@ export const AI_MODELS = {
   },
   nanoBananaPro: {
     id: "fal-ai/nano-banana-pro/edit",
+    shortId: "nano-banana-pro",
     name: "Nano Banana Pro (Gemini 3 Pro)",
     description: "Premium quality with advanced reasoning",
     speed: "medium",
@@ -126,6 +165,7 @@ export const AI_MODELS = {
   },
   seedream: {
     id: "fal-ai/bytedance/seedream/v4/edit",
+    shortId: "seedream-v4",
     name: "Seedream v4",
     description: "Best for LEGO-style and artistic transformations",
     speed: "medium",
@@ -134,6 +174,7 @@ export const AI_MODELS = {
   },
   seedream45: {
     id: "fal-ai/bytedance/seedream/v4.5/edit",
+    shortId: "seedream-v4.5",
     name: "Seedream 4.5",
     description: "Latest ByteDance model - unified generation and editing",
     speed: "medium",
@@ -142,6 +183,7 @@ export const AI_MODELS = {
   },
   flux2Pro: {
     id: "fal-ai/flux-2-pro/edit",
+    shortId: "flux-2-pro",
     name: "Flux 2 Pro Edit",
     description: "Professional-grade image editing with excellent prompt adherence",
     speed: "medium",
@@ -150,6 +192,7 @@ export const AI_MODELS = {
   },
   flux: {
     id: "fal-ai/flux/dev",
+    shortId: "flux-dev",
     name: "Flux Dev",
     description: "High-quality photorealistic generation (text-to-image only)",
     speed: "slow",
@@ -159,6 +202,7 @@ export const AI_MODELS = {
   // Video Models
   kling26Pro: {
     id: "fal-ai/kling-video/v2.6/pro/image-to-video",
+    shortId: "kling-2.6-pro",
     name: "Kling 2.6 Pro (Image to Video)",
     description: "Top-tier cinematic visuals with fluid motion and audio",
     speed: "slow",
@@ -167,6 +211,7 @@ export const AI_MODELS = {
   },
   kling26Text: {
     id: "fal-ai/kling-video/v2.6/pro/text-to-video",
+    shortId: "kling-2.6-text",
     name: "Kling 2.6 Pro (Text to Video)",
     description: "Generate video from text with cinematic quality",
     speed: "slow",
@@ -175,6 +220,7 @@ export const AI_MODELS = {
   },
   klingO1Edit: {
     id: "fal-ai/kling-video/o1/video-to-video/edit",
+    shortId: "kling-o1-edit",
     name: "Kling O1 Video Edit",
     description: "Edit existing video with natural language instructions",
     speed: "slow",
@@ -358,14 +404,15 @@ export async function processImageWithAI(
     );
   }
 
-  // Use provided model or default
-  const modelToUse = aiModel || DEFAULT_FAL_MODEL;
+  // Use provided model or default, and resolve short IDs to full FAL.ai IDs
+  const requestedModel = aiModel || DEFAULT_FAL_MODEL;
+  const modelToUse = resolveModelId(requestedModel);
   
   console.log("═══════════════════════════════════════════════════════════");
   console.log("🚀 AI PROCESSING STARTED");
   console.log("═══════════════════════════════════════════════════════════");
   console.log("🤖 Model requested:", aiModel || "(default)");
-  console.log("🤖 Model to use:", modelToUse);
+  console.log("🤖 Model resolved:", modelToUse);
   console.log("📝 Prompt received:", backgroundPrompt?.substring(0, 200) + (backgroundPrompt?.length > 200 ? '...' : ''));
   console.log("🖼️ Background images:", backgroundImageUrls?.length || (backgroundImageUrl ? 1 : 0));
   console.log("⚙️ Options - forceInstructions:", options.forceInstructions, ", aspectRatio:", options.aspectRatio);
