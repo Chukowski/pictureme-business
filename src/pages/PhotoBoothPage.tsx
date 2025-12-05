@@ -415,6 +415,7 @@ export const PhotoBoothPage = () => {
         }
 
         photoShareCode = savedPhoto.shareCode || "";
+        console.log("📷 Saved photo response:", { id: savedPhoto.id, shareCode: savedPhoto.shareCode, photoShareCode });
         setShareCode(photoShareCode);
         toast.success("Your photo is ready! 🎉");
       } catch (storageError) {
@@ -429,15 +430,19 @@ export const PhotoBoothPage = () => {
       // Update album data if in album mode
       if (isAlbumMode && albumData && photoShareCode) {
         try {
-          await addAlbumPhoto(albumData.id, photoShareCode, "booth");
+          console.log("📸 Adding photo to album:", { albumCode: albumData.id, photoShareCode, stationType: "booth" });
+          const addedPhoto = await addAlbumPhoto(albumData.id, photoShareCode, "booth");
+          console.log("✅ Photo added to album:", addedPhoto);
           setAlbumData(prev => prev ? ({
             ...prev,
             currentPhotos: prev.currentPhotos + 1,
           }) : null);
         } catch (albumError) {
-          console.error("Failed to add photo to album:", albumError);
+          console.error("❌ Failed to add photo to album:", albumError);
           toast.warning("Photo saved, but could not add to album.");
         }
+      } else {
+        console.log("⚠️ Not adding to album:", { isAlbumMode, hasAlbumData: !!albumData, photoShareCode });
       }
 
       setState("result");
