@@ -114,18 +114,21 @@ export async function getTokenPackages(): Promise<TokenPackage[]> {
   return response.json();
 }
 
-export async function purchaseTokens(packageId: string): Promise<{ checkout_url: string }> {
+export async function purchaseTokens(packageId: number): Promise<{ checkout_url: string; success: boolean }> {
   const token = getAuthToken();
-  const response = await fetch(`${API_URL}/api/billing/checkout`, {
+  const response = await fetch(`${API_URL}/api/billing/tokens/purchase`, {
     method: 'POST',
     headers: { 
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify({ package_id: packageId, type: 'tokens' })
+    body: JSON.stringify({ package_id: packageId })
   });
   
-  if (!response.ok) throw new Error('Failed to create checkout');
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to create checkout');
+  }
   return response.json();
 }
 

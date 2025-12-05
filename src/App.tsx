@@ -92,6 +92,12 @@ const FloatingSidebarToggle = () => {
 
 import { ENV } from "@/config/env";
 
+import PlaygroundPage from "./pages/PlaygroundPage";
+import LiveEventPage from "./pages/LiveEventPage";
+import HomeDashboard from "./pages/HomeDashboard";
+
+import { TopNavbar } from "./components/TopNavbar";
+
 // Get user info for CopilotKit context
 const getUserProperties = () => {
   try {
@@ -122,7 +128,7 @@ const getApiUrl = (): string => {
   
   // Fallback for dev only
   if (!url && import.meta.env.DEV) {
-    url = "http://localhost:3001";
+    url = "http://localhost:3002";
   }
   
   return url;
@@ -148,6 +154,7 @@ const AppContent = () => {
           <ConditionalAkitoWidget />
         </CopilotKit>
       )}
+      <TopNavbar />
       <Routes>
             {/* Root shows Landing Page */}
             <Route path="/" element={<LandingPage />} />
@@ -178,17 +185,19 @@ const AppContent = () => {
             {/* Admin Routes */}
             <Route path="/admin/auth" element={<AdminAuth />} />
             <Route path="/admin/register" element={<AdminRegister />} />
-            <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/admin" element={<Navigate to="/admin/home" replace />} />
+            <Route path="/admin/home" element={<HomeDashboard />} />
             <Route path="/admin/events" element={<AdminDashboard />} />
             <Route path="/admin/events/create" element={<AdminEventForm />} />
             <Route path="/admin/events/edit/:eventId" element={<AdminEventForm />} />
             <Route path="/admin/events/:eventId/photos" element={<AdminEventPhotos />} />
+            <Route path="/admin/events/:eventId/live" element={<LiveEventPage />} />
             <Route path="/admin/settings" element={<AccountSettings />} />
             {/* Billing and Tokens now redirect to Business Settings */}
             <Route path="/admin/billing" element={<Navigate to="/admin/business" replace />} />
             <Route path="/admin/tokens" element={<Navigate to="/admin/business" replace />} />
             <Route path="/admin/marketplace" element={<AdminDashboard />} />
-            <Route path="/admin/playground" element={<AdminDashboard />} />
+            <Route path="/admin/playground" element={<PlaygroundPage />} />
             <Route path="/admin/analytics" element={<AdminDashboard />} />
             <Route path="/admin/studio" element={<AdminDashboard />} />
             <Route path="/admin/albums" element={<AdminDashboard />} />

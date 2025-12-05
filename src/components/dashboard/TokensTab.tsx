@@ -33,7 +33,8 @@ import {
   Package,
   Loader2,
   CreditCard,
-  BarChart3
+  BarChart3,
+  Mail
 } from "lucide-react";
 import { User } from "@/services/eventsApi";
 import { 
@@ -47,6 +48,7 @@ import {
   type TokenPackage as ApiTokenPackage,
   type UsageByType
 } from "@/services/billingApi";
+import { getPlanFeatures } from "@/lib/planFeatures";
 import { toast } from "sonner";
 
 interface TokensTabProps {
@@ -66,9 +68,13 @@ interface TokenTransaction {
 interface TokenPackage {
   id: number;
   name: string;
+  description?: string;
   tokens: number;
   price_usd: number;
   popular?: boolean;
+  validity_days?: number;
+  is_enterprise?: boolean;
+  plan_type?: string;
 }
 
 interface EventTokenUsage {
@@ -84,11 +90,18 @@ export default function TokensTab({ currentUser }: TokensTabProps) {
   const [packages, setPackages] = useState<TokenPackage[]>([]);
   const [eventUsage, setEventUsage] = useState<EventTokenUsage[]>([]);
   const [usageByType, setUsageByType] = useState<UsageByType[]>([]);
+  
+  // Get plan tokens from user's role
+  const userRole = (currentUser?.role || 'individual') as 'individual' | 'business_starter' | 'business_eventpro' | 'business_masters' | 'superadmin';
+  const planFeatures = getPlanFeatures(userRole);
+  const planTokens = planFeatures.tokensMonthly;
+  
   const [stats, setStats] = useState({
     current_tokens: 0,
     tokens_used_month: 0,
     avg_daily_usage: 0,
-    forecast_days: 0
+    forecast_days: 0,
+    plan_tokens: planTokens
   });
   const [isPurchasing, setIsPurchasing] = useState(false);
   const [showLedger, setShowLedger] = useState(false);
@@ -111,14 +124,18 @@ export default function TokensTab({ currentUser }: TokensTabProps) {
       ]);
 
       if (statsData) {
-        setStats(statsData);
+        setStats({
+          ...statsData,
+          plan_tokens: statsData.plan_tokens || planTokens
+        });
       } else {
         // Fallback to user data
         setStats({
           current_tokens: currentUser.tokens_remaining || 0,
           tokens_used_month: 0,
           avg_daily_usage: 0,
-          forecast_days: 0
+          forecast_days: 0,
+          plan_tokens: planTokens
         });
       }
 
@@ -145,7 +162,8 @@ export default function TokensTab({ currentUser }: TokensTabProps) {
         current_tokens: currentUser.tokens_remaining || 0,
         tokens_used_month: 0,
         avg_daily_usage: 0,
-        forecast_days: 0
+        forecast_days: 0,
+        plan_tokens: planTokens
       });
     } finally {
       setIsLoading(false);
@@ -192,6 +210,14 @@ export default function TokensTab({ currentUser }: TokensTabProps) {
     return styles[type] || 'bg-zinc-500/10 text-zinc-400 border-zinc-500/20';
   };
 
+  // Helper to safely format dates
+  const formatDate = (dateString: string | undefined | null): string => {
+    if (!dateString) return '—';
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return '—';
+    return date.toLocaleDateString();
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -200,7 +226,7 @@ export default function TokensTab({ currentUser }: TokensTabProps) {
     );
   }
 
-  const tokenPercentage = Math.min(100, (stats.current_tokens / 10000) * 100);
+  const tokenPercentage = stats.plan_tokens > 0 ? Math.min(100, (stats.current_tokens / stats.plan_tokens) * 100) : 0;
   const isLowTokens = stats.current_tokens < 100;
 
   return (
@@ -234,7 +260,7 @@ export default function TokensTab({ currentUser }: TokensTabProps) {
               {stats.current_tokens.toLocaleString()}
             </div>
             <Progress value={tokenPercentage} className="h-1.5 bg-zinc-800" />
-            <p className="text-xs text-zinc-500 mt-2">of 10,000 capacity</p>
+            <p className="text-xs text-zinc-500 mt-2">of {stats.plan_tokens.toLocaleString()} capacity</p>
           </CardContent>
         </Card>
 
@@ -300,41 +326,81 @@ export default function TokensTab({ currentUser }: TokensTabProps) {
                     <div
                       key={pkg.id}
                       className={`relative p-4 rounded-xl border transition-all ${
-                        pkg.popular 
-                          ? 'border-indigo-500/50 bg-indigo-500/10' 
-                          : 'border-white/10 bg-zinc-800/50 hover:border-white/20'
+                        pkg.is_enterprise
+                          ? 'border-amber-500/50 bg-amber-500/10'
+                          : pkg.popular 
+                            ? 'border-indigo-500/50 bg-indigo-500/10' 
+                            : 'border-white/10 bg-zinc-800/50 hover:border-white/20'
                       }`}
                     >
-                      {pkg.popular && (
+                      {pkg.popular && !pkg.is_enterprise && (
                         <Badge className="absolute -top-2 right-4 bg-indigo-600">
                           Most Popular
                         </Badge>
                       )}
+                      {pkg.is_enterprise && (
+                        <Badge className="absolute -top-2 right-4 bg-amber-600">
+                          Enterprise
+                        </Badge>
+                      )}
                       <h3 className="text-lg font-semibold text-white">{pkg.name}</h3>
-                      <div className="mt-2">
-                        <span className="text-3xl font-bold text-white">${pkg.price_usd}</span>
-                      </div>
-                      <p className="text-sm text-zinc-400 mt-1">
-                        {pkg.tokens.toLocaleString()} tokens
-                      </p>
-                      <p className="text-xs text-zinc-500 mt-1">
-                        ${(pkg.price_usd / pkg.tokens * 1000).toFixed(2)} per 1k tokens
-                      </p>
-                      <Button
-                        className="w-full mt-4"
-                        variant={pkg.popular ? "default" : "outline"}
-                        onClick={() => handlePurchase(pkg)}
-                        disabled={isPurchasing}
-                      >
-                        {isPurchasing ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <>
-                            <CreditCard className="w-4 h-4 mr-2" />
-                            Purchase
-                          </>
-                        )}
-                      </Button>
+                      
+                      {pkg.is_enterprise ? (
+                        <>
+                          <div className="mt-2">
+                            <span className="text-2xl font-bold text-amber-400">Custom Pricing</span>
+                          </div>
+                          <p className="text-sm text-zinc-400 mt-1">
+                            Large-volume token packages
+                          </p>
+                          <p className="text-xs text-zinc-500 mt-1">
+                            Valid for 60 days
+                          </p>
+                          <ul className="text-xs text-zinc-400 mt-3 space-y-1">
+                            <li>• Requires application</li>
+                            <li>• For multi-event operators</li>
+                            <li>• Optional hardware + revenue-share</li>
+                          </ul>
+                          <Button
+                            className="w-full mt-4 bg-amber-600 hover:bg-amber-700 text-white"
+                            onClick={() => window.open('/contact?type=enterprise', '_blank')}
+                          >
+                            <Mail className="w-4 h-4 mr-2" />
+                            Request Pricing
+                          </Button>
+                        </>
+                      ) : (
+                        <>
+                          <div className="mt-2">
+                            <span className="text-3xl font-bold text-white">
+                              ${pkg.price_usd.toLocaleString()}
+                            </span>
+                          </div>
+                          <p className="text-sm text-zinc-400 mt-1">
+                            {pkg.tokens.toLocaleString()} tokens
+                          </p>
+                          {pkg.validity_days && pkg.validity_days > 0 && (
+                            <p className="text-xs text-zinc-500 mt-1">
+                              Valid for {pkg.validity_days} days
+                            </p>
+                          )}
+                          <Button
+                            className={`w-full mt-4 ${pkg.popular ? '' : 'bg-zinc-700 text-white hover:bg-zinc-600 border-zinc-600'}`}
+                            variant={pkg.popular ? "default" : "outline"}
+                            onClick={() => handlePurchase(pkg)}
+                            disabled={isPurchasing}
+                          >
+                            {isPurchasing ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <>
+                                <CreditCard className="w-4 h-4 mr-2" />
+                                Purchase
+                              </>
+                            )}
+                          </Button>
+                        </>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -367,14 +433,14 @@ export default function TokensTab({ currentUser }: TokensTabProps) {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {usageByType.map((item, index) => {
-                const totalUsage = usageByType.reduce((sum, u) => sum + u.tokens_used, 0);
-                const percentage = totalUsage > 0 ? (item.tokens_used / totalUsage) * 100 : 0;
+              {usageByType.filter(item => item?.generation_type).map((item, index) => {
+                const totalUsage = usageByType.reduce((sum, u) => sum + (u?.tokens_used || 0), 0);
+                const percentage = totalUsage > 0 ? ((item?.tokens_used || 0) / totalUsage) * 100 : 0;
                 return (
                   <div key={index} className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-white capitalize">{item.generation_type.replace('_', ' ')}</span>
-                      <span className="text-sm text-zinc-400">{item.tokens_used.toLocaleString()} tokens</span>
+                      <span className="text-sm font-medium text-white capitalize">{(item.generation_type || 'unknown').replace(/_/g, ' ')}</span>
+                      <span className="text-sm text-zinc-400">{(item.tokens_used || 0).toLocaleString()} tokens</span>
                     </div>
                     <div className="h-2 bg-zinc-800 rounded-full overflow-hidden">
                       <div 
@@ -382,7 +448,7 @@ export default function TokensTab({ currentUser }: TokensTabProps) {
                         style={{ width: `${percentage}%` }}
                       />
                     </div>
-                    <p className="text-xs text-zinc-500">{item.count} generations ({percentage.toFixed(1)}%)</p>
+                    <p className="text-xs text-zinc-500">{item.count || 0} generations ({percentage.toFixed(1)}%)</p>
                   </div>
                 );
               })}
@@ -464,7 +530,7 @@ export default function TokensTab({ currentUser }: TokensTabProps) {
                 {transactions.slice(0, 5).map((tx) => (
                   <TableRow key={tx.id} className="border-white/5">
                     <TableCell className="text-zinc-300">
-                      {new Date(tx.date).toLocaleDateString()}
+                      {formatDate(tx.date)}
                     </TableCell>
                     <TableCell className="text-white">{tx.description}</TableCell>
                     <TableCell className="text-zinc-400">{tx.event_name || '—'}</TableCell>
@@ -512,7 +578,7 @@ export default function TokensTab({ currentUser }: TokensTabProps) {
               {transactions.map((tx) => (
                 <TableRow key={tx.id} className="border-white/5">
                   <TableCell className="text-zinc-300">
-                    {new Date(tx.date).toLocaleDateString()}
+                    {formatDate(tx.date)}
                   </TableCell>
                   <TableCell className="text-white">{tx.description}</TableCell>
                   <TableCell className="text-zinc-400">{tx.event_name || '—'}</TableCell>

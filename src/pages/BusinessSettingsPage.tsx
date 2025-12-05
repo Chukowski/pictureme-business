@@ -423,7 +423,7 @@ export function BusinessSettingsPage() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <Button
                     variant="outline"
-                    className="h-auto py-4 flex flex-col items-center gap-2 border-zinc-700 hover:bg-zinc-800"
+                    className="h-auto py-4 flex flex-col items-center gap-2 border-zinc-700 bg-zinc-800/50 hover:bg-zinc-700"
                     onClick={() => setActiveTab('tokens')}
                   >
                     <Coins className="w-6 h-6 text-yellow-400" />
@@ -431,7 +431,7 @@ export function BusinessSettingsPage() {
                   </Button>
                   <Button
                     variant="outline"
-                    className="h-auto py-4 flex flex-col items-center gap-2 border-zinc-700 hover:bg-zinc-800"
+                    className="h-auto py-4 flex flex-col items-center gap-2 border-zinc-700 bg-zinc-800/50 hover:bg-zinc-700"
                     onClick={() => setActiveTab('billing')}
                   >
                     <CreditCard className="w-6 h-6 text-indigo-400" />
@@ -439,7 +439,7 @@ export function BusinessSettingsPage() {
                   </Button>
                   <Button
                     variant="outline"
-                    className="h-auto py-4 flex flex-col items-center gap-2 border-zinc-700 hover:bg-zinc-800"
+                    className="h-auto py-4 flex flex-col items-center gap-2 border-zinc-700 bg-zinc-800/50 hover:bg-zinc-700"
                     onClick={() => setActiveTab('team')}
                   >
                     <Users className="w-6 h-6 text-green-400" />

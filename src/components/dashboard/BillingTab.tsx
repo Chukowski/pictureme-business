@@ -119,10 +119,10 @@ const PLANS: Plan[] = [
     name: 'Masters',
     price: 3000,
     interval: 'month',
-    tokens_monthly: 10000,
+    tokens_monthly: 8000,
     max_events: 3,
     features: [
-      '10,000 tokens/month',
+      '8,000 tokens/month',
       'Up to 3 active events',
       'Premium templates & LoRA models',
       'Revenue-share & hardware options',
@@ -136,7 +136,24 @@ const PLANS: Plan[] = [
 // Note for UI
 const PLAN_NOTE = "Tokens are shared across your active events. When tokens run out, you can top up with extra packs.";
 
+// Map user role/subscription_tier to plan IDs
+const ROLE_TO_PLAN_MAP: Record<string, string> = {
+  'business_starter': 'event_starter',
+  'business_eventpro': 'event_pro',
+  'business_masters': 'masters',
+  'event_starter': 'event_starter',
+  'event_pro': 'event_pro',
+  'masters': 'masters',
+};
+
 export default function BillingTab({ currentUser }: BillingTabProps) {
+  // Helper to get plan from user role
+  const getPlanFromUserRole = (): Plan | null => {
+    const userRole = currentUser?.role || currentUser?.subscription_tier || '';
+    const planId = ROLE_TO_PLAN_MAP[userRole] || 'event_pro';
+    const matchedPlan = PLANS.find(p => p.id === planId);
+    return matchedPlan ? { ...matchedPlan, current: true } : null;
+  };
   const [isLoading, setIsLoading] = useState(true);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
@@ -173,19 +190,18 @@ export default function BillingTab({ currentUser }: BillingTabProps) {
         const matchedPlan = PLANS.find(p => p.id === planData.plan_id);
         if (matchedPlan) {
           setCurrentPlan({ ...matchedPlan, current: true });
+        } else {
+          // Fallback to user role/tier mapping
+          setCurrentPlan(getPlanFromUserRole());
         }
       } else {
-        // Default to EventPro for business users
-        const tier = currentUser.subscription_tier || 'eventpro';
-        const matchedPlan = PLANS.find(p => p.id === tier);
-        setCurrentPlan(matchedPlan ? { ...matchedPlan, current: true } : null);
+        // Default based on user role
+        setCurrentPlan(getPlanFromUserRole());
       }
     } catch (error) {
       console.error("Error fetching billing data:", error);
-      // Set default plan based on user tier
-      const tier = currentUser.subscription_tier || 'eventpro';
-      const matchedPlan = PLANS.find(p => p.id === tier);
-      setCurrentPlan(matchedPlan ? { ...matchedPlan, current: true } : null);
+      // Set default plan based on user role
+      setCurrentPlan(getPlanFromUserRole());
     } finally {
       setIsLoading(false);
     }

@@ -32,44 +32,28 @@ export default function AdminDashboard() {
     return user;
   }, []);
 
-  const [isEditingProfile, setIsEditingProfile] = useState(false);
-  const [isUpdating, setIsUpdating] = useState(false);
-  const [avatarFile, setAvatarFile] = useState<File | null>(null);
-  const [avatarPreview, setAvatarPreview] = useState<string>('');
-  const [coverFile, setCoverFile] = useState<File | null>(null);
-  const [coverPreview, setCoverPreview] = useState<string>('');
-  const [editForm, setEditForm] = useState<{
-    full_name: string;
-    email: string;
-    birth_date?: string;
-    avatar_url?: string;
-    cover_image_url?: string;
-    bio?: string;
-    social_links?: {
-      x?: string;
-      instagram?: string;
-      youtube?: string;
-      tiktok?: string;
-    };
-    password?: string;
-    is_public?: boolean;
-    publish_to_explore?: boolean;
-  }>({
-    full_name: '',
-    email: '',
-    birth_date: '',
-    avatar_url: '',
-    password: ''
-  });
-
   // Default to individual if no role specified (backward compatibility)
   const userRole = currentUser?.role || 'individual';
   const isSuperAdmin = userRole === 'superadmin';
   
   // Dashboard view mode for superadmin (can switch between studio and business)
   const [dashboardMode, setDashboardMode] = useState<'studio' | 'business'>('studio');
-  const [tokenStats, setTokenStats] = useState<{ current_tokens: number; tokens_total?: number } | null>(null);
+  const [tokenStats, setTokenStats] = useState<{ current_tokens: number; tokens_total?: number; plan_tokens?: number } | null>(null);
   const [isTokenRefreshing, setIsTokenRefreshing] = useState(false);
+
+  // Merge token stats into current user for display
+  const displayedUser = useMemo(() => {
+    if (!currentUser) return null;
+    
+    // Default total to 8000 if not present (Business Standard)
+    const defaultTotal = 8000;
+    
+    return {
+      ...currentUser,
+      tokens_remaining: tokenStats?.current_tokens ?? currentUser.tokens_remaining,
+      tokens_total: tokenStats?.tokens_total ?? currentUser.tokens_total ?? defaultTotal
+    };
+  }, [currentUser, tokenStats]);
 
   const fetchTokenStats = useCallback(async () => {
     const apiUrl = ENV.API_URL;
@@ -126,147 +110,6 @@ export default function AdminDashboard() {
     logoutUser();
     toast.success("Logged out successfully");
     navigate("/admin/auth");
-  };
-
-  const handleImageChange = (
-    e: React.ChangeEvent<HTMLInputElement>, 
-    type: 'avatar' | 'cover'
-  ) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      // Validate file size (5MB for avatar, 10MB for cover)
-      const maxSize = type === 'avatar' ? 5 * 1024 * 1024 : 10 * 1024 * 1024;
-      if (file.size > maxSize) {
-        toast.error(`File too large. Maximum size is ${type === 'avatar' ? '5MB' : '10MB'}`);
-        return;
-      }
-
-      // Validate file type
-      if (!file.type.startsWith('image/')) {
-        toast.error("Please select an image file");
-        return;
-      }
-
-      if (type === 'avatar') {
-        setAvatarFile(file);
-      } else {
-        setCoverFile(file);
-      }
-
-      // Create preview
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        if (type === 'avatar') {
-          setAvatarPreview(reader.result as string);
-        } else {
-          setCoverPreview(reader.result as string);
-        }
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const uploadImage = async (file: File, type: 'avatar' | 'cover'): Promise<string> => {
-    const formData = new FormData();
-    formData.append('file', file);
-
-    const token = localStorage.getItem('auth_token');
-    const headers: HeadersInit = {};
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
-
-    const endpoint = type === 'avatar' 
-      ? `${ENV.API_URL || ''}/api/users/me/avatar`
-      : `${ENV.API_URL || ''}/api/users/me/cover`;
-
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers,
-      credentials: 'include',
-      body: formData,
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to upload ${type}`);
-    }
-
-    const data = await response.json();
-    return type === 'avatar' ? data.avatar_url : data.cover_url;
-  };
-
-  const handleUpdateProfile = async () => {
-    setIsUpdating(true);
-    try {
-      let avatarUrl = editForm.avatar_url;
-      let coverUrl = editForm.cover_image_url;
-
-      // Upload avatar if file selected
-      if (avatarFile) {
-        avatarUrl = await uploadImage(avatarFile, 'avatar');
-        toast.success("Avatar uploaded successfully");
-      }
-
-      // Upload cover if file selected
-      if (coverFile) {
-        coverUrl = await uploadImage(coverFile, 'cover');
-        toast.success("Cover image uploaded successfully");
-      }
-
-      // Update profile with new URLs - clean up empty values
-      const updateData: Record<string, any> = {};
-      
-      if (editForm.full_name?.trim()) updateData.full_name = editForm.full_name.trim();
-      if (editForm.email?.trim()) updateData.email = editForm.email.trim();
-      if (editForm.bio !== undefined) updateData.bio = editForm.bio || '';
-      if (editForm.birth_date?.trim()) updateData.birth_date = editForm.birth_date;
-      if (editForm.password?.trim()) updateData.password = editForm.password;
-      if (avatarUrl) updateData.avatar_url = avatarUrl;
-      if (coverUrl) updateData.cover_image_url = coverUrl;
-      if (editForm.is_public !== undefined) updateData.is_public = editForm.is_public;
-      if (editForm.publish_to_explore !== undefined) updateData.publish_to_explore = editForm.publish_to_explore;
-      
-      // Clean social links - only include non-empty values
-      if (editForm.social_links) {
-        const cleanedSocialLinks: Record<string, string> = {};
-        Object.entries(editForm.social_links).forEach(([key, value]) => {
-          if (value?.trim()) {
-            cleanedSocialLinks[key] = value.trim();
-          }
-        });
-        if (Object.keys(cleanedSocialLinks).length > 0) {
-          updateData.social_links = cleanedSocialLinks;
-        }
-      }
-
-      console.log('📤 Sending update data:', updateData);
-      const updatedUser = await updateUser(updateData);
-
-      // Merge current user with updated data
-      const mergedUser = {
-        ...currentUser,
-        ...updatedUser,
-        avatar_url: avatarUrl || updatedUser.avatar_url || currentUser?.avatar_url
-      };
-
-      console.log('💾 Saving user to localStorage:', mergedUser);
-
-      // Update local storage with new user data
-      localStorage.setItem('user', JSON.stringify(mergedUser));
-      toast.success("Profile updated successfully");
-      setIsEditingProfile(false);
-      setAvatarFile(null);
-      setAvatarPreview('');
-      setCoverFile(null);
-      setCoverPreview('');
-
-      // Force reload to reflect changes
-      window.location.reload();
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to update profile");
-    } finally {
-      setIsUpdating(false);
-    }
   };
 
   if (!currentUser) {
@@ -387,38 +230,24 @@ export default function AdminDashboard() {
                     <span className="text-sm font-medium text-white leading-none">
                       {currentUser?.name || currentUser?.full_name || currentUser?.username || currentUser?.email}
                     </span>
-                    <span className="text-[10px] text-zinc-500 leading-none mt-1 capitalize">
-                      {userRole.replace('_', ' ')}
+                    <span className="text-[10px] text-zinc-500 leading-none mt-0.5 capitalize">
+                      {userRole.replace(/_/g, ' ')}
                     </span>
-                    <span className="text-[10px] text-yellow-400 font-mono mt-1 flex items-center gap-1">
-                      <Coins className="w-3 h-3" />
-                      {(tokenStats?.current_tokens ??
-                        currentUser?.tokens_remaining ??
-                        0).toLocaleString()} tokens
-                      {isTokenRefreshing && <Loader2 className="w-3 h-3 animate-spin" />}
+                  </div>
+                  <div className="flex items-center gap-1 ml-1 px-2 py-1 rounded-full bg-yellow-500/10 border border-yellow-500/20">
+                    <Coins className="w-3 h-3 text-yellow-400" />
+                    <span className="text-xs text-yellow-400 font-medium">
+                      {(tokenStats?.current_tokens ?? currentUser?.tokens_remaining ?? 0).toLocaleString()}
                     </span>
+                    {isTokenRefreshing && <Loader2 className="w-3 h-3 animate-spin text-yellow-400" />}
                   </div>
                   <ChevronDown className="w-4 h-4 text-zinc-400" />
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent 
                 align="end" 
-                className="w-64 bg-zinc-900 border-white/10 text-white p-2"
+                className="w-56 bg-zinc-900 border-white/10 text-white p-2"
               >
-                {/* Credits Progress */}
-                <div className="px-2 py-3 mb-2">
-                  <div className="flex items-center justify-between text-xs mb-2">
-                    <span className="text-zinc-400">
-                      {(currentUser?.tokens_remaining || 0).toLocaleString()} tokens disponibles
-                    </span>
-                  </div>
-                  <Progress 
-                    value={Math.min(100, ((currentUser?.tokens_remaining || 0) / (currentUser?.tokens_total || currentUser?.tokens_remaining || 1000)) * 100)} 
-                    className="h-1.5 bg-zinc-800"
-                  />
-                </div>
-                
-                <DropdownMenuSeparator className="bg-white/10" />
                 
                 <DropdownMenuItem 
                   onClick={() => navigate(`/profile/${currentUser?.username || currentUser?.slug}`)}
@@ -429,7 +258,7 @@ export default function AdminDashboard() {
                 </DropdownMenuItem>
                 
                 {/* Business Settings - only for business users */}
-                {userRole.startsWith('business') && userRole !== 'business_pending' && (
+                {userRole.startsWith('business') && userRole !== ('business_pending' as string) && (
                   <DropdownMenuItem 
                     onClick={() => navigate('/admin/business')}
                     className="flex items-center gap-3 px-3 py-2.5 cursor-pointer hover:bg-white/5 rounded-lg text-indigo-400"
@@ -440,25 +269,11 @@ export default function AdminDashboard() {
                 )}
 
                 <DropdownMenuItem 
-                  onClick={() => {
-                    setEditForm({
-                      full_name: currentUser?.full_name || currentUser?.name || '',
-                      email: currentUser?.email || '',
-                      birth_date: currentUser?.birth_date || '',
-                      avatar_url: currentUser?.avatar_url || '',
-                      cover_image_url: currentUser?.cover_image_url || '',
-                      bio: currentUser?.bio || '',
-                      social_links: currentUser?.social_links || {},
-                      password: '',
-                      is_public: currentUser?.is_public ?? true,
-                      publish_to_explore: currentUser?.publish_to_explore ?? true
-                    });
-                    setIsEditingProfile(true);
-                  }}
+                  onClick={() => navigate('/admin/settings')}
                   className="flex items-center gap-3 px-3 py-2.5 cursor-pointer hover:bg-white/5 rounded-lg text-lime-400"
                 >
                   <Settings className="w-4 h-4" />
-                  <span>Manage account</span>
+                  <span>Account Settings</span>
                 </DropdownMenuItem>
                 
                 <DropdownMenuItem 
@@ -493,233 +308,6 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      {/* Edit Profile Modal */}
-      <Dialog open={isEditingProfile} onOpenChange={setIsEditingProfile}>
-        <DialogContent className="bg-zinc-900 border-white/10 text-white sm:max-w-[500px] p-0 overflow-hidden gap-0">
-          <DialogHeader className="sr-only">
-            <DialogTitle>Edit Profile</DialogTitle>
-          </DialogHeader>
-
-          <div className="max-h-[85vh] overflow-y-auto">
-            {/* Cover Image Area */}
-            <div className="relative h-32 bg-gradient-to-r from-indigo-500 to-purple-500 group">
-              {(coverPreview || editForm.cover_image_url) ? (
-                <img
-                  src={coverPreview || editForm.cover_image_url}
-                  alt="Cover"
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-full bg-gradient-to-r from-indigo-500 to-purple-500" />
-              )}
-
-              <label className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40 cursor-pointer">
-                <div className="flex items-center gap-2 px-4 py-2 bg-white/90 rounded-lg text-black text-sm font-medium hover:bg-white transition-colors">
-                  <Upload className="w-4 h-4" />
-                  Change Cover
-                </div>
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(e) => handleImageChange(e, 'cover')}
-                />
-              </label>
-            </div>
-
-            <div className="px-6 pb-6">
-              {/* Avatar - Overlapping */}
-              <div className="relative -mt-12 mb-6 w-24 h-24">
-                <div className="w-24 h-24 rounded-full border-4 border-zinc-900 overflow-hidden bg-zinc-800">
-                  <img
-                    src={avatarPreview || editForm.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(editForm.full_name || 'User')}&background=random`}
-                    alt="Avatar"
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <label className="absolute bottom-0 right-0 p-1.5 bg-white rounded-full text-black hover:bg-gray-200 transition-colors shadow-lg cursor-pointer">
-                  <Camera className="w-4 h-4" />
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => handleImageChange(e, 'avatar')}
-                  />
-                </label>
-              </div>
-
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="username">Username*</Label>
-                  <div className="relative">
-                    <Input
-                      id="username"
-                      value={currentUser?.username || ''}
-                      disabled
-                      className="bg-black/50 border-white/10 pr-10"
-                    />
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2 px-1.5 py-0.5 bg-red-500/20 text-red-400 text-[10px] rounded">
-                      •••
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="full_name">Full Name</Label>
-                  <Input
-                    id="full_name"
-                    value={editForm.full_name}
-                    onChange={(e) => setEditForm({ ...editForm, full_name: e.target.value })}
-                    className="bg-black/50 border-white/10"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="bio">Bio</Label>
-                  <Textarea
-                    id="bio"
-                    placeholder="Type bio here..."
-                    value={editForm.bio || ''}
-                    onChange={(e) => setEditForm({ ...editForm, bio: e.target.value })}
-                    className="bg-black/50 border-white/10 min-h-[100px] resize-none"
-                  />
-                </div>
-
-                <div className="space-y-3 pt-2">
-                  <div className="space-y-2">
-                    <Input
-                      placeholder="x.com/"
-                      value={editForm.social_links?.x || ''}
-                      onChange={(e) => setEditForm({
-                        ...editForm,
-                        social_links: { ...editForm.social_links, x: e.target.value }
-                      })}
-                      className="bg-black/50 border-white/10"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Input
-                      placeholder="instagram.com/"
-                      value={editForm.social_links?.instagram || ''}
-                      onChange={(e) => setEditForm({
-                        ...editForm,
-                        social_links: { ...editForm.social_links, instagram: e.target.value }
-                      })}
-                      className="bg-black/50 border-white/10"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Input
-                      placeholder="youtube.com/@"
-                      value={editForm.social_links?.youtube || ''}
-                      onChange={(e) => setEditForm({
-                        ...editForm,
-                        social_links: { ...editForm.social_links, youtube: e.target.value }
-                      })}
-                      className="bg-black/50 border-white/10"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Input
-                      placeholder="tiktok.com/@"
-                      value={editForm.social_links?.tiktok || ''}
-                      onChange={(e) => setEditForm({
-                        ...editForm,
-                        social_links: { ...editForm.social_links, tiktok: e.target.value }
-                      })}
-                      className="bg-black/50 border-white/10"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2 pt-2 border-t border-white/10">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={editForm.email}
-                    onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
-                    className="bg-black/50 border-white/10"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="birth_date">Birth Date</Label>
-                  <Input
-                    id="birth_date"
-                    type="date"
-                    value={editForm.birth_date || ''}
-                    onChange={(e) => setEditForm({ ...editForm, birth_date: e.target.value })}
-                    className="bg-black/50 border-white/10"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="password">New Password (Optional)</Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    placeholder="Leave empty to keep current"
-                    value={editForm.password || ''}
-                    onChange={(e) => setEditForm({ ...editForm, password: e.target.value })}
-                    className="bg-black/50 border-white/10"
-                  />
-                </div>
-
-                {/* Privacy Settings */}
-                <div className="space-y-4 pt-4 border-t border-white/10">
-                  <h3 className="text-sm font-medium text-zinc-300">Privacy Settings</h3>
-                  
-                  <div className="flex items-center justify-between p-3 rounded-lg bg-black/30 border border-white/5">
-                    <div className="flex items-center gap-3">
-                      {editForm.is_public ? (
-                        <Globe className="w-5 h-5 text-emerald-400" />
-                      ) : (
-                        <Lock className="w-5 h-5 text-zinc-400" />
-                      )}
-                      <div>
-                        <p className="text-sm font-medium">Public Profile</p>
-                        <p className="text-xs text-zinc-500">
-                          {editForm.is_public 
-                            ? "Anyone can view your profile" 
-                            : "Only you can see your profile"}
-                        </p>
-                      </div>
-                    </div>
-                    <Switch
-                      checked={editForm.is_public}
-                      onCheckedChange={(checked) => setEditForm({ ...editForm, is_public: checked })}
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between p-3 rounded-lg bg-black/30 border border-white/5">
-                    <div className="flex items-center gap-3">
-                      <Sparkles className="w-5 h-5 text-indigo-400" />
-                      <div>
-                        <p className="text-sm font-medium">Publish to Explore</p>
-                        <p className="text-xs text-zinc-500">
-                          Auto-publish your creations to the public feed
-                        </p>
-                      </div>
-                    </div>
-                    <Switch
-                      checked={editForm.publish_to_explore}
-                      onCheckedChange={(checked) => setEditForm({ ...editForm, publish_to_explore: checked })}
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="p-6 pt-2 border-t border-white/10 flex justify-end">
-            <Button onClick={handleUpdateProfile} disabled={isUpdating} className="bg-white text-black hover:bg-gray-200 font-medium px-8">
-              {isUpdating && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              Save changes
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

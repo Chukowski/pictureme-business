@@ -155,7 +155,7 @@ const PLAN_FEATURES: Record<UserRole, PlanFeatures> = {
   },
   business_masters: {
     maxActiveEvents: 3,
-    tokensMonthly: 10000,
+    tokensMonthly: 8000,
     videoGeneration: true,
     faceswap: true,
     badgeCreatorAI: true,

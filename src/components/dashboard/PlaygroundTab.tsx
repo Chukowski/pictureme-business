@@ -38,6 +38,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { cn } from "@/lib/utils";
 import {
   Gamepad2,
   Camera,
@@ -64,12 +66,26 @@ import {
   Link2,
   Sparkles,
   X,
+  UserPlus,
+  Images,
+  Info,
+  MonitorPlay,
+  RotateCcw,
+  Save,
+  Maximize2,
+  Move,
+  Grid,
+  Type,
+  MousePointer2,
+  Trash2,
+  MessageSquare,
+  AlertCircle,
+  Globe
 } from "lucide-react";
 import { User as UserType, getUserEvents, EventConfig, Template, updateEvent } from "@/services/eventsApi";
 import { processImageWithAI, downloadImageAsBase64, AI_MODELS, type AIModelKey } from "@/services/aiProcessor";
 import { toast } from "sonner";
 import { BadgeTemplateConfig, DEFAULT_BADGE_CONFIG, CustomElementPositions, DEFAULT_ELEMENT_POSITIONS } from "@/components/templates/BadgeTemplateEditor";
-import { Move, Save, RotateCcw, Maximize2, MessageSquare, AlertCircle } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { PromptHelper } from "@/components/PromptHelper";
 import { Switch } from "@/components/ui/switch";
@@ -888,7 +904,7 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-[1280px] mx-auto">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -913,20 +929,19 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
         </div>
       </div>
 
-      {/* Token Warning */}
-      <Alert className="bg-amber-500/10 border-amber-500/30">
-        <AlertTriangle className="h-4 w-4 text-amber-500" />
-        <AlertTitle className="text-amber-400">Real Token Usage</AlertTitle>
-        <AlertDescription className="text-amber-200/80">
+      {/* Token notice (discrete) */}
+      <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 px-4 py-3 flex items-center justify-between text-xs text-amber-100">
           <div className="flex items-center gap-2">
-            <Coins className="w-4 h-4" />
+          <AlertTriangle className="h-4 w-4 text-amber-400" />
             <span>
-              AI processing in the Playground uses <strong>real tokens</strong>. 
-              Each template test or badge generation will consume tokens from your account.
+            AI processing usa <strong>tokens reales</strong>. Cada prueba consume tu balance.
             </span>
           </div>
-        </AlertDescription>
-      </Alert>
+        <div className="flex items-center gap-1 text-amber-200/80">
+          <Coins className="w-3 h-3" />
+          <span className="text-[11px]">Sesión: {tokensUsed} usados</span>
+        </div>
+      </div>
 
       {/* No Events Warning */}
       {events.length === 0 && (
@@ -962,7 +977,7 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
 
         {/* Template Test Tab - REAL AI */}
         <TabsContent value="template" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-[1.6fr_1fr] gap-6">
             {/* Input Section */}
             <Card className="bg-zinc-900/50 border-white/10">
               <CardHeader>
@@ -1476,6 +1491,7 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
             </Card>
 
             {/* Result Section */}
+            <div className="lg:sticky lg:top-4 space-y-4">
             <Card className="bg-zinc-900/50 border-white/10">
               <CardHeader>
                 <CardTitle className="text-white text-lg">Result</CardTitle>
@@ -1602,12 +1618,13 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
                 )}
               </CardContent>
             </Card>
+            </div>
           </div>
         </TabsContent>
 
         {/* Badge Test Tab - REAL AI */}
         <TabsContent value="badge" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-[1.6fr_1fr] gap-6">
             {/* Badge Input */}
             <Card className="bg-zinc-900/50 border-white/10">
               <CardHeader>
@@ -1670,8 +1687,13 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
                 )}
 
                 {/* Visitor Info */}
-                <div className="space-y-3">
+                <div className="space-y-3 p-4 rounded-lg bg-zinc-900/60 border border-zinc-800">
+                  <div className="flex items-center justify-between">
                   <Label className="text-zinc-300">Visitor Information</Label>
+                    <Badge variant="outline" className="text-[11px] border-zinc-700 text-zinc-400">
+                      Preview updates live
+                    </Badge>
+                  </div>
                   <Input
                     value={badgePreview.name}
                     onChange={(e) => setBadgePreview({ ...badgePreview, name: e.target.value })}
@@ -1729,6 +1751,17 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
 
                 {/* Process Badge Button */}
                 {badgeConfig.aiPipeline?.enabled && (
+                  <Card className="bg-zinc-900/60 border border-purple-500/10">
+                    <CardContent className="p-4 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Sparkles className="w-4 h-4 text-purple-400" />
+                          <span className="text-sm text-zinc-200">Process with AI</span>
+                        </div>
+                        <Badge className="bg-amber-500/20 text-amber-300 text-[11px] border-amber-500/30">
+                          1 token
+                        </Badge>
+                      </div>
                   <Button
                     className="w-full bg-purple-600 hover:bg-purple-700"
                     onClick={processBadgeWithAI}
@@ -1737,21 +1770,23 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
                     {isBadgeProcessing ? (
                       <>
                         <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Processing with AI...
+                            Processing...
                       </>
                     ) : (
                       <>
                         <Sparkles className="w-4 h-4 mr-2" />
-                        Enhance Photo with AI (Uses 1 Token)
+                            Enhance Photo
                       </>
                     )}
                   </Button>
+                    </CardContent>
+                  </Card>
                 )}
               </CardContent>
             </Card>
 
-            {/* Badge Visual Editor */}
-            <Card className="bg-zinc-900/50 border-white/10">
+            {/* Badge Visual Editor / Preview (sticky on desktop) */}
+            <Card className="bg-zinc-900/50 border-white/10 lg:sticky lg:top-4">
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div>
@@ -2122,14 +2157,15 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
         </TabsContent>
 
         {/* Event Preview Tab */}
-        <TabsContent value="event" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <TabsContent value="preview" className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-[1.6fr_1fr] gap-6">
+            <div className="space-y-6">
             {/* Event Selector */}
             <Card className="bg-zinc-900/50 border-white/10">
               <CardHeader>
                 <CardTitle className="text-white text-lg">Select Event</CardTitle>
                 <CardDescription className="text-zinc-400">
-                  Choose an event to preview
+                    Choose an event to preview its stations
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -2153,88 +2189,27 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
                 </Select>
 
                 {selectedEvent && (
-                  <div className="space-y-3 pt-4 border-t border-zinc-800">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-zinc-400">Status</span>
+                    <div className="grid grid-cols-2 gap-4 pt-4 border-t border-zinc-800">
+                      <div>
+                        <span className="text-xs text-zinc-500 block mb-1">Status</span>
                       <Badge className={selectedEvent.is_active ? 'bg-green-500/20 text-green-400' : 'bg-zinc-500/20 text-zinc-400'}>
                         {selectedEvent.is_active ? 'Active' : 'Draft'}
                       </Badge>
                     </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-zinc-400">Templates</span>
-                      <span className="text-white">{templates.length}</span>
+                      <div>
+                        <span className="text-xs text-zinc-500 block mb-1">Templates</span>
+                        <span className="text-white text-sm font-medium">{templates.length} Active</span>
                     </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-zinc-400">Album Mode</span>
-                      <span className="text-white">{selectedEvent.albumTracking?.enabled ? 'Yes' : 'No'}</span>
+                      <div>
+                        <span className="text-xs text-zinc-500 block mb-1">Album Mode</span>
+                        <span className="text-white text-sm font-medium">{selectedEvent.albumTracking?.enabled ? 'Enabled' : 'Disabled'}</span>
                     </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-zinc-400">Slug</span>
-                      <span className="text-white font-mono text-xs">{selectedEvent.slug}</span>
+                      <div>
+                        <span className="text-xs text-zinc-500 block mb-1">Slug</span>
+                        <span className="text-white text-xs font-mono bg-black/30 px-2 py-1 rounded">{selectedEvent.slug}</span>
                     </div>
                   </div>
                 )}
-              </CardContent>
-            </Card>
-
-            {/* Preview Options */}
-            <Card className="bg-zinc-900/50 border-white/10">
-              <CardHeader>
-                <CardTitle className="text-white text-lg">Preview Options</CardTitle>
-                <CardDescription className="text-zinc-400">
-                  Choose how to preview
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label className="text-zinc-300">Device</Label>
-                  <div className="flex gap-2">
-                    <Button
-                      variant={previewDevice === 'desktop' ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => setPreviewDevice('desktop')}
-                      className={previewDevice === 'desktop' ? 'bg-purple-600' : 'border-zinc-700'}
-                    >
-                      <Monitor className="w-4 h-4 mr-2" />
-                      Desktop
-                    </Button>
-                    <Button
-                      variant={previewDevice === 'mobile' ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => setPreviewDevice('mobile')}
-                      className={previewDevice === 'mobile' ? 'bg-purple-600' : 'border-zinc-700'}
-                    >
-                      <Smartphone className="w-4 h-4 mr-2" />
-                      Mobile
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="text-zinc-300">Quick Actions</Label>
-                  <div className="grid grid-cols-2 gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="border-zinc-700"
-                      onClick={() => setShowPreviewModal(true)}
-                      disabled={!selectedEvent}
-                    >
-                      <Eye className="w-4 h-4 mr-2" />
-                      Preview
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="border-zinc-700"
-                      onClick={() => openEventPreview('main')}
-                      disabled={!selectedEvent}
-                    >
-                      <ExternalLink className="w-4 h-4 mr-2" />
-                      Open
-                    </Button>
-                  </div>
-                </div>
               </CardContent>
             </Card>
 
@@ -2242,11 +2217,11 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
             <Card className="bg-zinc-900/50 border-white/10">
               <CardHeader>
                 <CardTitle className="text-white text-lg flex items-center gap-2">
-                  <Link2 className="w-4 h-4" />
+                    <Link2 className="w-4 h-4 text-cyan-400" />
                   Station URLs
                 </CardTitle>
                 <CardDescription className="text-zinc-400">
-                  Test different stations
+                    Direct links to different event stations
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-2">
@@ -2262,28 +2237,42 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
                       const url = getStationUrl(key);
                       const isCopied = copiedUrl === url;
                       return (
-                        <div key={key} className="flex items-center justify-between p-2 rounded-lg bg-zinc-800/50 group">
-                          <span className="text-sm text-zinc-300">{label}</span>
+                          <div key={key} className="flex items-center justify-between p-3 rounded-lg bg-zinc-800/50 group hover:bg-zinc-800 transition-colors">
+                            <div className="flex items-center gap-3">
+                              <div className="p-2 rounded-md bg-zinc-900 text-zinc-400">
+                                {key === 'main' ? <Globe className="w-4 h-4" /> :
+                                 key === 'registration' ? <UserPlus className="w-4 h-4" /> :
+                                 key === 'booth' ? <Camera className="w-4 h-4" /> :
+                                 key === 'viewer' ? <Images className="w-4 h-4" /> :
+                                 <Gamepad2 className="w-4 h-4" />}
+                              </div>
+                              <div>
+                                <span className="text-sm text-zinc-200 font-medium block">{label}</span>
+                                <span className="text-[10px] text-zinc-500 font-mono truncate max-w-[200px] block opacity-50 group-hover:opacity-100 transition-opacity">
+                                  {url}
+                                </span>
+                              </div>
+                            </div>
                           <div className="flex gap-1">
                             <Button
                               variant="ghost"
                               size="sm"
                               onClick={() => copyUrl(url, label)}
-                              className="h-7 w-7 p-0"
+                                className="h-8 w-8 p-0 text-zinc-400 hover:text-white hover:bg-zinc-700"
                             >
                               {isCopied ? (
-                                <Check className="w-3 h-3 text-green-400" />
+                                  <Check className="w-4 h-4 text-green-400" />
                               ) : (
-                                <Copy className="w-3 h-3" />
+                                  <Copy className="w-4 h-4" />
                               )}
                             </Button>
                             <Button
                               variant="ghost"
                               size="sm"
                               onClick={() => openEventPreview(key)}
-                              className="h-7 w-7 p-0"
+                                className="h-8 w-8 p-0 text-zinc-400 hover:text-cyan-400 hover:bg-zinc-700"
                             >
-                              <ExternalLink className="w-3 h-3" />
+                                <ExternalLink className="w-4 h-4" />
                             </Button>
                           </div>
                         </div>
@@ -2291,33 +2280,121 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
                     })}
                   </>
                 ) : (
-                  <p className="text-sm text-zinc-500 text-center py-4">
-                    Select an event to see URLs
+                    <div className="text-center py-8 border-2 border-dashed border-zinc-800 rounded-xl">
+                      <Link2 className="w-8 h-8 text-zinc-600 mx-auto mb-2" />
+                      <p className="text-sm text-zinc-500">
+                        Select an event to generate station URLs
                   </p>
+                    </div>
                 )}
               </CardContent>
             </Card>
+            </div>
+
+            {/* Preview Options (Sticky) */}
+            <div className="space-y-6 lg:sticky lg:top-4 h-fit">
+              <Card className="bg-zinc-900/50 border-white/10">
+                <CardHeader>
+                  <CardTitle className="text-white text-lg">Preview Options</CardTitle>
+                  <CardDescription className="text-zinc-400">
+                    Simulate different devices
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="space-y-3">
+                    <Label className="text-zinc-300">Device View</Label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Button
+                        variant={previewDevice === 'desktop' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setPreviewDevice('desktop')}
+                        className={`h-auto py-3 flex-col gap-1 ${previewDevice === 'desktop' ? 'bg-cyan-600 hover:bg-cyan-700' : 'border-zinc-700 bg-zinc-900/50'}`}
+                      >
+                        <Monitor className="w-5 h-5" />
+                        <span className="text-xs">Desktop</span>
+                      </Button>
+                      <Button
+                        variant={previewDevice === 'mobile' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setPreviewDevice('mobile')}
+                        className={`h-auto py-3 flex-col gap-1 ${previewDevice === 'mobile' ? 'bg-cyan-600 hover:bg-cyan-700' : 'border-zinc-700 bg-zinc-900/50'}`}
+                      >
+                        <Smartphone className="w-5 h-5" />
+                        <span className="text-xs">Mobile</span>
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <Label className="text-zinc-300">Quick Launch</Label>
+                    <div className="space-y-2">
+                      <Button
+                        variant="outline"
+                        className="w-full border-zinc-700 bg-zinc-800/50 hover:bg-zinc-800 justify-between"
+                        onClick={() => setShowPreviewModal(true)}
+                        disabled={!selectedEvent}
+                      >
+                        <span className="flex items-center gap-2">
+                          <Eye className="w-4 h-4" />
+                          Open Preview Modal
+                        </span>
+                        <Badge variant="secondary" className="bg-zinc-700 text-zinc-300 text-[10px]">Fast</Badge>
+                      </Button>
+                      <Button
+                        variant="outline"
+                        className="w-full border-zinc-700 bg-zinc-800/50 hover:bg-zinc-800 justify-between"
+                        onClick={() => openEventPreview('main')}
+                        disabled={!selectedEvent}
+                      >
+                        <span className="flex items-center gap-2">
+                          <ExternalLink className="w-4 h-4" />
+                          Open in New Tab
+                        </span>
+                        <Badge variant="secondary" className="bg-zinc-700 text-zinc-300 text-[10px]">Full</Badge>
+                      </Button>
+                    </div>
+                  </div>
+
+                  {selectedEvent && (
+                    <div className="p-3 rounded-lg bg-cyan-500/10 border border-cyan-500/20">
+                      <div className="flex items-start gap-2">
+                        <Info className="w-4 h-4 text-cyan-400 mt-0.5 shrink-0" />
+                        <p className="text-xs text-cyan-300/80">
+                          Preview mode uses mock data by default. To test with real tokens, use the Booth Simulator tab.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
           </div>
         </TabsContent>
 
         {/* Booth Simulator Tab */}
         <TabsContent value="booth" className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-[1.6fr_1fr] gap-6">
+            <div className="space-y-6">
+              {/* Config Card */}
           <Card className="bg-zinc-900/50 border-white/10">
             <CardHeader>
-              <CardTitle className="text-white text-lg">Photo Booth Simulator</CardTitle>
+                  <CardTitle className="text-white text-lg flex items-center gap-2">
+                    <Camera className="w-5 h-5 text-pink-400" />
+                    Simulator Configuration
+                  </CardTitle>
               <CardDescription className="text-zinc-400">
-                Test the complete photo booth experience
+                    Configure the booth experience you want to test
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <CardContent className="space-y-8">
                 {/* Step 1: Select Event */}
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-full bg-purple-500 flex items-center justify-center text-white font-bold">
+                  <div className="space-y-4 relative pl-8 before:absolute before:left-3.5 before:top-8 before:bottom-[-2rem] before:w-px before:bg-zinc-800">
+                    <div className="absolute left-0 top-0 w-7 h-7 rounded-full bg-pink-500/20 text-pink-400 border border-pink-500/30 flex items-center justify-center text-xs font-bold">
                       1
                     </div>
-                    <span className="text-white font-medium">Select Event</span>
+                    <div className="space-y-1">
+                      <h3 className="text-sm font-medium text-zinc-200">Select Event</h3>
+                      <p className="text-xs text-zinc-500">Choose the event to simulate</p>
                   </div>
                   <Select
                     value={selectedEventId}
@@ -2335,76 +2412,100 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
                     </SelectContent>
                   </Select>
                   {selectedEvent && (
-                    <div className="text-xs text-zinc-500">
-                      {templates.length} template{templates.length !== 1 ? 's' : ''} available
+                      <div className="flex gap-2">
+                         <Badge variant="outline" className="text-xs border-zinc-700 text-zinc-400">
+                           {templates.length} templates
+                         </Badge>
+                         <Badge variant="outline" className="text-xs border-zinc-700 text-zinc-400">
+                           {selectedEvent.albumTracking?.enabled ? 'Album Mode' : 'Standard Mode'}
+                         </Badge>
                     </div>
                   )}
                 </div>
 
                 {/* Step 2: Choose Station */}
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-full bg-purple-500 flex items-center justify-center text-white font-bold">
+                  <div className="space-y-4 relative pl-8">
+                    <div className="absolute left-0 top-0 w-7 h-7 rounded-full bg-zinc-800 text-zinc-400 border border-zinc-700 flex items-center justify-center text-xs font-bold">
                       2
                     </div>
-                    <span className="text-white font-medium">Choose Station</span>
+                    <div className="space-y-1">
+                      <h3 className="text-sm font-medium text-zinc-200">Choose Entry Point</h3>
+                      <p className="text-xs text-zinc-500">Where do you want to start the flow?</p>
                   </div>
-                  <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {[
-                      { key: 'registration', label: 'Registration', desc: 'Create badges' },
-                      { key: 'booth', label: 'Booth', desc: 'Take photos' },
-                      { key: 'playground', label: 'Playground', desc: 'Free mode' },
-                      { key: 'viewer', label: 'Viewer', desc: 'View albums' },
-                    ].map(({ key, label, desc }) => (
+                        { key: 'registration', label: 'Registration', desc: 'Create visitor badges', icon: UserPlus },
+                        { key: 'booth', label: 'Photo Booth', desc: 'Capture & process photos', icon: Camera },
+                        { key: 'playground', label: 'Playground', desc: 'Free test mode', icon: Gamepad2 },
+                        { key: 'viewer', label: 'Album Viewer', desc: 'View gallery & sharing', icon: Images },
+                      ].map(({ key, label, desc, icon: Icon }) => (
                       <Button
                         key={key}
                         variant="outline"
-                        className="border-zinc-700 justify-start flex-col items-start h-auto py-3"
+                          className="border-zinc-700 justify-start items-start h-auto py-3 px-3 bg-zinc-800/30 hover:bg-zinc-800 hover:border-pink-500/50 group"
                         onClick={() => openEventPreview(key)}
                         disabled={!selectedEvent}
                       >
-                        <span className="font-medium">{label}</span>
-                        <span className="text-xs text-zinc-500">{desc}</span>
+                          <div className="mr-3 mt-0.5 p-2 rounded-md bg-zinc-900 text-zinc-500 group-hover:text-pink-400 transition-colors">
+                            <Icon className="w-4 h-4" />
+                          </div>
+                          <div className="text-left">
+                            <span className="font-medium text-zinc-200 block mb-0.5">{label}</span>
+                            <span className="text-[10px] text-zinc-500">{desc}</span>
+                          </div>
                       </Button>
                     ))}
                   </div>
                 </div>
-
-                {/* Step 3: Launch */}
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-full bg-purple-500 flex items-center justify-center text-white font-bold">
-                      3
+                </CardContent>
+              </Card>
                     </div>
-                    <span className="text-white font-medium">Launch Test</span>
-                  </div>
+
+            {/* Launch & Tips (Sticky) */}
+            <div className="space-y-6 lg:sticky lg:top-4 h-fit">
+              <Card className="bg-zinc-900/50 border-white/10 border-t-4 border-t-pink-500">
+                <CardHeader>
+                  <CardTitle className="text-white text-lg">Launch Simulator</CardTitle>
+                  <CardDescription className="text-zinc-400">
+                    Start the full experience
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
                   <Button
-                    className="w-full bg-purple-600 hover:bg-purple-700"
+                    className="w-full bg-pink-600 hover:bg-pink-700 h-12 text-base shadow-lg shadow-pink-900/20"
                     onClick={() => openEventPreview('main')}
                     disabled={!selectedEvent}
                   >
-                    <Play className="w-4 h-4 mr-2" />
-                    Launch Photo Booth
+                    <Play className="w-5 h-5 mr-2 fill-current" />
+                    Launch Full Experience
                   </Button>
-                  <p className="text-xs text-zinc-500">
-                    Opens in a new tab. Processing photos will use real tokens.
-                  </p>
-                </div>
+                  
+                  <div className="text-xs text-zinc-500 text-center px-4">
+                    Opens in a new tab. <br/>
+                    <span className="text-amber-500/80">Warning: Processing photos consumes real tokens.</span>
               </div>
 
-              {/* Tips */}
-              <div className="mt-8 p-4 rounded-lg bg-purple-500/10 border border-purple-500/20">
-                <h4 className="text-sm font-medium text-purple-400 mb-2">💡 Testing Tips</h4>
-                <ul className="text-sm text-zinc-400 space-y-1">
-                  <li>• Use the <strong>Registration</strong> station to test badge creation (Album Mode events)</li>
-                  <li>• Test the <strong>Booth</strong> station to verify template processing</li>
-                  <li>• Check the <strong>Viewer</strong> station for album display</li>
-                  <li>• Add <code className="text-purple-400 bg-purple-500/10 px-1 rounded">?mock=1</code> to URLs for mock data (no tokens)</li>
-                  <li>• Test on mobile by resizing your browser or using DevTools</li>
+                  <div className="p-4 rounded-lg bg-pink-500/5 border border-pink-500/10">
+                    <h4 className="text-xs font-bold text-pink-400 uppercase tracking-wider mb-3">Testing Tips</h4>
+                    <ul className="text-xs text-zinc-400 space-y-2">
+                      <li className="flex gap-2">
+                        <span className="text-pink-500">•</span>
+                        <span>Use <strong>Registration</strong> to test badge printing flows (Album Mode).</span>
+                      </li>
+                      <li className="flex gap-2">
+                        <span className="text-pink-500">•</span>
+                        <span>Use <strong>Booth</strong> to verify AI template processing results.</span>
+                      </li>
+                      <li className="flex gap-2">
+                        <span className="text-pink-500">•</span>
+                        <span>Add <code className="text-pink-400 bg-pink-500/10 px-1 rounded">?mock=1</code> to URLs to use free mock processing.</span>
+                      </li>
                 </ul>
               </div>
             </CardContent>
           </Card>
+            </div>
+          </div>
         </TabsContent>
       </Tabs>
 

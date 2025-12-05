@@ -94,3 +94,27 @@ Guide_*.md
 SPECS_*.md
 *_BRANDING.md
 !docs/**
+
+# Environment variables and secrets
+.env
+.env.*
+*.env
+.env.local
+.env.development
+.env.production
+.env.staging
+
+# AWS credentials
+aws-exports.js
+awsconfiguration.json
+amplify-meta.json
+
+# Other sensitive files
+config/secrets.yml
+config/database.yml
+*.pem
+*.key
+*.p12
+*.pfx
+credentials.json
+service-account.json

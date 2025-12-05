@@ -16,6 +16,13 @@ function getApiUrl(): string {
   return ENV.API_URL;
 }
 
+// Helper to get API path with version prefix
+function getApiPath(path: string, useV2 = false): string {
+  const base = getApiUrl();
+  const version = useV2 ? '/api/v2' : '/api';
+  return `${base}${version}${path}`;
+}
+
 export interface User {
   id: number;
   username: string;
@@ -153,6 +160,7 @@ export interface Template {
   images: string[]; // Background images
   elementImages?: string[]; // Element/prop images for mixing (Seedream, Imagen)
   prompt: string;
+  negativePrompt?: string; // What to avoid in the generated image
   groupPrompt?: string; // Alternative prompt for group photos
   active: boolean;
   // Individual branding controls per template
@@ -168,15 +176,16 @@ export interface Template {
   
   // Pipeline Configuration
   pipelineConfig?: {
-    imageModel?: string; // e.g., 'seedream-t2i', 'nano-banana', 'flux-realism'
+    imageModel?: string; // e.g., 'nano-banana', 'seedream-v4', 'flux-realism'
     groupImageModel?: string; // Separate model for group photos (optional)
     forceInstructions?: boolean; // Add extra context to help AI understand images
     seed?: number; // Seed for reproducible results (same seed = similar output)
+    strength?: number; // Control how much the AI changes the image (0-1)
+    steps?: number; // Number of inference steps
     faceswapEnabled?: boolean;
     faceswapModel?: string;
     videoEnabled?: boolean;
     videoModel?: string; // e.g., 'wan-v2', 'kling-pro', 'veo-3.1'
-    badgeEnabled?: boolean;
   };
   
   // Access & Monetization Overrides
@@ -669,8 +678,8 @@ export async function createAlbum(eventId: number, orgId?: string, ownerName?: s
     throw new Error('Invalid event ID');
   }
   
-  // Note: trailing slash is required to avoid 307 redirect from FastAPI
-  const response = await fetch(`${getApiUrl()}/api/albums/`, {
+  // Use v2 endpoint
+  const response = await fetch(getApiPath('/albums', true), {
     method: 'POST',
     headers,
     body: JSON.stringify({ 
@@ -690,19 +699,19 @@ export async function createAlbum(eventId: number, orgId?: string, ownerName?: s
 }
 
 export async function getAlbum(code: string): Promise<Album> {
-  const response = await fetch(`${getApiUrl()}/api/albums/${code}`);
+  const response = await fetch(getApiPath(`/albums/${code}`, true));
   if (!response.ok) throw new Error('Album not found');
   return response.json();
 }
 
 export async function getAlbumPhotos(code: string): Promise<AlbumPhoto[]> {
-  const response = await fetch(`${getApiUrl()}/api/albums/${code}/photos`);
+  const response = await fetch(getApiPath(`/albums/${code}/photos`, true));
   if (!response.ok) return [];
   return response.json();
 }
 
 export async function addAlbumPhoto(code: string, photoId: string, stationType: string): Promise<AlbumPhoto> {
-  const response = await fetch(`${getApiUrl()}/api/albums/${code}/photos`, {
+  const response = await fetch(getApiPath(`/albums/${code}/photos`, true), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ photo_id: photoId, station_type: stationType })
@@ -713,7 +722,7 @@ export async function addAlbumPhoto(code: string, photoId: string, stationType: 
 }
 
 export async function deleteAlbumPhoto(albumCode: string, photoId: string): Promise<void> {
-  const response = await fetch(`${getApiUrl()}/api/albums/${albumCode}/photos/${photoId}`, {
+  const response = await fetch(getApiPath(`/albums/${albumCode}/photos/${photoId}`, true), {
     method: 'DELETE',
     headers: { 'Content-Type': 'application/json' }
   });
@@ -733,7 +742,7 @@ export async function deleteAlbum(albumCode: string, staffPin?: string): Promise
   const token = getAuthToken();
   
   // Build URL with optional PIN parameter
-  let url = `${getApiUrl()}/api/albums/${albumCode}`;
+  let url = getApiPath(`/albums/${albumCode}`, true);
   if (staffPin) {
     url += `?pin=${encodeURIComponent(staffPin)}`;
   }
@@ -759,7 +768,7 @@ export async function deleteAlbum(albumCode: string, staffPin?: string): Promise
 
 export async function getEventAlbums(eventId: number): Promise<Album[]> {
   const token = getAuthToken();
-  const response = await fetch(`${getApiUrl()}/api/albums/event/${eventId}`, {
+  const response = await fetch(getApiPath(`/albums/event/${eventId}`, true), {
     headers: { 'Authorization': `Bearer ${token}` }
   });
   if (!response.ok) return [];
@@ -810,7 +819,7 @@ export async function getEventAlbumStats(eventId: number): Promise<EventAlbumSta
 
 export async function updateAlbumStatus(albumCode: string, status: 'in_progress' | 'completed' | 'paid' | 'archived'): Promise<void> {
   const token = getAuthToken();
-  const response = await fetch(`${getApiUrl()}/api/albums/${albumCode}/status?status=${status}`, {
+  const response = await fetch(getApiPath(`/albums/${albumCode}/status?status=${status}`, true), {
     method: 'PUT',
     headers: { 
       'Authorization': `Bearer ${token}`,

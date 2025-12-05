@@ -1,14 +1,12 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { getUserEvents, type User, type EventConfig } from "@/services/eventsApi";
 import { 
   getDashboardStats, 
-  type TokenStats, 
   type AlbumSummary, 
-  type StationAnalytics,
-  type TokenUsageByType 
+  type StationAnalytics
 } from "@/services/analyticsApi";
 import {
   BarChart3,
@@ -18,14 +16,19 @@ import {
   Eye,
   Activity,
   Clock,
-  Zap,
-  Coins,
   BookOpen,
   CheckCircle,
-  CreditCard
+  CreditCard,
+  Zap
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
+import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+  SelectValue
+} from "@/components/ui/select";
 import { ENV } from "@/config/env";
 
 // Helper to get API URL
@@ -56,29 +59,26 @@ export default function AdminAnalyticsTab({ currentUser }: AdminAnalyticsTabProp
   const [events, setEvents] = useState<EventConfig[]>([]);
   const [analytics, setAnalytics] = useState<EventAnalytics[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [rangeDays, setRangeDays] = useState(30);
   
   // Real statistics from API
-  const [tokenStats, setTokenStats] = useState<TokenStats | null>(null);
   const [albumStats, setAlbumStats] = useState<AlbumSummary | null>(null);
   const [stationStats, setStationStats] = useState<StationAnalytics[]>([]);
-  const [tokenUsage, setTokenUsage] = useState<TokenUsageByType[]>([]);
 
   useEffect(() => {
-    loadAnalytics();
-  }, []);
+    loadAnalytics(rangeDays);
+  }, [rangeDays]);
 
-  const loadAnalytics = async () => {
+  const loadAnalytics = useCallback(async (days: number) => {
     try {
       setIsLoading(true);
       const token = localStorage.getItem("auth_token");
 
-      // Load dashboard stats (tokens, albums, stations)
+      // Load dashboard stats (albums, stations)
       try {
-        const dashboardStats = await getDashboardStats(30);
-        setTokenStats(dashboardStats.tokens);
+        const dashboardStats = await getDashboardStats(days);
         setAlbumStats(dashboardStats.albums);
         setStationStats(dashboardStats.stations);
-        setTokenUsage(dashboardStats.tokenUsage);
       } catch (statsError) {
         console.warn("Failed to load dashboard stats:", statsError);
       }
@@ -126,7 +126,7 @@ export default function AdminAnalyticsTab({ currentUser }: AdminAnalyticsTabProp
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
   const totalStats = analytics.reduce(
     (acc, curr) => ({
@@ -138,42 +138,31 @@ export default function AdminAnalyticsTab({ currentUser }: AdminAnalyticsTabProp
     { totalPhotos: 0, totalViews: 0, photosLast24h: 0, activeEvents: 0 }
   );
 
-  // Calculate token usage percentage
-  const tokenUsagePercent = tokenStats 
-    ? Math.min(100, ((tokenStats.tokens_total - tokenStats.current_tokens) / tokenStats.tokens_total) * 100)
-    : 0;
-
   return (
-    <div className="space-y-8">
-      {/* Token & Album Stats - Real Data */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {/* Tokens Remaining */}
-        <Card className="bg-zinc-900/50 border-white/10 backdrop-blur-sm">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-zinc-400">Tokens Remaining</CardTitle>
-            <div className="p-2 rounded-lg bg-amber-500/10">
-              <Coins className="h-4 w-4 text-amber-400" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <Skeleton className="h-8 w-20 bg-zinc-800" />
-            ) : (
-              <>
-                <div className="text-2xl font-bold text-white">
-                  {tokenStats?.current_tokens?.toLocaleString() || 0}
-                </div>
-                <div className="mt-2">
-                  <Progress value={100 - tokenUsagePercent} className="h-1.5" />
-                </div>
-                <p className="text-xs text-zinc-500 mt-1">
-                  {tokenStats?.tokens_used_month?.toLocaleString() || 0} used this month
-                </p>
-              </>
-            )}
-          </CardContent>
-        </Card>
+    <div className="space-y-8 max-w-[1280px] mx-auto">
+      {/* Header with range selector */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-white">Analytics</h1>
+          <p className="text-sm text-zinc-400">Insights for your events and stations</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="text-sm text-zinc-400">Range</span>
+          <Select value={String(rangeDays)} onValueChange={(v) => setRangeDays(Number(v))}>
+            <SelectTrigger className="w-32 bg-zinc-900 border-white/10 text-white">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="bg-zinc-900 border-white/10 text-white">
+              <SelectItem value="7">Last 7 days</SelectItem>
+              <SelectItem value="30">Last 30 days</SelectItem>
+              <SelectItem value="90">Last 90 days</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
 
+      {/* Album Stats - Real Data */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {/* Total Albums */}
         <Card className="bg-zinc-900/50 border-white/10 backdrop-blur-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -268,35 +257,6 @@ export default function AdminAnalyticsTab({ currentUser }: AdminAnalyticsTabProp
                   </div>
                   <p className="text-xs text-zinc-500">
                     {station.album_count} albums • Last: {station.last_photo ? new Date(station.last_photo).toLocaleDateString() : 'N/A'}
-                  </p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Token Usage by Type */}
-      {tokenUsage.length > 0 && (
-        <div>
-          <h2 className="text-xl font-semibold text-white mb-6 flex items-center gap-2">
-            <Zap className="w-5 h-5 text-amber-400" />
-            Token Usage by Type
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            {tokenUsage.map((usage) => (
-              <Card key={usage.type} className="bg-zinc-900/50 border-white/10">
-                <CardContent className="pt-6">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium text-white capitalize">
-                      {usage.type}
-                    </span>
-                    <span className="text-lg font-bold text-amber-400">
-                      {usage.tokens_used}
-                    </span>
-                  </div>
-                  <p className="text-xs text-zinc-500">
-                    {usage.transaction_count} transactions
                   </p>
                 </CardContent>
               </Card>

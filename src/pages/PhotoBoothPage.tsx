@@ -98,8 +98,11 @@ export const PhotoBoothPage = () => {
     });
   }, [config?.templates, stationId]);
 
-  // Initialize album mode
+  // Initialize album mode - MUST wait for config to load
   useEffect(() => {
+    // Don't run until config is loaded
+    if (loading) return;
+
     const loadAlbum = async () => {
       if (!albumId) return;
       try {
@@ -134,7 +137,7 @@ export const PhotoBoothPage = () => {
       // Load album data
       loadAlbum();
     }
-  }, [isAlbumMode, albumId, config, stationType]);
+  }, [loading, isAlbumMode, albumId, config, stationType]);
 
   // Fire celebratory confetti when the AI result is ready
   useEffect(() => {

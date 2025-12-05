@@ -49,6 +49,7 @@ import {
   Globe,
   Zap,
   Settings2,
+  Clock,
 } from "lucide-react";
 import { User } from "@/services/eventsApi";
 import { ENV } from "@/config/env";
@@ -154,12 +155,21 @@ const FACESWAP_MODELS = [
   { value: 'high-quality', label: 'High Quality', tokens: 5 },
 ];
 
-// Cache marketplace data
+// Cache marketplace data (keyed by user to prevent cross-user data leaks)
 let cachedTemplates: MarketplaceTemplate[] | null = null;
 let cachedLoraModels: LoRAModel[] | null = null;
 let cachedLibrary: LibraryItem[] | null = null;
+let cachedUserId: string | null = null;
 
 export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
+  // Invalidate cache if user changed
+  if (cachedUserId !== currentUser.id) {
+    cachedTemplates = null;
+    cachedLoraModels = null;
+    cachedLibrary = null;
+    cachedUserId = currentUser.id;
+  }
+  
   const [activeSection, setActiveSection] = useState<'templates' | 'lora' | 'library'>('templates');
   const [templates, setTemplates] = useState<MarketplaceTemplate[]>(cachedTemplates || []);
   const [loraModels, setLoraModels] = useState<LoRAModel[]>(cachedLoraModels || []);
@@ -219,6 +229,13 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
 
   const isBusiness = currentUser.role?.startsWith('business') || currentUser.role === 'superadmin';
 
+  const getTemplateImage = (template: MarketplaceTemplate) => {
+    return template.preview_url || 
+           (template.backgrounds && template.backgrounds[0]) || 
+           (template.preview_images && template.preview_images[0]) ||
+           'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400';
+  };
+
   useEffect(() => {
     if (!cachedTemplates) {
       fetchMarketplaceData();
@@ -242,20 +259,40 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
 
       if (templatesRes.ok) {
         const data = await templatesRes.json();
-        cachedTemplates = data;
-        setTemplates(data);
+        cachedTemplates = data || [];
+        setTemplates(data || []);
       }
 
       if (loraRes.ok) {
         const loraData = await loraRes.json();
-        cachedLoraModels = loraData;
-        setLoraModels(loraData);
+        cachedLoraModels = loraData || [];
+        setLoraModels(loraData || []);
       }
 
       if (libraryRes && libraryRes.ok) {
         const libraryData = await libraryRes.json();
-        cachedLibrary = libraryData;
-        setMyLibrary(libraryData);
+        cachedLibrary = libraryData || [];
+        setMyLibrary(libraryData || []);
+      }
+
+      // Reconcile owned templates not present in library
+      const libraryList = cachedLibrary || [];
+      const libraryIds = new Set(libraryList.map((item) => item.template_id));
+      const ownedMissing = (cachedTemplates || []).filter((t) => t.is_owned && !libraryIds.has(t.id));
+      if (ownedMissing.length > 0) {
+        const synthesized: LibraryItem[] = ownedMissing.map((t) => ({
+          id: `owned_${t.id}`,
+          template_id: t.id,
+          type: 'template',
+          name: t.name,
+          preview_url: getTemplateImage(t),
+          template_type: t.template_type,
+          purchased_at: new Date().toISOString(),
+          times_used: 0,
+        }));
+        const merged = [...synthesized, ...libraryList];
+        cachedLibrary = merged;
+        setMyLibrary(merged);
       }
     } catch (error) {
       console.error("Error fetching marketplace data:", error);
@@ -314,7 +351,7 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
   };
 
   const handleRemoveFromLibrary = async (item: LibraryItem) => {
-    setMyLibrary(myLibrary.filter(t => t.id !== item.id));
+    setMyLibrary((myLibrary || []).filter(t => t.id !== item.id));
     cachedLibrary = (cachedLibrary || []).filter(t => t.id !== item.id);
     toast.success("Removed from library");
   };
@@ -503,17 +540,10 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
     }
   });
 
-  const isInLibrary = (templateId: string) => myLibrary.some(t => t.template_id === templateId);
-
-  const getTemplateImage = (template: MarketplaceTemplate) => {
-    return template.preview_url || 
-           (template.backgrounds && template.backgrounds[0]) || 
-           (template.preview_images && template.preview_images[0]) ||
-           'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400';
-  };
+  const isInLibrary = (templateId: string) => (myLibrary || []).some(t => t.template_id === templateId);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-[1280px] mx-auto">
       {/* Section Tabs */}
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div className="flex bg-zinc-900/50 p-1 rounded-xl border border-white/10">
@@ -551,7 +581,7 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
           >
             <Library className="w-4 h-4" />
             My Library
-            {myLibrary.length > 0 && (
+            {myLibrary && myLibrary.length > 0 && (
               <Badge className="ml-1 bg-zinc-700 text-white">{myLibrary.length}</Badge>
             )}
           </button>
@@ -631,7 +661,7 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
               {filteredTemplates.map((template) => (
                 <Card
                   key={template.id}
-                  className="bg-zinc-900/50 border-white/10 overflow-hidden group hover:border-white/20 transition-all cursor-pointer"
+                  className="bg-zinc-900/50 border-white/10 overflow-hidden group hover:border-white/20 transition-all cursor-pointer relative"
                   onClick={() => setSelectedTemplate(template)}
                 >
                   <div className="relative aspect-[4/3] overflow-hidden bg-zinc-800">
@@ -680,6 +710,14 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
                       </div>
                     )}
 
+                    {template.template_type === 'business' && !isBusiness && (
+                      <div className="absolute bottom-2 right-2">
+                        <Badge className="bg-purple-500/90 text-white text-[10px]">
+                          Requires Business Plan
+                        </Badge>
+                      </div>
+                    )}
+
                     {/* Owned Badge */}
                     {(template.is_owned || isInLibrary(template.id)) && (
                       <div className="absolute bottom-2 right-2">
@@ -722,6 +760,59 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
                       </Badge>
                     </div>
                   </CardContent>
+
+                  {/* Hover overlay actions */}
+                  <div className="absolute inset-0 bg-black/65 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3 p-4 pointer-events-none group-hover:pointer-events-auto">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-white border-white/30 hover:bg-white/10 bg-white/5"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedTemplate(template);
+                      }}
+                    >
+                      <Eye className="w-4 h-4 mr-1" /> Preview
+                    </Button>
+                    {template.is_owned || isInLibrary(template.id) ? (
+                      <Button
+                        size="sm"
+                        className="bg-emerald-500 hover:bg-emerald-600 text-white"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActiveSection('library');
+                        }}
+                      >
+                        Use
+                      </Button>
+                    ) : (
+                      (() => {
+                        const locked = template.template_type === 'business' && !isBusiness;
+                        const isFree = template.price === 0;
+                        return (
+                      <Button
+                        size="sm"
+                        className={`text-white ${locked ? 'bg-white/10 text-white/60 border border-white/20 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700'}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handlePurchase(template);
+                        }}
+                        disabled={locked}
+                      >
+                        {isFree ? (
+                          <>
+                            <Plus className="w-4 h-4 mr-1" /> Add
+                          </>
+                        ) : (
+                          <>
+                            <Coins className="w-4 h-4 mr-1" /> {template.price}
+                          </>
+                        )}
+                      </Button>
+                        );
+                      })()
+                    )}
+                  </div>
                 </Card>
               ))}
             </div>
@@ -741,52 +832,109 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
       {activeSection === 'lora' && isBusiness && (
         <div className="space-y-6">
           {loraModels.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {loraModels.map((model) => (
-                <Card key={model.id} className="bg-zinc-900/50 border-white/10 overflow-hidden">
-                  <div className="relative aspect-video overflow-hidden bg-zinc-800">
-                    <img
-                      src={model.preview_url}
-                      alt={model.name}
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400';
-                      }}
-                    />
-                    <div className="absolute top-2 right-2">
-                      <Badge className="bg-black/60 backdrop-blur-sm text-white">
-                        ${model.price}
-                      </Badge>
-                    </div>
-                  </div>
-                  <CardContent className="p-4">
-                    <h3 className="font-semibold text-white">{model.name}</h3>
-                    <p className="text-sm text-zinc-400 mt-1 line-clamp-2">{model.description}</p>
-                    <div className="flex items-center justify-between mt-3">
-                      <div className="flex items-center gap-2 text-sm text-zinc-500">
-                        <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
-                        <span>{model.rating}</span>
-                        <span>•</span>
-                        <Download className="w-3 h-3" />
-                        <span>{model.downloads}</span>
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {loraModels.map((model) => (
+                  <Card key={model.id} className="bg-zinc-900/50 border-white/10 overflow-hidden hover:border-indigo-500/30 transition-all">
+                    <div className="relative aspect-video overflow-hidden bg-zinc-800">
+                      <img
+                        src={model.preview_url}
+                        alt={model.name}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400';
+                        }}
+                      />
+                      <div className="absolute top-2 right-2">
+                        <Badge className="bg-black/60 backdrop-blur-sm text-white">
+                          ${model.price}
+                        </Badge>
                       </div>
-                      <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700 text-white">
-                        Buy
-                      </Button>
+                    </div>
+                    <CardContent className="p-4 space-y-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <h3 className="font-semibold text-white">{model.name}</h3>
+                          <p className="text-sm text-zinc-400 mt-1 line-clamp-2">{model.description}</p>
+                        </div>
+                        <Badge variant="outline" className="border-white/10 text-xs text-zinc-400">
+                          {model.category}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2 text-sm text-zinc-500">
+                          <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
+                          <span>{model.rating}</span>
+                          <span>•</span>
+                          <Download className="w-3 h-3" />
+                          <span>{model.downloads}</span>
+                        </div>
+                        <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700 text-white">
+                          Buy
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+
+              {/* How it works + Upcoming */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                <Card className="bg-zinc-900/50 border-white/10 lg:col-span-2">
+                  <CardContent className="p-5 space-y-3">
+                    <div className="flex items-center gap-2 text-white font-semibold">
+                      <Sparkles className="w-4 h-4 text-indigo-400" />
+                      How LoRA Marketplace Works
+                    </div>
+                    <ol className="space-y-2 text-sm text-zinc-300 list-decimal list-inside">
+                      <li>Pick a model with a style you like.</li>
+                      <li>Apply it to your templates or badges from the editor.</li>
+                      <li>Pay per use or own it if marked “Owned”.</li>
+                      <li>Preview sample outputs before applying.</li>
+                    </ol>
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-zinc-900/50 border-white/10">
+                  <CardContent className="p-5 space-y-2">
+                    <div className="flex items-center gap-2 text-white font-semibold">
+                      <Clock className="w-4 h-4 text-amber-400" />
+                      Upcoming Models
+                    </div>
+                    <div className="space-y-2 text-sm text-zinc-300">
+                      <div className="p-3 rounded-lg bg-zinc-800/60 flex items-center justify-between">
+                        <span>Neon Portrait v2</span>
+                        <Badge className="bg-amber-500/20 text-amber-400">Soon</Badge>
+                      </div>
+                      <div className="p-3 rounded-lg bg-zinc-800/60 flex items-center justify-between">
+                        <span>Product Hero Light</span>
+                        <Badge className="bg-amber-500/20 text-amber-400">Soon</Badge>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
-              ))}
-            </div>
+              </div>
+            </>
           ) : (
-            <div className="text-center py-12">
+            <div className="text-center py-12 space-y-4">
               <Wand2 className="w-12 h-12 mx-auto text-zinc-600 mb-4" />
               <h3 className="text-lg font-semibold text-white">LoRA Model Marketplace</h3>
               <p className="text-zinc-400 mt-1">Coming soon: Train and share custom AI models</p>
-              <Button className="mt-4 bg-indigo-600 hover:bg-indigo-700 text-white">
+              <Button className="mt-2 bg-indigo-600 hover:bg-indigo-700 text-white">
                 <Sparkles className="w-4 h-4 mr-2" />
                 Join Waitlist
               </Button>
+              <div className="max-w-xl mx-auto text-left bg-zinc-900/50 border border-white/10 rounded-2xl p-5">
+                <h4 className="text-white font-semibold flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-amber-400" />
+                  Upcoming Models
+                </h4>
+                <ul className="text-sm text-zinc-300 mt-2 space-y-1 list-disc list-inside">
+                  <li>Neon Portrait v2</li>
+                  <li>Product Hero Light</li>
+                  <li>Studio Cinematic Pack</li>
+                </ul>
+              </div>
             </div>
           )}
         </div>
@@ -795,7 +943,7 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
       {/* My Library Section */}
       {activeSection === 'library' && (
         <>
-          {myLibrary.length === 0 ? (
+          {(!myLibrary || myLibrary.length === 0) ? (
             <div className="text-center py-12">
               <Library className="w-12 h-12 mx-auto text-zinc-600 mb-4" />
               <h3 className="text-lg font-semibold text-white">Your library is empty</h3>
@@ -809,7 +957,7 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {myLibrary.map((item) => (
+              {(myLibrary || []).map((item) => (
                 <Card
                   key={item.id}
                   className="bg-zinc-900/50 border-white/10 overflow-hidden group"

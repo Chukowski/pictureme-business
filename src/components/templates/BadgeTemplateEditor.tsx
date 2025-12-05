@@ -2,24 +2,17 @@
  * BadgeTemplateEditor Component
  * 
  * Allows users to configure badge templates for registration stations.
- * Includes AI pipeline configuration, background upload, and custom fields.
- * 
- * Badge Generation Flow:
- * 1. User takes/uploads photo at Registration
- * 2. Photo is processed with AI (using badge template pipeline)
- * 3. AI generates image in specified ratio
- * 4. System composites: Background + AI-generated photo + QR + Text fields
- * 5. Final badge is ready for download/print
+ * Refactored for better UX with side-by-side preview.
  */
 
 import React, { useState, useRef } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
+import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Select,
   SelectContent,
@@ -28,38 +21,20 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '@/components/ui/tabs';
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion';
-import {
-  QrCode,
   User,
   Calendar,
   PartyPopper,
-  Type,
-  Image as ImageIcon,
   Upload,
   Trash2,
   LayoutTemplate,
   Square,
   RectangleHorizontal,
   RectangleVertical,
-  Eye,
   Loader2,
   Download,
-  Wand2,
   Sparkles,
-  Settings2,
   Palette,
-  AlertTriangle,
+  CheckCircle2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -96,6 +71,7 @@ export interface BadgeTemplateConfig {
     model: string;
     referenceImages: string[];
     outputRatio: '1:1' | '3:4' | '4:3' | '9:16' | '16:9';
+    sourceTemplateId?: string; // Use existing template for badge photo enhancement
   };
   
   // Fields configuration
@@ -163,11 +139,11 @@ const OUTPUT_RATIOS = [
   { value: '16:9', label: 'Wide (16:9)', desc: 'Widescreen' },
 ] as const;
 
-// AI Models available
+// AI Models available (matching production)
 const AI_MODELS = [
-  { value: 'fal-ai/bytedance/seedream/v4/edit', label: 'Seedream v4 (Recommended)', desc: 'Best quality' },
-  { value: 'fal-ai/flux-realism', label: 'Flux Realism', desc: 'Photorealistic' },
-  { value: 'fal-ai/gemini-flash', label: 'Gemini Flash', desc: 'Fast generation' },
+  { value: 'nano-banana', label: 'Nano Banana (Fast)', desc: 'Fast, high-quality' },
+  { value: 'seedream-v4', label: 'SeeDream v4 (Quality)', desc: 'Best for artistic styles' },
+  { value: 'flux-realism', label: 'Flux Realism', desc: 'Photorealistic' },
 ] as const;
 
 const QR_POSITIONS = [
@@ -222,7 +198,7 @@ export const DEFAULT_BADGE_CONFIG: BadgeTemplateConfig = {
   aiPipeline: {
     enabled: false,
     prompt: 'Create a professional portrait photo with a clean, modern background. Keep the person\'s face and features accurate.',
-    model: 'fal-ai/bytedance/seedream/v4/edit',
+    model: 'nano-banana',
     referenceImages: [],
     outputRatio: '1:1',
   },
@@ -411,126 +387,102 @@ export function BadgeTemplateEditor({
     toast.success(`Downloaded ${layout} template (${layoutConfig.width}×${layoutConfig.height}px)`);
   };
 
-  // Badge preview dimensions
-  const previewDimensions = {
-    portrait: { width: 180, height: 240 },
-    landscape: { width: 240, height: 180 },
-    square: { width: 200, height: 200 },
-  };
-
-  const dims = previewDimensions[config.layout];
-  const photoSizeMap = { small: 50, medium: 70, large: 90 };
-  const photoSize = photoSizeMap[config.photoPlacement.size || 'medium'];
-
   return (
     <div className={cn("space-y-6", className)}>
       {/* Enable Toggle */}
-      <div className="flex items-center justify-between p-4 rounded-xl bg-black/30 border border-white/10">
-        <div className="space-y-0.5">
-          <Label className="text-white font-medium">Badge Template</Label>
-          <p className="text-xs text-zinc-400">
-            Configure badge design for registration station
-          </p>
+      <div className="flex items-center justify-between p-4 rounded-xl bg-gradient-to-r from-purple-900/20 to-indigo-900/20 border border-purple-500/20">
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-lg bg-purple-500/20 text-purple-400">
+            <CheckCircle2 className="w-5 h-5" />
+          </div>
+          <div>
+            <Label className="text-white font-medium text-base">Enable Badge Generation</Label>
+            <p className="text-xs text-zinc-400">
+              Automatically create badges for guests
+            </p>
+          </div>
         </div>
         <Switch
           checked={config.enabled}
           onCheckedChange={(enabled) => updateConfig({ enabled })}
           disabled={disabled}
-          className="data-[state=checked]:bg-indigo-600"
+          className="data-[state=checked]:bg-purple-600"
         />
       </div>
 
       {config.enabled && (
-        <Tabs defaultValue="design" className="space-y-4">
-          <TabsList className="bg-black/30 border border-white/10 p-1">
-            <TabsTrigger value="design" className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-zinc-400">
-              <Palette className="w-4 h-4 mr-2" />
+        <Tabs defaultValue="design" className="w-full">
+          <TabsList className="grid w-full grid-cols-3 bg-zinc-900/50 border border-white/10 rounded-lg p-1">
+            <TabsTrigger 
+              value="design" 
+              className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-zinc-400 rounded-md text-xs"
+            >
+              <Palette className="w-3.5 h-3.5 mr-1.5" />
               Design
             </TabsTrigger>
-            <TabsTrigger value="ai" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white text-zinc-400">
-              <Wand2 className="w-4 h-4 mr-2" />
+            <TabsTrigger 
+              value="content" 
+              className="data-[state=active]:bg-emerald-600 data-[state=active]:text-white text-zinc-400 rounded-md text-xs"
+            >
+              <LayoutTemplate className="w-3.5 h-3.5 mr-1.5" />
+              Content
+            </TabsTrigger>
+            <TabsTrigger 
+              value="ai" 
+              className="data-[state=active]:bg-purple-600 data-[state=active]:text-white text-zinc-400 rounded-md text-xs"
+            >
+              <Sparkles className="w-3.5 h-3.5 mr-1.5" />
               AI Pipeline
-            </TabsTrigger>
-            <TabsTrigger value="fields" className="data-[state=active]:bg-emerald-600 data-[state=active]:text-white text-zinc-400">
-              <Type className="w-4 h-4 mr-2" />
-              Fields
-            </TabsTrigger>
-            <TabsTrigger value="preview" className="data-[state=active]:bg-cyan-600 data-[state=active]:text-white text-zinc-400">
-              <Eye className="w-4 h-4 mr-2" />
-              Preview
             </TabsTrigger>
           </TabsList>
 
-          {/* Design Tab */}
-          <TabsContent value="design" className="space-y-4">
-            {/* Layout Selection */}
-            <Card className="bg-black/30 border-white/10">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm text-white flex items-center gap-2">
-                  <LayoutTemplate className="w-4 h-4 text-indigo-400" />
-                  Layout & Size
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-3 gap-3">
-                  {LAYOUT_OPTIONS.map((option) => {
-                    const Icon = option.icon;
-                    return (
-                      <button
-                        key={option.value}
-                        type="button"
-                        onClick={() => updateConfig({ layout: option.value })}
-                        disabled={disabled}
-                        className={cn(
-                          "p-4 rounded-xl border text-center transition-all",
-                          config.layout === option.value
-                            ? "border-indigo-500 bg-indigo-500/10 ring-1 ring-indigo-500"
-                            : "border-white/10 bg-white/5 hover:border-white/20 hover:bg-white/10"
-                        )}
-                      >
-                        <Icon className="w-6 h-6 mx-auto mb-2 text-zinc-300" />
-                        <p className="text-sm font-medium text-white">{option.label}</p>
-                        <p className="text-xs text-zinc-400">{option.width}×{option.height}px</p>
-                      </button>
-                    );
-                  })}
-                </div>
+          {/* Tab 1: Visual Design */}
+          <TabsContent value="design" className="mt-4 space-y-6">
+            {/* Layout */}
+            <div className="space-y-3">
+              <Label className="text-zinc-300 text-xs uppercase tracking-wider">Layout & Size</Label>
+              <div className="grid grid-cols-3 gap-3">
+                {LAYOUT_OPTIONS.map((option) => {
+                  const Icon = option.icon;
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => updateConfig({ layout: option.value })}
+                      disabled={disabled}
+                      className={cn(
+                        "p-3 rounded-xl border text-center transition-all flex flex-col items-center gap-2",
+                        config.layout === option.value
+                          ? "border-indigo-500 bg-indigo-500/10 ring-1 ring-indigo-500"
+                          : "border-white/10 bg-white/5 hover:border-white/20 hover:bg-white/10"
+                      )}
+                    >
+                      <Icon className="w-5 h-5 text-zinc-300" />
+                      <span className="text-xs font-medium text-white">{option.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
 
-                {/* Download Template Examples */}
-                <div className="pt-4 border-t border-white/10">
-                  <Label className="text-xs text-zinc-400 mb-2 block">Download Background Template</Label>
-                  <div className="flex flex-wrap gap-2">
-                    {LAYOUT_OPTIONS.map((option) => (
-                      <Button
-                        key={option.value}
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        className="border-white/10 bg-white/5 text-zinc-300 hover:bg-white/10 hover:text-white"
-                        onClick={() => downloadTemplateExample(option.value)}
-                      >
-                        <Download className="w-3 h-3 mr-1" />
-                        {option.label} ({option.width}×{option.height})
-                      </Button>
-                    ))}
-                  </div>
-                  <p className="text-xs text-zinc-500 mt-2">
-                    Download a template with guidelines to design your custom background
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
+            <Separator className="bg-white/5" />
 
             {/* Background */}
-            <Card className="bg-black/30 border-white/10">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm text-white flex items-center gap-2">
-                  <ImageIcon className="w-4 h-4 text-indigo-400" />
-                  Background
-                </CardTitle>
-                <CardDescription className="text-zinc-400">Upload a custom background or use a solid color</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label className="text-zinc-300 text-xs uppercase tracking-wider">Background</Label>
+                <Button
+                  variant="link"
+                  size="sm"
+                  className="h-auto p-0 text-xs text-indigo-400"
+                  onClick={() => downloadTemplateExample(config.layout)}
+                >
+                  <Download className="w-3 h-3 mr-1" />
+                  Download Template
+                </Button>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -540,13 +492,13 @@ export function BadgeTemplateEditor({
                 />
                 
                 {config.backgroundUrl ? (
-                  <div className="relative rounded-xl overflow-hidden border border-white/10">
+                  <div className="relative rounded-lg overflow-hidden border border-white/10 group aspect-video">
                     <img
                       src={config.backgroundUrl}
                       alt="Badge background"
-                      className="w-full h-32 object-cover"
+                      className="w-full h-full object-cover"
                     />
-                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                       <Button
                         type="button"
                         variant="destructive"
@@ -563,7 +515,7 @@ export function BadgeTemplateEditor({
                   <Button
                     type="button"
                     variant="outline"
-                    className="w-full border-dashed border-white/20 bg-white/5 text-zinc-300 hover:bg-white/10 hover:text-white"
+                    className="h-full min-h-[80px] border-dashed border-white/20 bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-white hover:border-white/30"
                     onClick={() => fileInputRef.current?.click()}
                     disabled={disabled || isUploading}
                   >
@@ -572,289 +524,280 @@ export function BadgeTemplateEditor({
                     ) : (
                       <Upload className="w-4 h-4 mr-2" />
                     )}
-                    Upload Background Image
+                    Upload Image
                   </Button>
                 )}
 
                 <div className="space-y-2">
-                  <Label className="text-xs text-zinc-400">Background Color (Fallback)</Label>
+                  <Label className="text-xs text-zinc-400">Fallback Color</Label>
                   <div className="flex gap-2">
                     <Input
                       type="color"
                       value={config.backgroundColor || '#1e293b'}
                       onChange={(e) => updateConfig({ backgroundColor: e.target.value })}
                       disabled={disabled}
-                      className="w-12 h-10 p-1 bg-black/40 border-white/10"
+                      className="w-10 h-10 p-1 bg-black/40 border-white/10"
                     />
                     <Input
                       type="text"
                       value={config.backgroundColor || '#1e293b'}
                       onChange={(e) => updateConfig({ backgroundColor: e.target.value })}
                       disabled={disabled}
-                      placeholder="#1e293b"
-                      className="flex-1 bg-black/40 border-white/10 text-white placeholder:text-zinc-600 font-mono text-sm focus:border-indigo-500"
+                      className="flex-1 bg-black/40 border-white/10 text-white font-mono text-xs"
                     />
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-
-            {/* Photo Placement */}
-            <Card className="bg-black/30 border-white/10">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm text-white flex items-center gap-2">
-                  <User className="w-4 h-4 text-blue-400" />
-                  Photo Placement
-                </CardTitle>
-                <CardDescription className="text-zinc-400">Configure visitor photo display</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <Label className="text-xs text-zinc-400">Position</Label>
-                    <Select
-                      value={config.photoPlacement.position}
-                      onValueChange={(position: BadgeTemplateConfig['photoPlacement']['position']) => 
-                        updatePhotoPlacement({ position })
-                      }
-                      disabled={disabled}
-                    >
-                      <SelectTrigger className="bg-black/40 border-white/10 text-white focus:border-indigo-500">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {PHOTO_POSITIONS.map((pos) => (
-                          <SelectItem key={pos.value} value={pos.value}>
-                            {pos.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label className="text-xs text-zinc-400">Shape</Label>
-                    <Select
-                      value={config.photoPlacement.shape}
-                      onValueChange={(shape: BadgeTemplateConfig['photoPlacement']['shape']) => 
-                        updatePhotoPlacement({ shape })
-                      }
-                      disabled={disabled}
-                    >
-                      <SelectTrigger className="bg-black/40 border-white/10 text-white focus:border-indigo-500">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {PHOTO_SHAPES.map((s) => (
-                          <SelectItem key={s.value} value={s.value}>
-                            {s.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label className="text-xs text-zinc-400">Size</Label>
-                    <Select
-                      value={config.photoPlacement.size || 'medium'}
-                      onValueChange={(size: BadgeTemplateConfig['photoPlacement']['size']) => 
-                        updatePhotoPlacement({ size })
-                      }
-                      disabled={disabled}
-                    >
-                      <SelectTrigger className="bg-black/40 border-white/10 text-white focus:border-indigo-500">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {PHOTO_SIZES.map((s) => (
-                          <SelectItem key={s.value} value={s.value}>
-                            {s.label} ({s.percent})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* QR Code Settings */}
-            <Card className="bg-black/30 border-white/10">
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-sm text-white flex items-center gap-2">
-                    <QrCode className="w-4 h-4 text-cyan-400" />
-                    QR Code
-                  </CardTitle>
-                  <Switch
-                    checked={config.qrCode.enabled}
-                    onCheckedChange={(enabled) => updateQrCode({ enabled })}
-                    disabled={disabled}
-                    className="data-[state=checked]:bg-indigo-600"
-                  />
-                </div>
-                <CardDescription className="text-zinc-400">Links to visitor's album for photo collection</CardDescription>
-              </CardHeader>
-              {config.qrCode.enabled && (
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label className="text-xs text-zinc-400">Position</Label>
-                      <Select
-                        value={config.qrCode.position}
-                        onValueChange={(position: BadgeTemplateConfig['qrCode']['position']) => 
-                          updateQrCode({ position })
-                        }
-                        disabled={disabled}
-                      >
-                        <SelectTrigger className="bg-black/40 border-white/10 text-white focus:border-indigo-500">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {QR_POSITIONS.map((pos) => (
-                            <SelectItem key={pos.value} value={pos.value}>
-                              {pos.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label className="text-xs text-zinc-400">Size</Label>
-                      <Select
-                        value={config.qrCode.size}
-                        onValueChange={(size: BadgeTemplateConfig['qrCode']['size']) => 
-                          updateQrCode({ size })
-                        }
-                        disabled={disabled}
-                      >
-                        <SelectTrigger className="bg-black/40 border-white/10 text-white focus:border-indigo-500">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {QR_SIZES.map((s) => (
-                            <SelectItem key={s.value} value={s.value}>
-                              {s.label} ({s.size})
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                </CardContent>
-              )}
-            </Card>
+              </div>
+            </div>
           </TabsContent>
 
-          {/* AI Pipeline Tab */}
-          <TabsContent value="ai" className="space-y-4">
-            <Card className="bg-black/30 border-white/10">
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-sm text-white flex items-center gap-2">
-                    <Sparkles className="w-4 h-4 text-purple-400" />
-                    AI Photo Enhancement
-                  </CardTitle>
-                  <Switch
-                    checked={config.aiPipeline.enabled}
-                    onCheckedChange={(enabled) => updateAiPipeline({ enabled })}
-                    disabled={disabled}
-                    className="data-[state=checked]:bg-purple-600"
-                  />
+          {/* Tab 2: Content & Placement */}
+          <TabsContent value="content" className="mt-4 space-y-6">
+            {/* Photo Placement */}
+            <div className="space-y-3">
+              <Label className="text-zinc-300 text-xs uppercase tracking-wider">Photo Placement</Label>
+              <div className="grid grid-cols-3 gap-3">
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] text-zinc-500">Position</Label>
+                  <Select
+                    value={config.photoPlacement.position}
+                    onValueChange={(position: any) => updatePhotoPlacement({ position })}
+                  >
+                    <SelectTrigger className="h-8 text-xs bg-black/40 border-white/10 text-white">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PHOTO_POSITIONS.map((pos) => (
+                        <SelectItem key={pos.value} value={pos.value}>{pos.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
-                <CardDescription className="text-zinc-400">
-                  Process visitor photos with AI before adding to badge
-                </CardDescription>
-              </CardHeader>
-              {config.aiPipeline.enabled && (
-                <CardContent className="space-y-4">
-                  {/* Token Warning */}
-                  <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30">
-                    <div className="flex items-start gap-2">
-                      <AlertTriangle className="w-4 h-4 text-amber-500 mt-0.5" />
-                      <div>
-                        <p className="text-sm font-medium text-amber-400">Token Usage</p>
-                        <p className="text-xs text-amber-200/70">
-                          AI processing uses tokens. Each badge generation will consume tokens based on your plan.
-                        </p>
-                      </div>
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] text-zinc-500">Shape</Label>
+                  <Select
+                    value={config.photoPlacement.shape}
+                    onValueChange={(shape: any) => updatePhotoPlacement({ shape })}
+                  >
+                    <SelectTrigger className="h-8 text-xs bg-black/40 border-white/10 text-white">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PHOTO_SHAPES.map((s) => (
+                        <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] text-zinc-500">Size</Label>
+                  <Select
+                    value={config.photoPlacement.size || 'medium'}
+                    onValueChange={(size: any) => updatePhotoPlacement({ size })}
+                  >
+                    <SelectTrigger className="h-8 text-xs bg-black/40 border-white/10 text-white">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PHOTO_SIZES.map((s) => (
+                        <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+
+            <Separator className="bg-white/5" />
+
+            {/* Fields */}
+            <div className="space-y-3">
+              <Label className="text-zinc-300 text-xs uppercase tracking-wider">Visible Fields</Label>
+              <div className="grid grid-cols-2 gap-3">
+                {[
+                  { key: 'showName', label: 'Visitor Name', icon: User },
+                  { key: 'showDateTime', label: 'Date & Time', icon: Calendar },
+                  { key: 'showEventName', label: 'Event Name', icon: PartyPopper },
+                ].map((field) => (
+                  <div key={field.key} className="flex items-center justify-between p-2.5 rounded-lg bg-white/5 border border-white/10">
+                    <div className="flex items-center gap-2">
+                      <field.icon className="w-3.5 h-3.5 text-zinc-400" />
+                      <span className="text-xs text-zinc-300">{field.label}</span>
+                    </div>
+                    <Switch
+                      checked={(config.fields as any)[field.key]}
+                      onCheckedChange={(c) => updateFields({ [field.key]: c })}
+                      className="scale-75 data-[state=checked]:bg-emerald-600"
+                    />
+                  </div>
+                ))}
+              </div>
+              
+              <div className="pt-2">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-[10px] text-zinc-500">Custom Field 1 Label</Label>
+                    <Input
+                      value={config.fields.customField1}
+                      onChange={(e) => updateFields({ customField1: e.target.value })}
+                      placeholder="e.g. Company"
+                      className="h-8 text-xs bg-black/40 border-white/10 text-white"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-[10px] text-zinc-500">Custom Field 2 Label</Label>
+                    <Input
+                      value={config.fields.customField2}
+                      onChange={(e) => updateFields({ customField2: e.target.value })}
+                      placeholder="e.g. Role"
+                      className="h-8 text-xs bg-black/40 border-white/10 text-white"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <Separator className="bg-white/5" />
+
+            {/* QR Code */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label className="text-zinc-300 text-xs uppercase tracking-wider">QR Code</Label>
+                <Switch
+                  checked={config.qrCode.enabled}
+                  onCheckedChange={(c) => updateQrCode({ enabled: c })}
+                  className="scale-75 data-[state=checked]:bg-indigo-600"
+                />
+              </div>
+              
+              {config.qrCode.enabled && (
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-[10px] text-zinc-500">Position</Label>
+                    <Select
+                      value={config.qrCode.position}
+                      onValueChange={(position: any) => updateQrCode({ position })}
+                    >
+                      <SelectTrigger className="h-8 text-xs bg-black/40 border-white/10 text-white">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {QR_POSITIONS.map((pos) => (
+                          <SelectItem key={pos.value} value={pos.value}>{pos.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-[10px] text-zinc-500">Size</Label>
+                    <Select
+                      value={config.qrCode.size}
+                      onValueChange={(size: any) => updateQrCode({ size })}
+                    >
+                      <SelectTrigger className="h-8 text-xs bg-black/40 border-white/10 text-white">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {QR_SIZES.map((s) => (
+                          <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              )}
+            </div>
+          </TabsContent>
+
+          {/* Tab 3: AI Pipeline */}
+          <TabsContent value="ai" className="mt-4 space-y-6">
+            <div className="flex items-center justify-between p-3 rounded-lg bg-purple-500/10 border border-purple-500/20">
+              <div>
+                <Label className="text-purple-200 font-medium">Enable AI Processing</Label>
+                <p className="text-xs text-purple-300/70">Enhance visitor photos using AI</p>
+              </div>
+              <Switch
+                checked={config.aiPipeline.enabled}
+                onCheckedChange={(enabled) => updateAiPipeline({ enabled })}
+                disabled={disabled}
+                className="data-[state=checked]:bg-purple-600"
+              />
+            </div>
+
+            {config.aiPipeline.enabled && (
+              <div className="space-y-4">
+                <div className="space-y-3">
+                  <Label className="text-zinc-300 text-xs uppercase tracking-wider">Configuration</Label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <Label className="text-[10px] text-zinc-500">Model</Label>
+                      <Select
+                        value={config.aiPipeline.model}
+                        onValueChange={(model) => updateAiPipeline({ model })}
+                      >
+                        <SelectTrigger className="h-8 text-xs bg-black/40 border-white/10 text-white">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {AI_MODELS.map((model) => (
+                            <SelectItem key={model.value} value={model.value}>{model.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-[10px] text-zinc-500">Output Ratio</Label>
+                      <Select
+                        value={config.aiPipeline.outputRatio || '1:1'}
+                        onValueChange={(ratio: any) => updateAiPipeline({ outputRatio: ratio })}
+                      >
+                        <SelectTrigger className="h-8 text-xs bg-black/40 border-white/10 text-white">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {OUTPUT_RATIOS.map((ratio) => (
+                            <SelectItem key={ratio.value} value={ratio.value}>
+                              {ratio.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
-
-                  {/* AI Model Selection */}
-                  <div className="space-y-2">
-                    <Label className="text-zinc-300">AI Model</Label>
-                    <Select
-                      value={config.aiPipeline.model}
-                      onValueChange={(model) => updateAiPipeline({ model })}
-                      disabled={disabled}
-                    >
-                      <SelectTrigger className="bg-black/40 border-white/10 text-white focus:border-purple-500">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {AI_MODELS.map((model) => (
-                          <SelectItem key={model.value} value={model.value}>
-                            <div>
-                              <span>{model.label}</span>
-                              <span className="text-xs text-zinc-400 ml-2">({model.desc})</span>
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {/* Output Ratio */}
-                  <div className="space-y-2">
-                    <Label className="text-zinc-300">Output Ratio</Label>
-                    <Select
-                      value={config.aiPipeline.outputRatio}
-                      onValueChange={(ratio: BadgeTemplateConfig['aiPipeline']['outputRatio']) => 
-                        updateAiPipeline({ outputRatio: ratio })
-                      }
-                      disabled={disabled}
-                    >
-                      <SelectTrigger className="bg-black/40 border-white/10 text-white focus:border-purple-500">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {OUTPUT_RATIOS.map((ratio) => (
-                          <SelectItem key={ratio.value} value={ratio.value}>
-                            <div>
-                              <span>{ratio.label}</span>
-                              <span className="text-xs text-zinc-400 ml-2">({ratio.desc})</span>
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {/* AI Prompt */}
-                  <div className="space-y-2">
-                    <Label className="text-zinc-300">AI Prompt</Label>
+                  <div className="space-y-1.5">
+                    <Label className="text-[10px] text-zinc-500">Prompt</Label>
                     <Textarea
                       value={config.aiPipeline.prompt}
                       onChange={(e) => updateAiPipeline({ prompt: e.target.value })}
-                      disabled={disabled}
-                      placeholder="Describe how the AI should enhance the photo..."
-                      className="bg-black/40 border-white/10 text-white placeholder:text-zinc-600 min-h-[100px] focus:border-purple-500"
+                      placeholder="Describe the style..."
+                      className="min-h-[80px] text-xs bg-black/40 border-white/10 text-white"
                     />
-                    <p className="text-xs text-zinc-500">
-                      Describe the style, background, or enhancements you want applied to visitor photos.
-                    </p>
                   </div>
+                </div>
 
-                  {/* Reference Images */}
-                  <div className="space-y-2">
-                    <Label className="text-zinc-300">Reference Images (Optional)</Label>
-                    <p className="text-xs text-zinc-500 mb-2">
-                      Add style reference images for the AI to match
-                    </p>
-                    
+                <div className="space-y-3">
+                  <Label className="text-zinc-300 text-xs uppercase tracking-wider">Reference Images</Label>
+                  <div className="grid grid-cols-4 gap-2">
+                    {config.aiPipeline.referenceImages?.map((img, i) => (
+                      <div key={i} className="relative group aspect-square rounded-md overflow-hidden border border-white/10">
+                        <img src={img} className="w-full h-full object-cover" />
+                        <button
+                          onClick={() => removeRefImage(i)}
+                          className="absolute top-0 right-0 bg-red-500/80 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <Trash2 className="w-3 h-3 text-white" />
+                        </button>
+                      </div>
+                    ))}
+                    {(config.aiPipeline.referenceImages?.length || 0) < 4 && (
+                      <button
+                        onClick={() => refImageInputRef.current?.click()}
+                        disabled={isUploadingRef}
+                        className="aspect-square rounded-md border border-dashed border-white/20 flex items-center justify-center hover:bg-white/5 transition-colors"
+                      >
+                        {isUploadingRef ? <Loader2 className="w-4 h-4 animate-spin text-zinc-500" /> : <Upload className="w-4 h-4 text-zinc-500" />}
+                      </button>
+                    )}
                     <input
                       ref={refImageInputRef}
                       type="file"
@@ -862,320 +805,10 @@ export function BadgeTemplateEditor({
                       onChange={handleRefImageUpload}
                       className="hidden"
                     />
-
-                    <div className="grid grid-cols-4 gap-2">
-                      {config.aiPipeline.referenceImages?.map((img, i) => (
-                        <div key={i} className="relative group">
-                          <img
-                            src={img}
-                            alt={`Reference ${i + 1}`}
-                            className="w-full aspect-square object-cover rounded-xl border border-white/10"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => removeRefImage(i)}
-                            className="absolute top-1 right-1 p-1 rounded-full bg-red-500/80 opacity-0 group-hover:opacity-100 transition-opacity"
-                          >
-                            <Trash2 className="w-3 h-3 text-white" />
-                          </button>
-                        </div>
-                      ))}
-                      
-                      {(config.aiPipeline.referenceImages?.length || 0) < 4 && (
-                        <button
-                          type="button"
-                          onClick={() => refImageInputRef.current?.click()}
-                          disabled={disabled || isUploadingRef}
-                          className="aspect-square rounded-xl border-2 border-dashed border-white/20 flex items-center justify-center hover:border-purple-500/50 hover:bg-white/5 transition-colors"
-                        >
-                          {isUploadingRef ? (
-                            <Loader2 className="w-6 h-6 text-zinc-500 animate-spin" />
-                          ) : (
-                            <Upload className="w-6 h-6 text-zinc-500" />
-                          )}
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </CardContent>
-              )}
-            </Card>
-          </TabsContent>
-
-          {/* Fields Tab */}
-          <TabsContent value="fields" className="space-y-4">
-            <Card className="bg-black/30 border-white/10">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm text-white flex items-center gap-2">
-                  <Type className="w-4 h-4 text-emerald-400" />
-                  Display Fields
-                </CardTitle>
-                <CardDescription className="text-zinc-400">Select which information to display on the badge</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 gap-3">
-                  <div className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/10">
-                    <div className="flex items-center gap-2">
-                      <User className="w-4 h-4 text-blue-400" />
-                      <span className="text-sm text-white">Visitor Name</span>
-                    </div>
-                    <Switch
-                      checked={config.fields.showName}
-                      onCheckedChange={(showName) => updateFields({ showName })}
-                      disabled={disabled}
-                      className="data-[state=checked]:bg-emerald-600"
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/10">
-                    <div className="flex items-center gap-2">
-                      <Calendar className="w-4 h-4 text-green-400" />
-                      <span className="text-sm text-white">Date & Time</span>
-                    </div>
-                    <Switch
-                      checked={config.fields.showDateTime}
-                      onCheckedChange={(showDateTime) => updateFields({ showDateTime })}
-                      disabled={disabled}
-                      className="data-[state=checked]:bg-emerald-600"
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/10">
-                    <div className="flex items-center gap-2">
-                      <PartyPopper className="w-4 h-4 text-purple-400" />
-                      <span className="text-sm text-white">Event Name</span>
-                    </div>
-                    <Switch
-                      checked={config.fields.showEventName}
-                      onCheckedChange={(showEventName) => updateFields({ showEventName })}
-                      disabled={disabled}
-                      className="data-[state=checked]:bg-emerald-600"
-                    />
                   </div>
                 </div>
-
-                <div className="space-y-3 pt-4 border-t border-white/10">
-                  <Label className="text-xs text-zinc-400">Custom Fields (Labels)</Label>
-                  <Input
-                    value={config.fields.customField1}
-                    onChange={(e) => updateFields({ customField1: e.target.value })}
-                    placeholder="Custom field 1 label (e.g., Company)"
-                    disabled={disabled}
-                    className="bg-black/40 border-white/10 text-white placeholder:text-zinc-600 focus:border-emerald-500"
-                  />
-                  <Input
-                    value={config.fields.customField2}
-                    onChange={(e) => updateFields({ customField2: e.target.value })}
-                    placeholder="Custom field 2 label (e.g., Role)"
-                    disabled={disabled}
-                    className="bg-black/40 border-white/10 text-white placeholder:text-zinc-600 focus:border-emerald-500"
-                  />
-                  <p className="text-xs text-zinc-500">
-                    Custom fields will be filled in by visitors during registration
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Preview Tab */}
-          <TabsContent value="preview" className="space-y-4">
-            <Card className="bg-black/30 border-white/10">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm text-white flex items-center gap-2">
-                  <Eye className="w-4 h-4 text-cyan-400" />
-                  Badge Preview
-                </CardTitle>
-                <CardDescription className="text-zinc-400">See how badges will look</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex justify-center">
-                  <div
-                    className="relative rounded-xl overflow-hidden border-2 border-white/20 shadow-xl"
-                    style={{
-                      width: dims.width,
-                      height: dims.height,
-                      backgroundColor: config.backgroundColor || '#1e293b',
-                      backgroundImage: config.backgroundUrl ? `url(${config.backgroundUrl})` : undefined,
-                      backgroundSize: 'cover',
-                      backgroundPosition: 'center',
-                    }}
-                  >
-                    {/* Photo placeholder - use custom positions if enabled */}
-                    {config.useCustomPositions && config.customPositions?.photo ? (
-                    <div
-                      className={cn(
-                          "absolute bg-white/10 border-2 border-dashed border-white/30 flex items-center justify-center",
-                          config.photoPlacement.shape === 'circle' && "rounded-full",
-                          config.photoPlacement.shape === 'rounded' && "rounded-lg"
-                        )}
-                        style={{ 
-                          width: photoSize, 
-                          height: photoSize,
-                          left: `${config.customPositions.photo.x}%`,
-                          top: `${config.customPositions.photo.y}%`,
-                          transform: 'translate(-50%, -50%)',
-                        }}
-                      >
-                        <User className="w-6 h-6 text-white/50" />
-                      </div>
-                    ) : (
-                      <div
-                        className={cn(
-                          "absolute bg-white/10 border-2 border-dashed border-white/30 flex items-center justify-center",
-                        config.photoPlacement.shape === 'circle' && "rounded-full",
-                        config.photoPlacement.shape === 'rounded' && "rounded-lg",
-                        config.photoPlacement.position === 'top' && "top-4 left-1/2 -translate-x-1/2",
-                        config.photoPlacement.position === 'center' && "top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2",
-                        config.photoPlacement.position === 'left' && "top-1/2 left-4 -translate-y-1/2",
-                        config.photoPlacement.position === 'right' && "top-1/2 right-4 -translate-y-1/2"
-                      )}
-                      style={{ width: photoSize, height: photoSize }}
-                    >
-                        <User className="w-6 h-6 text-white/50" />
-                    </div>
-                    )}
-
-                    {/* AI badge indicator */}
-                    {config.aiPipeline.enabled && (
-                      <div className="absolute top-2 left-2">
-                        <Badge className="bg-purple-500/80 text-white text-[10px]">
-                          <Sparkles className="w-2 h-2 mr-1" />
-                          AI Enhanced
-                        </Badge>
-                      </div>
-                    )}
-
-                    {/* QR Code placeholder - use custom positions if enabled */}
-                    {config.qrCode.enabled && (
-                      config.useCustomPositions && config.customPositions?.qrCode ? (
-                        <div
-                          className="absolute bg-white p-1 rounded"
-                          style={{
-                            width: config.qrCode.size === 'small' ? 30 : config.qrCode.size === 'medium' ? 40 : 50,
-                            height: config.qrCode.size === 'small' ? 30 : config.qrCode.size === 'medium' ? 40 : 50,
-                            left: `${config.customPositions.qrCode.x}%`,
-                            top: `${config.customPositions.qrCode.y}%`,
-                            transform: 'translate(-50%, -50%)',
-                          }}
-                        >
-                          <QrCode className="w-full h-full text-zinc-800" />
-                        </div>
-                      ) : (
-                      <div
-                        className={cn(
-                          "absolute bg-white p-1 rounded",
-                          config.qrCode.position === 'top-left' && "top-2 left-2",
-                          config.qrCode.position === 'top-right' && "top-2 right-2",
-                          config.qrCode.position === 'bottom-left' && "bottom-2 left-2",
-                          config.qrCode.position === 'bottom-right' && "bottom-2 right-2",
-                          config.qrCode.position === 'center' && "top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
-                        )}
-                        style={{
-                          width: config.qrCode.size === 'small' ? 30 : config.qrCode.size === 'medium' ? 40 : 50,
-                          height: config.qrCode.size === 'small' ? 30 : config.qrCode.size === 'medium' ? 40 : 50,
-                        }}
-                      >
-                          <QrCode className="w-full h-full text-zinc-800" />
-                      </div>
-                      )
-                    )}
-
-                    {/* Fields preview - use custom positions if enabled */}
-                    {config.useCustomPositions && config.customPositions?.name ? (
-                      <>
-                        {config.fields.showName && (
-                          <p 
-                            className="absolute text-xs font-semibold text-white truncate"
-                            style={{
-                              left: `${config.customPositions.name?.x || 50}%`,
-                              top: `${config.customPositions.name?.y || 72}%`,
-                              transform: 'translate(-50%, -50%)',
-                            }}
-                          >
-                            John Doe
-                          </p>
-                        )}
-                        {config.fields.showEventName && (
-                          <p 
-                            className="absolute text-[10px] text-zinc-300 truncate"
-                            style={{
-                              left: `${config.customPositions.eventName?.x || 50}%`,
-                              top: `${config.customPositions.eventName?.y || 80}%`,
-                              transform: 'translate(-50%, -50%)',
-                            }}
-                          >
-                            {eventName}
-                          </p>
-                        )}
-                        {config.fields.showDateTime && (
-                          <p 
-                            className="absolute text-[10px] text-zinc-400"
-                            style={{
-                              left: `${config.customPositions.dateTime?.x || 50}%`,
-                              top: `${config.customPositions.dateTime?.y || 87}%`,
-                              transform: 'translate(-50%, -50%)',
-                            }}
-                          >
-                            Nov 28, 2025 • 2:30 PM
-                          </p>
-                        )}
-                      </>
-                    ) : (
-                    <div className="absolute bottom-2 left-2 right-2 space-y-0.5">
-                      {config.fields.showName && (
-                        <p className="text-xs font-semibold text-white truncate">John Doe</p>
-                      )}
-                      {config.fields.showEventName && (
-                          <p className="text-[10px] text-zinc-300 truncate">{eventName}</p>
-                      )}
-                      {config.fields.showDateTime && (
-                          <p className="text-[10px] text-zinc-400">Nov 28, 2025 • 2:30 PM</p>
-                      )}
-                      {config.fields.customField1 && (
-                          <p className="text-[10px] text-zinc-400 truncate">{config.fields.customField1}: <span className="text-zinc-300">Value</span></p>
-                      )}
-                      {config.fields.customField2 && (
-                          <p className="text-[10px] text-zinc-400 truncate">{config.fields.customField2}: <span className="text-zinc-300">Value</span></p>
-                      )}
-                    </div>
-                    )}
-
-                    {/* Custom positions indicator */}
-                    {config.useCustomPositions && (
-                      <div className="absolute bottom-1 right-1">
-                        <Badge className="bg-cyan-500/80 text-white text-[8px]">
-                          Custom Layout
-                        </Badge>
-                      </div>
-                    )}
-                  </div>
-                </div>
-                
-                {/* Custom Layout Tip */}
-                <div className="mt-4 p-3 rounded-xl bg-cyan-500/10 border border-cyan-500/30">
-                  <p className="text-xs text-cyan-400">
-                    <strong>💡 Tip:</strong> Use the <span className="font-semibold">Playground → Badge Test</span> to drag and position elements exactly where you want them, then save the custom layout.
-                  </p>
-                </div>
-                
-                <div className="mt-4 p-4 rounded-xl bg-white/5 border border-white/10">
-                  <h4 className="text-sm font-medium text-white mb-2">Badge Generation Flow</h4>
-                  <ol className="text-xs text-zinc-400 space-y-1 list-decimal list-inside">
-                    <li>Visitor takes/uploads photo at Registration Station</li>
-                    {config.aiPipeline.enabled && (
-                      <li className="text-purple-400">Photo is enhanced with AI ({config.aiPipeline.outputRatio} ratio)</li>
-                    )}
-                    <li>System composites badge with background + photo + QR + fields</li>
-                    <li>Badge is ready for download/print</li>
-                  </ol>
-                </div>
-
-                <p className="text-xs text-zinc-500 text-center mt-3">
-                  This is a simplified preview. Actual badge will include real visitor data.
-                </p>
-              </CardContent>
-            </Card>
+              </div>
+            )}
           </TabsContent>
         </Tabs>
       )}
