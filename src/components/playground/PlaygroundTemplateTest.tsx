@@ -101,7 +101,11 @@ export function PlaygroundTemplateTest({ events, currentUser, onReloadEvents }: 
   };
 
   const processWithAI = async () => {
-    if (!selectedTemplate || !selectedEvent || !testImageBase64) return;
+    if (!selectedTemplate || !selectedEvent || !testImageBase64 || testImageBase64.length < 100) {
+      toast.error("Please upload or select a test image first");
+      console.error("❌ processWithAI: missing or empty testImageBase64");
+      return;
+    }
 
     setIsProcessing(true);
     setProcessingStatus('processing');
@@ -124,12 +128,18 @@ export function PlaygroundTemplateTest({ events, currentUser, onReloadEvents }: 
           : selectedTemplate.prompt || '';
 
       const result = await processImageWithAI({
-        imageBase64: testImageBase64,
-        prompt: promptToUse,
-        modelKey: selectedAiModel,
+        userPhotoBase64: testImageBase64,
+        backgroundPrompt: promptToUse,
+        backgroundImageUrls: selectedTemplate.images || [],
+        includeBranding: false,
         aspectRatio: selectedTemplate.aspectRatio || "2:3",
+        aiModel: AI_MODELS[selectedAiModel].id,
         forceInstructions: forceInstructions,
-        seed: customSeed
+        seed: customSeed,
+        eventId: selectedEvent.postgres_event_id,
+        billingContext: isGroupPhoto ? 'playground-group' : 'playground-individual',
+        eventSlug: selectedEvent.slug,
+        userSlug: selectedEvent.user_slug,
       });
 
       setProcessedResult(result.imageUrl);
