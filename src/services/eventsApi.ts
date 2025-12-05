@@ -745,9 +745,15 @@ export async function addAlbumPhoto(code: string, photoId: string, stationType: 
 }
 
 export async function deleteAlbumPhoto(albumCode: string, photoId: string): Promise<void> {
+  const token = getAuthToken();
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  
   const response = await fetch(getApiPath(`/albums/${albumCode}/photos/${photoId}`, true), {
     method: 'DELETE',
-    headers: { 'Content-Type': 'application/json' }
+    headers
   });
   
   if (!response.ok) {

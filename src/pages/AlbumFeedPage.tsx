@@ -11,7 +11,7 @@ import { useEventConfig } from '@/hooks/useEventConfig';
 import { 
   Loader2, ArrowLeft, Download, Share2, Mail, MessageSquare, 
   CheckCircle2, XCircle, MonitorPlay, Printer, Lock, Unlock,
-  QrCode, ExternalLink, CreditCard, ShoppingCart, Clock
+  QrCode, ExternalLink, CreditCard, ShoppingCart, Clock, Trash2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -20,7 +20,7 @@ import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { EventNotFound } from '@/components/EventNotFound';
-import { getAlbum, getAlbumPhotos, createAlbumCheckout, updateAlbumStatus, Album, sendAlbumEmail, getEmailStatus, requestAlbumPayment } from '@/services/eventsApi';
+import { getAlbum, getAlbumPhotos, createAlbumCheckout, updateAlbumStatus, deleteAlbumPhoto, Album, sendAlbumEmail, getEmailStatus, requestAlbumPayment } from '@/services/eventsApi';
 import { QRCodeSVG } from 'qrcode.react';
 
 // Mock photo data - will be replaced with real API
@@ -159,6 +159,24 @@ export default function AlbumFeedPage() {
   }, [albumId]);
 
   // Staff actions
+  const handleDeletePhoto = async (photoId: string) => {
+    if (!albumId) return;
+    
+    if (!confirm('Are you sure you want to delete this photo? This action cannot be undone.')) {
+      return;
+    }
+    
+    try {
+      await deleteAlbumPhoto(albumId, photoId);
+      // Remove from local state
+      setPhotos(photos.filter(p => p.id !== photoId));
+      toast.success('Photo deleted');
+    } catch (error) {
+      console.error('Failed to delete photo:', error);
+      toast.error('Failed to delete photo');
+    }
+  };
+
   const handleApprovePhoto = (photoId: string, approved: boolean) => {
     setPhotos(photos.map(p => 
       p.id === photoId ? { ...p, approved } : p
@@ -768,17 +786,30 @@ export default function AlbumFeedPage() {
 
                               {/* Approval badge */}
                               {isStaff && (
-                                <div className="absolute top-2 right-2">
-                                  {photo.approved ? (
-                                    <Badge className="bg-green-500/80 text-white text-xs">
-                                      <CheckCircle2 className="w-3 h-3" />
-                                    </Badge>
-                                  ) : (
-                                    <Badge className="bg-amber-500/80 text-white text-xs">
-                                      Pending
-                                    </Badge>
-                                  )}
-                                </div>
+                                <>
+                                  <div className="absolute top-2 right-2">
+                                    {photo.approved ? (
+                                      <Badge className="bg-green-500/80 text-white text-xs">
+                                        <CheckCircle2 className="w-3 h-3" />
+                                      </Badge>
+                                    ) : (
+                                      <Badge className="bg-amber-500/80 text-white text-xs">
+                                        Pending
+                                      </Badge>
+                                    )}
+                                  </div>
+                                  {/* Delete button */}
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleDeletePhoto(photo.id);
+                                    }}
+                                    className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg bg-red-500/80 hover:bg-red-600 text-white"
+                                    title="Delete photo"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                </>
                               )}
                             </div>
                           ))}
