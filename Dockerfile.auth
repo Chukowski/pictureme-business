@@ -9,7 +9,7 @@ COPY package*.json ./
 RUN npm ci --only=production --legacy-peer-deps
 
 # Copy auth server
-COPY auth-server-simple.js .
+COPY test/auth-server-simple.js .
 
 # Expose port
 EXPOSE 3002
