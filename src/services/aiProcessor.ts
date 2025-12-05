@@ -404,6 +404,23 @@ export async function processImageWithAI(
     );
   }
 
+  // Validate required parameters
+  if (!userPhotoBase64) {
+    throw new Error("User photo is required but was not provided.");
+  }
+  
+  if (!backgroundPrompt || backgroundPrompt.trim() === '') {
+    console.error("❌ VALIDATION ERROR: backgroundPrompt is missing or empty");
+    console.error("📋 Options received:", JSON.stringify({
+      hasUserPhoto: !!userPhotoBase64,
+      backgroundPrompt: backgroundPrompt,
+      backgroundImageUrl: backgroundImageUrl,
+      backgroundImageUrls: backgroundImageUrls,
+      aiModel: aiModel,
+    }, null, 2));
+    throw new Error("Prompt is required but was not provided. Please ensure the template has a prompt configured.");
+  }
+
   // Use provided model or default, and resolve short IDs to full FAL.ai IDs
   const requestedModel = aiModel || DEFAULT_FAL_MODEL;
   const modelToUse = resolveModelId(requestedModel);
@@ -507,6 +524,21 @@ Transform them while keeping their identity recognizable.`;
         console.log(`🎲 Seed: ${options.seed} (for reproducible results)`);
       }
       
+      // Final validation before sending to FAL.ai (Seedream)
+      console.log("═══════════════════════════════════════════════════════════");
+      console.log("📤 SENDING TO FAL.AI (Seedream):");
+      console.log("═══════════════════════════════════════════════════════════");
+      console.log("🎯 Model:", modelToUse);
+      console.log("📝 Prompt:", seedreamInput.prompt ? `"${String(seedreamInput.prompt).substring(0, 100)}..."` : "⚠️ MISSING!");
+      console.log("🖼️ Images:", Array.isArray(seedreamInput.image_urls) ? `${(seedreamInput.image_urls as string[]).length} images` : "⚠️ MISSING!");
+      
+      if (!seedreamInput.prompt) {
+        throw new Error("Cannot send request to FAL.ai: prompt is missing");
+      }
+      if (!seedreamInput.image_urls || (seedreamInput.image_urls as string[]).length === 0) {
+        throw new Error("Cannot send request to FAL.ai: image_urls is missing or empty");
+      }
+      
       result = await fal.subscribe(modelToUse, {
         input: seedreamInput,
         logs: true,
@@ -597,6 +629,22 @@ Output a single cohesive image.`;
       } else {
         const dimensions = getImageDimensions(aspectRatio);
         console.log(`📐 Using aspect ratio: ${aspectRatio} (${dimensions.width}x${dimensions.height})`);
+      }
+      
+      // Final validation before sending to FAL.ai
+      console.log("═══════════════════════════════════════════════════════════");
+      console.log("📤 SENDING TO FAL.AI:");
+      console.log("═══════════════════════════════════════════════════════════");
+      console.log("🎯 Model:", modelToUse);
+      console.log("📝 Prompt:", modelInput.prompt ? `"${String(modelInput.prompt).substring(0, 100)}..."` : "⚠️ MISSING!");
+      console.log("🖼️ Images:", Array.isArray(modelInput.image_urls) ? `${(modelInput.image_urls as string[]).length} images` : "⚠️ MISSING!");
+      console.log("📊 Full input keys:", Object.keys(modelInput));
+      
+      if (!modelInput.prompt) {
+        throw new Error("Cannot send request to FAL.ai: prompt is missing");
+      }
+      if (!modelInput.image_urls || (modelInput.image_urls as string[]).length === 0) {
+        throw new Error("Cannot send request to FAL.ai: image_urls is missing or empty");
       }
       
       result = await fal.subscribe(modelToUse, {
