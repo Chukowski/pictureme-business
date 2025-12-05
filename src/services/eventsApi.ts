@@ -587,6 +587,27 @@ export const updateUser = async (data: Partial<User> & { password?: string }): P
   return response.json();
 };
 
+/**
+ * Get user token statistics
+ */
+export async function getTokenStats(): Promise<{ current_tokens: number; tokens_total?: number; plan_tokens?: number }> {
+  const token = getAuthToken();
+  if (!token) throw new Error('Not authenticated');
+
+  const response = await fetch(`${getApiUrl()}/api/tokens/stats`, {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+    },
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch token stats');
+  }
+
+  return response.json();
+}
+
 // Organization Types
 export interface Organization {
   id: string;

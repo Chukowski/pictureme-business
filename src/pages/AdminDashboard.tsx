@@ -191,11 +191,6 @@ export default function AdminDashboard() {
                 </div>
               )}
             </div>
-            <p className="text-sm text-zinc-400 ml-1">
-              {(isSuperAdmin ? dashboardMode === 'business' : userRole.startsWith('business'))
-                ? 'Manage your events, analytics, and business settings'
-                : 'Create AI-powered images and videos'}
-            </p>
           </div>
 
           <div className="flex items-center gap-3">
@@ -211,90 +206,7 @@ export default function AdminDashboard() {
               </Button>
             )}
 
-            {/* User Dropdown Menu */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="hidden md:flex items-center gap-3 px-3 py-1.5 rounded-full bg-zinc-900/50 border border-white/10 backdrop-blur-sm hover:bg-zinc-800/50 transition-colors cursor-pointer">
-                  <div className="w-7 h-7 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/20 overflow-hidden">
-                    {currentUser?.avatar_url ? (
-                      <img
-                        src={currentUser.avatar_url}
-                        alt="Avatar"
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <User className="w-3.5 h-3.5 text-white" />
-                    )}
-                  </div>
-                  <div className="flex flex-col text-left">
-                    <span className="text-sm font-medium text-white leading-none">
-                      {currentUser?.name || currentUser?.full_name || currentUser?.username || currentUser?.email}
-                    </span>
-                    <span className="text-[10px] text-zinc-500 leading-none mt-0.5 capitalize">
-                      {userRole.replace(/_/g, ' ')}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1 ml-1 px-2 py-1 rounded-full bg-yellow-500/10 border border-yellow-500/20">
-                    <Coins className="w-3 h-3 text-yellow-400" />
-                    <span className="text-xs text-yellow-400 font-medium">
-                      {(tokenStats?.current_tokens ?? currentUser?.tokens_remaining ?? 0).toLocaleString()}
-                    </span>
-                    {isTokenRefreshing && <Loader2 className="w-3 h-3 animate-spin text-yellow-400" />}
-                  </div>
-                  <ChevronDown className="w-4 h-4 text-zinc-400" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent 
-                align="end" 
-                className="w-56 bg-zinc-900 border-white/10 text-white p-2"
-              >
-                
-                <DropdownMenuItem 
-                  onClick={() => navigate(`/profile/${currentUser?.username || currentUser?.slug}`)}
-                  className="flex items-center gap-3 px-3 py-2.5 cursor-pointer hover:bg-white/5 rounded-lg"
-                >
-                  <User className="w-4 h-4 text-zinc-400" />
-                  <span>View profile</span>
-                </DropdownMenuItem>
-                
-                {/* Business Settings - only for business users */}
-                {userRole.startsWith('business') && userRole !== ('business_pending' as string) && (
-                  <DropdownMenuItem 
-                    onClick={() => navigate('/admin/business')}
-                    className="flex items-center gap-3 px-3 py-2.5 cursor-pointer hover:bg-white/5 rounded-lg text-indigo-400"
-                  >
-                    <Building2 className="w-4 h-4" />
-                    <span>Business Settings</span>
-                  </DropdownMenuItem>
-                )}
-
-                <DropdownMenuItem 
-                  onClick={() => navigate('/admin/settings')}
-                  className="flex items-center gap-3 px-3 py-2.5 cursor-pointer hover:bg-white/5 rounded-lg text-lime-400"
-                >
-                  <Settings className="w-4 h-4" />
-                  <span>Account Settings</span>
-                </DropdownMenuItem>
-                
-                <DropdownMenuItem 
-                  onClick={() => window.open('https://discord.gg/pictureme', '_blank')}
-                  className="flex items-center gap-3 px-3 py-2.5 cursor-pointer hover:bg-white/5 rounded-lg"
-                >
-                  <Users className="w-4 h-4 text-zinc-400" />
-                  <span>Join our community</span>
-                </DropdownMenuItem>
-                
-                <DropdownMenuSeparator className="bg-white/10" />
-                
-                <DropdownMenuItem 
-                  onClick={handleLogout}
-                  className="flex items-center gap-3 px-3 py-2.5 cursor-pointer hover:bg-white/5 rounded-lg"
-                >
-                  <LogOut className="w-4 h-4 text-zinc-400" />
-                  <span>Sign out</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            {/* Old User Dropdown Removed - Now in TopNavbar */}
           </div>
         </div>
 

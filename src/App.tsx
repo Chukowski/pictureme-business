@@ -19,6 +19,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import AdminEvents from "./pages/AdminEvents";
 import AdminEventForm from "./pages/AdminEventForm";
 import AdminEventPhotos from "./pages/AdminEventPhotos";
+import SuperAdminContent from "./components/super-admin/SuperAdminContent";
 import SuperAdminLayout from "./components/super-admin/SuperAdminLayout";
 import SuperAdminOverview from "./components/super-admin/SuperAdminOverview";
 import SuperAdminUsers from "./components/super-admin/SuperAdminUsers";
@@ -176,6 +177,7 @@ const AppContent = () => {
               <Route path="events" element={<SuperAdminEvents />} />
               <Route path="models" element={<SuperAdminAIModels />} />
               <Route path="marketplace" element={<SuperAdminMarketplace />} />
+              <Route path="content" element={<SuperAdminContent />} />
               <Route path="analytics" element={<SuperAdminAnalytics />} />
               <Route path="settings" element={<SuperAdminSettings />} />
               <Route path="devtools" element={<SuperAdminDevTools />} />

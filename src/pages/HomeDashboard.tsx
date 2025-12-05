@@ -4,19 +4,82 @@ import { motion } from "framer-motion";
 import { 
   Sparkles, Plus, Zap, Layers, ArrowRight, 
   Clock, LayoutTemplate, Activity, AlertCircle,
-  CheckCircle2, Image as ImageIcon
+  CheckCircle2, Image as ImageIcon, ShoppingBag,
+  ExternalLink, Heart, Download, Play
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { getCurrentUser, getUserEvents, type User, type EventConfig } from "@/services/eventsApi";
+import { getCurrentUser, getUserEvents, getTokenStats, type User, type EventConfig } from "@/services/eventsApi";
 import { getPlanDisplayName } from "@/lib/planFeatures";
+import { 
+  getHomeContent, 
+  type HomeContentResponse,
+  type Announcement,
+  viewTemplate,
+  likeCreation
+} from "@/services/contentApi";
+import { cn } from "@/lib/utils";
+
+// Helper Components for Zone C
+const AnnouncementCard = ({ announcement }: { announcement: Announcement }) => {
+  const navigate = useNavigate();
+  const typeStyles: Record<string, { bg: string; text: string; icon: string }> = {
+    new_feature: { bg: 'bg-emerald-500/20', text: 'text-emerald-400', icon: '🚀' },
+    update: { bg: 'bg-blue-500/20', text: 'text-blue-400', icon: '📦' },
+    maintenance: { bg: 'bg-amber-500/20', text: 'text-amber-400', icon: '🔧' },
+    pro_tip: { bg: 'bg-purple-500/20', text: 'text-purple-400', icon: '💡' },
+    alert: { bg: 'bg-red-500/20', text: 'text-red-400', icon: '⚠️' },
+  };
+
+  const style = typeStyles[announcement.type] || typeStyles.update;
+
+  const handleAction = () => {
+    if (!announcement.cta_url) return;
+    if (announcement.cta_url.startsWith('/')) {
+      navigate(announcement.cta_url);
+    } else {
+      window.open(announcement.cta_url, '_blank');
+    }
+  };
+
+  return (
+    <div className="space-y-2 group">
+      <div className="flex items-center gap-2">
+        <Badge variant="outline" className={cn("border-0 text-[10px] px-1.5 py-0.5", style.bg, style.text)}>
+          <span className="mr-1">{style.icon}</span>
+          {announcement.type.replace('_', ' ').toUpperCase()}
+        </Badge>
+        <span className="text-xs text-zinc-500">
+          {new Date(announcement.created_at).toLocaleDateString()}
+        </span>
+      </div>
+      <h3 className="text-sm font-medium text-white group-hover:text-indigo-400 transition-colors">
+        {announcement.title}
+      </h3>
+      <p className="text-xs text-zinc-400 line-clamp-3">
+        {announcement.content}
+      </p>
+      {announcement.cta_label && announcement.cta_url && (
+        <Button 
+          size="sm" 
+          variant="link" 
+          className="p-0 h-auto text-indigo-400 text-xs mt-1 group-hover:translate-x-1 transition-transform" 
+          onClick={handleAction}
+        >
+          {announcement.cta_label} <ArrowRight className="w-3 h-3 ml-1" />
+        </Button>
+      )}
+    </div>
+  );
+};
 
 export default function HomeDashboard() {
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
   const [events, setEvents] = useState<EventConfig[]>([]);
+  const [content, setContent] = useState<HomeContentResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -30,10 +93,33 @@ export default function HomeDashboard() {
         navigate('/admin/auth');
         return;
       }
-      setUser(currentUser);
-
-      const userEvents = await getUserEvents();
+      
+      // Parallel fetch: user events, home content, and FRESH token stats
+      const [userEvents, homeContent, tokenStats] = await Promise.all([
+        getUserEvents(),
+        getHomeContent(currentUser.role?.startsWith('business') ? 'business' : 'personal'),
+        getTokenStats().catch(() => null) // Fetch fresh token stats
+      ]).catch(async (e) => {
+        console.error("Error fetching content:", e);
+        const events = await getUserEvents().catch(() => []);
+        return [events, null, null] as const;
+      });
+      
+      // Merge fresh token stats into user object
+      if (tokenStats) {
+        setUser({
+          ...currentUser,
+          tokens_remaining: tokenStats.current_tokens,
+          tokens_total: tokenStats.tokens_total || currentUser.tokens_total
+        });
+      } else {
+        setUser(currentUser);
+      }
+      
       setEvents(userEvents);
+      if (homeContent) {
+        setContent(homeContent);
+      }
     } catch (error) {
       console.error("Failed to load home data", error);
     } finally {
@@ -44,11 +130,7 @@ export default function HomeDashboard() {
   // Metrics
   const activeEvents = events.filter(e => e.is_active).length;
   const totalTemplates = events.reduce((acc, e) => acc + (e.templates?.length || 0), 0);
-  const recentEvents = [...events].sort((a, b) => {
-    // Sort by most recently created/updated if available, otherwise created
-    return -1; // TODO: fix sorting when timestamps are consistent
-  }).slice(0, 5);
-
+  
   if (isLoading) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
@@ -58,13 +140,13 @@ export default function HomeDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white p-6 md:p-8">
+    <div className="min-h-screen bg-black text-white p-6 md:p-8 pt-24 md:pt-28">
       {/* Background Effects */}
       <div className="fixed top-0 left-0 w-full h-[500px] bg-gradient-to-b from-indigo-900/20 to-transparent pointer-events-none -z-10" />
       
       <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
         
-        {/* Zone A: Welcome + Quick State (Left Column on Large Screens) */}
+        {/* Zone A: Welcome + Quick State (Left Column) */}
         <div className="lg:col-span-3 space-y-6">
           <div className="space-y-2">
             <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-zinc-400">
@@ -104,29 +186,45 @@ export default function HomeDashboard() {
           {/* Quick Actions */}
           <div className="space-y-3">
             <p className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Quick Actions</p>
-            <Button 
-              className="w-full justify-start bg-white text-black hover:bg-zinc-200"
+            
+            <button 
               onClick={() => navigate('/admin/events/create')}
+              className="w-full group flex items-center gap-3 p-3 rounded-xl bg-zinc-900/30 border border-white/10 hover:bg-zinc-900/60 hover:border-indigo-500/30 transition-all text-left"
             >
-              <Plus className="w-4 h-4 mr-2" />
-              Create New Event
-            </Button>
-            <Button 
-              variant="outline" 
-              className="w-full justify-start border-white/10 hover:bg-white/5 text-zinc-300"
+              <div className="h-8 w-8 rounded-lg bg-indigo-500/10 flex items-center justify-center text-indigo-400 group-hover:bg-indigo-500/20 transition-colors">
+                <Plus className="w-4 h-4" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-zinc-200 group-hover:text-white">Create Event</p>
+                <p className="text-[10px] text-zinc-500">Start a new photo session</p>
+              </div>
+            </button>
+
+            <button 
               onClick={() => navigate('/admin/playground')}
+              className="w-full group flex items-center gap-3 p-3 rounded-xl bg-zinc-900/30 border border-white/10 hover:bg-zinc-900/60 hover:border-amber-500/30 transition-all text-left"
             >
-              <Zap className="w-4 h-4 mr-2 text-amber-400" />
-              Open Playground
-            </Button>
-            <Button 
-              variant="outline" 
-              className="w-full justify-start border-white/10 hover:bg-white/5 text-zinc-300"
+              <div className="h-8 w-8 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-400 group-hover:bg-amber-500/20 transition-colors">
+                <Zap className="w-4 h-4" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-zinc-200 group-hover:text-white">AI Playground</p>
+                <p className="text-[10px] text-zinc-500">Test prompts & models</p>
+              </div>
+            </button>
+
+            <button 
               onClick={() => navigate('/admin/marketplace')}
+              className="w-full group flex items-center gap-3 p-3 rounded-xl bg-zinc-900/30 border border-white/10 hover:bg-zinc-900/60 hover:border-purple-500/30 transition-all text-left"
             >
-              <ShoppingBag className="w-4 h-4 mr-2 text-purple-400" />
-              Browse Templates
-            </Button>
+              <div className="h-8 w-8 rounded-lg bg-purple-500/10 flex items-center justify-center text-purple-400 group-hover:bg-purple-500/20 transition-colors">
+                <ShoppingBag className="w-4 h-4" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-zinc-200 group-hover:text-white">Marketplace</p>
+                <p className="text-[10px] text-zinc-500">Explore templates</p>
+              </div>
+            </button>
           </div>
         </div>
 
@@ -219,6 +317,19 @@ export default function HomeDashboard() {
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
+                      {event.is_active && (
+                        <Button
+                          size="sm"
+                          className="h-7 px-3 text-[10px] font-medium gap-1.5 bg-emerald-900/30 text-emerald-400 hover:bg-emerald-900/50 border border-emerald-500/20 rounded-full mr-1"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/admin/events/${event._id}/live`);
+                          }}
+                        >
+                          <Play className="w-2.5 h-2.5 fill-current" />
+                          Live
+                        </Button>
+                      )}
                       <Badge variant="outline" className={`text-[10px] border-0 ${event.is_active ? 'bg-emerald-500/10 text-emerald-400' : 'bg-zinc-500/10 text-zinc-500'}`}>
                         {event.is_active ? 'Active' : 'Draft'}
                       </Badge>
@@ -258,7 +369,7 @@ export default function HomeDashboard() {
           </Card>
         </div>
 
-        {/* Zone C: What's New / Updates (Right Column) */}
+        {/* Zone C: Dynamic Content Feed (Right Column) */}
         <div className="lg:col-span-3 space-y-6">
           <Card className="bg-indigo-900/10 border-indigo-500/20 h-full">
             <CardHeader className="pb-2">
@@ -268,33 +379,96 @@ export default function HomeDashboard() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="space-y-2">
-                <Badge className="bg-indigo-500 text-white hover:bg-indigo-600">New Feature</Badge>
-                <h3 className="text-sm font-medium text-white">Live Event Mode</h3>
-                <p className="text-xs text-zinc-400">
-                  Monitor your events in real-time with our new command center. Track uploads, approve photos, and manage stations.
-                </p>
-                <Button size="sm" variant="link" className="p-0 h-auto text-indigo-400" onClick={() => navigate('/admin/events')}>
-                  Try it out →
-                </Button>
-              </div>
-
-              <div className="space-y-2 pt-4 border-t border-white/5">
-                <h3 className="text-sm font-medium text-white">Pro Tip</h3>
-                <p className="text-xs text-zinc-400">
-                  Use the "Playground" to test prompts before creating templates. It saves tokens and time.
-                </p>
-              </div>
-
-              <div className="space-y-2 pt-4 border-t border-white/5">
-                <div className="flex items-center gap-2 text-amber-400">
-                  <AlertCircle className="w-4 h-4" />
-                  <span className="text-xs font-medium">Maintenance</span>
+              {/* Announcements Feed */}
+              {content?.announcements && content.announcements.length > 0 ? (
+                <div className="space-y-4">
+                  {content.announcements.slice(0, 3).map(announcement => (
+                    <AnnouncementCard key={announcement.id} announcement={announcement} />
+                  ))}
+                  <Button variant="link" className="text-xs text-indigo-400 p-0 h-auto w-full text-center" onClick={() => {}}>
+                    View All Announcements →
+                  </Button>
                 </div>
-                <p className="text-xs text-zinc-400">
-                  Scheduled maintenance on Sunday at 2 AM UTC. Services may be interrupted for 15 mins.
-                </p>
-              </div>
+              ) : (
+                // Fallback / Default Static Content if no API announcements
+                <div className="space-y-6">
+                  {/* Live Event Mode Promo */}
+                  <div className="space-y-2">
+                    <Badge className="bg-indigo-500 text-white hover:bg-indigo-600">New Feature</Badge>
+                    <h3 className="text-sm font-medium text-white">Live Event Mode</h3>
+                    <p className="text-xs text-zinc-400">
+                      Monitor your events in real-time with our new command center. Track uploads, approve photos, and manage stations.
+                    </p>
+                    <Button size="sm" variant="link" className="p-0 h-auto text-indigo-400" onClick={() => navigate('/admin/events')}>
+                      Try it out →
+                    </Button>
+                  </div>
+
+                  {/* Pro Tip */}
+                  <div className="space-y-2 pt-4 border-t border-white/5">
+                    <h3 className="text-sm font-medium text-white">Pro Tip</h3>
+                    <p className="text-xs text-zinc-400">
+                      Use the "Playground" to test prompts before creating templates. It saves tokens and time.
+                    </p>
+                  </div>
+
+                  {/* Maintenance */}
+                  <div className="space-y-2 pt-4 border-t border-white/5">
+                    <div className="flex items-center gap-2 text-amber-400">
+                      <AlertCircle className="w-4 h-4" />
+                      <span className="text-xs font-medium">Maintenance</span>
+                    </div>
+                    <p className="text-xs text-zinc-400">
+                      Scheduled maintenance on Sunday at 2 AM UTC. Services may be interrupted for 15 mins.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Featured Templates */}
+              {content?.featured_templates && content.featured_templates.length > 0 && (
+                <div className="pt-4 border-t border-white/5">
+                  <h3 className="text-xs font-medium text-zinc-400 mb-3 uppercase tracking-wider flex items-center gap-2">
+                    <Sparkles className="w-3 h-3" /> Featured Templates
+                  </h3>
+                  <div className="grid grid-cols-3 gap-2">
+                    {content.featured_templates.slice(0, 3).map(template => (
+                      <div 
+                        key={template.id} 
+                        className="aspect-square rounded-lg bg-zinc-800 bg-cover bg-center border border-white/5 hover:border-indigo-500/50 transition-all cursor-pointer group relative"
+                        style={{ backgroundImage: `url(${template.thumbnail_url || '/placeholder-template.jpg'})` }}
+                        onClick={() => viewTemplate(template.template_id)}
+                      >
+                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <ExternalLink className="w-4 h-4 text-white" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Trending */}
+              {content?.trending_templates && content.trending_templates.length > 0 && (
+                <div className="pt-4 border-t border-white/5">
+                  <h3 className="text-xs font-medium text-zinc-400 mb-3 uppercase tracking-wider flex items-center gap-2">
+                    <Activity className="w-3 h-3" /> Trending Now
+                  </h3>
+                  <div className="space-y-2">
+                     {content.trending_templates.slice(0, 3).map((template, i) => (
+                       <div key={template.id} className="flex items-center gap-3 group cursor-pointer">
+                          <div className="w-8 h-8 rounded bg-zinc-800 flex items-center justify-center text-zinc-500 text-xs font-bold border border-white/5 group-hover:border-amber-500/30 group-hover:text-amber-400 transition-colors">
+                            {i + 1}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                             <p className="text-xs font-medium text-zinc-300 truncate group-hover:text-white transition-colors">{template.template_name}</p>
+                             <p className="text-[10px] text-zinc-500">{template.use_count} uses</p>
+                          </div>
+                       </div>
+                     ))}
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -303,4 +477,3 @@ export default function HomeDashboard() {
     </div>
   );
 }
-

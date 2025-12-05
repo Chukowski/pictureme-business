@@ -13,7 +13,8 @@ import {
     Terminal,
     LogOut,
     Menu,
-    X
+    X,
+    Megaphone
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getCurrentUser, logoutUser } from "@/services/eventsApi";
@@ -46,6 +47,7 @@ export default function SuperAdminLayout() {
         { icon: Calendar, label: "Global Events", path: "/super-admin/events" },
         { icon: Cpu, label: "AI Models", path: "/super-admin/models" },
         { icon: ShoppingBag, label: "Marketplace", path: "/super-admin/marketplace" },
+        { icon: Megaphone, label: "Content", path: "/super-admin/content" },
         { icon: BarChart3, label: "Analytics", path: "/super-admin/analytics" },
         { icon: Settings, label: "Settings", path: "/super-admin/settings" },
         { icon: Terminal, label: "Dev Tools", path: "/super-admin/devtools" },
