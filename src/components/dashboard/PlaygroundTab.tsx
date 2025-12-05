@@ -356,16 +356,26 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
   const useSampleImage = async (url: string) => {
     console.log('📸 Loading sample image:', url);
     setTestImage(url);
+    setTestImageBase64(null); // Clear previous to show loading state
     setProcessedResult(null);
     setBadgeProcessedImage(null);
+    
+    toast.loading('Loading sample image...', { id: 'sample-image-loading' });
+    
     try {
       const base64 = await imageUrlToBase64(url);
-      console.log('✅ Sample image converted to base64, length:', base64?.length || 0);
+      if (!base64 || base64.length < 100) {
+        throw new Error('Image data is empty or invalid');
+      }
+      console.log('✅ Sample image converted to base64, length:', base64.length);
       setTestImageBase64(base64);
-      toast.success('Image loaded successfully');
+      toast.success('Image loaded successfully', { id: 'sample-image-loading' });
     } catch (error) {
       console.error('❌ Failed to convert image to base64:', error);
-      toast.error('Failed to load sample image. Try uploading an image instead.');
+      toast.error('Failed to load sample image. Please upload an image instead.', { 
+        id: 'sample-image-loading',
+        duration: 5000 
+      });
       setTestImageBase64(null);
     }
   };
