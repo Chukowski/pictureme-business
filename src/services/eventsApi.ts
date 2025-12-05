@@ -728,7 +728,9 @@ export async function getAlbum(code: string): Promise<Album> {
 export async function getAlbumPhotos(code: string): Promise<AlbumPhoto[]> {
   const response = await fetch(getApiPath(`/albums/${code}/photos`, true));
   if (!response.ok) return [];
-  return response.json();
+  const data = await response.json();
+  // Ensure we always return an array, even if backend returns null
+  return Array.isArray(data) ? data : [];
 }
 
 export async function addAlbumPhoto(code: string, photoId: string, stationType: string): Promise<AlbumPhoto> {

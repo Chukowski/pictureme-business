@@ -108,11 +108,13 @@ export const PhotoBoothPage = () => {
       try {
         const album = await getAlbum(albumId);
         const photos = await getAlbumPhotos(albumId);
+        // Ensure photos is always an array
+        const photoList = Array.isArray(photos) ? photos : [];
         setAlbumData({
           id: album.code,
           visitorName: album.owner_name,
           visitorNumber: 0,
-          currentPhotos: photos.length,
+          currentPhotos: photoList.length,
           maxPhotos: config?.albumTracking?.rules?.maxPhotosPerAlbum || 5,
           currentStation: stationType || 'Photo Booth',
         });
