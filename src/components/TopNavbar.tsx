@@ -130,15 +130,9 @@ export function TopNavbar() {
     if (isHiddenPath) return;
 
     const handleMouseMove = (e: MouseEvent) => {
-      const isTopLeft = e.clientX <= 40 && e.clientY <= 40;
-      const isTopRight = e.clientX >= window.innerWidth - 40 && e.clientY <= 40;
+      const isTop = e.clientY <= 40; // Simplified detection area
       
-      if (isTopLeft || isTopRight) {
-        setIsVisible(true);
-        lastInteraction.current = Date.now();
-      }
-      
-      if (e.clientY <= 15) {
+      if (isTop) {
         setIsVisible(true);
         lastInteraction.current = Date.now();
       }
@@ -164,7 +158,6 @@ export function TopNavbar() {
     { id: 'events', label: 'Events', icon: FolderKanban, path: '/admin/events' },
     { id: 'analytics', label: 'Analytics', icon: BarChart3, path: '/admin/analytics' },
     { id: 'marketplace', label: 'Marketplace', icon: ShoppingBag, path: '/admin/marketplace' },
-    ...(hasAlbumTracking ? [{ id: 'albums', label: 'Albums', icon: BookOpen, path: '/admin/albums' }] : []),
     { id: 'playground', label: 'Playground', icon: Gamepad2, path: '/admin/playground' },
   ];
 
@@ -179,191 +172,164 @@ export function TopNavbar() {
   return (
     <AnimatePresence>
       {isVisible && (
-        <>
-          {/* LEFT NAVBAR: Navigation */}
-          <motion.div
-            key="left-navbar"
-            initial={{ opacity: 0, y: -20, x: 0 }}
-            animate={{ opacity: 1, y: 0, x: 0 }}
-            exit={{ opacity: 0, y: -20, x: 0 }}
-            transition={{ duration: 0.15, ease: "easeOut" }}
-            className="fixed top-4 left-4 z-[100]"
-            onMouseEnter={() => {
-              setIsHovered(true);
-              handleInteraction();
-            }}
-            onMouseLeave={() => setIsHovered(false)}
-          >
-            <div className="flex items-center gap-2 p-1 bg-zinc-950/80 backdrop-blur-md border border-white/10 rounded-full shadow-2xl shadow-black/50">
-              
-              {/* Home Shortcut */}
-              <button 
-                onClick={() => navigate('/admin/home')}
-                className="w-8 h-8 flex items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 text-white shadow-lg ml-1 hover:scale-105 transition-transform"
-              >
-                <Menu className="w-4 h-4" />
-              </button>
+        <motion.div
+          key="top-navbar"
+          initial={{ opacity: 0, y: -20, x: "-50%" }}
+          animate={{ opacity: 1, y: 0, x: "-50%" }}
+          exit={{ opacity: 0, y: -20, x: "-50%" }}
+          transition={{ duration: 0.15, ease: "easeOut" }}
+          className="fixed top-4 left-1/2 z-[100] flex items-center justify-center"
+          onMouseEnter={() => {
+            setIsHovered(true);
+            handleInteraction();
+          }}
+          onMouseLeave={() => setIsHovered(false)}
+        >
+          <div className="flex items-center gap-2 p-1 bg-zinc-950/80 backdrop-blur-md border border-white/10 rounded-full shadow-2xl shadow-black/50">
+            
+            {/* Home Shortcut */}
+            <button 
+              onClick={() => navigate('/admin/home')}
+              className="w-8 h-8 flex items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 text-white shadow-lg ml-1 hover:scale-105 transition-transform"
+            >
+              <Menu className="w-4 h-4" />
+            </button>
 
-              <div className="h-4 w-px bg-white/10 mx-1" />
+            <div className="h-4 w-px bg-white/10 mx-1" />
 
-              {/* Nav Items */}
-              <nav className="flex items-center gap-1">
-                {navItems.map((item) => {
-                  const active = isActive(item.path);
-                  return (
-                    <button
-                      key={item.id}
-                      onClick={() => {
-                        navigate(item.path);
-                        handleInteraction();
-                      }}
-                      className={cn(
-                        "group flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium transition-all",
-                        active 
-                          ? "bg-white/10 text-white shadow-inner" 
-                          : "text-zinc-400 hover:text-zinc-200 hover:bg-white/5"
-                      )}
-                    >
-                      <item.icon className={cn("w-3.5 h-3.5", active && "text-indigo-400")} />
-                      <span className={cn(
-                        "hidden sm:inline-block whitespace-nowrap transition-all duration-300", 
-                        !active && "opacity-0 w-0 overflow-hidden group-hover:opacity-100 group-hover:w-auto group-hover:ml-1"
-                      )}>
-                        {item.label}
-                      </span>
-                    </button>
-                  );
-                })}
-              </nav>
-
-              {/* Settings Shortcut */}
-              <div className="h-4 w-px bg-white/10 mx-1" />
-              
-              <button
-                onClick={() => navigate('/admin/settings')}
-                className="p-2 rounded-full text-zinc-400 hover:text-white hover:bg-white/5 transition-colors"
-              >
-                <Settings className="w-4 h-4" />
-              </button>
-
-            </div>
-          </motion.div>
-
-          {/* RIGHT NAVBAR: User Profile & Tokens */}
-          <motion.div
-            key="right-navbar"
-            initial={{ opacity: 0, y: -20, x: 0 }}
-            animate={{ opacity: 1, y: 0, x: 0 }}
-            exit={{ opacity: 0, y: -20, x: 0 }}
-            transition={{ duration: 0.15, ease: "easeOut" }}
-            className="fixed top-4 right-4 z-[100]"
-            onMouseEnter={() => {
-              setIsHovered(true);
-              handleInteraction();
-            }}
-            onMouseLeave={() => setIsHovered(false)}
-          >
-            <div className="flex items-center gap-2 p-1 bg-zinc-950/80 backdrop-blur-md border border-white/10 rounded-full shadow-2xl shadow-black/50">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button 
-                    className="relative h-9 flex items-center pl-1 pr-4 rounded-full bg-black/40 hover:bg-black/60 transition-colors border border-white/5 group outline-none focus:ring-2 focus:ring-indigo-500/50 gap-3"
+            {/* Nav Items */}
+            <nav className="flex items-center gap-1">
+              {navItems.map((item) => {
+                const active = isActive(item.path);
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => {
+                      navigate(item.path);
+                      handleInteraction();
+                    }}
+                    className={cn(
+                      "group flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium transition-all",
+                      active 
+                        ? "bg-white/10 text-white shadow-inner" 
+                        : "text-zinc-400 hover:text-zinc-200 hover:bg-white/5"
+                    )}
                   >
-                    {/* Avatar */}
-                    <div className="relative w-7 h-7 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center overflow-hidden shadow-md">
-                      {currentUser?.avatar_url ? (
-                        <img 
-                          src={currentUser.avatar_url} 
-                          alt="User" 
-                          className="w-full h-full object-cover opacity-100 group-hover:opacity-0 transition-opacity absolute inset-0" 
-                        />
-                      ) : (
-                        <span className="text-[10px] font-bold opacity-100 group-hover:opacity-0 transition-opacity absolute inset-0 flex items-center justify-center">
-                          {currentUser?.username?.substring(0, 2).toUpperCase() || 'ME'}
-                        </span>
-                      )}
-                      <Settings className="w-3.5 h-3.5 absolute opacity-0 group-hover:opacity-100 transition-opacity" />
-                    </div>
-
-                    {/* User Info & Tokens */}
-                    <div className="flex flex-col items-start text-xs">
-                      <span className="font-medium text-white leading-none mb-0.5">
-                        {currentUser?.name || currentUser?.full_name?.split(' ')[0] || currentUser?.username || 'User'}
-                      </span>
-                      <div className="flex items-center gap-1.5 text-[10px] text-zinc-400 leading-none">
-                         <span className="capitalize">{userRole.replace(/_/g, ' ')}</span>
-                         <span className="w-0.5 h-0.5 rounded-full bg-zinc-600" />
-                         <div className="flex items-center gap-0.5 text-yellow-500">
-                           <Coins className="w-2.5 h-2.5" />
-                           <span>{tokens.toLocaleString()}</span>
-                         </div>
-                      </div>
-                    </div>
+                    <item.icon className={cn("w-3.5 h-3.5", active && "text-indigo-400")} />
+                    <span className={cn(
+                      "hidden sm:inline-block whitespace-nowrap transition-all duration-300", 
+                      !active && "opacity-0 w-0 overflow-hidden group-hover:opacity-100 group-hover:w-auto group-hover:ml-1"
+                    )}>
+                      {item.label}
+                    </span>
                   </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56 bg-zinc-900 border-white/10 text-white p-2 mr-2">
-                  <div className="px-2 py-1.5">
-                    <p className="text-sm font-medium text-white">{currentUser?.name || currentUser?.full_name || currentUser?.username || 'User'}</p>
-                    <p className="text-xs text-zinc-500 truncate">{currentUser?.email}</p>
+                );
+              })}
+            </nav>
+
+            <div className="h-4 w-px bg-white/10 mx-1" />
+
+            {/* User Dropdown - Minimized */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button 
+                  className="relative h-8 w-auto flex items-center gap-2 pl-1 pr-3 rounded-full bg-white/5 hover:bg-white/10 transition-colors border border-white/5 group outline-none focus:ring-2 focus:ring-indigo-500/50"
+                >
+                  {/* Avatar */}
+                  <div className="relative w-6 h-6 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center overflow-hidden shadow-sm">
+                    {currentUser?.avatar_url ? (
+                      <img 
+                        src={currentUser.avatar_url} 
+                        alt="User" 
+                        className="w-full h-full object-cover opacity-100 group-hover:opacity-0 transition-opacity absolute inset-0" 
+                      />
+                    ) : (
+                      <span className="text-[9px] font-bold opacity-100 group-hover:opacity-0 transition-opacity absolute inset-0 flex items-center justify-center">
+                        {currentUser?.username?.substring(0, 2).toUpperCase() || 'ME'}
+                      </span>
+                    )}
+                    <Settings className="w-3 h-3 absolute opacity-0 group-hover:opacity-100 transition-opacity" />
                   </div>
-                  <DropdownMenuSeparator className="bg-white/10" />
-                  
-                  <DropdownMenuItem 
-                    onClick={() => navigate('/admin/home')}
-                    className="flex items-center gap-2 px-2 py-1.5 cursor-pointer hover:bg-white/5 rounded-md focus:bg-white/5 focus:text-white"
-                  >
-                    <Menu className="w-4 h-4 text-zinc-400" />
-                    <span>Home</span>
-                  </DropdownMenuItem>
 
-                  <DropdownMenuItem 
-                    onClick={() => navigate(`/profile/${currentUser?.username || currentUser?.slug}`)}
-                    className="flex items-center gap-2 px-2 py-1.5 cursor-pointer hover:bg-white/5 rounded-md focus:bg-white/5 focus:text-white"
-                  >
-                    <User className="w-4 h-4 text-zinc-400" />
-                    <span>View Profile</span>
-                  </DropdownMenuItem>
-                  
-                  {userRole.startsWith('business') && userRole !== 'business_pending' && (
-                    <DropdownMenuItem 
-                      onClick={() => navigate('/admin/business')}
-                      className="flex items-center gap-2 px-2 py-1.5 cursor-pointer hover:bg-white/5 rounded-md focus:bg-white/5 focus:text-white text-indigo-400"
-                    >
-                      <Building2 className="w-4 h-4" />
-                      <span>Business Settings</span>
-                    </DropdownMenuItem>
-                  )}
+                  {/* Minimized Token Count */}
+                  <div className="flex items-center gap-1 text-[10px] font-medium text-zinc-300">
+                     <span className="w-1 h-1 rounded-full bg-green-500" />
+                     <span className="text-yellow-500 flex items-center gap-0.5">
+                        <Coins className="w-2.5 h-2.5" />
+                        {tokens >= 1000 ? `${(tokens / 1000).toFixed(1)}k` : tokens}
+                     </span>
+                  </div>
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56 bg-zinc-900 border-white/10 text-white p-2 mt-2">
+                <div className="px-2 py-1.5">
+                  <p className="text-sm font-medium text-white">{currentUser?.name || currentUser?.full_name || currentUser?.username || 'User'}</p>
+                  <p className="text-xs text-zinc-500 truncate">{currentUser?.email}</p>
+                  <div className="flex items-center gap-1.5 mt-1.5 text-[10px] text-zinc-400">
+                      <span className="capitalize bg-white/5 px-1.5 py-0.5 rounded">{userRole.replace(/_/g, ' ')}</span>
+                      <span className="text-yellow-500 flex items-center gap-1">
+                        <Coins className="w-3 h-3" /> {tokens.toLocaleString()} Tokens
+                      </span>
+                  </div>
+                </div>
+                <DropdownMenuSeparator className="bg-white/10" />
+                
+                <DropdownMenuItem 
+                  onClick={() => navigate('/admin/home')}
+                  className="flex items-center gap-2 px-2 py-1.5 cursor-pointer hover:bg-white/5 rounded-md focus:bg-white/5 focus:text-white"
+                >
+                  <Menu className="w-4 h-4 text-zinc-400" />
+                  <span>Home</span>
+                </DropdownMenuItem>
 
+                <DropdownMenuItem 
+                  onClick={() => navigate(`/profile/${currentUser?.username || currentUser?.slug}`)}
+                  className="flex items-center gap-2 px-2 py-1.5 cursor-pointer hover:bg-white/5 rounded-md focus:bg-white/5 focus:text-white"
+                >
+                  <User className="w-4 h-4 text-zinc-400" />
+                  <span>View Profile</span>
+                </DropdownMenuItem>
+                
+                {userRole.startsWith('business') && userRole !== 'business_pending' && (
                   <DropdownMenuItem 
-                    onClick={() => navigate('/admin/settings')}
-                    className="flex items-center gap-2 px-2 py-1.5 cursor-pointer hover:bg-white/5 rounded-md focus:bg-white/5 focus:text-white"
+                    onClick={() => navigate('/admin/business')}
+                    className="flex items-center gap-2 px-2 py-1.5 cursor-pointer hover:bg-white/5 rounded-md focus:bg-white/5 focus:text-white text-indigo-400"
                   >
-                    <Settings className="w-4 h-4 text-zinc-400" />
-                    <span>Account Settings</span>
+                    <Building2 className="w-4 h-4" />
+                    <span>Business Settings</span>
                   </DropdownMenuItem>
-                  
-                  <DropdownMenuItem 
-                    onClick={() => window.open('https://discord.gg/pictureme', '_blank')}
-                    className="flex items-center gap-2 px-2 py-1.5 cursor-pointer hover:bg-white/5 rounded-md focus:bg-white/5 focus:text-white"
-                  >
-                    <Users className="w-4 h-4 text-zinc-400" />
-                    <span>Community</span>
-                  </DropdownMenuItem>
-                  
-                  <DropdownMenuSeparator className="bg-white/10" />
-                  
-                  <DropdownMenuItem 
-                    onClick={handleLogout}
-                    className="flex items-center gap-2 px-2 py-1.5 cursor-pointer hover:bg-white/5 rounded-md focus:bg-white/5 focus:text-white text-red-400 hover:text-red-300"
-                  >
-                    <LogOut className="w-4 h-4" />
-                    <span>Sign out</span>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </motion.div>
-        </>
+                )}
+
+                <DropdownMenuItem 
+                  onClick={() => navigate('/admin/settings')}
+                  className="flex items-center gap-2 px-2 py-1.5 cursor-pointer hover:bg-white/5 rounded-md focus:bg-white/5 focus:text-white"
+                >
+                  <Settings className="w-4 h-4 text-zinc-400" />
+                  <span>Account Settings</span>
+                </DropdownMenuItem>
+                
+                <DropdownMenuItem 
+                  onClick={() => window.open('https://discord.gg/pictureme', '_blank')}
+                  className="flex items-center gap-2 px-2 py-1.5 cursor-pointer hover:bg-white/5 rounded-md focus:bg-white/5 focus:text-white"
+                >
+                  <Users className="w-4 h-4 text-zinc-400" />
+                  <span>Community</span>
+                </DropdownMenuItem>
+                
+                <DropdownMenuSeparator className="bg-white/10" />
+                
+                <DropdownMenuItem 
+                  onClick={handleLogout}
+                  className="flex items-center gap-2 px-2 py-1.5 cursor-pointer hover:bg-white/5 rounded-md focus:bg-white/5 focus:text-white text-red-400 hover:text-red-300"
+                >
+                  <LogOut className="w-4 h-4" />
+                  <span>Sign out</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+          </div>
+        </motion.div>
       )}
     </AnimatePresence>
   );

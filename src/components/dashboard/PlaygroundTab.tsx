@@ -382,9 +382,9 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
 
   // Process image with REAL AI
   const processWithAI = async () => {
-    if (!testImageBase64) {
+    if (!testImageBase64 || testImageBase64.length < 100) {
       toast.error("Please upload or select a test image first");
-      console.error("❌ processWithAI: testImageBase64 is null/empty. User needs to upload an image.");
+      console.error("❌ processWithAI: testImageBase64 is null/empty or too short. User needs to upload/select an image.");
       return;
     }
     if (!selectedTemplate) {
@@ -482,8 +482,9 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
 
   // Process badge with AI
   const processBadgeWithAI = async () => {
-    if (!testImageBase64) {
+    if (!testImageBase64 || testImageBase64.length < 100) {
       toast.error("Please select or capture a photo first");
+      console.error("❌ processBadgeWithAI: testImageBase64 is null/empty or too short.");
       return;
     }
 

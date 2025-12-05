@@ -1,24 +1,25 @@
 import { useState, useRef } from "react";
 import { PlaygroundSplitView } from "./PlaygroundSplitView";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
-  Upload, X, Sparkles, Wand2, Loader2, AlertTriangle, 
-  MessageSquare, Save, Copy, Download, CheckCircle2, 
-  Image as ImageIcon, User, Users 
+  Upload, Sparkles, Loader2, AlertTriangle, 
+  MessageSquare, Save, Copy, Download,
+  Image as ImageIcon, User, Users, Info, 
+  RotateCcw, SplitSquareHorizontal, Trash2
 } from "lucide-react";
 import { toast } from "sonner";
 import { User as UserType, EventConfig, updateEvent } from "@/services/eventsApi";
 import { processImageWithAI, downloadImageAsBase64, AI_MODELS, type AIModelKey } from "@/services/aiProcessor";
 import { PromptHelper } from "@/components/PromptHelper";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 // Sample test images
 const SAMPLE_IMAGES_INDIVIDUAL = [
@@ -103,7 +104,6 @@ export function PlaygroundTemplateTest({ events, currentUser, onReloadEvents }: 
   const processWithAI = async () => {
     if (!selectedTemplate || !selectedEvent || !testImageBase64 || testImageBase64.length < 100) {
       toast.error("Please upload or select a test image first");
-      console.error("❌ processWithAI: missing or empty testImageBase64");
       return;
     }
 
@@ -182,22 +182,22 @@ export function PlaygroundTemplateTest({ events, currentUser, onReloadEvents }: 
 
   // --- Left Panel Content ---
   const ControlsPanel = (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Header */}
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-white">Template Test</h2>
-        <p className="text-zinc-400">Test your AI templates with real images and prompts.</p>
+      <div className="mb-8">
+        <h2 className="text-3xl font-bold text-white mb-2">Template Test</h2>
+        <p className="text-zinc-400">Test and refine your AI templates with real-time feedback.</p>
       </div>
 
       {/* 1. Photo Source Section */}
-      <Card className="bg-zinc-900/50 border-white/10 overflow-hidden">
-        <div className="px-4 py-3 border-b border-white/5 bg-white/[0.02] flex items-center gap-2">
-          <ImageIcon className="w-4 h-4 text-zinc-400" />
-          <span className="text-sm font-medium text-zinc-200">1. Photo Source</span>
+      <Card className="bg-zinc-900/50 border-white/10 overflow-hidden shadow-lg">
+        <div className="px-6 py-4 border-b border-white/5 bg-white/[0.02] flex items-center gap-3">
+          <div className="w-6 h-6 rounded-full bg-indigo-500/20 flex items-center justify-center text-indigo-400 text-xs font-bold">1</div>
+          <span className="text-base font-medium text-zinc-200">Photo Source</span>
         </div>
-        <CardContent className="p-4 space-y-4">
+        <CardContent className="p-6 space-y-6">
           {/* Upload Area */}
-          <div className="space-y-3">
+          <div className="space-y-4">
             <input
               ref={fileInputRef}
               type="file"
@@ -206,17 +206,17 @@ export function PlaygroundTemplateTest({ events, currentUser, onReloadEvents }: 
               onChange={handleImageUpload}
             />
             {testImage ? (
-              <div className="flex items-center gap-4 p-3 bg-black/30 rounded-xl border border-white/10">
-                <img src={testImage} alt="Test" className="w-16 h-16 rounded-lg object-cover" />
+              <div className="flex items-center gap-5 p-4 bg-black/30 rounded-xl border border-white/10">
+                <img src={testImage} alt="Test" className="w-20 h-20 rounded-lg object-cover shadow-md" />
                 <div className="flex-1">
-                  <p className="text-xs text-zinc-300 mb-2 font-medium">Image loaded</p>
-                  <div className="flex gap-2">
+                  <p className="text-sm text-zinc-300 mb-3 font-medium">Source Image Loaded</p>
+                  <div className="flex gap-3">
                     <Button
                       type="button"
                       size="sm"
                       variant="outline"
                       onClick={() => fileInputRef.current?.click()}
-                      className="h-7 text-xs border-white/20 text-zinc-300 bg-zinc-900/50 hover:bg-zinc-800 hover:text-white"
+                      className="h-8 text-xs border-white/20 text-zinc-300 bg-zinc-900/50 hover:bg-zinc-800 hover:text-white"
                     >
                       Change
                     </Button>
@@ -228,7 +228,7 @@ export function PlaygroundTemplateTest({ events, currentUser, onReloadEvents }: 
                         setTestImage(null);
                         setTestImageBase64(null);
                       }}
-                      className="h-7 text-xs text-red-400 hover:bg-red-500/10 hover:text-red-300"
+                      className="h-8 text-xs text-red-400 hover:bg-red-500/10 hover:text-red-300"
                     >
                       Remove
                     </Button>
@@ -237,29 +237,32 @@ export function PlaygroundTemplateTest({ events, currentUser, onReloadEvents }: 
               </div>
             ) : (
               <div
-                className="border-2 border-dashed border-zinc-700 rounded-xl p-6 text-center cursor-pointer hover:border-purple-500/50 transition-colors bg-black/20 hover:bg-black/30 group"
+                className="border-2 border-dashed border-zinc-700 rounded-xl p-8 text-center cursor-pointer hover:border-purple-500/50 transition-all bg-black/20 hover:bg-black/30 group"
                 onClick={() => fileInputRef.current?.click()}
               >
-                <Upload className="w-8 h-8 mx-auto mb-2 text-zinc-500 group-hover:text-purple-400 transition-colors" />
-                <p className="text-xs text-zinc-400 group-hover:text-zinc-200 transition-colors">Upload photo</p>
+                <div className="w-12 h-12 rounded-full bg-zinc-800 flex items-center justify-center mx-auto mb-4 group-hover:bg-purple-500/20 transition-colors">
+                   <Upload className="w-6 h-6 text-zinc-500 group-hover:text-purple-400 transition-colors" />
+                </div>
+                <p className="text-sm font-medium text-zinc-300 group-hover:text-white transition-colors">Click to upload photo</p>
+                <p className="text-xs text-zinc-500 mt-1">or drag and drop</p>
               </div>
             )}
           </div>
 
           {/* Sample Tabs */}
           <Tabs defaultValue="individual" className="w-full">
-            <TabsList className="w-full bg-zinc-800/50 border border-white/5 h-8 p-0.5">
-              <TabsTrigger value="individual" className="flex-1 text-[10px] h-7 data-[state=active]:bg-zinc-700 data-[state=active]:text-white text-zinc-400 hover:text-zinc-200">Individual</TabsTrigger>
-              <TabsTrigger value="group" className="flex-1 text-[10px] h-7 data-[state=active]:bg-zinc-700 data-[state=active]:text-white text-zinc-400 hover:text-zinc-200">Group</TabsTrigger>
+            <TabsList className="w-full bg-zinc-800/50 border border-white/5 h-10 p-1 rounded-lg">
+              <TabsTrigger value="individual" className="flex-1 text-xs data-[state=active]:bg-zinc-700 data-[state=active]:text-white text-zinc-400 hover:text-zinc-200 rounded-md">Individual Samples</TabsTrigger>
+              <TabsTrigger value="group" className="flex-1 text-xs data-[state=active]:bg-zinc-700 data-[state=active]:text-white text-zinc-400 hover:text-zinc-200 rounded-md">Group Samples</TabsTrigger>
             </TabsList>
-            <TabsContent value="individual" className="mt-3">
-              <div className="grid grid-cols-4 gap-2">
+            <TabsContent value="individual" className="mt-4">
+              <div className="grid grid-cols-4 gap-3">
                 {SAMPLE_IMAGES_INDIVIDUAL.map((url, i) => (
                   <button
                     key={i}
                     onClick={() => useSampleImage(url)}
-                    className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all ${
-                      testImage === url ? 'border-purple-500 ring-2 ring-purple-500/20' : 'border-transparent hover:border-white/20'
+                    className={`relative aspect-square rounded-xl overflow-hidden border-2 transition-all hover:scale-105 ${
+                      testImage === url ? 'border-purple-500 ring-2 ring-purple-500/20 shadow-lg shadow-purple-500/10' : 'border-transparent hover:border-white/20'
                     }`}
                   >
                     <img src={url} alt="Sample" className="w-full h-full object-cover" />
@@ -267,14 +270,14 @@ export function PlaygroundTemplateTest({ events, currentUser, onReloadEvents }: 
                 ))}
               </div>
             </TabsContent>
-            <TabsContent value="group" className="mt-3">
-              <div className="grid grid-cols-4 gap-2">
+            <TabsContent value="group" className="mt-4">
+              <div className="grid grid-cols-4 gap-3">
                 {SAMPLE_IMAGES_GROUP.map((url, i) => (
                   <button
                     key={i}
                     onClick={() => useSampleImage(url)}
-                    className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all ${
-                      testImage === url ? 'border-purple-500 ring-2 ring-purple-500/20' : 'border-transparent hover:border-white/20'
+                    className={`relative aspect-square rounded-xl overflow-hidden border-2 transition-all hover:scale-105 ${
+                      testImage === url ? 'border-purple-500 ring-2 ring-purple-500/20 shadow-lg shadow-purple-500/10' : 'border-transparent hover:border-white/20'
                     }`}
                   >
                     <img src={url} alt="Sample" className="w-full h-full object-cover" />
@@ -287,38 +290,38 @@ export function PlaygroundTemplateTest({ events, currentUser, onReloadEvents }: 
       </Card>
 
       {/* 2. Template & Model Section */}
-      <Card className="bg-zinc-900/50 border-white/10 overflow-hidden">
-        <div className="px-4 py-3 border-b border-white/5 bg-white/[0.02] flex items-center gap-2">
-          <Wand2 className="w-4 h-4 text-zinc-400" />
-          <span className="text-sm font-medium text-zinc-200">2. Configuration</span>
+      <Card className="bg-zinc-900/50 border-white/10 overflow-hidden shadow-lg">
+        <div className="px-6 py-4 border-b border-white/5 bg-white/[0.02] flex items-center gap-3">
+          <div className="w-6 h-6 rounded-full bg-purple-500/20 flex items-center justify-center text-purple-400 text-xs font-bold">2</div>
+          <span className="text-base font-medium text-zinc-200">Configuration</span>
         </div>
-        <CardContent className="p-4 space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+        <CardContent className="p-6 space-y-6">
+          <div className="grid grid-cols-2 gap-6">
             <div className="space-y-2">
-              <Label className="text-xs text-zinc-400">Event</Label>
+              <Label className="text-xs text-zinc-400 uppercase tracking-wide font-semibold">Event</Label>
               <Select value={selectedEventId} onValueChange={(id) => {
                 setSelectedEventId(id);
                 setSelectedTemplateId('');
               }}>
-                <SelectTrigger className="h-9 bg-zinc-800 border-zinc-700 text-xs text-zinc-200">
+                <SelectTrigger className="h-10 bg-zinc-800 border-zinc-700 text-sm text-zinc-200 focus:ring-purple-500/20">
                   <SelectValue placeholder="Select event" />
                 </SelectTrigger>
                 <SelectContent className="bg-zinc-800 border-zinc-700">
                   {events.map(e => (
-                    <SelectItem key={e._id} value={e._id} className="text-xs text-zinc-200">{e.title}</SelectItem>
+                    <SelectItem key={e._id} value={e._id} className="text-zinc-200">{e.title}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label className="text-xs text-zinc-400">Template</Label>
+              <Label className="text-xs text-zinc-400 uppercase tracking-wide font-semibold">Template</Label>
               <Select value={selectedTemplateId} onValueChange={setSelectedTemplateId} disabled={!selectedEventId}>
-                <SelectTrigger className="h-9 bg-zinc-800 border-zinc-700 text-xs text-zinc-200">
+                <SelectTrigger className="h-10 bg-zinc-800 border-zinc-700 text-sm text-zinc-200 focus:ring-purple-500/20">
                   <SelectValue placeholder="Select template" />
                 </SelectTrigger>
                 <SelectContent className="bg-zinc-800 border-zinc-700">
                   {templates.map(t => (
-                    <SelectItem key={t.id} value={t.id} className="text-xs text-zinc-200">{t.name}</SelectItem>
+                    <SelectItem key={t.id} value={t.id} className="text-zinc-200">{t.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -326,16 +329,30 @@ export function PlaygroundTemplateTest({ events, currentUser, onReloadEvents }: 
           </div>
 
           <div className="space-y-2">
-            <Label className="text-xs text-zinc-400">AI Model</Label>
+            <div className="flex items-center gap-2">
+              <Label className="text-xs text-zinc-400 uppercase tracking-wide font-semibold">AI Model</Label>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <Info className="w-3 h-3 text-zinc-500 hover:text-zinc-300" />
+                  </TooltipTrigger>
+                  <TooltipContent className="bg-zinc-800 border-white/10 text-xs">
+                    Choose higher quality models for final results, or faster models for testing.
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
             <Select value={selectedAiModel} onValueChange={(v: AIModelKey) => setSelectedAiModel(v)}>
-              <SelectTrigger className="h-9 bg-zinc-800 border-zinc-700 text-xs text-zinc-200">
+              <SelectTrigger className="h-10 bg-zinc-800 border-zinc-700 text-sm text-zinc-200 focus:ring-purple-500/20">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="bg-zinc-800 border-zinc-700">
                 {Object.entries(AI_MODELS).map(([key, model]) => (
-                  <SelectItem key={key} value={key} className="text-xs text-zinc-200">
-                    <span className="font-medium">{model.name}</span>
-                    <span className="text-zinc-400 ml-2 text-[10px]">({model.speed})</span>
+                  <SelectItem key={key} value={key} className="text-zinc-200">
+                    <div className="flex flex-col py-1">
+                      <span className="font-medium">{model.name}</span>
+                      <span className="text-zinc-500 text-[10px]">{model.speed} • High Quality</span>
+                    </div>
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -343,26 +360,26 @@ export function PlaygroundTemplateTest({ events, currentUser, onReloadEvents }: 
           </div>
 
           <div className="space-y-2">
-            <Label className="text-xs text-zinc-400">Processing Mode</Label>
+            <Label className="text-xs text-zinc-400 uppercase tracking-wide font-semibold">Processing Mode</Label>
             <div className="flex bg-zinc-800 p-1 rounded-lg">
               <button
                 type="button"
                 onClick={() => setIsGroupPhoto(false)}
-                className={`flex-1 flex items-center justify-center gap-2 py-1.5 rounded-md text-xs font-medium transition-all ${
+                className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-md text-sm font-medium transition-all ${
                   !isGroupPhoto ? 'bg-zinc-600 text-white shadow-sm' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-700/50'
                 }`}
               >
-                <User className="w-3 h-3" />
+                <User className="w-4 h-4" />
                 Individual
               </button>
               <button
                 type="button"
                 onClick={() => setIsGroupPhoto(true)}
-                className={`flex-1 flex items-center justify-center gap-2 py-1.5 rounded-md text-xs font-medium transition-all ${
+                className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-md text-sm font-medium transition-all ${
                   isGroupPhoto ? 'bg-zinc-600 text-white shadow-sm' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-700/50'
                 }`}
               >
-                <Users className="w-3 h-3" />
+                <Users className="w-4 h-4" />
                 Group
               </button>
             </div>
@@ -371,30 +388,31 @@ export function PlaygroundTemplateTest({ events, currentUser, onReloadEvents }: 
       </Card>
 
       {/* 3. Prompt Section */}
-      <Card className="bg-zinc-900/50 border-white/10 overflow-hidden">
-        <div className="px-4 py-3 border-b border-white/5 bg-white/[0.02] flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <MessageSquare className="w-4 h-4 text-zinc-400" />
-            <span className="text-sm font-medium text-zinc-200">3. Prompting</span>
+      <Card className="bg-zinc-900/50 border-white/10 overflow-hidden shadow-lg">
+        <div className="px-6 py-4 border-b border-white/5 bg-white/[0.02] flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-6 h-6 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400 text-xs font-bold">3</div>
+            <span className="text-base font-medium text-zinc-200">Prompting</span>
           </div>
-          <div className="flex items-center gap-2">
-            <Label className="text-[10px] text-zinc-400">Custom</Label>
+          <div className="flex items-center gap-2 bg-black/20 px-3 py-1.5 rounded-full border border-white/5">
+            <Label className="text-[10px] text-zinc-400 uppercase font-semibold tracking-wide cursor-pointer" htmlFor="custom-prompt">Custom</Label>
             <Switch 
+              id="custom-prompt"
               checked={useCustomPrompt} 
               onCheckedChange={setUseCustomPrompt} 
-              className="scale-75 data-[state=checked]:bg-purple-600" 
+              className="scale-75 data-[state=checked]:bg-emerald-500" 
             />
           </div>
         </div>
-        <CardContent className="p-4 space-y-4">
+        <CardContent className="p-6 space-y-6">
           {useCustomPrompt ? (
-            <div className="space-y-3">
+            <div className="space-y-4">
               <Textarea
                 value={customPrompt}
                 onChange={(e) => setCustomPrompt(e.target.value)}
                 placeholder="Describe the transformation..."
-                rows={3}
-                className="text-xs font-mono bg-black/30 border-white/10 resize-none text-zinc-300 placeholder:text-zinc-600"
+                rows={4}
+                className="text-sm font-mono bg-black/30 border-white/10 resize-none text-zinc-300 placeholder:text-zinc-600 focus:border-emerald-500/30"
               />
               <PromptHelper
                 onSelectPrompt={setCustomPrompt}
@@ -417,7 +435,7 @@ export function PlaygroundTemplateTest({ events, currentUser, onReloadEvents }: 
                     await onReloadEvents();
                     toast.success('Prompt saved to template!');
                   }}
-                  className="w-full h-8 text-xs border-green-500/30 text-green-400 bg-green-500/5 hover:bg-green-500/10 hover:text-green-300 font-medium"
+                  className="w-full h-9 text-xs border-emerald-500/30 text-emerald-400 bg-emerald-500/5 hover:bg-emerald-500/10 hover:text-emerald-300 font-medium"
                 >
                   <Save className="w-3 h-3 mr-2" />
                   Save to Template
@@ -425,9 +443,9 @@ export function PlaygroundTemplateTest({ events, currentUser, onReloadEvents }: 
               )}
             </div>
           ) : (
-            <div className="p-3 rounded-lg bg-black/30 border border-white/5">
-              <p className="text-xs text-zinc-400 font-medium mb-1">Using Template Prompt:</p>
-              <p className="text-xs text-zinc-300 font-mono line-clamp-3">
+            <div className="p-4 rounded-xl bg-black/30 border border-white/5">
+              <p className="text-xs text-zinc-400 font-medium mb-2 uppercase tracking-wide">Using Template Prompt:</p>
+              <p className="text-sm text-zinc-300 font-mono leading-relaxed">
                 {isGroupPhoto && selectedTemplate?.groupPrompt
                   ? selectedTemplate.groupPrompt
                   : selectedTemplate?.prompt || "No prompt configured in template."}
@@ -435,20 +453,32 @@ export function PlaygroundTemplateTest({ events, currentUser, onReloadEvents }: 
             </div>
           )}
 
-          {/* Advanced Settings - Collapsed or small */}
-          <div className="grid grid-cols-2 gap-4 pt-2 border-t border-white/5">
-            <div className="space-y-1">
-              <Label className="text-[10px] text-zinc-500">Seed (Optional)</Label>
+          {/* Advanced Settings */}
+          <div className="grid grid-cols-2 gap-6 pt-4 border-t border-white/5">
+            <div className="space-y-2">
+              <Label className="text-[10px] text-zinc-500 uppercase tracking-wider">Seed (Optional)</Label>
               <Input 
                 type="number" 
                 value={customSeed || ''} 
                 onChange={e => setCustomSeed(e.target.value ? parseInt(e.target.value) : undefined)}
                 placeholder="Random"
-                className="h-7 text-xs bg-black/20 border-white/10 text-zinc-300 placeholder:text-zinc-600"
+                className="h-8 text-xs bg-black/20 border-white/10 text-zinc-300 placeholder:text-zinc-600 font-mono"
               />
             </div>
-            <div className="flex items-center justify-between pt-4">
-              <Label className="text-[10px] text-zinc-500">Force Instructions</Label>
+            <div className="flex items-center justify-between pt-6">
+              <div className="flex items-center gap-2">
+                 <Label className="text-[10px] text-zinc-500 uppercase tracking-wider">Force Instructions</Label>
+                 <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger>
+                        <Info className="w-3 h-3 text-zinc-600 hover:text-zinc-400" />
+                      </TooltipTrigger>
+                      <TooltipContent className="bg-zinc-800 border-white/10 text-xs">
+                        Stronger adherence to prompt instructions.
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+              </div>
               <Switch 
                 checked={forceInstructions} 
                 onCheckedChange={setForceInstructions} 
@@ -459,105 +489,150 @@ export function PlaygroundTemplateTest({ events, currentUser, onReloadEvents }: 
         </CardContent>
       </Card>
 
-      {/* 4. Action Section */}
-      <div className="sticky bottom-0 pt-4 pb-8 bg-zinc-950 z-10 border-t border-white/5 mt-4">
+      {/* 4. Action Section - Sticky */}
+      <div className="sticky bottom-0 pt-4 pb-8 bg-zinc-950 z-20 border-t border-white/5 mt-8">
         <Button
-          className="w-full h-12 bg-purple-600 hover:bg-purple-700 text-white shadow-lg shadow-purple-900/20 transition-all hover:scale-[1.02]"
+          className="w-full h-14 text-lg bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white shadow-xl shadow-purple-900/20 transition-all hover:scale-[1.01] rounded-xl"
           onClick={processWithAI}
           disabled={isProcessing || !selectedTemplate || !testImageBase64}
         >
           {isProcessing ? (
             <>
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              Processing...
+              <Loader2 className="w-5 h-5 mr-3 animate-spin" />
+              Processing Magic...
             </>
           ) : (
             <>
-              <Sparkles className="w-4 h-4 mr-2 fill-current" />
+              <Sparkles className="w-5 h-5 mr-3 fill-current" />
               Generate Result
             </>
           )}
         </Button>
-        <p className="text-[10px] text-center text-zinc-500 mt-2">
-          Uses 1 token per generation.
+        <p className="text-[10px] text-center text-zinc-500 mt-3 flex items-center justify-center gap-2">
+          <span>Uses 1 token per generation</span>
+          <span className="w-1 h-1 rounded-full bg-zinc-700" />
+          <span>~12s avg. time</span>
         </p>
       </div>
     </div>
   );
 
-  // --- Right Panel Content ---
-  const PreviewPanel = (
-    <div className="h-full flex flex-col">
-      {/* Token Warning Banner - placed above device preview */}
-      <div className="shrink-0 p-4 pb-0">
-        <div className="bg-amber-500/10 border border-amber-500/20 px-4 py-2 flex items-center justify-between rounded-lg">
-          <div className="flex items-center gap-2">
-            <AlertTriangle className="w-3 h-3 text-amber-400" />
-            <span className="text-[10px] font-medium text-amber-200">Real token usage</span>
-          </div>
-          <span className="text-[10px] text-amber-200/70">Session: {tokensUsed} used</span>
-        </div>
+  // --- Right Panel Content (Canvas Overlay) ---
+  const CanvasOverlay = (
+    <>
+      {/* HUD Widget */}
+      <div className="absolute top-4 right-4 pointer-events-auto">
+        <Card className="bg-zinc-950/90 backdrop-blur-md border-white/10 shadow-2xl w-64">
+           <div className="p-3 space-y-3">
+              <div className="flex items-center justify-between border-b border-white/5 pb-2">
+                 <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Session HUD</span>
+                 <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-4 w-4 text-zinc-600 hover:text-red-400" 
+                    title="Clear Session"
+                    onClick={() => {
+                      setProcessedResult(null);
+                      setTestImage(null);
+                      setTestImageBase64(null);
+                    }}
+                 >
+                   <Trash2 className="w-3 h-3" />
+                 </Button>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-2">
+                 <div className="bg-zinc-900/50 rounded p-2">
+                    <span className="text-[10px] text-zinc-500 block">Tokens Used</span>
+                    <span className="text-sm font-mono text-white">{tokensUsed}</span>
+                 </div>
+                 <div className="bg-zinc-900/50 rounded p-2">
+                    <span className="text-[10px] text-zinc-500 block">Model</span>
+                    <span className="text-xs font-medium text-white truncate">{AI_MODELS[selectedAiModel].name}</span>
+                 </div>
+              </div>
+
+              {lastResultSeed && (
+                <div className="bg-indigo-500/10 rounded p-2 border border-indigo-500/20 flex items-center justify-between group cursor-pointer" onClick={() => {
+                  setCustomSeed(lastResultSeed);
+                  toast.success("Seed copied to settings");
+                }}>
+                   <div>
+                      <span className="text-[10px] text-indigo-300 block">Last Seed</span>
+                      <span className="text-xs font-mono text-indigo-100">{lastResultSeed}</span>
+                   </div>
+                   <Copy className="w-3 h-3 text-indigo-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                </div>
+              )}
+           </div>
+        </Card>
       </div>
 
-      <div className="flex-1 p-6 flex flex-col min-h-0">
-        <div className="flex-1 flex items-center justify-center bg-zinc-900/50 rounded-2xl border-2 border-dashed border-zinc-800 relative overflow-hidden group">
-          {processedResult ? (
-            <>
-              <img 
-                src={processedResult} 
-                alt="Result" 
-                className="max-w-full max-h-full object-contain shadow-2xl" 
-              />
-              <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3 backdrop-blur-sm">
-                <Button onClick={downloadResult} size="sm" className="bg-white text-black hover:bg-zinc-200">
-                  <Download className="w-4 h-4 mr-2" /> Download
-                </Button>
-              </div>
-            </>
-          ) : isProcessing ? (
-            <div className="text-center w-full max-w-xs">
-              <div className="relative w-16 h-16 mx-auto mb-6">
-                <div className="absolute inset-0 rounded-full border-4 border-purple-500/30"></div>
-                <div className="absolute inset-0 rounded-full border-4 border-purple-500 border-t-transparent animate-spin"></div>
-                <Sparkles className="absolute inset-0 m-auto w-6 h-6 text-purple-400 animate-pulse" />
-              </div>
-              <h3 className="text-white font-medium mb-2">Creating Magic...</h3>
-              <Progress value={processingProgress} className="h-1.5 bg-zinc-800" indicatorClassName="bg-purple-500" />
-              <p className="text-xs text-zinc-500 mt-2">{processingStatus}</p>
-            </div>
-          ) : (
-            <div className="text-center text-zinc-500">
-              <ImageIcon className="w-12 h-12 mx-auto mb-3 opacity-30" />
-              <p className="text-sm font-medium text-zinc-400">No Result Yet</p>
-              <p className="text-xs text-zinc-500">Configure and generate to see preview</p>
-            </div>
-          )}
+      {/* Run Again Bar - Only visible when result exists */}
+      {processedResult && (
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 pointer-events-auto animate-in slide-in-from-bottom-4 fade-in duration-300">
+           <div className="flex items-center gap-2 bg-zinc-900/90 backdrop-blur-xl p-2 rounded-full border border-white/10 shadow-2xl ring-1 ring-black/50">
+              <Button 
+                onClick={processWithAI} 
+                disabled={isProcessing}
+                className="rounded-full bg-white text-black hover:bg-zinc-200 h-9 px-4 font-medium"
+              >
+                 <RotateCcw className="w-3.5 h-3.5 mr-2" />
+                 Regenerate
+              </Button>
+              <div className="w-px h-4 bg-white/20 mx-1" />
+              <Button 
+                variant="ghost"
+                onClick={downloadResult}
+                className="rounded-full text-zinc-300 hover:text-white hover:bg-white/10 h-9 w-9 p-0"
+                title="Download"
+              >
+                 <Download className="w-4 h-4" />
+              </Button>
+              <Button 
+                variant="ghost"
+                className="rounded-full text-zinc-300 hover:text-white hover:bg-white/10 h-9 w-9 p-0"
+                title="Compare (Coming Soon)"
+              >
+                 <SplitSquareHorizontal className="w-4 h-4" />
+              </Button>
+           </div>
         </div>
+      )}
+    </>
+  );
 
-        {/* Result Info / Quick Actions */}
-        {processedResult && (
-          <div className="mt-4 grid grid-cols-2 gap-2">
-            <div className="bg-zinc-900 border border-white/5 p-3 rounded-xl">
-              <span className="text-[10px] text-zinc-500 uppercase tracking-wider">Seed</span>
-              <div className="flex items-center justify-between mt-1">
-                <code className="text-xs text-purple-300 font-mono">{lastResultSeed}</code>
-                <button 
-                  onClick={() => {
-                    if (lastResultSeed) {
-                      setCustomSeed(lastResultSeed);
-                      toast.success("Seed applied to settings");
-                    }
-                  }}
-                  className="text-zinc-500 hover:text-white"
-                >
-                  <Copy className="w-3 h-3" />
-                </button>
-              </div>
+  // --- Right Panel Content (Inside Phone) ---
+  const PreviewPanel = (
+    <div className="h-full flex flex-col relative group">
+      {/* Visual Feedback Overlay */}
+      {isProcessing && (
+        <div className="absolute inset-0 z-50 bg-black/60 backdrop-blur-sm flex flex-col items-center justify-center text-center p-6 animate-in fade-in duration-300">
+           <div className="relative w-20 h-20 mb-6">
+              <div className="absolute inset-0 rounded-full border-4 border-white/10"></div>
+              <div className="absolute inset-0 rounded-full border-4 border-indigo-500 border-t-transparent animate-spin"></div>
+              <Sparkles className="absolute inset-0 m-auto w-8 h-8 text-indigo-400 animate-pulse" />
+           </div>
+           <h3 className="text-xl font-bold text-white mb-2">Creating Magic</h3>
+           <p className="text-sm text-zinc-400 mb-6">Applying style transfer...</p>
+           <Progress value={processingProgress} className="h-1.5 w-48 bg-white/10" indicatorClassName="bg-indigo-500" />
+        </div>
+      )}
+
+      <div className="flex-1 flex items-center justify-center bg-zinc-900/50 relative overflow-hidden">
+        {processedResult ? (
+          <img 
+            src={processedResult} 
+            alt="Result" 
+            className="w-full h-full object-contain" 
+          />
+        ) : (
+          <div className="text-center text-zinc-600 p-8">
+            <div className="w-20 h-20 rounded-3xl bg-zinc-800/50 flex items-center justify-center mx-auto mb-4 border border-white/5">
+              <ImageIcon className="w-8 h-8 opacity-40" />
             </div>
-            <div className="bg-zinc-900 border border-white/5 p-3 rounded-xl">
-              <span className="text-[10px] text-zinc-500 uppercase tracking-wider">Model</span>
-              <p className="text-xs text-zinc-300 mt-1 truncate">{AI_MODELS[selectedAiModel].name}</p>
-            </div>
+            <p className="text-sm font-medium text-zinc-400">No Result Yet</p>
+            <p className="text-xs text-zinc-500 mt-1">Configure settings and click generate</p>
           </div>
         )}
       </div>
@@ -568,7 +643,7 @@ export function PlaygroundTemplateTest({ events, currentUser, onReloadEvents }: 
     <PlaygroundSplitView 
       leftPanel={ControlsPanel} 
       rightPanel={PreviewPanel} 
+      canvasOverlay={CanvasOverlay}
     />
   );
 }
-

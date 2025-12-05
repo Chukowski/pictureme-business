@@ -3,15 +3,14 @@ import { PlaygroundSplitView } from "./PlaygroundSplitView";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { 
   Link2, Globe, UserPlus, Camera, Gamepad2, 
-  Images, Copy, Check, ExternalLink, Info, Eye 
+  Images, Copy, Check, ExternalLink, Info, Eye, MapPin, Monitor
 } from "lucide-react";
 import { toast } from "sonner";
 import { User as UserType, EventConfig } from "@/services/eventsApi";
-import { ENV } from "@/config/env";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface PlaygroundEventPreviewProps {
   events: EventConfig[];
@@ -58,44 +57,43 @@ export function PlaygroundEventPreview({ events, currentUser }: PlaygroundEventP
 
   // --- Left Panel ---
   const ControlsPanel = (
-    <div className="space-y-6">
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-white">Event Preview</h2>
-        <p className="text-zinc-400">Explore and test all stations of your event.</p>
+    <div className="space-y-8">
+      <div className="mb-8">
+        <h2 className="text-3xl font-bold text-white mb-2">Event Preview</h2>
+        <p className="text-zinc-400">Explore the complete visitor journey across all stations.</p>
       </div>
 
       {/* 1. Select Event */}
-      <Card className="bg-zinc-900/50 border-white/10">
-        <CardHeader className="px-4 py-3 border-b border-white/5 bg-white/[0.02]">
-          <CardTitle className="text-sm font-medium text-zinc-200">1. Select Event</CardTitle>
-        </CardHeader>
-        <CardContent className="p-4 space-y-4">
+      <Card className="bg-zinc-900/50 border-white/10 overflow-hidden shadow-lg">
+        <div className="px-6 py-4 border-b border-white/5 bg-white/[0.02] flex items-center gap-3">
+          <div className="w-6 h-6 rounded-full bg-indigo-500/20 flex items-center justify-center text-indigo-400 text-xs font-bold">1</div>
+          <span className="text-base font-medium text-zinc-200">Select Event</span>
+        </div>
+        <CardContent className="p-6 space-y-6">
           <Select value={selectedEventId} onValueChange={setSelectedEventId}>
-            <SelectTrigger className="h-9 bg-zinc-800 border-zinc-700 text-xs text-zinc-200">
+            <SelectTrigger className="h-10 bg-zinc-800 border-zinc-700 text-sm text-zinc-200">
               <SelectValue placeholder="Choose event to preview" />
             </SelectTrigger>
             <SelectContent className="bg-zinc-800 border-zinc-700">
               {events.map(e => (
-                <SelectItem key={e._id} value={e._id} className="text-xs text-zinc-200">{e.title}</SelectItem>
+                <SelectItem key={e._id} value={e._id} className="text-zinc-200">{e.title}</SelectItem>
               ))}
             </SelectContent>
           </Select>
 
           {selectedEvent && (
-            <div className="grid grid-cols-2 gap-2">
-              <div className="p-2 rounded-lg bg-zinc-800 border border-zinc-700">
-                <span className="text-[10px] text-zinc-500 uppercase">Status</span>
-                <div className="mt-1">
-                  <Badge variant="outline" className={selectedEvent.is_active ? 'bg-green-500/10 text-green-400 border-green-500/20' : 'text-zinc-400'}>
-                    {selectedEvent.is_active ? 'Active' : 'Draft'}
-                  </Badge>
-                </div>
+            <div className="flex gap-3">
+              <div className="flex-1 p-3 rounded-xl bg-zinc-800/50 border border-white/5 flex flex-col gap-1">
+                <span className="text-[10px] text-zinc-500 uppercase tracking-wider">Status</span>
+                <Badge variant="outline" className={selectedEvent.is_active ? 'bg-green-500/10 text-green-400 border-green-500/20 w-fit' : 'text-zinc-400 w-fit'}>
+                  {selectedEvent.is_active ? 'Active' : 'Draft'}
+                </Badge>
               </div>
-              <div className="p-2 rounded-lg bg-zinc-800 border border-zinc-700">
-                <span className="text-[10px] text-zinc-500 uppercase">Templates</span>
-                <div className="mt-1 text-sm font-medium text-zinc-200">
+              <div className="flex-1 p-3 rounded-xl bg-zinc-800/50 border border-white/5 flex flex-col gap-1">
+                <span className="text-[10px] text-zinc-500 uppercase tracking-wider">Templates</span>
+                <span className="text-sm font-medium text-zinc-200">
                   {selectedEvent.templates?.length || 0} Active
-                </div>
+                </span>
               </div>
             </div>
           )}
@@ -103,21 +101,19 @@ export function PlaygroundEventPreview({ events, currentUser }: PlaygroundEventP
       </Card>
 
       {/* 2. Station Links */}
-      <Card className="bg-zinc-900/50 border-white/10">
-        <CardHeader className="px-4 py-3 border-b border-white/5 bg-white/[0.02]">
-          <CardTitle className="text-sm font-medium text-zinc-200 flex items-center gap-2">
-            <Link2 className="w-4 h-4 text-zinc-400" />
-            2. Stations
-          </CardTitle>
-        </CardHeader>
+      <Card className="bg-zinc-900/50 border-white/10 overflow-hidden shadow-lg">
+        <div className="px-6 py-4 border-b border-white/5 bg-white/[0.02] flex items-center gap-3">
+          <div className="w-6 h-6 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400 text-xs font-bold">2</div>
+          <span className="text-base font-medium text-zinc-200">Navigate Stations</span>
+        </div>
         <CardContent className="p-4 space-y-2">
           {selectedEvent ? (
             [
-              { key: 'main', label: 'Main Page', icon: Globe },
-              { key: 'registration', label: 'Registration', icon: UserPlus },
-              { key: 'booth', label: 'Booth', icon: Camera },
-              { key: 'viewer', label: 'Viewer', icon: Images },
-            ].map(({ key, label, icon: Icon }) => {
+              { key: 'main', label: 'Landing Page', icon: Globe, desc: 'Main entry point' },
+              { key: 'registration', label: 'Registration', icon: UserPlus, desc: 'Check-in kiosk' },
+              { key: 'booth', label: 'Photo Booth', icon: Camera, desc: 'Main capture flow' },
+              { key: 'viewer', label: 'Live Gallery', icon: Images, desc: 'Public display' },
+            ].map(({ key, label, icon: Icon, desc }) => {
               const url = getStationUrl(key);
               const isCopied = copiedUrl === url;
               const isActive = activeStation === key;
@@ -125,65 +121,89 @@ export function PlaygroundEventPreview({ events, currentUser }: PlaygroundEventP
               return (
                 <div 
                   key={key} 
-                  className={`flex items-center justify-between p-2 rounded-lg transition-all ${
-                    isActive ? 'bg-zinc-800 border border-zinc-700' : 'bg-transparent border border-transparent hover:bg-zinc-800/50'
+                  className={`group flex items-center justify-between p-3 rounded-xl transition-all cursor-pointer border ${
+                    isActive ? 'bg-zinc-800 border-indigo-500/30 shadow-md' : 'bg-transparent border-transparent hover:bg-zinc-800/50 hover:border-white/5'
                   }`}
+                  onClick={() => setActiveStation(key as any)}
                 >
-                  <div className="flex items-center gap-3 flex-1 overflow-hidden cursor-pointer" onClick={() => setActiveStation(key as any)}>
-                    <div className={`p-1.5 rounded-md ${isActive ? 'bg-indigo-500/20 text-indigo-400' : 'bg-zinc-800 text-zinc-400'}`}>
-                      <Icon className="w-4 h-4" />
+                  <div className="flex items-center gap-4 flex-1 overflow-hidden">
+                    <div className={`p-2.5 rounded-lg transition-colors ${isActive ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/20' : 'bg-zinc-800 text-zinc-400 group-hover:bg-zinc-700 group-hover:text-zinc-200'}`}>
+                      <Icon className="w-5 h-5" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <span className={`text-sm font-medium block ${isActive ? 'text-white' : 'text-zinc-200'}`}>{label}</span>
-                      <span className={`text-[10px] font-mono truncate block ${isActive ? 'text-zinc-400' : 'text-zinc-500'}`}>{url}</span>
+                      <span className={`text-sm font-medium block mb-0.5 ${isActive ? 'text-white' : 'text-zinc-200'}`}>{label}</span>
+                      <span className="text-xs text-zinc-500 block">{desc}</span>
                     </div>
                   </div>
-                  <div className="flex gap-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => copyUrl(url, label)}
-                      className="h-7 w-7 p-0 text-zinc-400 hover:text-white hover:bg-zinc-700"
-                    >
-                      {isCopied ? <Check className="w-3 h-3 text-green-400" /> : <Copy className="w-3 h-3" />}
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => openStation(url)}
-                      className="h-7 w-7 p-0 text-zinc-400 hover:text-cyan-400 hover:bg-zinc-700"
-                    >
-                      <ExternalLink className="w-3 h-3" />
-                    </Button>
+                  
+                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              copyUrl(url, label);
+                            }}
+                            className="h-8 w-8 text-zinc-400 hover:text-white hover:bg-zinc-700 rounded-lg"
+                          >
+                            {isCopied ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Copy URL</TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                    
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openStation(url);
+                            }}
+                            className="h-8 w-8 text-zinc-400 hover:text-cyan-400 hover:bg-zinc-700 rounded-lg"
+                          >
+                            <ExternalLink className="w-4 h-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Open in New Tab</TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   </div>
                 </div>
               );
             })
           ) : (
-            <div className="text-center py-8 border-2 border-dashed border-zinc-800 rounded-xl bg-zinc-900/30">
-              <p className="text-sm text-zinc-400">Select an event to see stations</p>
+            <div className="text-center py-12 border-2 border-dashed border-zinc-800 rounded-xl bg-zinc-900/30">
+               <MapPin className="w-10 h-10 text-zinc-600 mx-auto mb-3" />
+              <p className="text-sm text-zinc-400">Select an event to view stations</p>
             </div>
           )}
         </CardContent>
       </Card>
+    </div>
+  );
 
-      {/* Quick Tips */}
-      <div className="p-4 rounded-lg bg-indigo-500/5 border border-indigo-500/10">
-        <div className="flex items-center gap-2 mb-2">
-          <Info className="w-4 h-4 text-indigo-400" />
-          <span className="text-xs font-medium text-indigo-300">Preview Tip</span>
-        </div>
-        <p className="text-xs text-zinc-400 leading-relaxed">
-          The preview on the right loads the actual station. You can interact with it as a user. 
-          For full screen testing, use the "Open" button next to each station.
-        </p>
-      </div>
+  const CanvasOverlay = selectedEvent && (
+    <div className="absolute bottom-8 right-8 z-50 pointer-events-auto">
+      <Button 
+        onClick={() => openStation(getStationUrl(activeStation))}
+        className="bg-white/10 hover:bg-white/20 text-white backdrop-blur-md border border-white/10 shadow-xl rounded-full px-6"
+      >
+        <Monitor className="w-4 h-4 mr-2" />
+        Open Full Screen
+      </Button>
     </div>
   );
 
   // --- Right Panel ---
   const PreviewPanel = (
-    <div className="h-full flex flex-col bg-zinc-900">
+    <div className="h-full flex flex-col bg-zinc-900 relative group">
       {selectedEvent ? (
         <iframe
           src={getStationUrl(activeStation)}
@@ -192,8 +212,9 @@ export function PlaygroundEventPreview({ events, currentUser }: PlaygroundEventP
         />
       ) : (
         <div className="flex-1 flex flex-col items-center justify-center text-zinc-600">
-          <Eye className="w-12 h-12 mb-4 opacity-20" />
-          <p>Select an event to preview</p>
+          <Eye className="w-16 h-16 mb-6 opacity-20" />
+          <p className="text-lg font-medium text-zinc-500">No Event Selected</p>
+          <p className="text-sm text-zinc-600 mt-2">Select an event from the panel to start preview</p>
         </div>
       )}
     </div>
@@ -203,7 +224,7 @@ export function PlaygroundEventPreview({ events, currentUser }: PlaygroundEventP
     <PlaygroundSplitView 
       leftPanel={ControlsPanel} 
       rightPanel={PreviewPanel} 
+      canvasOverlay={CanvasOverlay}
     />
   );
 }
-
