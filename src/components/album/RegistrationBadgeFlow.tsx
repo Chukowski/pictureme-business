@@ -32,6 +32,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import QRCode from 'qrcode';
 import { BadgeTemplateConfig } from '@/components/templates/BadgeTemplateEditor';
 import { processImageWithAI, downloadImageAsBase64 } from '@/services/aiProcessor';
+import { Template } from '@/services/eventsApi';
 
 type FlowState = 'input' | 'camera' | 'preview' | 'creating' | 'badge' | 'complete';
 
@@ -42,6 +43,7 @@ interface RegistrationBadgeFlowProps {
   eventSlug: string;
   primaryColor?: string;
   badgeTemplate?: BadgeTemplateConfig;
+  templates?: Template[]; // Event templates for AI pipeline source
   onComplete?: (albumCode: string) => void;
 }
 
@@ -52,6 +54,7 @@ export function RegistrationBadgeFlow({
   eventSlug,
   primaryColor = '#6366F1',
   badgeTemplate,
+  templates = [],
   onComplete
 }: RegistrationBadgeFlowProps) {
   const [state, setState] = useState<FlowState>('input');
@@ -179,49 +182,73 @@ export function RegistrationBadgeFlow({
       const aiPipelineEnabled = badgeTemplate?.aiPipeline?.enabled === true;
       let finalPhoto = capturedPhoto;
       
-      if (aiPipelineEnabled && badgeTemplate?.aiPipeline?.prompt) {
-        setProcessingStatus('Processing photo with AI...');
-        toast.info('Enhancing your photo with AI...', { duration: 5000 });
+      if (aiPipelineEnabled) {
+        // If a source template is selected, use its prompt and images
+        const sourceTemplateId = badgeTemplate?.aiPipeline?.sourceTemplateId;
+        const sourceTemplate = sourceTemplateId 
+          ? templates.find(t => t.id === sourceTemplateId)
+          : null;
         
-        try {
-          // Determine aspect ratio from badge layout
-          const aspectRatio = badgeTemplate.layout === 'landscape' ? '16:9' 
-            : badgeTemplate.layout === 'square' ? '1:1' 
-            : badgeTemplate.aiPipeline.outputRatio || '1:1';
+        // Get prompt and images from source template or badge config
+        const prompt = sourceTemplate?.prompt || badgeTemplate?.aiPipeline?.prompt;
+        const referenceImages = sourceTemplate?.images || badgeTemplate?.aiPipeline?.referenceImages || [];
+        const aiModel = sourceTemplate?.pipelineConfig?.imageModel || badgeTemplate?.aiPipeline?.model;
+        
+        if (prompt) {
+          setProcessingStatus('Processing photo with AI...');
+          toast.info('Enhancing your photo with AI...', { duration: 5000 });
           
-          const result = await processImageWithAI({
-            userPhotoBase64: capturedPhoto,
-            backgroundPrompt: badgeTemplate.aiPipeline.prompt,
-            backgroundImageUrls: badgeTemplate.aiPipeline.referenceImages || [],
-            includeBranding: false,
-            aspectRatio: aspectRatio as any,
-            aiModel: badgeTemplate.aiPipeline.model, // Use badge template's AI model
-            eventId,
-            billingContext: "registration-badge",
-            eventSlug,
-            userSlug,
-            onProgress: (status) => {
-              if (status === 'queued') {
-                setProcessingStatus('Waiting in queue...');
-              } else if (status === 'processing') {
-                setProcessingStatus('AI is working its magic...');
-              }
-            }
+          console.log('🎨 Badge AI Pipeline:', {
+            sourceTemplateId,
+            sourceTemplateName: sourceTemplate?.name,
+            prompt: prompt?.substring(0, 100) + '...',
+            referenceImagesCount: referenceImages.length,
+            aiModel
           });
           
-          // Get the processed image
-          if (result.url.startsWith('data:')) {
-            finalPhoto = result.url;
-          } else {
-            finalPhoto = await downloadImageAsBase64(result.url);
+          try {
+            // Determine aspect ratio from badge layout or source template
+            const aspectRatio = sourceTemplate?.aspectRatio 
+              || (badgeTemplate?.layout === 'landscape' ? '16:9' 
+                : badgeTemplate?.layout === 'square' ? '1:1' 
+                : badgeTemplate?.aiPipeline?.outputRatio || '1:1');
+            
+            const result = await processImageWithAI({
+              userPhotoBase64: capturedPhoto,
+              backgroundPrompt: prompt,
+              backgroundImageUrls: referenceImages,
+              includeBranding: false,
+              aspectRatio: aspectRatio as any,
+              aiModel: aiModel,
+              eventId,
+              billingContext: "registration-badge",
+              eventSlug,
+              userSlug,
+              onProgress: (status) => {
+                if (status === 'queued') {
+                  setProcessingStatus('Waiting in queue...');
+                } else if (status === 'processing') {
+                  setProcessingStatus('AI is working its magic...');
+                }
+              }
+            });
+            
+            // Get the processed image
+            if (result.url.startsWith('data:')) {
+              finalPhoto = result.url;
+            } else {
+              finalPhoto = await downloadImageAsBase64(result.url);
+            }
+            
+            setProcessedPhoto(finalPhoto);
+            toast.success('Photo enhanced with AI! ✨');
+          } catch (aiError: any) {
+            console.error('AI processing failed:', aiError);
+            toast.warning('AI enhancement failed, using original photo');
+            // Continue with original photo if AI fails
           }
-          
-          setProcessedPhoto(finalPhoto);
-          toast.success('Photo enhanced with AI! ✨');
-        } catch (aiError: any) {
-          console.error('AI processing failed:', aiError);
-          toast.warning('AI enhancement failed, using original photo');
-          // Continue with original photo if AI fails
+        } else {
+          console.warn('⚠️ AI Pipeline enabled but no prompt found');
         }
       }
       
