@@ -81,26 +81,6 @@ export function RegistrationBadgeFlow({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
-  // Enumerate available cameras
-  const enumerateCameras = useCallback(async () => {
-    try {
-      // Need to get permission first to see device labels
-      const tempStream = await navigator.mediaDevices.getUserMedia({ video: true });
-      tempStream.getTracks().forEach(track => track.stop());
-      
-      const devices = await navigator.mediaDevices.enumerateDevices();
-      const videoDevices = devices.filter(device => device.kind === 'videoinput');
-      setAvailableCameras(videoDevices);
-      
-      // Set default camera if not already selected
-      if (!selectedCameraId && videoDevices.length > 0) {
-        setSelectedCameraId(videoDevices[0].deviceId);
-      }
-    } catch (error) {
-      console.error('Error enumerating cameras:', error);
-    }
-  }, [selectedCameraId]);
-
   // Start camera with specific device
   const startCamera = useCallback(async (deviceId?: string) => {
     try {
@@ -114,20 +94,36 @@ export function RegistrationBadgeFlow({
       // First change state to mount the video element
       setState('camera');
       
-      // Enumerate cameras first if we haven't
-      if (availableCameras.length === 0) {
-        await enumerateCameras();
+      const cameraId = deviceId || selectedCameraId;
+      
+      // Try with specific camera first, fallback to any camera
+      let stream: MediaStream;
+      try {
+        const constraints: MediaStreamConstraints = {
+          video: cameraId
+            ? { deviceId: cameraId, width: { ideal: 1280 }, height: { ideal: 720 } }
+            : { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } }
+        };
+        stream = await navigator.mediaDevices.getUserMedia(constraints);
+      } catch (constraintError) {
+        // Fallback to any available camera
+        console.warn('Specific camera failed, falling back to default:', constraintError);
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { width: { ideal: 1280 }, height: { ideal: 720 } }
+        });
       }
       
-      const cameraId = deviceId || selectedCameraId;
-      const constraints: MediaStreamConstraints = {
-        video: cameraId
-          ? { deviceId: { exact: cameraId }, width: { ideal: 1280 }, height: { ideal: 720 } }
-          : { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } }
-      };
-      
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
       streamRef.current = stream;
+      
+      // Enumerate cameras after we have permission
+      if (availableCameras.length === 0) {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const videoDevices = devices.filter(device => device.kind === 'videoinput');
+        setAvailableCameras(videoDevices);
+        if (!selectedCameraId && videoDevices.length > 0) {
+          setSelectedCameraId(videoDevices[0].deviceId);
+        }
+      }
       
       // The video element should now be mounted, attach stream
       // Use a small delay to ensure React has rendered the video element
@@ -142,7 +138,7 @@ export function RegistrationBadgeFlow({
       toast.error('Could not access camera. Please check permissions.');
       setState('input'); // Go back to input state on error
     }
-  }, [selectedCameraId, availableCameras.length, enumerateCameras]);
+  }, [selectedCameraId, availableCameras.length]);
 
   // Handle camera change
   const handleCameraChange = useCallback((newCameraId: string) => {

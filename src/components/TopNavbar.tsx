@@ -26,6 +26,20 @@ export function TopNavbar() {
   const userRole = currentUser?.role || 'individual';
   const hasAlbumTracking = hasFeature(userRole, 'albumTracking');
 
+  // Paths where navbar should be completely hidden
+  const isHiddenPath = [
+    '/registration',
+    '/booth',
+    '/viewer',
+    '/display', // Big Screen
+    '/feed'
+  ].some(path => location.pathname.endsWith(path)) || 
+  // Check for dynamic event routes that are not admin routes
+  (location.pathname.split('/').length >= 3 && 
+   !location.pathname.startsWith('/admin') && 
+   !location.pathname.startsWith('/super-admin') &&
+   !location.pathname.startsWith('/profile'));
+
   // Define workspaces where auto-hide is active
   const isWorkspace = [
     '/playground',
@@ -33,14 +47,13 @@ export function TopNavbar() {
     '/create',
     '/live',
     '/staff',
-    '/booth',
-    '/registration',
-    '/viewer',
     '/bigscreen'
   ].some(path => location.pathname.includes(path));
 
   // Token Stats Logic
   useEffect(() => {
+    if (isHiddenPath) return; // Don't fetch stats on public pages
+
     const fetchTokenStats = async () => {
       const apiUrl = ENV.API_URL;
       if (!apiUrl) return;
@@ -77,10 +90,15 @@ export function TopNavbar() {
       clearInterval(interval);
       window.removeEventListener("tokens-updated", handleTokensUpdated as EventListener);
     };
-  }, []);
+  }, [isHiddenPath]);
 
   // Handle Auto-Hide Logic
   useEffect(() => {
+    if (isHiddenPath) {
+      setIsVisible(false);
+      return;
+    }
+
     if (!isWorkspace) {
       setIsVisible(true);
       return;
@@ -98,10 +116,12 @@ export function TopNavbar() {
 
     const interval = setInterval(checkInactivity, 500);
     return () => clearInterval(interval);
-  }, [isWorkspace, isHovered]);
+  }, [isWorkspace, isHovered, isHiddenPath]);
 
   // Handle Mouse Interaction
   useEffect(() => {
+    if (isHiddenPath) return;
+
     const handleMouseMove = (e: MouseEvent) => {
       const isTopLeft = e.clientX <= 40 && e.clientY <= 40;
       const isTopRight = e.clientX >= window.innerWidth - 40 && e.clientY <= 40;
@@ -119,7 +139,7 @@ export function TopNavbar() {
 
     window.addEventListener('mousemove', handleMouseMove);
     return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, []);
+  }, [isHiddenPath]);
 
   const handleInteraction = () => {
     lastInteraction.current = Date.now() + 1500; // Add extra buffer
@@ -130,6 +150,8 @@ export function TopNavbar() {
     logoutUser();
     navigate("/admin/auth");
   };
+
+  if (isHiddenPath) return null;
 
   const navItems = [
     { id: 'events', label: 'Events', icon: FolderKanban, path: '/admin/events' },
