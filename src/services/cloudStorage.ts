@@ -46,7 +46,10 @@ export async function savePhotoToCloud(photo: {
 }): Promise<CloudPhoto> {
   try {
     // Note: trailing slash required to avoid 307 redirect
-    const response = await fetch(`${getApiUrl()}/api/photos/upload/public/`, {
+    const uploadUrl = `${getApiUrl()}/api/photos/upload/public/`;
+    console.log('☁️ Uploading to:', uploadUrl);
+    
+    const response = await fetch(uploadUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -63,8 +66,10 @@ export async function savePhotoToCloud(photo: {
     });
     
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ detail: response.statusText }));
-      throw new Error(error.detail || 'Failed to upload to cloud');
+      const errorText = await response.text();
+      console.error('☁️ Upload failed:', response.status, errorText);
+      const error = JSON.parse(errorText).catch?.(() => ({ detail: response.statusText })) || { detail: errorText };
+      throw new Error(error.detail || error.error || `Upload failed: ${response.status} ${errorText}`);
     }
     
     const cloudPhoto = await response.json();

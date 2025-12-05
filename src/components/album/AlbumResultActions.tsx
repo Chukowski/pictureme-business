@@ -27,7 +27,7 @@ interface AlbumResultActionsProps {
   onViewAlbum: () => void;
   onShare?: () => void;
   onDownload?: () => void;
-  onDeletePhoto?: () => void; // New: callback to delete current photo
+  onDeletePhoto?: (staffPin?: string) => Promise<void>; // Callback to delete current photo with optional staff PIN
   canTakeMore: boolean;
   primaryColor?: string;
   className?: string;
@@ -76,7 +76,8 @@ export function AlbumResultActions({
     
     setIsDeleting(true);
     try {
-      await onDeletePhoto();
+      // Pass the staff PIN to the delete function
+      await onDeletePhoto(staffPin);
       toast.success("Photo deleted. You can try again!");
       setShowStaffDialog(false);
       setIsStaffAuthenticated(false);

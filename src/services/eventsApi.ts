@@ -744,21 +744,30 @@ export async function addAlbumPhoto(code: string, photoId: string, stationType: 
   return response.json();
 }
 
-export async function deleteAlbumPhoto(albumCode: string, photoId: string): Promise<void> {
+export async function deleteAlbumPhoto(albumCode: string, photoId: string, staffPin?: string): Promise<void> {
   const token = getAuthToken();
+  
+  // Build URL with optional PIN parameter
+  let url = getApiPath(`/albums/${albumCode}/photos/${photoId}`, true);
+  if (staffPin) {
+    url += `?pin=${encodeURIComponent(staffPin)}`;
+  }
+  
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
   }
   
-  const response = await fetch(getApiPath(`/albums/${albumCode}/photos/${photoId}`, true), {
+  const response = await fetch(url, {
     method: 'DELETE',
     headers
   });
   
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ detail: 'Failed to delete photo' }));
-    throw new Error(error.detail || 'Failed to delete photo');
+    const errorText = await response.text();
+    console.error('Delete photo failed:', response.status, errorText);
+    const error = JSON.parse(errorText || '{}');
+    throw new Error(error.detail || error.error || 'Failed to delete photo');
   }
 }
 

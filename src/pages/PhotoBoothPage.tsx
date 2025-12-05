@@ -472,13 +472,13 @@ export const PhotoBoothPage = () => {
   };
 
   // Handle staff delete photo (for retakes)
-  const handleDeleteCurrentPhoto = async () => {
+  const handleDeleteCurrentPhoto = async (staffPin?: string) => {
     if (!albumData || !shareCode) {
       throw new Error('No photo to delete');
     }
     
     try {
-      await deleteAlbumPhoto(albumData.id, shareCode);
+      await deleteAlbumPhoto(albumData.id, shareCode, staffPin);
       
       // Update local album data
       setAlbumData(prev => prev ? ({
