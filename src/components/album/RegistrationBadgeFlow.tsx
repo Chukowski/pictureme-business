@@ -269,7 +269,17 @@ export function RegistrationBadgeFlow({
         // Get prompt and images from source template or badge config
         const prompt = sourceTemplate?.prompt || badgeTemplate?.aiPipeline?.prompt;
         const referenceImages = sourceTemplate?.images || badgeTemplate?.aiPipeline?.referenceImages || [];
-        const aiModel = sourceTemplate?.pipelineConfig?.imageModel || badgeTemplate?.aiPipeline?.model;
+        // Priority: source template model > badge aiPipeline model > fallback to nano-banana
+        const aiModel = sourceTemplate?.pipelineConfig?.imageModel || badgeTemplate?.aiPipeline?.model || 'nano-banana';
+        
+        console.log('🔍 Badge AI Model Resolution:', {
+          sourceTemplateModel: sourceTemplate?.pipelineConfig?.imageModel,
+          badgeAiPipelineModel: badgeTemplate?.aiPipeline?.model,
+          resolvedModel: aiModel,
+          sourceTemplateId,
+          sourceTemplateFound: !!sourceTemplate,
+          templatesCount: templates.length
+        });
         
         if (prompt) {
           setProcessingStatus('Processing photo with AI...');
@@ -341,8 +351,31 @@ export function RegistrationBadgeFlow({
       
       setAlbumCode(album.code);
       
-      // Note: The registration photo is for the badge only, not counted as an album photo.
-      // Album photos are taken at the booth station and processed with AI.
+      // Save the badge photo to the album (with station_type = 'registration')
+      // This allows users to see their badge photo in the album
+      try {
+        setProcessingStatus('Saving badge photo...');
+        
+        // Save to cloud storage first
+        const cloudResult = await savePhotoToCloud({
+          originalImageBase64: capturedPhoto,
+          processedImageBase64: finalPhoto,
+          backgroundId: 'registration',
+          backgroundName: 'Registration Badge',
+          prompt: '',
+          userSlug,
+          eventSlug,
+        });
+        
+        if (cloudResult?.shareCode) {
+          // Add to album with registration station type
+          await addAlbumPhoto(album.code, cloudResult.shareCode, 'registration');
+          console.log('✅ Badge photo saved to album:', { albumCode: album.code, photoShareCode: cloudResult.shareCode });
+        }
+      } catch (saveError) {
+        console.warn('⚠️ Failed to save badge photo to album (non-critical):', saveError);
+        // Don't fail the whole flow if saving fails
+      }
       
       setState('badge');
       toast.success('Badge created successfully!');
@@ -383,7 +416,17 @@ export function RegistrationBadgeFlow({
         
         const prompt = sourceTemplate?.prompt || badgeTemplate?.aiPipeline?.prompt;
         const referenceImages = sourceTemplate?.images || badgeTemplate?.aiPipeline?.referenceImages || [];
-        const aiModel = sourceTemplate?.pipelineConfig?.imageModel || badgeTemplate?.aiPipeline?.model;
+        // Priority: source template model > badge aiPipeline model > fallback to nano-banana
+        const aiModel = sourceTemplate?.pipelineConfig?.imageModel || badgeTemplate?.aiPipeline?.model || 'nano-banana';
+        
+        console.log('🔍 Group Badge AI Model Resolution:', {
+          sourceTemplateModel: sourceTemplate?.pipelineConfig?.imageModel,
+          badgeAiPipelineModel: badgeTemplate?.aiPipeline?.model,
+          resolvedModel: aiModel,
+          sourceTemplateId,
+          sourceTemplateFound: !!sourceTemplate,
+          templatesCount: templates.length
+        });
         
         console.log('🎨 Group Badge AI config:', {
           sourceTemplateId,

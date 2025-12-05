@@ -1119,10 +1119,18 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
                     onChange={handleImageUpload}
                   />
                   {testImage ? (
-                    <div className="flex items-center gap-4 p-4 bg-black/20 rounded-xl border border-white/10">
+                    <div className={`flex items-center gap-4 p-4 bg-black/20 rounded-xl border ${testImageBase64 ? 'border-white/10' : 'border-red-500/50'}`}>
                       <img src={testImage} alt="Test" className="w-24 h-24 rounded-lg object-cover" />
                       <div className="flex-1">
-                        <p className="text-sm text-zinc-300 mb-2">Test image loaded</p>
+                        {testImageBase64 ? (
+                          <p className="text-sm text-green-400 mb-2 flex items-center gap-1">
+                            <CheckCircle2 className="w-4 h-4" /> Image loaded and ready
+                          </p>
+                        ) : (
+                          <p className="text-sm text-red-400 mb-2 flex items-center gap-1">
+                            <AlertTriangle className="w-4 h-4" /> Image failed to load (CORS). Upload an image instead.
+                          </p>
+                        )}
                         <div className="flex gap-2">
                           <Button
                             type="button"
