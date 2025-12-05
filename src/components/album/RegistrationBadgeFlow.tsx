@@ -24,8 +24,16 @@ import {
   User,
   Loader2,
   CheckCircle2,
-  Sparkles
+  Sparkles,
+  ChevronDown
 } from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { toast } from 'sonner';
 import { createAlbum } from '@/services/eventsApi';
 import { QRCodeSVG } from 'qrcode.react';
@@ -66,13 +74,35 @@ export function RegistrationBadgeFlow({
   const [isCreating, setIsCreating] = useState(false);
   const [isCameraReady, setIsCameraReady] = useState(false);
   const [processingStatus, setProcessingStatus] = useState<string>('');
+  const [availableCameras, setAvailableCameras] = useState<MediaDeviceInfo[]>([]);
+  const [selectedCameraId, setSelectedCameraId] = useState<string>('');
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
-  // Start camera
-  const startCamera = useCallback(async () => {
+  // Enumerate available cameras
+  const enumerateCameras = useCallback(async () => {
+    try {
+      // Need to get permission first to see device labels
+      const tempStream = await navigator.mediaDevices.getUserMedia({ video: true });
+      tempStream.getTracks().forEach(track => track.stop());
+      
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const videoDevices = devices.filter(device => device.kind === 'videoinput');
+      setAvailableCameras(videoDevices);
+      
+      // Set default camera if not already selected
+      if (!selectedCameraId && videoDevices.length > 0) {
+        setSelectedCameraId(videoDevices[0].deviceId);
+      }
+    } catch (error) {
+      console.error('Error enumerating cameras:', error);
+    }
+  }, [selectedCameraId]);
+
+  // Start camera with specific device
+  const startCamera = useCallback(async (deviceId?: string) => {
     try {
       setIsCameraReady(false);
       
@@ -84,13 +114,19 @@ export function RegistrationBadgeFlow({
       // First change state to mount the video element
       setState('camera');
       
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { 
-          facingMode: 'user', 
-          width: { ideal: 1280 }, 
-          height: { ideal: 720 } 
-        }
-      });
+      // Enumerate cameras first if we haven't
+      if (availableCameras.length === 0) {
+        await enumerateCameras();
+      }
+      
+      const cameraId = deviceId || selectedCameraId;
+      const constraints: MediaStreamConstraints = {
+        video: cameraId
+          ? { deviceId: { exact: cameraId }, width: { ideal: 1280 }, height: { ideal: 720 } }
+          : { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } }
+      };
+      
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
       streamRef.current = stream;
       
       // The video element should now be mounted, attach stream
@@ -106,7 +142,15 @@ export function RegistrationBadgeFlow({
       toast.error('Could not access camera. Please check permissions.');
       setState('input'); // Go back to input state on error
     }
-  }, []);
+  }, [selectedCameraId, availableCameras.length, enumerateCameras]);
+
+  // Handle camera change
+  const handleCameraChange = useCallback((newCameraId: string) => {
+    setSelectedCameraId(newCameraId);
+    if (state === 'camera') {
+      startCamera(newCameraId);
+    }
+  }, [state, startCamera]);
 
   // Effect to attach stream to video element when in camera state
   useEffect(() => {
@@ -676,6 +720,27 @@ export function RegistrationBadgeFlow({
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* Camera Selector - show when multiple cameras available */}
+              {availableCameras.length > 1 && (
+                <Select value={selectedCameraId} onValueChange={handleCameraChange}>
+                  <SelectTrigger className="w-full bg-zinc-800/50 border-white/10 text-white">
+                    <Camera className="w-4 h-4 mr-2" />
+                    <SelectValue placeholder="Select camera" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-zinc-900 border-white/10">
+                    {availableCameras.map((camera, index) => (
+                      <SelectItem 
+                        key={camera.deviceId} 
+                        value={camera.deviceId}
+                        className="text-white hover:bg-zinc-800"
+                      >
+                        {camera.label || `Camera ${index + 1}`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+              
               <div className="relative aspect-[3/4] bg-black rounded-xl overflow-hidden">
                 <video
                   ref={videoRef}
