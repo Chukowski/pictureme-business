@@ -257,24 +257,31 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
     
     // Try fetch with proxy first
     try {
+      console.log('🔄 Attempting proxy fetch...');
       const response = await fetch(proxiedUrl);
+      console.log('📡 Proxy response status:', response.status);
       if (response.ok) {
         const blob = await response.blob();
+        console.log('📦 Blob received, size:', blob.size, 'type:', blob.type);
         return new Promise((resolve, reject) => {
           const reader = new FileReader();
           reader.onloadend = () => {
             const result = reader.result as string;
-            console.log('✅ Image converted via fetch, base64 length:', result.length);
+            console.log('✅ Image converted via proxy fetch, base64 length:', result.length);
             resolve(result);
           };
-          reader.onerror = reject;
+          reader.onerror = (e) => {
+            console.error('❌ FileReader error:', e);
+            reject(e);
+          };
           reader.readAsDataURL(blob);
         });
       } else {
-        console.warn('⚠️ Proxy fetch failed with status:', response.status);
+        const errorText = await response.text().catch(() => 'No error text');
+        console.warn('⚠️ Proxy fetch failed with status:', response.status, 'error:', errorText);
       }
     } catch (fetchError) {
-      console.log('⚠️ Fetch with proxy failed, trying direct fetch:', fetchError);
+      console.log('⚠️ Fetch with proxy failed:', fetchError);
     }
     
     // Try direct fetch (for data URLs or same-origin)
