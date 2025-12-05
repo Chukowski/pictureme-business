@@ -154,8 +154,10 @@ async function loadConfig() {
     const response = await fetch(`${apiUrl}/api/config`);
     const config = await response.json();
     
-    if (config.falKey) {
-      FAL_KEY = config.falKey;
+    // Backend returns snake_case (fal_key), check both formats for compatibility
+    const falKey = config.fal_key || config.falKey;
+    if (falKey) {
+      FAL_KEY = falKey;
       // Don't override default model from backend - let event config control it
       
       // Configure fal client
@@ -164,6 +166,8 @@ async function loadConfig() {
       });
       
       console.log('✅ FAL configuration loaded from backend (secure)');
+    } else {
+      console.warn('⚠️ No FAL key in config response:', Object.keys(config));
     }
   } catch (error) {
     console.warn('⚠️ Failed to load config from backend:', error);

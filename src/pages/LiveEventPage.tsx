@@ -157,7 +157,7 @@ export default function LiveEventPage() {
                 <LiveQueue albums={albums.slice(0, 5)} onAction={handleAction} />
               </div>
               <div className="space-y-6">
-                <LiveStations />
+                <LiveStations event={event} />
               </div>
             </div>
           </>
@@ -168,7 +168,7 @@ export default function LiveEventPage() {
         )}
 
         {activeTab === 'stations' && (
-          <LiveStations />
+          <LiveStations event={event} />
         )}
 
         {activeTab === 'sales' && (

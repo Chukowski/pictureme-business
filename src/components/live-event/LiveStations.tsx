@@ -25,7 +25,20 @@ export function LiveStations({ event }: LiveStationsProps) {
   const getStationUrl = (type: string) => {
     if (!event?.user_slug || !event?.slug) return '';
     const baseUrl = window.location.origin;
-    const path = type === 'bigscreen' ? 'display' : type; // bigscreen maps to /display route
+    
+    // URL mapping for different station types
+    let path = type;
+    if (type === 'bigscreen') {
+      path = 'display'; // Big Screen maps to /:userSlug/:eventSlug/display
+    } else if (type === 'booth') {
+      path = 'booth'; // Main Booth maps to /:userSlug/:eventSlug/booth
+    } else if (type === 'registration') {
+      path = 'registration';
+    } else if (type === 'viewer') {
+      path = 'viewer';
+    }
+
+    // Construct URL: baseUrl / userSlug / eventSlug / path
     return `${baseUrl}/${event.user_slug}/${event.slug}/${path}`;
   };
 
