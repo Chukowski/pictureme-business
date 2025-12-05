@@ -752,10 +752,42 @@ function getProxiedUrl(url: string): string {
 }
 
 /**
+ * Compress an image to a maximum size while maintaining aspect ratio
+ * @param img - HTMLImageElement to compress
+ * @param maxSize - Maximum dimension (width or height)
+ * @param quality - JPEG quality (0-1)
+ * @returns Compressed data URI
+ */
+function compressImage(img: HTMLImageElement, maxSize: number = 2048, quality: number = 0.85): string {
+  let { width, height } = img;
+  
+  // Calculate new dimensions
+  if (width > maxSize || height > maxSize) {
+    const ratio = Math.min(maxSize / width, maxSize / height);
+    width = Math.round(width * ratio);
+    height = Math.round(height * ratio);
+    console.log(`📐 Resizing image from ${img.width}x${img.height} to ${width}x${height}`);
+  }
+  
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  
+  const ctx = canvas.getContext("2d");
+  if (!ctx) {
+    throw new Error("Failed to get canvas context");
+  }
+  
+  ctx.drawImage(img, 0, 0, width, height);
+  return canvas.toDataURL("image/jpeg", quality);
+}
+
+/**
  * Helper function to convert image URL to data URI
  * Uses fetch for better CORS handling with proxy
+ * Automatically compresses large images to avoid 413 errors
  */
-async function imageUrlToDataUri(url: string): Promise<string> {
+async function imageUrlToDataUri(url: string, maxSize: number = 2048): Promise<string> {
   // Use proxy for S3 URLs to bypass CORS
   const proxiedUrl = getProxiedUrl(url);
   console.log("📥 Loading image:", url, "->", proxiedUrl);
@@ -769,14 +801,25 @@ async function imageUrlToDataUri(url: string): Promise<string> {
     
     if (response.ok) {
       const blob = await response.blob();
+      // Create image from blob to check dimensions and compress if needed
+      const blobUrl = URL.createObjectURL(blob);
       return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          console.log("✅ Image loaded via fetch:", url);
-          resolve(reader.result as string);
+        const img = new Image();
+        img.onload = () => {
+          URL.revokeObjectURL(blobUrl);
+          try {
+            const dataUri = compressImage(img, maxSize);
+            console.log("✅ Image loaded via fetch:", url);
+            resolve(dataUri);
+          } catch (err) {
+            reject(err);
+          }
         };
-        reader.onerror = () => reject(new Error(`Failed to read blob for: ${url}`));
-        reader.readAsDataURL(blob);
+        img.onerror = () => {
+          URL.revokeObjectURL(blobUrl);
+          reject(new Error(`Failed to load blob image for: ${url}`));
+        };
+        img.src = blobUrl;
       });
     } else {
       console.warn("⚠️ Fetch failed with status:", response.status, "- trying canvas fallback");
@@ -792,18 +835,7 @@ async function imageUrlToDataUri(url: string): Promise<string> {
     
     img.onload = () => {
       try {
-        const canvas = document.createElement("canvas");
-        canvas.width = img.width;
-        canvas.height = img.height;
-        
-        const ctx = canvas.getContext("2d");
-        if (!ctx) {
-          reject(new Error("Failed to get canvas context"));
-          return;
-        }
-        
-        ctx.drawImage(img, 0, 0);
-        const dataUri = canvas.toDataURL("image/jpeg", 0.95);
+        const dataUri = compressImage(img, maxSize);
         console.log("✅ Image loaded via canvas:", url);
         resolve(dataUri);
       } catch (canvasError) {
