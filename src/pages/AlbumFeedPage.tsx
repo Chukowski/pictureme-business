@@ -134,15 +134,19 @@ export default function AlbumFeedPage() {
           createdAt: new Date(album.created_at),
         });
 
-        setPhotos(photosData.map((p: any) => ({
-          id: p.id,
-          url: p.url || "",
-          thumbnailUrl: p.thumbnail_url,
-          templateName: "Photo", 
-          createdAt: new Date(p.created_at),
-          approved: true, 
-          stationName: p.station_type
-        })));
+        console.log("📸 Album photos raw data:", photosData);
+        setPhotos(photosData.map((p: any) => {
+          console.log("📸 Photo data:", { id: p.id, photo_id: p.photo_id, url: p.url, thumbnail_url: p.thumbnail_url });
+          return {
+            id: p.id,
+            url: p.url || "",
+            thumbnailUrl: p.thumbnail_url,
+            templateName: "Photo", 
+            createdAt: new Date(p.created_at),
+            approved: true, 
+            stationName: p.station_type
+          };
+        }));
       } catch (error) {
         console.error(error);
         toast.error('Failed to load album');
