@@ -2,7 +2,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Album } from "@/services/eventsApi";
-import { Check, Eye, Share2, CreditCard, Search, Trash2, Clock, AlertTriangle, RefreshCw, ChevronDown, ChevronUp, MoreHorizontal } from "lucide-react";
+import { Check, Eye, Share2, CreditCard, Search, Trash2, Clock, AlertTriangle, RefreshCw, ChevronDown, ChevronUp, MoreHorizontal, Mail, MessageCircle, Printer, Copy, Link, DollarSign } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -12,6 +12,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 
 interface LiveQueueProps {
@@ -31,7 +32,27 @@ export function LiveQueue({ albums, onAction }: LiveQueueProps) {
   };
 
   const filteredAlbums = albums.filter(album => {
-    const matchesSearch = (album.owner_name || album.code).toLowerCase().includes(search.toLowerCase());
+    if (!search.trim()) {
+      // No search query, just filter by status
+      const matchesStatus = statusFilter === 'all' || album.status === statusFilter;
+      return matchesStatus;
+    }
+    
+    const searchLower = search.toLowerCase().trim();
+    
+    // Search in multiple fields
+    const searchableFields = [
+      album.code,
+      album.owner_name,
+      album.owner_email,
+      album.visitor_number?.toString(),
+      album.id,
+    ].filter(Boolean); // Remove null/undefined
+    
+    const matchesSearch = searchableFields.some(field => 
+      field!.toLowerCase().includes(searchLower)
+    );
+    
     const matchesStatus = statusFilter === 'all' || album.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -168,23 +189,50 @@ export function LiveQueue({ albums, onAction }: LiveQueueProps) {
                          <Button size="sm" variant="outline" className="h-7 text-xs border-white/10 bg-zinc-900 text-zinc-300 hover:bg-white/10" onClick={() => onAction('share', album)}>
                             <Share2 className="w-3 h-3 mr-2" /> Share
                          </Button>
-                         {album.status === 'in_progress' && (
-                           <Button size="sm" variant="outline" className="h-7 text-xs border-amber-500/20 bg-amber-500/5 text-amber-400 hover:bg-amber-500/10" onClick={() => onAction('force_complete', album)}>
-                              <AlertTriangle className="w-3 h-3 mr-2" /> Force Complete
-                           </Button>
-                         )}
+                         
+                         {/* More Actions Dropdown (Full Menu) */}
                          <DropdownMenu>
                            <DropdownMenuTrigger asChild>
-                             <Button size="sm" variant="ghost" className="h-7 w-7 p-0 ml-auto">
-                               <MoreHorizontal className="w-4 h-4" />
+                             <Button size="sm" variant="ghost" className="h-7 px-2 ml-auto text-zinc-400 hover:text-white">
+                               <MoreHorizontal className="w-4 h-4 mr-1" /> More
                              </Button>
                            </DropdownMenuTrigger>
-                           <DropdownMenuContent align="end" className="bg-zinc-900 border-white/10 text-zinc-300">
-                             <DropdownMenuItem onClick={() => onAction('retry', album)}>
-                               <RefreshCw className="w-3 h-3 mr-2" /> Retry Processing
+                           <DropdownMenuContent align="end" className="bg-zinc-900 border-white/10 text-zinc-300 w-56">
+                             <DropdownMenuItem onClick={() => onAction('view', album)}>
+                               <Eye className="w-4 h-4 mr-2" /> View Album
                              </DropdownMenuItem>
+                             <DropdownMenuItem onClick={() => onAction('approve', album)}>
+                               <Check className="w-4 h-4 mr-2" /> Mark Complete
+                             </DropdownMenuItem>
+                             <DropdownMenuItem onClick={() => onAction('pay', album)} className="text-emerald-400 focus:text-emerald-400">
+                               <DollarSign className="w-4 h-4 mr-2" /> Mark Paid
+                             </DropdownMenuItem>
+                             
+                             <DropdownMenuSeparator className="bg-white/10" />
+                             
+                             <DropdownMenuItem onClick={() => onAction('email', album)}>
+                               <Mail className="w-4 h-4 mr-2" /> Send Email
+                             </DropdownMenuItem>
+                             <DropdownMenuItem onClick={() => onAction('whatsapp', album)}>
+                               <MessageCircle className="w-4 h-4 mr-2" /> WhatsApp
+                             </DropdownMenuItem>
+                             <DropdownMenuItem onClick={() => onAction('print', album)}>
+                               <Printer className="w-4 h-4 mr-2" /> Print
+                             </DropdownMenuItem>
+                             
+                             <DropdownMenuSeparator className="bg-white/10" />
+
+                             <DropdownMenuItem onClick={() => onAction('copy_code', album)}>
+                               <Copy className="w-4 h-4 mr-2" /> Copy Album Code
+                             </DropdownMenuItem>
+                             <DropdownMenuItem onClick={() => onAction('copy_url', album)}>
+                               <Link className="w-4 h-4 mr-2" /> Copy Album URL
+                             </DropdownMenuItem>
+                             
+                             <DropdownMenuSeparator className="bg-white/10" />
+                             
                              <DropdownMenuItem className="text-red-400 focus:text-red-400" onClick={() => onAction('delete', album)}>
-                               <Trash2 className="w-3 h-3 mr-2" /> Delete Album
+                               <Trash2 className="w-4 h-4 mr-2" /> Delete Album
                              </DropdownMenuItem>
                            </DropdownMenuContent>
                          </DropdownMenu>

@@ -1,7 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { getUserEvents, getEventAlbumStats, getEventAlbums, deleteAlbum, getTokenStats, EventConfig, EventAlbumStats, Album } from "@/services/eventsApi";
+import { getUserEvents, deleteAlbum, getTokenStats, updateAlbumStatus, EventConfig, Album } from "@/services/eventsApi";
+import { useLiveAlbums } from "@/hooks/useLiveAlbums";
 import { LiveEventLayout } from "@/components/live-event/LiveEventLayout";
 import { LiveOverview } from "@/components/live-event/LiveOverview";
 import { LiveQueue } from "@/components/live-event/LiveQueue";
@@ -11,27 +12,46 @@ import { LiveStaff } from "@/components/live-event/LiveStaff";
 import { EventHealthPanel } from "@/components/live-event/EventHealthPanel";
 import { LiveLogs, LogEntry } from "@/components/live-event/LiveLogs";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
+import { RefreshCw } from "lucide-react";
 
 export default function LiveEventPage() {
   const { eventId } = useParams();
   const navigate = useNavigate();
   
   const [event, setEvent] = useState<EventConfig | null>(null);
-  const [stats, setStats] = useState<EventAlbumStats | null>(null);
-  const [albums, setAlbums] = useState<Album[]>([]);
   const [tokens, setTokens] = useState(0);
   
   const [activeTab, setActiveTab] = useState('overview');
   const [isPaused, setIsPaused] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingEvent, setIsLoadingEvent] = useState(true);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
-  // Mock Logs for now
+  // Logs state
   const [logs, setLogs] = useState<LogEntry[]>([
      { id: '1', type: 'info', message: 'Event started', timestamp: new Date(Date.now() - 1000 * 60 * 60), source: 'System' },
-     { id: '2', type: 'success', message: 'Booth 1 connected', timestamp: new Date(Date.now() - 1000 * 60 * 55), source: 'Booth' },
-     { id: '3', type: 'payment', message: 'Payment received $25.00', timestamp: new Date(Date.now() - 1000 * 60 * 15), source: 'Sales' },
   ]);
+
+  // Add log helper
+  const addLog = useCallback((type: LogEntry['type'], message: string, source: string = 'System') => {
+    setLogs(prev => [
+      { id: Date.now().toString(), type, message, timestamp: new Date(), source },
+      ...prev.slice(0, 99) // Keep last 100 logs
+    ]);
+  }, []);
+
+  // Use live albums hook with polling (every 5 seconds)
+  const {
+    albums,
+    stats,
+    isLoading: isLoadingAlbums,
+    lastUpdated,
+    refresh: refreshAlbums,
+    setAlbums,
+  } = useLiveAlbums({
+    eventId: event?.postgres_event_id || 0,
+    enabled: !!event?.postgres_event_id && !isPaused,
+    pollInterval: 5000, // 5 seconds
+  });
 
   useEffect(() => {
     if (eventId) {
@@ -51,8 +71,7 @@ export default function LiveEventPage() {
 
   const loadEventData = async () => {
     try {
-      setIsLoading(true);
-      // 1. Load Event Config
+      setIsLoadingEvent(true);
       const events = await getUserEvents();
       const currentEvent = events.find(e => e._id === eventId);
       
@@ -62,32 +81,11 @@ export default function LiveEventPage() {
         return;
       }
       setEvent(currentEvent);
-
-      // 2. Load Stats & Albums (if connected to PostgreSQL)
-      if (currentEvent.postgres_event_id) {
-        const [eventStats, eventAlbums] = await Promise.all([
-          getEventAlbumStats(currentEvent.postgres_event_id),
-          getEventAlbums(currentEvent.postgres_event_id)
-        ]);
-        setStats(eventStats);
-        setAlbums(eventAlbums || []);
-      } else {
-        // Mock data for events without postgres connection (e.g. draft/demo)
-        setStats({
-          totalAlbums: 0,
-          completedAlbums: 0,
-          inProgressAlbums: 0,
-          paidAlbums: 0,
-          totalPhotos: 0,
-          pendingApproval: 0
-        });
-        setAlbums([]);
-      }
     } catch (error) {
-      console.error("Failed to load live data:", error);
-      toast.error("Failed to connect to live event server");
+      console.error("Failed to load event:", error);
+      toast.error("Failed to load event");
     } finally {
-      setIsLoading(false);
+      setIsLoadingEvent(false);
     }
   };
 
@@ -95,15 +93,32 @@ export default function LiveEventPage() {
     try {
       switch (action) {
         case 'approve':
-          toast.success(`Album ${album.code} approved!`);
-          // Simulate log update
-          setLogs(prev => [{ id: Date.now().toString(), type: 'success', message: `Album ${album.code} approved`, timestamp: new Date(), source: 'Operator' }, ...prev]);
-          loadEventData();
+        case 'complete':
+          await updateAlbumStatus(album.code, 'completed');
+          toast.success(`Album ${album.code} marked as completed!`);
+          addLog('success', `Album ${album.code} completed`, 'Operator');
+          // Update local state immediately
+          setAlbums(prev => prev.map(a => 
+            a.code === album.code ? { ...a, status: 'completed' } : a
+          ));
           break;
         case 'pay':
+        case 'paid':
+          await updateAlbumStatus(album.code, 'paid');
           toast.success(`Album ${album.code} marked as paid!`);
-          setLogs(prev => [{ id: Date.now().toString(), type: 'payment', message: `Payment marked for ${album.code}`, timestamp: new Date(), source: 'Operator' }, ...prev]);
-          loadEventData();
+          addLog('payment', `Payment marked for ${album.code}`, 'Operator');
+          // Update local state immediately
+          setAlbums(prev => prev.map(a => 
+            a.code === album.code ? { ...a, status: 'paid', payment_status: 'paid' } : a
+          ));
+          break;
+        case 'in_progress':
+          await updateAlbumStatus(album.code, 'in_progress');
+          toast.success(`Album ${album.code} set to in progress`);
+          addLog('info', `Album ${album.code} set to in progress`, 'Operator');
+          setAlbums(prev => prev.map(a => 
+            a.code === album.code ? { ...a, status: 'in_progress' } : a
+          ));
           break;
         case 'view':
           if (event?.user_slug && event?.slug) {
@@ -118,22 +133,46 @@ export default function LiveEventPage() {
           if (confirm(`Are you sure you want to delete album ${album.code}? This will also delete all photos in the album.`)) {
              const result = await deleteAlbum(album.code);
              toast.success(`Album ${album.code} deleted (${result.photosDeleted} photos removed)`);
-             setLogs(prev => [{ id: Date.now().toString(), type: 'warning', message: `Album ${album.code} deleted`, timestamp: new Date(), source: 'Operator' }, ...prev]);
-             loadEventData();
+             addLog('warning', `Album ${album.code} deleted`, 'Operator');
+             // Remove from local state immediately (WebSocket will also notify)
+             setAlbums(prev => prev.filter(a => a.code !== album.code));
           }
           break;
         case 'force_complete':
           toast.info('Force complete requested');
-          // logic
           break;
         case 'retry':
           toast.info('Retry processing requested');
           break;
+        case 'email':
+          toast.info(`Email sending triggered for ${album.code}`);
+          break;
+        case 'whatsapp':
+           if (event?.user_slug && event?.slug) {
+             const url = `${window.location.origin}/${event.user_slug}/${event.slug}/album/${album.code}`;
+             const text = `Here are your photos from ${event.title}: ${url}`;
+             window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+           }
+           break;
+        case 'print':
+           toast.info(`Print dialog for ${album.code}`);
+           break;
+        case 'copy_code':
+           navigator.clipboard.writeText(album.code);
+           toast.success('Album code copied');
+           break;
+        case 'copy_url':
+           if (event?.user_slug && event?.slug) {
+             const url = `${window.location.origin}/${event.user_slug}/${event.slug}/album/${album.code}`;
+             navigator.clipboard.writeText(url);
+             toast.success('Album URL copied');
+           }
+           break;
       }
     } catch (error) {
       console.error(error);
       toast.error("Action failed");
-      setLogs(prev => [{ id: Date.now().toString(), type: 'error', message: `Action ${action} failed`, timestamp: new Date(), source: 'System' }, ...prev]);
+      addLog('error', `Action ${action} failed`, 'System');
     }
   };
 
@@ -143,6 +182,8 @@ export default function LiveEventPage() {
     const url = `${baseUrl}/${event.user_slug}/${event.slug}/${type}`;
     window.open(url, '_blank');
   };
+
+  const isLoading = isLoadingEvent || isLoadingAlbums;
 
   if (isLoading) {
     return (
@@ -163,12 +204,26 @@ export default function LiveEventPage() {
       onOpenStation={handleOpenStation}
       leftSidebar={<LiveStations event={event} mode="sidebar" />}
       rightSidebar={
-        <EventHealthPanel 
-          tokens={tokens} 
-          model={event?.settings?.aiModel || 'Default Model'} 
-          processorStatus="online"
-          errors={0}
-        />
+        <div className="space-y-4">
+          {/* Auto-refresh Status */}
+          <div className="flex items-center justify-between px-3 py-2 rounded-lg text-sm bg-zinc-800/50 border border-white/10">
+            <div className="flex items-center gap-2 text-zinc-400">
+              <RefreshCw className="w-4 h-4" />
+              <span>Auto-refresh: 5s</span>
+            </div>
+            {lastUpdated && (
+              <span className="text-xs text-zinc-500">
+                {lastUpdated.toLocaleTimeString()}
+              </span>
+            )}
+          </div>
+          <EventHealthPanel 
+            tokens={tokens} 
+            model={event?.settings?.aiModel || 'Default Model'} 
+            processorStatus="online"
+            errors={0}
+          />
+        </div>
       }
     >
       <div className="animate-in fade-in duration-500 space-y-8">
