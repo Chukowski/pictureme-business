@@ -1,9 +1,24 @@
 import { useNavigate } from "react-router-dom";
 import { Plus, Gamepad2, Calendar, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { EventConfig } from "@/services/eventsApi";
+import { toast } from "sonner";
 
-export function UniversalActionBar() {
+interface UniversalActionBarProps {
+  activeEvent?: EventConfig;
+}
+
+export function UniversalActionBar({ activeEvent }: UniversalActionBarProps) {
   const navigate = useNavigate();
+
+  const handleStaffDashboard = () => {
+    if (activeEvent) {
+      navigate(`/admin/events/${activeEvent._id}/live?tab=staff`);
+    } else {
+      toast.info("No active event found. Please select an event from the list.");
+      navigate("/admin/events");
+    }
+  };
 
   const actions = [
     {
@@ -27,11 +42,10 @@ export function UniversalActionBar() {
       variant: "ghost" as const,
       className: "text-zinc-400 hover:text-white hover:bg-zinc-800",
     },
-    // Staff dashboard link - redirecting to events as entry point for now
     {
       label: "Staff Dashboard",
       icon: Users,
-      onClick: () => navigate("/admin/events"), 
+      onClick: handleStaffDashboard,
       variant: "ghost" as const,
       className: "text-zinc-400 hover:text-white hover:bg-zinc-800",
     },
@@ -54,4 +68,3 @@ export function UniversalActionBar() {
     </div>
   );
 }
-

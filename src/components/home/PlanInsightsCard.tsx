@@ -68,7 +68,7 @@ export function PlanInsightsCard({ user }: PlanInsightsCardProps) {
           <Button 
             size="sm" 
             className="w-full bg-white text-black hover:bg-zinc-200"
-            onClick={() => navigate('/admin/settings')}
+            onClick={() => navigate('/admin/business')}
           >
             Upgrade Plan <ArrowRight className="w-3 h-3 ml-1" />
           </Button>
@@ -77,4 +77,3 @@ export function PlanInsightsCard({ user }: PlanInsightsCardProps) {
     </Card>
   );
 }
-

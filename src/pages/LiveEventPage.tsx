@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { getUserEvents, deleteAlbum, getTokenStats, updateAlbumStatus, EventConfig, Album } from "@/services/eventsApi";
 import { useLiveAlbums } from "@/hooks/useLiveAlbums";
@@ -17,11 +17,14 @@ import { RefreshCw } from "lucide-react";
 export default function LiveEventPage() {
   const { eventId } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   
   const [event, setEvent] = useState<EventConfig | null>(null);
   const [tokens, setTokens] = useState(0);
   
-  const [activeTab, setActiveTab] = useState('overview');
+  // Initialize active tab from URL query param, default to 'overview'
+  const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'overview');
+  
   const [isPaused, setIsPaused] = useState(false);
   const [isLoadingEvent, setIsLoadingEvent] = useState(true);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -53,6 +56,14 @@ export default function LiveEventPage() {
     pollInterval: 5000, // 5 seconds
   });
 
+  // Update activeTab if URL changes
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab) {
+      setActiveTab(tab);
+    }
+  }, [searchParams]);
+
   useEffect(() => {
     if (eventId) {
       loadEventData();
@@ -72,6 +83,7 @@ export default function LiveEventPage() {
   const loadEventData = async () => {
     try {
       setIsLoadingEvent(true);
+      // 1. Load Event Config
       const events = await getUserEvents();
       const currentEvent = events.find(e => e._id === eventId);
       
@@ -140,12 +152,14 @@ export default function LiveEventPage() {
           break;
         case 'force_complete':
           toast.info('Force complete requested');
+          // logic
           break;
         case 'retry':
           toast.info('Retry processing requested');
           break;
         case 'email':
           toast.info(`Email sending triggered for ${album.code}`);
+          // Open email modal logic here
           break;
         case 'whatsapp':
            if (event?.user_slug && event?.slug) {
@@ -156,6 +170,7 @@ export default function LiveEventPage() {
            break;
         case 'print':
            toast.info(`Print dialog for ${album.code}`);
+           // window.print() or specific print endpoint
            break;
         case 'copy_code':
            navigator.clipboard.writeText(album.code);
@@ -183,6 +198,13 @@ export default function LiveEventPage() {
     window.open(url, '_blank');
   };
 
+  // Helper to update both state and URL
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    // Update URL without reloading
+    navigate(`?tab=${tab}`, { replace: true });
+  };
+
   const isLoading = isLoadingEvent || isLoadingAlbums;
 
   if (isLoading) {
@@ -198,7 +220,7 @@ export default function LiveEventPage() {
       event={event}
       isPaused={isPaused}
       activeTab={activeTab}
-      onTabChange={setActiveTab}
+      onTabChange={handleTabChange}
       onTogglePause={() => setIsPaused(!isPaused)}
       onOpenSettings={() => setIsSettingsOpen(true)}
       onOpenStation={handleOpenStation}

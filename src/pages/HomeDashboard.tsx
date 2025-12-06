@@ -97,7 +97,7 @@ export default function HomeDashboard() {
               <p className="text-sm text-zinc-500">Here's what's happening with your events today.</p>
             </div>
             {/* Universal Action Bar (Moved here for better alignment) */}
-            <UniversalActionBar />
+            <UniversalActionBar activeEvent={activeEvent} />
           </div>
         </div>
 
@@ -114,7 +114,7 @@ export default function HomeDashboard() {
           <div className="lg:col-span-8 space-y-8">
             
             {/* Tools Grid */}
-            <ToolsGrid />
+            <ToolsGrid activeEvent={activeEvent} />
 
             {/* Recommended Templates Slider */}
             <RecommendedTemplates content={content} />

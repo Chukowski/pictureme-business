@@ -43,8 +43,15 @@ import {
   FileText,
   Calendar,
   AlertTriangle,
-  ArrowUpRight
+  ArrowUpRight,
+  Link2,
+  Sparkles,
+  Coins,
+  ExternalLink,
+  User,
+  Briefcase
 } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { User } from "@/services/eventsApi";
 import { ENV } from "@/config/env";
 import { toast } from "sonner";
@@ -82,7 +89,66 @@ interface PaymentMethod {
   is_default: boolean;
 }
 
-const PLANS: Plan[] = [
+interface StripeConnectStatus {
+  connected: boolean;
+  account_id?: string;
+  charges_enabled: boolean;
+  payouts_enabled: boolean;
+  onboarding_url?: string;
+}
+
+// ========== INDIVIDUAL PLANS ==========
+const INDIVIDUAL_PLANS: Plan[] = [
+  {
+    id: 'spark',
+    name: 'Spark',
+    price: 9,
+    interval: 'month',
+    tokens_monthly: 50,
+    max_events: 0,
+    features: [
+      '50 tokens/month',
+      'Base Models (Nano)',
+      'Standard Speed',
+      'Personal License'
+    ]
+  },
+  {
+    id: 'vibe',
+    name: 'Vibe',
+    price: 19,
+    interval: 'month',
+    tokens_monthly: 100,
+    max_events: 0,
+    features: [
+      '100 tokens/month',
+      'Everything in Spark',
+      'Custom Backgrounds',
+      'Priority Generation',
+      'No Watermark',
+      'Commercial License'
+    ]
+  },
+  {
+    id: 'studio',
+    name: 'Studio',
+    price: 39,
+    interval: 'month',
+    tokens_monthly: 200,
+    max_events: 0,
+    features: [
+      '200 tokens/month',
+      'Everything in Vibe',
+      'Faceswap Models',
+      'Template Selling',
+      'API Access',
+      'Priority Support'
+    ]
+  }
+];
+
+// ========== BUSINESS PLANS ==========
+const BUSINESS_PLANS: Plan[] = [
   {
     id: 'event_starter',
     name: 'Event Starter',
@@ -125,13 +191,39 @@ const PLANS: Plan[] = [
       '8,000 tokens/month',
       'Up to 3 active events',
       'Premium templates & LoRA models',
-      'Revenue-share & hardware options',
-      'Print module',
+      'Revenue-share & Stripe Connect',
+      'Print module & POS',
       'Dedicated account manager'
     ],
     isCustom: true
   }
 ];
+
+// ========== TOKEN PACKS - INDIVIDUAL ==========
+interface TokenPack {
+  id: string;
+  name: string;
+  tokens: number;
+  price: number;
+  type: 'individual' | 'business';
+  validity_days?: number;
+}
+
+const INDIVIDUAL_TOKEN_PACKS: TokenPack[] = [
+  { id: 'mini', name: 'Mini Pack', tokens: 25, price: 6, type: 'individual' },
+  { id: 'boost', name: 'Boost Pack', tokens: 60, price: 12, type: 'individual' },
+  { id: 'creator', name: 'Creator Pack', tokens: 150, price: 24, type: 'individual' },
+];
+
+// ========== TOKEN PACKS - BUSINESS ==========
+const BUSINESS_TOKEN_PACKS: TokenPack[] = [
+  { id: 'business_starter', name: 'Business Starter', tokens: 1000, price: 400, type: 'business', validity_days: 60 },
+  { id: 'business_pro', name: 'Business Pro', tokens: 5000, price: 1500, type: 'business', validity_days: 60 },
+  { id: 'business_plus', name: 'Business Plus', tokens: 8000, price: 2000, type: 'business', validity_days: 60 },
+];
+
+// For backward compatibility
+const PLANS = BUSINESS_PLANS;
 
 // Note for UI
 const PLAN_NOTE = "Tokens are shared across your active events. When tokens run out, you can top up with extra packs.";
@@ -160,6 +252,14 @@ export default function BillingTab({ currentUser }: BillingTabProps) {
   const [currentPlan, setCurrentPlan] = useState<Plan | null>(null);
   const [isUpgrading, setIsUpgrading] = useState(false);
   const [showPlansDialog, setShowPlansDialog] = useState(false);
+  const [connectStatus, setConnectStatus] = useState<StripeConnectStatus | null>(null);
+  const [isConnecting, setIsConnecting] = useState(false);
+  const [planType, setPlanType] = useState<'individual' | 'business'>('business');
+  
+  // Determine if user is on a business plan (has events, etc.)
+  const isBusinessUser = currentUser?.role?.includes('business') || 
+                         currentUser?.subscription_tier?.includes('event') ||
+                         currentUser?.subscription_tier?.includes('masters');
 
   useEffect(() => {
     fetchBillingData();
@@ -171,10 +271,11 @@ export default function BillingTab({ currentUser }: BillingTabProps) {
       const token = localStorage.getItem("auth_token");
       const headers = { Authorization: `Bearer ${token}` };
 
-      const [invoicesRes, methodsRes, planRes] = await Promise.all([
+      const [invoicesRes, methodsRes, planRes, connectRes] = await Promise.all([
         fetch(`${ENV.API_URL}/api/billing/invoices`, { headers }),
         fetch(`${ENV.API_URL}/api/billing/payment-methods`, { headers }),
-        fetch(`${ENV.API_URL}/api/billing/current-plan`, { headers })
+        fetch(`${ENV.API_URL}/api/billing/current-plan`, { headers }),
+        fetch(`${ENV.API_URL}/api/billing/connect/status`, { headers })
       ]);
 
       if (invoicesRes.ok) {
@@ -187,9 +288,13 @@ export default function BillingTab({ currentUser }: BillingTabProps) {
 
       if (planRes.ok) {
         const planData = await planRes.json();
-        const matchedPlan = PLANS.find(p => p.id === planData.plan_id);
+        // Try to match from all plans (business + individual)
+        const allPlans = [...BUSINESS_PLANS, ...INDIVIDUAL_PLANS];
+        const matchedPlan = allPlans.find(p => p.id === planData.plan_id || p.id === planData.id);
         if (matchedPlan) {
           setCurrentPlan({ ...matchedPlan, current: true });
+          // Set plan type based on matched plan
+          setPlanType(INDIVIDUAL_PLANS.some(p => p.id === matchedPlan.id) ? 'individual' : 'business');
         } else {
           // Fallback to user role/tier mapping
           setCurrentPlan(getPlanFromUserRole());
@@ -197,6 +302,12 @@ export default function BillingTab({ currentUser }: BillingTabProps) {
       } else {
         // Default based on user role
         setCurrentPlan(getPlanFromUserRole());
+      }
+      
+      // Fetch Stripe Connect status
+      if (connectRes.ok) {
+        const connectData = await connectRes.json();
+        setConnectStatus(connectData);
       }
     } catch (error) {
       console.error("Error fetching billing data:", error);
@@ -261,21 +372,99 @@ export default function BillingTab({ currentUser }: BillingTabProps) {
   const handleAddPaymentMethod = async () => {
     try {
       const token = localStorage.getItem("auth_token");
-      const response = await fetch(`${ENV.API_URL}/api/billing/setup-payment`, {
+      const response = await fetch(`${ENV.API_URL}/api/billing/payment-methods`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` }
       });
 
       if (response.ok) {
         const data = await response.json();
-        if (data.setup_url) {
-          window.location.href = data.setup_url;
+        if (data.client_secret) {
+          // Would need Stripe Elements to complete - for now show message
+          toast.info("Payment setup initiated. Please complete in Stripe.");
         }
       } else {
         toast.error("Failed to set up payment method");
       }
     } catch (error) {
       toast.error("Setup failed. Please try again.");
+    }
+  };
+  
+  // Handle Stripe Connect onboarding
+  const handleConnectStripe = async () => {
+    setIsConnecting(true);
+    try {
+      const token = localStorage.getItem("auth_token");
+      const response = await fetch(`${ENV.API_URL}/api/billing/connect/onboard`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.onboarding_url) {
+          window.location.href = data.onboarding_url;
+        }
+      } else {
+        const error = await response.json();
+        if (response.status === 403) {
+          toast.error("Stripe Connect is only available for Masters plan");
+        } else {
+          toast.error(error.error || "Failed to start Stripe Connect");
+        }
+      }
+    } catch (error) {
+      toast.error("Connection failed. Please try again.");
+    } finally {
+      setIsConnecting(false);
+    }
+  };
+  
+  // Handle Stripe Connect dashboard
+  const handleOpenStripeDashboard = async () => {
+    try {
+      const token = localStorage.getItem("auth_token");
+      const response = await fetch(`${ENV.API_URL}/api/billing/connect/dashboard`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.dashboard_url) {
+          window.open(data.dashboard_url, '_blank');
+        }
+      } else {
+        toast.error("Failed to open Stripe dashboard");
+      }
+    } catch (error) {
+      toast.error("Failed to open dashboard");
+    }
+  };
+  
+  // Handle Token Pack purchase
+  const handlePurchaseTokenPack = async (packId: string) => {
+    try {
+      const token = localStorage.getItem("auth_token");
+      const response = await fetch(`${ENV.API_URL}/api/billing/tokens/purchase`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ package_id: packId })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.checkout_url) {
+          window.location.href = data.checkout_url;
+        }
+      } else {
+        toast.error("Failed to start purchase");
+      }
+    } catch (error) {
+      toast.error("Purchase failed. Please try again.");
     }
   };
 
@@ -620,6 +809,199 @@ export default function BillingTab({ currentUser }: BillingTabProps) {
           </CardContent>
         </Card>
       </div>
+
+      {/* Stripe Connect Section (Business Users Only) */}
+      {isBusinessUser && (
+        <Card className="bg-zinc-900/50 border-white/10">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-purple-500/10 border border-purple-500/20">
+                  <Link2 className="w-5 h-5 text-purple-400" />
+                </div>
+                <div>
+                  <CardTitle className="text-white">Stripe Connect</CardTitle>
+                  <CardDescription className="text-zinc-400">
+                    Accept payments and enable revenue sharing
+                  </CardDescription>
+                </div>
+              </div>
+              {connectStatus?.connected && (
+                <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20">
+                  <Check className="w-3 h-3 mr-1" />
+                  Connected
+                </Badge>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent>
+            {connectStatus?.connected ? (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="p-4 rounded-lg bg-zinc-800/50">
+                    <p className="text-sm text-zinc-400">Charges Enabled</p>
+                    <p className="text-lg font-semibold text-white flex items-center gap-2">
+                      {connectStatus.charges_enabled ? (
+                        <><Check className="w-4 h-4 text-emerald-400" /> Yes</>
+                      ) : (
+                        <><AlertTriangle className="w-4 h-4 text-yellow-400" /> Pending</>
+                      )}
+                    </p>
+                  </div>
+                  <div className="p-4 rounded-lg bg-zinc-800/50">
+                    <p className="text-sm text-zinc-400">Payouts Enabled</p>
+                    <p className="text-lg font-semibold text-white flex items-center gap-2">
+                      {connectStatus.payouts_enabled ? (
+                        <><Check className="w-4 h-4 text-emerald-400" /> Yes</>
+                      ) : (
+                        <><AlertTriangle className="w-4 h-4 text-yellow-400" /> Pending</>
+                      )}
+                    </p>
+                  </div>
+                </div>
+                <Button 
+                  variant="outline" 
+                  className="border-purple-500/30 text-purple-400 hover:bg-purple-500/10"
+                  onClick={handleOpenStripeDashboard}
+                >
+                  <ExternalLink className="w-4 h-4 mr-2" />
+                  Open Stripe Dashboard
+                </Button>
+              </div>
+            ) : (
+              <div className="text-center py-6">
+                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-purple-500/10 flex items-center justify-center">
+                  <Link2 className="w-8 h-8 text-purple-400" />
+                </div>
+                <h3 className="text-lg font-semibold text-white mb-2">Enable Revenue Sharing</h3>
+                <p className="text-sm text-zinc-400 mb-4 max-w-md mx-auto">
+                  Connect your Stripe account to accept payments from album sales and enable automatic revenue sharing.
+                </p>
+                {currentPlan?.id === 'masters' || currentPlan?.id === 'business_masters' ? (
+                  <Button 
+                    className="bg-purple-600 hover:bg-purple-700"
+                    onClick={handleConnectStripe}
+                    disabled={isConnecting}
+                  >
+                    {isConnecting ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <Link2 className="w-4 h-4 mr-2" />
+                    )}
+                    Connect Stripe Account
+                  </Button>
+                ) : (
+                  <div className="space-y-2">
+                    <Badge variant="outline" className="border-amber-500/20 text-amber-400">
+                      <Crown className="w-3 h-3 mr-1" />
+                      Masters Plan Required
+                    </Badge>
+                    <p className="text-xs text-zinc-500">
+                      Upgrade to Masters to enable Stripe Connect and revenue sharing
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Token Packs Section */}
+      <Card className="bg-zinc-900/50 border-white/10">
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-amber-500/10 border border-amber-500/20">
+              <Coins className="w-5 h-5 text-amber-400" />
+            </div>
+            <div>
+              <CardTitle className="text-white">Token Packs</CardTitle>
+              <CardDescription className="text-zinc-400">
+                Purchase additional tokens when you need more
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <Tabs defaultValue={isBusinessUser ? "business" : "individual"} className="w-full">
+            <TabsList className="grid w-full grid-cols-2 bg-zinc-800/50 mb-4">
+              <TabsTrigger value="individual" className="data-[state=active]:bg-indigo-600">
+                <User className="w-4 h-4 mr-2" />
+                Individual
+              </TabsTrigger>
+              <TabsTrigger value="business" className="data-[state=active]:bg-indigo-600">
+                <Briefcase className="w-4 h-4 mr-2" />
+                Business
+              </TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="individual">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {INDIVIDUAL_TOKEN_PACKS.map((pack) => (
+                  <div
+                    key={pack.id}
+                    className="p-4 rounded-xl border border-white/10 bg-zinc-800/30 hover:border-indigo-500/50 transition-colors"
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="font-semibold text-white">{pack.name}</h4>
+                      <Badge variant="outline" className="border-amber-500/20 text-amber-400">
+                        {pack.tokens} tokens
+                      </Badge>
+                    </div>
+                    <p className="text-2xl font-bold text-white mb-3">
+                      ${pack.price}
+                    </p>
+                    <p className="text-xs text-zinc-500 mb-4">
+                      ${(pack.price / pack.tokens).toFixed(2)} per token
+                    </p>
+                    <Button 
+                      className="w-full bg-indigo-600 hover:bg-indigo-700"
+                      onClick={() => handlePurchaseTokenPack(pack.id)}
+                    >
+                      <Sparkles className="w-4 h-4 mr-2" />
+                      Purchase
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="business">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {BUSINESS_TOKEN_PACKS.map((pack) => (
+                  <div
+                    key={pack.id}
+                    className="p-4 rounded-xl border border-white/10 bg-zinc-800/30 hover:border-indigo-500/50 transition-colors"
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="font-semibold text-white">{pack.name}</h4>
+                      <Badge variant="outline" className="border-amber-500/20 text-amber-400">
+                        {pack.tokens.toLocaleString()} tokens
+                      </Badge>
+                    </div>
+                    <p className="text-2xl font-bold text-white mb-1">
+                      ${pack.price.toLocaleString()}
+                    </p>
+                    <p className="text-xs text-zinc-500 mb-4">
+                      Valid for {pack.validity_days} days • ${(pack.price / pack.tokens).toFixed(2)}/token
+                    </p>
+                    <Button 
+                      className="w-full bg-indigo-600 hover:bg-indigo-700"
+                      onClick={() => handlePurchaseTokenPack(pack.id)}
+                    >
+                      <Sparkles className="w-4 h-4 mr-2" />
+                      Purchase
+                    </Button>
+                  </div>
+                ))}
+              </div>
+              <p className="text-xs text-zinc-500 mt-4 text-center">
+                Need more? <a href="/apply" className="text-indigo-400 hover:underline">Contact us</a> for enterprise packages.
+              </p>
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
     </div>
   );
 }

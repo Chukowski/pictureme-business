@@ -12,7 +12,6 @@ export function SmartOnboarding({ events }: SmartOnboardingProps) {
   const navigate = useNavigate();
 
   // Heuristic: Show if user has < 2 events (assuming new user)
-  // Real logic might also check templates count, etc.
   if (events.length >= 2) return null;
 
   const steps = [
@@ -26,7 +25,7 @@ export function SmartOnboarding({ events }: SmartOnboardingProps) {
     {
       id: 'playground',
       label: "Test AI templates in Playground",
-      done: false, // Hard to track without specific user meta, assume false for onboarding view
+      done: false,
       action: () => navigate('/admin/playground'),
       cta: "Try"
     },
@@ -41,45 +40,52 @@ export function SmartOnboarding({ events }: SmartOnboardingProps) {
 
   return (
     <Card className="bg-zinc-900 bg-gradient-to-r from-indigo-900/20 to-purple-900/20 border-indigo-500/30 mb-8">
-      <CardContent className="p-5 flex flex-col md:flex-row items-center justify-between gap-6">
-        <div className="space-y-1">
-          <h3 className="text-lg font-bold text-white">Here's how to get started</h3>
-          <p className="text-sm text-indigo-200/70">Complete these steps to launch your first AI experience.</p>
-        </div>
+      <CardContent className="p-5">
+        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+          <div className="space-y-1 max-w-md">
+            <h3 className="text-lg font-bold text-white">Here's how to get started</h3>
+            <p className="text-sm text-indigo-200/70">Complete these steps to launch your first AI experience.</p>
+          </div>
 
-        <div className="flex-1 w-full md:w-auto grid grid-cols-1 sm:grid-cols-3 gap-4">
-          {steps.map((step) => (
-            <div 
-              key={step.id} 
-              className={`flex items-center gap-3 p-3 rounded-lg border transition-all ${
-                step.done 
-                  ? "bg-emerald-500/10 border-emerald-500/20" 
-                  : "bg-zinc-900/40 border-white/5 hover:bg-zinc-900/60 cursor-pointer"
-              }`}
-              onClick={!step.done ? step.action : undefined}
-            >
-              {step.done ? (
-                <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
-              ) : (
-                <Circle className="w-5 h-5 text-zinc-600 shrink-0" />
-              )}
-              
-              <div className="flex-1">
-                <p className={`text-sm font-medium ${step.done ? "text-emerald-100 line-through opacity-70" : "text-zinc-200"}`}>
-                  {step.label}
-                </p>
+          <div className="w-full lg:w-auto flex flex-col sm:flex-row gap-4">
+            {steps.map((step) => (
+              <div 
+                key={step.id} 
+                className={`flex-1 flex flex-col justify-between p-4 rounded-xl border transition-all h-28 min-w-0 sm:min-w-[200px] relative overflow-hidden ${
+                  step.done 
+                    ? "bg-emerald-500/10 border-emerald-500/20" 
+                    : "bg-zinc-900/40 border-white/5 hover:bg-zinc-900/60 cursor-pointer group"
+                }`}
+                onClick={!step.done ? step.action : undefined}
+              >
+                <div className="absolute top-0 right-0 p-2 opacity-10 group-hover:opacity-20 transition-opacity pointer-events-none">
+                   <Circle className="w-12 h-12 fill-current" />
+                </div>
+
+                <div className="flex items-start justify-between mb-2 relative z-10">
+                  {step.done ? (
+                    <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+                  ) : (
+                    <Circle className="w-5 h-5 text-zinc-600 shrink-0 group-hover:text-indigo-400 transition-colors" />
+                  )}
+                  
+                   {!step.done && (
+                    <span className="text-[10px] uppercase font-bold tracking-wider text-zinc-500 group-hover:text-white transition-colors">
+                      {step.cta}
+                    </span>
+                  )}
+                </div>
+                
+                <div className="relative z-10">
+                  <p className={`text-sm font-medium leading-tight ${step.done ? "text-emerald-100 line-through opacity-70" : "text-zinc-200 group-hover:text-white"}`}>
+                    {step.label}
+                  </p>
+                </div>
               </div>
-
-              {!step.done && (
-                <Button size="sm" variant="ghost" className="h-6 text-[10px] px-2 bg-white/5 hover:bg-white/10 text-zinc-300">
-                  {step.cta}
-                </Button>
-              )}
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </CardContent>
     </Card>
   );
 }
-
