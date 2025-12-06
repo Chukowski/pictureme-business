@@ -246,15 +246,22 @@ export function getMinPlanForFeature(feature: keyof PlanFeatures): UserRole {
  * Get human-readable plan name
  */
 export function getPlanDisplayName(role: string | undefined): string {
-  const names: Record<UserRole, string> = {
-    individual: 'Individual',
-    business_pending: 'Business (Pending)',
-    business_starter: 'Event Starter',
-    business_eventpro: 'Event Pro',
-    business_masters: 'Masters',
-    superadmin: 'Super Admin',
+  const names: Record<string, string> = {
+    // Individual plans
+    'individual': 'Spark',
+    'spark': 'Spark',
+    'vibe': 'Vibe',
+    'studio': 'Studio',
+    // Business plans
+    'business_pending': 'Business (Pending)',
+    'business_starter': 'Event Starter',
+    'business_eventpro': 'Event Pro',
+    'business_masters': 'Masters',
+    'superadmin': 'Super Admin',
   };
-  return names[(role || 'individual') as UserRole] || 'Individual';
+  
+  const normalizedRole = (role || 'individual').toLowerCase();
+  return names[normalizedRole] || 'Spark';
 }
 
 /**
