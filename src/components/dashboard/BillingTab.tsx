@@ -45,13 +45,8 @@ import {
   AlertTriangle,
   ArrowUpRight,
   Link2,
-  Sparkles,
-  Coins,
-  ExternalLink,
-  User as UserIcon,
-  Briefcase
+  ExternalLink
 } from "lucide-react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { User } from "@/services/eventsApi";
 import { ENV } from "@/config/env";
 import { toast } from "sonner";
@@ -197,29 +192,6 @@ const BUSINESS_PLANS: Plan[] = [
     ],
     isCustom: true
   }
-];
-
-// ========== TOKEN PACKS - INDIVIDUAL ==========
-interface TokenPack {
-  id: string;
-  name: string;
-  tokens: number;
-  price: number;
-  type: 'individual' | 'business';
-  validity_days?: number;
-}
-
-const INDIVIDUAL_TOKEN_PACKS: TokenPack[] = [
-  { id: 'mini', name: 'Mini Pack', tokens: 25, price: 6, type: 'individual' },
-  { id: 'boost', name: 'Boost Pack', tokens: 60, price: 12, type: 'individual' },
-  { id: 'creator', name: 'Creator Pack', tokens: 150, price: 24, type: 'individual' },
-];
-
-// ========== TOKEN PACKS - BUSINESS ==========
-const BUSINESS_TOKEN_PACKS: TokenPack[] = [
-  { id: 'business_starter', name: 'Business Starter', tokens: 1000, price: 400, type: 'business', validity_days: 60 },
-  { id: 'business_pro', name: 'Business Pro', tokens: 5000, price: 1500, type: 'business', validity_days: 60 },
-  { id: 'business_plus', name: 'Business Plus', tokens: 8000, price: 2000, type: 'business', validity_days: 60 },
 ];
 
 // For backward compatibility
@@ -510,32 +482,6 @@ export default function BillingTab({ currentUser }: BillingTabProps) {
       }
     } catch (error) {
       toast.error("Failed to open dashboard");
-    }
-  };
-  
-  // Handle Token Pack purchase
-  const handlePurchaseTokenPack = async (packId: string) => {
-    try {
-      const token = localStorage.getItem("auth_token");
-      const response = await fetch(`${ENV.API_URL}/api/billing/tokens/purchase`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({ package_id: packId })
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.checkout_url) {
-          window.location.href = data.checkout_url;
-        }
-      } else {
-        toast.error("Failed to start purchase");
-      }
-    } catch (error) {
-      toast.error("Purchase failed. Please try again.");
     }
   };
 
@@ -978,101 +924,6 @@ export default function BillingTab({ currentUser }: BillingTabProps) {
         </Card>
       )}
 
-      {/* Token Packs Section */}
-      <Card className="bg-zinc-900/50 border-white/10">
-        <CardHeader>
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-amber-500/10 border border-amber-500/20">
-              <Coins className="w-5 h-5 text-amber-400" />
-            </div>
-            <div>
-              <CardTitle className="text-white">Token Packs</CardTitle>
-              <CardDescription className="text-zinc-400">
-                Purchase additional tokens when you need more
-              </CardDescription>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <Tabs defaultValue={isBusinessUser ? "business" : "individual"} className="w-full">
-            <TabsList className="grid w-full grid-cols-2 bg-zinc-800/50 mb-4">
-              <TabsTrigger value="individual" className="data-[state=active]:bg-indigo-600">
-                <UserIcon className="w-4 h-4 mr-2" />
-                Individual
-              </TabsTrigger>
-              <TabsTrigger value="business" className="data-[state=active]:bg-indigo-600">
-                <Briefcase className="w-4 h-4 mr-2" />
-                Business
-              </TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="individual">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {INDIVIDUAL_TOKEN_PACKS.map((pack) => (
-                  <div
-                    key={pack.id}
-                    className="p-4 rounded-xl border border-white/10 bg-zinc-800/30 hover:border-indigo-500/50 transition-colors"
-                  >
-                    <div className="flex items-center justify-between mb-3">
-                      <h4 className="font-semibold text-white">{pack.name}</h4>
-                      <Badge variant="outline" className="border-amber-500/20 text-amber-400">
-                        {pack.tokens} tokens
-                      </Badge>
-                    </div>
-                    <p className="text-2xl font-bold text-white mb-3">
-                      ${pack.price}
-                    </p>
-                    <p className="text-xs text-zinc-500 mb-4">
-                      ${(pack.price / pack.tokens).toFixed(2)} per token
-                    </p>
-                    <Button 
-                      className="w-full bg-indigo-600 hover:bg-indigo-700"
-                      onClick={() => handlePurchaseTokenPack(pack.id)}
-                    >
-                      <Sparkles className="w-4 h-4 mr-2" />
-                      Purchase
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            </TabsContent>
-            
-            <TabsContent value="business">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {BUSINESS_TOKEN_PACKS.map((pack) => (
-                  <div
-                    key={pack.id}
-                    className="p-4 rounded-xl border border-white/10 bg-zinc-800/30 hover:border-indigo-500/50 transition-colors"
-                  >
-                    <div className="flex items-center justify-between mb-3">
-                      <h4 className="font-semibold text-white">{pack.name}</h4>
-                      <Badge variant="outline" className="border-amber-500/20 text-amber-400">
-                        {pack.tokens.toLocaleString()} tokens
-                      </Badge>
-                    </div>
-                    <p className="text-2xl font-bold text-white mb-1">
-                      ${pack.price.toLocaleString()}
-                    </p>
-                    <p className="text-xs text-zinc-500 mb-4">
-                      Valid for {pack.validity_days} days • ${(pack.price / pack.tokens).toFixed(2)}/token
-                    </p>
-                    <Button 
-                      className="w-full bg-indigo-600 hover:bg-indigo-700"
-                      onClick={() => handlePurchaseTokenPack(pack.id)}
-                    >
-                      <Sparkles className="w-4 h-4 mr-2" />
-                      Purchase
-                    </Button>
-                  </div>
-                ))}
-              </div>
-              <p className="text-xs text-zinc-500 mt-4 text-center">
-                Need more? <a href="/apply" className="text-indigo-400 hover:underline">Contact us</a> for enterprise packages.
-              </p>
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
     </div>
   );
 }
