@@ -837,7 +837,8 @@ export async function getEventAlbums(eventId: number): Promise<Album[]> {
     headers: { 'Authorization': `Bearer ${token}` }
   });
   if (!response.ok) return [];
-  return response.json();
+  const data = await response.json();
+  return Array.isArray(data) ? data : [];
 }
 
 /**
@@ -852,7 +853,8 @@ export async function getEventAlbumsWithPin(eventId: number, pin: string): Promi
     }
     return [];
   }
-  return response.json();
+  const data = await response.json();
+  return Array.isArray(data) ? data : [];
 }
 
 export interface EventAlbumStats {

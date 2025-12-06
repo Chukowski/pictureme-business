@@ -1,15 +1,16 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { getUserEvents, getEventAlbumStats, getEventAlbums, deleteAlbum, EventConfig, EventAlbumStats, Album } from "@/services/eventsApi";
+import { getUserEvents, getEventAlbumStats, getEventAlbums, deleteAlbum, getTokenStats, EventConfig, EventAlbumStats, Album } from "@/services/eventsApi";
 import { LiveEventLayout } from "@/components/live-event/LiveEventLayout";
 import { LiveOverview } from "@/components/live-event/LiveOverview";
 import { LiveQueue } from "@/components/live-event/LiveQueue";
 import { LiveStations } from "@/components/live-event/LiveStations";
 import { LiveSales } from "@/components/live-event/LiveSales";
 import { LiveStaff } from "@/components/live-event/LiveStaff";
+import { EventHealthPanel } from "@/components/live-event/EventHealthPanel";
+import { LiveLogs, LogEntry } from "@/components/live-event/LiveLogs";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
-import { EventSettings } from "@/components/admin/event-editor/EventSettings";
 
 export default function LiveEventPage() {
   const { eventId } = useParams();
@@ -18,17 +19,35 @@ export default function LiveEventPage() {
   const [event, setEvent] = useState<EventConfig | null>(null);
   const [stats, setStats] = useState<EventAlbumStats | null>(null);
   const [albums, setAlbums] = useState<Album[]>([]);
+  const [tokens, setTokens] = useState(0);
   
   const [activeTab, setActiveTab] = useState('overview');
   const [isPaused, setIsPaused] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
+  // Mock Logs for now
+  const [logs, setLogs] = useState<LogEntry[]>([
+     { id: '1', type: 'info', message: 'Event started', timestamp: new Date(Date.now() - 1000 * 60 * 60), source: 'System' },
+     { id: '2', type: 'success', message: 'Booth 1 connected', timestamp: new Date(Date.now() - 1000 * 60 * 55), source: 'Booth' },
+     { id: '3', type: 'payment', message: 'Payment received $25.00', timestamp: new Date(Date.now() - 1000 * 60 * 15), source: 'Sales' },
+  ]);
+
   useEffect(() => {
     if (eventId) {
       loadEventData();
+      loadTokenStats();
     }
   }, [eventId]);
+
+  const loadTokenStats = async () => {
+    try {
+      const data = await getTokenStats();
+      setTokens(data.current_tokens);
+    } catch (e) {
+      console.error("Failed to load tokens", e);
+    }
+  };
 
   const loadEventData = async () => {
     try {
@@ -51,7 +70,7 @@ export default function LiveEventPage() {
           getEventAlbums(currentEvent.postgres_event_id)
         ]);
         setStats(eventStats);
-        setAlbums(eventAlbums);
+        setAlbums(eventAlbums || []);
       } else {
         // Mock data for events without postgres connection (e.g. draft/demo)
         setStats({
@@ -76,40 +95,45 @@ export default function LiveEventPage() {
     try {
       switch (action) {
         case 'approve':
-          // Assuming updateAlbumStatus is imported
-          // await updateAlbumStatus(album.id, 'completed');
           toast.success(`Album ${album.code} approved!`);
-          // Reload data
+          // Simulate log update
+          setLogs(prev => [{ id: Date.now().toString(), type: 'success', message: `Album ${album.code} approved`, timestamp: new Date(), source: 'Operator' }, ...prev]);
           loadEventData();
           break;
         case 'pay':
-          // await updateAlbumStatus(album.id, 'paid');
           toast.success(`Album ${album.code} marked as paid!`);
+          setLogs(prev => [{ id: Date.now().toString(), type: 'payment', message: `Payment marked for ${album.code}`, timestamp: new Date(), source: 'Operator' }, ...prev]);
           loadEventData();
           break;
         case 'view':
-          // Open album detail modal or page
-          // For now, let's open the public album page
           if (event?.user_slug && event?.slug) {
              const url = `${window.location.origin}/${event.user_slug}/${event.slug}/album/${album.code}`;
              window.open(url, '_blank');
           }
           break;
         case 'share':
-          // Trigger share modal (to be implemented)
           toast.info(`Share dialog for ${album.code}`);
           break;
         case 'delete':
           if (confirm(`Are you sure you want to delete album ${album.code}? This will also delete all photos in the album.`)) {
              const result = await deleteAlbum(album.code);
              toast.success(`Album ${album.code} deleted (${result.photosDeleted} photos removed)`);
+             setLogs(prev => [{ id: Date.now().toString(), type: 'warning', message: `Album ${album.code} deleted`, timestamp: new Date(), source: 'Operator' }, ...prev]);
              loadEventData();
           }
+          break;
+        case 'force_complete':
+          toast.info('Force complete requested');
+          // logic
+          break;
+        case 'retry':
+          toast.info('Retry processing requested');
           break;
       }
     } catch (error) {
       console.error(error);
       toast.error("Action failed");
+      setLogs(prev => [{ id: Date.now().toString(), type: 'error', message: `Action ${action} failed`, timestamp: new Date(), source: 'System' }, ...prev]);
     }
   };
 
@@ -122,8 +146,8 @@ export default function LiveEventPage() {
 
   if (isLoading) {
     return (
-      <div className="h-screen bg-zinc-950 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-cyan-500"></div>
+      <div className="h-screen bg-black flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-indigo-500"></div>
       </div>
     );
   }
@@ -137,38 +161,23 @@ export default function LiveEventPage() {
       onTogglePause={() => setIsPaused(!isPaused)}
       onOpenSettings={() => setIsSettingsOpen(true)}
       onOpenStation={handleOpenStation}
+      leftSidebar={<LiveStations event={event} mode="sidebar" />}
+      rightSidebar={
+        <EventHealthPanel 
+          tokens={tokens} 
+          model={event?.settings?.aiModel || 'Default Model'} 
+          processorStatus="online"
+          errors={0}
+        />
+      }
     >
-      <div className="space-y-8 animate-in fade-in duration-500">
-        
-        {/* Always show Overview stats unless we are in specific tabs that hide it? 
-            User requirement: "SECCIÓN 1 — Real-time Overview"
-            "SECCIÓN 2 — Live Queue"
-            Maybe Overview is always visible at top, or just the stats row.
-            Let's show stats row on 'overview' tab and maybe simplified elsewhere.
-            For now, follow the tabs structure.
-        */}
-        
+      <div className="animate-in fade-in duration-500 space-y-8">
         {activeTab === 'overview' && (
           <>
             <LiveOverview stats={stats || { totalAlbums: 0, completedAlbums: 0, inProgressAlbums: 0, paidAlbums: 0, totalPhotos: 0, pendingApproval: 0 }} />
-            
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-2">
-                <LiveQueue albums={albums.slice(0, 5)} onAction={handleAction} />
-              </div>
-              <div className="space-y-6">
-                <LiveStations event={event} />
-              </div>
-            </div>
+            <LiveQueue albums={albums || []} onAction={handleAction} />
+            <LiveLogs logs={logs} />
           </>
-        )}
-
-        {activeTab === 'queue' && (
-          <LiveQueue albums={albums} onAction={handleAction} />
-        )}
-
-        {activeTab === 'stations' && (
-          <LiveStations event={event} />
         )}
 
         {activeTab === 'sales' && (
@@ -180,7 +189,7 @@ export default function LiveEventPage() {
         )}
       </div>
 
-      {/* Settings Sheet (Collapsible "Settings" from requirements) */}
+      {/* Settings Sheet */}
       <Sheet open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
         <SheetContent side="right" className="w-[400px] sm:w-[540px] bg-zinc-950 border-l border-white/10 overflow-y-auto">
           <SheetHeader>
@@ -188,17 +197,11 @@ export default function LiveEventPage() {
             <SheetDescription className="text-zinc-400">Adjust rules on the fly.</SheetDescription>
           </SheetHeader>
           <div className="mt-6">
-             {/* We reuse the EventSettings component but might need to adapt it to save instantly or show limited options 
-                 For now, we can show a simplified view or the full component in read-only/edit mode.
-                 Since EventSettings expects formData/setFormData, we need to wrap it or create a "LiveSettings" wrapper.
-                 For this MVP, I'll assume we want quick toggles.
-             */}
              <p className="text-sm text-zinc-500 mb-4">Quick Toggles</p>
-             {/* Placeholder for settings */}
              <div className="space-y-4">
                 <div className="p-4 rounded-lg bg-zinc-900 border border-white/10">
                     <h4 className="text-sm font-medium text-white mb-2">Watermark</h4>
-                    {/* ... */}
+                    {/* Placeholder */}
                 </div>
              </div>
           </div>
@@ -207,4 +210,3 @@ export default function LiveEventPage() {
     </LiveEventLayout>
   );
 }
-

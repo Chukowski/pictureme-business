@@ -1,12 +1,15 @@
 import { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Circle, MoreVertical, QrCode, RefreshCw, Play, Pause, XCircle, Maximize2, Settings } from "lucide-react";
+import { ArrowLeft, Circle, MoreVertical, QrCode, RefreshCw, Play, Pause, XCircle, Maximize2, Settings, Menu, LayoutDashboard } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { EventConfig } from "@/services/eventsApi";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
 interface LiveEventLayoutProps {
   children: ReactNode;
+  leftSidebar?: ReactNode;
+  rightSidebar?: ReactNode;
   event: EventConfig | null;
   isPaused: boolean;
   activeTab: string;
@@ -18,6 +21,8 @@ interface LiveEventLayoutProps {
 
 export function LiveEventLayout({
   children,
+  leftSidebar,
+  rightSidebar,
   event,
   isPaused,
   activeTab,
@@ -29,18 +34,22 @@ export function LiveEventLayout({
   const navigate = useNavigate();
 
   const TABS = [
-    { id: 'overview', label: 'Overview' },
-    { id: 'queue', label: 'Queue / Albums' },
-    { id: 'stations', label: 'Stations' },
+    { id: 'overview', label: 'Command Center', icon: LayoutDashboard },
     { id: 'sales', label: 'Payments' },
     { id: 'staff', label: 'Staff' },
+    // Removed Queue and Stations as tabs if they are always visible, but Queue might still be a focused view?
+    // User requested "Command Center" style.
+    // Let's keep tabs for specific deep dives but Overview is the main one.
   ];
 
   return (
-    <div className="min-h-screen bg-zinc-950 flex flex-col">
+    <div className="h-screen bg-black flex flex-col overflow-hidden relative selection:bg-indigo-500/30">
+       {/* Background Layers - Consistent with Home Dashboard */}
+       <div className="absolute inset-0 bg-black -z-20" />
+       <div className="absolute top-0 left-0 w-full h-[500px] bg-gradient-to-b from-indigo-950/20 via-black/50 to-black pointer-events-none -z-10" />
+      
       {/* Sticky Header */}
-      <header className="sticky top-0 z-50 border-b border-white/10 bg-zinc-950/80 backdrop-blur-md">
-        <div className="flex items-center justify-between h-16 px-6">
+      <header className="shrink-0 h-16 border-b border-white/10 bg-black/80 backdrop-blur-md flex items-center justify-between px-4 lg:px-6 z-50">
           <div className="flex items-center gap-4">
             <Button 
               variant="ghost" 
@@ -51,94 +60,103 @@ export function LiveEventLayout({
               <ArrowLeft className="w-5 h-5" />
             </Button>
             
-            <div>
+            <div className="flex items-center gap-3">
               <h1 className="text-lg font-bold text-white flex items-center gap-2">
                 {event?.title || 'Loading Event...'}
                 <span className="text-zinc-500 font-normal hidden sm:inline-block">/ Live Mode</span>
               </h1>
-              <div className="flex items-center gap-2 text-xs">
-                <div className={`flex items-center gap-1.5 ${isPaused ? 'text-amber-400' : 'text-emerald-400'}`}>
-                  <Circle className={`w-2 h-2 fill-current ${!isPaused && 'animate-pulse'}`} />
+              
+              <div className={`hidden md:flex items-center gap-1.5 text-xs px-2 py-0.5 rounded-full border ${isPaused ? 'border-amber-500/20 bg-amber-500/5 text-amber-400' : 'border-emerald-500/20 bg-emerald-500/5 text-emerald-400'}`}>
+                  <Circle className={`w-1.5 h-1.5 fill-current ${!isPaused && 'animate-pulse'}`} />
                   <span className="font-medium uppercase tracking-wide">{isPaused ? 'PAUSED' : 'LIVE NOW'}</span>
-                </div>
-                <span className="text-zinc-600">•</span>
-                <span className="text-zinc-400">{event?.slug}</span>
               </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
+             {/* Navigation Tabs (Desktop) */}
+             <div className="hidden lg:flex items-center bg-zinc-900/50 p-1 rounded-full border border-white/5 mr-4">
+               {TABS.map(tab => (
+                 <button
+                    key={tab.id}
+                    onClick={() => onTabChange(tab.id)}
+                    className={`
+                      px-4 py-1.5 text-xs font-medium rounded-full transition-all flex items-center gap-2
+                      ${activeTab === tab.id 
+                        ? 'bg-zinc-800 text-white shadow-sm' 
+                        : 'text-zinc-400 hover:text-zinc-200 hover:bg-white/5'}
+                    `}
+                  >
+                    {tab.icon && <tab.icon className="w-3 h-3" />}
+                    {tab.label}
+                  </button>
+               ))}
+             </div>
+
              {/* Status Control */}
              <Button 
               variant="outline" 
               size="sm" 
               onClick={onTogglePause}
-              className={`hidden sm:flex h-9 border-white/10 ${isPaused ? 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20' : 'bg-amber-500/10 text-amber-400 hover:bg-amber-500/20'}`}
+              className={`hidden sm:flex h-8 border-white/10 text-xs ${isPaused ? 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20' : 'bg-amber-500/10 text-amber-400 hover:bg-amber-500/20'}`}
             >
-              {isPaused ? <Play className="w-4 h-4 mr-2" /> : <Pause className="w-4 h-4 mr-2" />}
-              {isPaused ? 'Resume Event' : 'Pause Event'}
+              {isPaused ? <Play className="w-3 h-3 mr-2" /> : <Pause className="w-3 h-3 mr-2" />}
+              {isPaused ? 'Resume' : 'Pause'}
             </Button>
 
-            {/* Quick Actions */}
-            <div className="h-6 w-px bg-white/10 mx-2 hidden sm:block" />
-            
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={() => onOpenStation('registration')}
-              className="hidden md:flex h-9 text-zinc-400 hover:text-white"
-            >
-              <QrCode className="w-4 h-4 mr-2" />
-              Scan Badge
-            </Button>
-            
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={() => onOpenStation('bigscreen')}
-              className="hidden md:flex h-9 text-zinc-400 hover:text-white"
-            >
-              <Maximize2 className="w-4 h-4 mr-2" />
-              Big Screen
-            </Button>
+            <div className="h-4 w-px bg-white/10 mx-1 hidden sm:block" />
 
             <Button 
               variant="ghost" 
               size="icon"
               onClick={onOpenSettings}
-              className="h-9 w-9 text-zinc-400 hover:text-white rounded-full"
+              className="h-8 w-8 text-zinc-400 hover:text-white rounded-full"
             >
-              <Settings className="w-5 h-5" />
+              <Settings className="w-4 h-4" />
             </Button>
+            
+            {/* Mobile Menu Trigger for Left Sidebar */}
+            <Sheet>
+               <SheetTrigger asChild>
+                 <Button variant="ghost" size="icon" className="lg:hidden h-8 w-8 text-zinc-400">
+                    <Menu className="w-4 h-4" />
+                 </Button>
+               </SheetTrigger>
+               <SheetContent side="left" className="w-[300px] bg-zinc-950 border-white/10 p-0">
+                  <div className="p-4 border-b border-white/10">
+                     <h2 className="text-lg font-bold text-white">Stations</h2>
+                  </div>
+                  <div className="p-4">
+                     {leftSidebar}
+                  </div>
+               </SheetContent>
+            </Sheet>
           </div>
-        </div>
-
-        {/* Navigation Tabs */}
-        <div className="px-6 flex gap-1 overflow-x-auto no-scrollbar">
-          {TABS.map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => onTabChange(tab.id)}
-              className={`
-                px-4 py-2.5 text-sm font-medium border-b-2 transition-all whitespace-nowrap
-                ${activeTab === tab.id 
-                  ? 'border-cyan-500 text-white' 
-                  : 'border-transparent text-zinc-400 hover:text-zinc-200 hover:bg-white/5'}
-              `}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
       </header>
 
-      {/* Main Content */}
-      <main className="flex-1 overflow-auto p-6">
-        <div className="max-w-[1600px] mx-auto">
-          {children}
-        </div>
-      </main>
+      {/* Main Layout Area */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Left Sidebar (Stations) - Desktop */}
+        {leftSidebar && (
+          <aside className="hidden lg:block w-[280px] border-r border-white/10 bg-black/40 flex-shrink-0 overflow-y-auto p-4 custom-scrollbar">
+             {leftSidebar}
+          </aside>
+        )}
+
+        {/* Center Content */}
+        <main className="flex-1 overflow-y-auto p-4 md:p-6 relative custom-scrollbar">
+          <div className="max-w-5xl mx-auto space-y-6">
+            {children}
+          </div>
+        </main>
+
+        {/* Right Sidebar (Health) - Desktop */}
+        {rightSidebar && (
+          <aside className="hidden xl:block w-[280px] border-l border-white/10 bg-black/40 flex-shrink-0 overflow-y-auto p-4 custom-scrollbar">
+             {rightSidebar}
+          </aside>
+        )}
+      </div>
     </div>
   );
 }
-
