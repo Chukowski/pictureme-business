@@ -147,8 +147,9 @@ export default function AlbumFeedPage() {
           visitorName: album.owner_name,
           visitorNumber: 0,
           isComplete: album.status === 'completed' || album.status === 'paid',
-          // Album is considered paid if payment_status is 'paid' OR status is 'paid' or 'completed'
-          isPaid: album.payment_status === 'paid' || album.status === 'paid' || album.status === 'completed',
+          // Album is considered paid ONLY if payment_status is 'paid' OR status is explicitly 'paid'
+          // 'completed' status means photos are done, NOT that payment is done
+          isPaid: album.payment_status === 'paid' || album.status === 'paid',
           createdAt: new Date(album.created_at),
         });
 

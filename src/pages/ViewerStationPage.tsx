@@ -228,16 +228,16 @@ export function ViewerStationPage() {
 
   const primaryColor = config.theme?.primaryColor || '#6366F1';
   
-  // Album is unlocked if:
-  // - payment_status is 'paid' OR
-  // - status is 'completed' or 'paid'
-  // Album is locked only if it requires payment and hasn't been paid/completed
+  // Album is unlocked ONLY if:
+  // - payment_status is 'paid' (payment processed) OR
+  // - status is 'paid' (staff manually marked as paid)
+  // 'completed' status means photos are done, NOT that payment is done
   const requiresPayment = config.albumTracking?.payment?.enabled && config.albumTracking?.payment?.requirePayment;
-  const isPaidOrCompleted = album && (
+  const isPaid = album && (
     ('payment_status' in album && album.payment_status === 'paid') ||
-    ('status' in album && (album.status === 'completed' || album.status === 'paid'))
+    ('status' in album && album.status === 'paid')
   );
-  const isLocked = requiresPayment && !isPaidOrCompleted;
+  const isLocked = requiresPayment && !isPaid;
 
   // When in scan mode, show the QR scanner directly (full screen)
   if (state === 'scan' || state === 'pin') {
