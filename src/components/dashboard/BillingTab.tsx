@@ -48,7 +48,7 @@ import {
   Sparkles,
   Coins,
   ExternalLink,
-  User,
+  User as UserIcon,
   Briefcase
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -228,22 +228,73 @@ const PLANS = BUSINESS_PLANS;
 // Note for UI
 const PLAN_NOTE = "Tokens are shared across your active events. When tokens run out, you can top up with extra packs.";
 
-// Map user role/subscription_tier to plan IDs
+// Map user role/subscription_tier to plan IDs (normalized to lowercase, no spaces)
 const ROLE_TO_PLAN_MAP: Record<string, string> = {
+  // Business plans
   'business_starter': 'event_starter',
-  'business_eventpro': 'event_pro',
-  'business_masters': 'masters',
+  'businessstarter': 'event_starter',
+  'business starter': 'event_starter',
   'event_starter': 'event_starter',
+  'eventstarter': 'event_starter',
+  
+  'business_eventpro': 'event_pro',
+  'businesseventpro': 'event_pro',
+  'business eventpro': 'event_pro',
   'event_pro': 'event_pro',
+  'eventpro': 'event_pro',
+  
+  'business_masters': 'masters',
+  'businessmasters': 'masters',
+  'business masters': 'masters',
   'masters': 'masters',
+  
+  // Individual plans
+  'spark': 'spark',
+  'vibe': 'vibe',
+  'studio': 'studio',
+  'individual': 'spark', // Default individual
+  
+  // Free/default
+  'free': 'event_starter',
+};
+
+// Helper to normalize role string for lookup
+const normalizeRole = (role: string): string => {
+  return role.toLowerCase().replace(/[_\s]+/g, ' ').trim();
 };
 
 export default function BillingTab({ currentUser }: BillingTabProps) {
   // Helper to get plan from user role
   const getPlanFromUserRole = (): Plan | null => {
     const userRole = currentUser?.role || currentUser?.subscription_tier || '';
-    const planId = ROLE_TO_PLAN_MAP[userRole] || 'event_pro';
-    const matchedPlan = PLANS.find(p => p.id === planId);
+    const normalizedRole = normalizeRole(userRole);
+    
+    // Try exact match first, then normalized
+    let planId = ROLE_TO_PLAN_MAP[userRole] || ROLE_TO_PLAN_MAP[normalizedRole];
+    
+    // If still no match, try partial matching for common patterns
+    if (!planId) {
+      if (normalizedRole.includes('masters')) {
+        planId = 'masters';
+      } else if (normalizedRole.includes('pro') || normalizedRole.includes('eventpro')) {
+        planId = 'event_pro';
+      } else if (normalizedRole.includes('starter')) {
+        planId = 'event_starter';
+      } else if (normalizedRole.includes('studio')) {
+        planId = 'studio';
+      } else if (normalizedRole.includes('vibe')) {
+        planId = 'vibe';
+      } else if (normalizedRole.includes('spark')) {
+        planId = 'spark';
+      } else {
+        planId = 'event_starter'; // Default fallback
+      }
+    }
+    
+    console.log('🔍 getPlanFromUserRole:', { userRole, normalizedRole, planId });
+    
+    const allPlans = [...BUSINESS_PLANS, ...INDIVIDUAL_PLANS];
+    const matchedPlan = allPlans.find(p => p.id === planId);
     return matchedPlan ? { ...matchedPlan, current: true } : null;
   };
   const [isLoading, setIsLoading] = useState(true);
@@ -288,19 +339,39 @@ export default function BillingTab({ currentUser }: BillingTabProps) {
 
       if (planRes.ok) {
         const planData = await planRes.json();
+        console.log('📋 Plan data from API:', planData);
+        
         // Try to match from all plans (business + individual)
         const allPlans = [...BUSINESS_PLANS, ...INDIVIDUAL_PLANS];
-        const matchedPlan = allPlans.find(p => p.id === planData.plan_id || p.id === planData.id);
+        
+        // Try multiple fields to find a match
+        const planIdToMatch = planData.plan_id || planData.id || planData.name?.toLowerCase().replace(/\s+/g, '_');
+        let matchedPlan = allPlans.find(p => p.id === planIdToMatch);
+        
+        // If no exact match, try normalized name matching
+        if (!matchedPlan && planData.name) {
+          const normalizedName = normalizeRole(planData.name);
+          if (normalizedName.includes('masters')) {
+            matchedPlan = allPlans.find(p => p.id === 'masters');
+          } else if (normalizedName.includes('pro')) {
+            matchedPlan = allPlans.find(p => p.id === 'event_pro');
+          } else if (normalizedName.includes('starter')) {
+            matchedPlan = allPlans.find(p => p.id === 'event_starter');
+          }
+        }
+        
         if (matchedPlan) {
           setCurrentPlan({ ...matchedPlan, current: true });
           // Set plan type based on matched plan
-          setPlanType(INDIVIDUAL_PLANS.some(p => p.id === matchedPlan.id) ? 'individual' : 'business');
+          setPlanType(INDIVIDUAL_PLANS.some(p => p.id === matchedPlan!.id) ? 'individual' : 'business');
         } else {
           // Fallback to user role/tier mapping
+          console.log('⚠️ No plan match from API, falling back to user role');
           setCurrentPlan(getPlanFromUserRole());
         }
       } else {
         // Default based on user role
+        console.log('⚠️ Plan API failed, falling back to user role');
         setCurrentPlan(getPlanFromUserRole());
       }
       
@@ -926,7 +997,7 @@ export default function BillingTab({ currentUser }: BillingTabProps) {
           <Tabs defaultValue={isBusinessUser ? "business" : "individual"} className="w-full">
             <TabsList className="grid w-full grid-cols-2 bg-zinc-800/50 mb-4">
               <TabsTrigger value="individual" className="data-[state=active]:bg-indigo-600">
-                <User className="w-4 h-4 mr-2" />
+                <UserIcon className="w-4 h-4 mr-2" />
                 Individual
               </TabsTrigger>
               <TabsTrigger value="business" className="data-[state=active]:bg-indigo-600">
