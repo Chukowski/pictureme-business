@@ -232,12 +232,13 @@ export function ViewerStationPage() {
   // - payment_status is 'paid' (payment processed) OR
   // - status is 'paid' (staff manually marked as paid)
   // 'completed' status means photos are done, NOT that payment is done
-  const requiresPayment = config.albumTracking?.payment?.enabled && config.albumTracking?.payment?.requirePayment;
+  // printReady = payment wall enabled (same logic as AlbumFeedPage)
   const isPaid = album && (
     ('payment_status' in album && album.payment_status === 'paid') ||
     ('status' in album && album.status === 'paid')
   );
-  const isLocked = requiresPayment && !isPaid;
+  const requiresPayment = config.albumTracking?.rules?.printReady === true && !isPaid;
+  const isLocked = requiresPayment;
 
   // When in scan mode, show the QR scanner directly (full screen)
   if (state === 'scan' || state === 'pin') {
