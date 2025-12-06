@@ -918,6 +918,15 @@ export default function BillingTab({ currentUser }: BillingTabProps) {
                   <ExternalLink className="w-4 h-4 mr-2" />
                   Open Stripe Dashboard
                 </Button>
+                <div className="flex justify-start">
+                  <Button
+                    variant="outline"
+                    className="border-zinc-700 text-zinc-400 hover:bg-zinc-800"
+                    onClick={handleCancelConnect}
+                  >
+                    Cancel / Reset Stripe Connect
+                  </Button>
+                </div>
               </div>
             ) : (
               <div className="text-center py-6">

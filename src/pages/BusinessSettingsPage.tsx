@@ -13,7 +13,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Card,
   CardContent,
@@ -102,8 +102,9 @@ interface User {
 
 export function BusinessSettingsPage() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [user, setUser] = useState<User | null>(null);
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeTab, setActiveTab] = useState(() => searchParams.get('tab') || 'overview');
   const [isLoading, setIsLoading] = useState(true);
   
   // Organization data
@@ -170,6 +171,21 @@ export function BusinessSettingsPage() {
       navigate('/login');
     }
   }, [navigate, loadData]);
+
+  // Keep tab in sync with URL
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam && tabParam !== activeTab) {
+      setActiveTab(tabParam);
+    }
+  }, [searchParams, activeTab]);
+
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    const params = new URLSearchParams(searchParams);
+    params.set('tab', value);
+    setSearchParams(params, { replace: true });
+  };
 
   // Invite member
   const handleInvite = async () => {
@@ -317,7 +333,7 @@ export function BusinessSettingsPage() {
           </Button>
         </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
           <TabsList className="bg-zinc-900 border border-zinc-800">
             <TabsTrigger value="overview" className="data-[state=active]:bg-indigo-500">
               <Building2 className="w-4 h-4 mr-2" />
@@ -424,7 +440,7 @@ export function BusinessSettingsPage() {
                   <Button
                     variant="outline"
                     className="h-auto py-4 flex flex-col items-center gap-2 border-zinc-700 bg-zinc-800/50 hover:bg-zinc-700"
-                    onClick={() => setActiveTab('tokens')}
+                    onClick={() => handleTabChange('tokens')}
                   >
                     <Coins className="w-6 h-6 text-yellow-400" />
                     <span className="text-white">View Token Usage</span>
@@ -432,7 +448,7 @@ export function BusinessSettingsPage() {
                   <Button
                     variant="outline"
                     className="h-auto py-4 flex flex-col items-center gap-2 border-zinc-700 bg-zinc-800/50 hover:bg-zinc-700"
-                    onClick={() => setActiveTab('billing')}
+                    onClick={() => handleTabChange('billing')}
                   >
                     <CreditCard className="w-6 h-6 text-indigo-400" />
                     <span className="text-white">Manage Billing</span>
@@ -440,7 +456,7 @@ export function BusinessSettingsPage() {
                   <Button
                     variant="outline"
                     className="h-auto py-4 flex flex-col items-center gap-2 border-zinc-700 bg-zinc-800/50 hover:bg-zinc-700"
-                    onClick={() => setActiveTab('team')}
+                    onClick={() => handleTabChange('team')}
                   >
                     <Users className="w-6 h-6 text-green-400" />
                     <span className="text-white">Manage Team</span>
