@@ -8,6 +8,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useEventConfig } from '@/hooks/useEventConfig';
+import { useEventContext } from '@/contexts/EventContext';
 import { getUserEvents } from '@/services/eventsApi';
 import {
   Loader2, ArrowLeft, QrCode, Users, Camera, BookOpen,
@@ -67,33 +68,42 @@ interface StaffStats {
 }
 
 export default function StaffDashboard() {
+  // Try to get config from context first (for short URLs)
+  const eventContext = useEventContext();
+  
   // Support both /admin/staff/:eventId and /:userSlug/:eventSlug/staff routes
-  const { userSlug, eventSlug, eventId: routeEventId } = useParams<{ 
+  const params = useParams<{ 
     userSlug?: string; 
     eventSlug?: string;
     eventId?: string;
   }>();
+  
+  const userSlug = eventContext?.userSlug || params.userSlug || '';
+  const eventSlug = eventContext?.eventSlug || params.eventSlug || '';
+  const routeEventId = params.eventId;
+  
   const navigate = useNavigate();
   const location = useLocation();
   
   // Determine if we're in admin route mode
   const isAdminRoute = location.pathname.startsWith('/admin/staff');
+  const hasContextConfig = !!eventContext?.config;
   
   // State for event config when using admin route
   const [adminEventConfig, setAdminEventConfig] = useState<any>(null);
   const [adminEventLoading, setAdminEventLoading] = useState(isAdminRoute);
   const [adminEventError, setAdminEventError] = useState<string | null>(null);
   
-  // Use hook for legacy route (only when not admin route)
+  // Use hook for legacy route (only when not admin route and no context)
   const { config: hookConfig, loading: hookLoading, error: hookError } = useEventConfig(
-    isAdminRoute ? '' : (userSlug || ''), 
-    isAdminRoute ? '' : (eventSlug || '')
+    (isAdminRoute || hasContextConfig) ? '' : userSlug, 
+    (isAdminRoute || hasContextConfig) ? '' : eventSlug
   );
   
-  // Unified config
-  const config = isAdminRoute ? adminEventConfig : hookConfig;
-  const loading = isAdminRoute ? adminEventLoading : hookLoading;
-  const error = isAdminRoute ? adminEventError : hookError;
+  // Unified config - context takes priority, then admin, then hook
+  const config = eventContext?.config || (isAdminRoute ? adminEventConfig : hookConfig);
+  const loading = hasContextConfig ? false : (isAdminRoute ? adminEventLoading : hookLoading);
+  const error = hasContextConfig ? null : (isAdminRoute ? adminEventError : hookError);
 
   const [activeTab, setActiveTab] = useState('overview');
   const [albums, setAlbums] = useState<Album[]>([]);

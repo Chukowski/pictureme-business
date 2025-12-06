@@ -16,6 +16,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { useEventConfig } from '@/hooks/useEventConfig';
+import { useEventContext } from '@/contexts/EventContext';
 import { Loader2, Camera, QrCode, Sparkles } from 'lucide-react';
 import { getAlbum, getAlbumPhotos } from '@/services/eventsApi';
 import { QRCodeSVG } from 'qrcode.react';
@@ -34,9 +35,23 @@ interface DisplayAlbum {
 }
 
 export default function ViewerDisplayPage() {
-  const { userSlug, eventSlug } = useParams<{ userSlug: string; eventSlug: string }>();
+  // Try to get config from context first (for short URLs)
+  const eventContext = useEventContext();
+  const params = useParams<{ userSlug: string; eventSlug: string }>();
+  
+  const userSlug = eventContext?.userSlug || params.userSlug || '';
+  const eventSlug = eventContext?.eventSlug || params.eventSlug || '';
+  
   const [searchParams] = useSearchParams();
-  const { config, loading } = useEventConfig(userSlug!, eventSlug!);
+  
+  // Only fetch if not provided by context
+  const { config: fetchedConfig, loading: fetchLoading } = useEventConfig(
+    eventContext?.config ? '' : userSlug, 
+    eventContext?.config ? '' : eventSlug
+  );
+  
+  const config = eventContext?.config || fetchedConfig;
+  const loading = eventContext?.config ? false : fetchLoading;
   
   // Current album being displayed
   const [currentAlbum, setCurrentAlbum] = useState<DisplayAlbum | null>(null);

@@ -14,6 +14,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { useEventConfig } from '@/hooks/useEventConfig';
+import { useEventContext } from '@/contexts/EventContext';
 import { Badge } from '@/components/ui/badge';
 import {
   Monitor,
@@ -31,9 +32,24 @@ import { cn } from '@/lib/utils';
 const REFRESH_INTERVAL = 10000; // 10 seconds
 
 export function BigScreenPage() {
-  const { userSlug, eventSlug } = useParams<{ userSlug: string; eventSlug: string }>();
+  // Try to get config from context first (for short URLs)
+  const eventContext = useEventContext();
+  const params = useParams<{ userSlug: string; eventSlug: string }>();
+  
+  const userSlug = eventContext?.userSlug || params.userSlug || '';
+  const eventSlug = eventContext?.eventSlug || params.eventSlug || '';
+  
   const [searchParams] = useSearchParams();
-  const { config, loading: configLoading, error: configError } = useEventConfig(userSlug!, eventSlug!);
+  
+  // Only fetch if not provided by context
+  const { config: fetchedConfig, loading: fetchLoading, error: fetchError } = useEventConfig(
+    eventContext?.config ? '' : userSlug, 
+    eventContext?.config ? '' : eventSlug
+  );
+  
+  const config = eventContext?.config || fetchedConfig;
+  const configLoading = eventContext?.config ? false : fetchLoading;
+  const configError = eventContext?.config ? null : fetchError;
 
   const [albums, setAlbums] = useState<(Album | MockAlbum)[]>([]);
   const [isLoading, setIsLoading] = useState(true);

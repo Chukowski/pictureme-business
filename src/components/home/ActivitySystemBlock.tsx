@@ -1,14 +1,18 @@
-import { Activity, CheckCircle2, LayoutTemplate } from "lucide-react";
+import { Activity, CheckCircle2, LayoutTemplate, Coins, Server, Clock4 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EventConfig } from "@/services/eventsApi";
+import { User } from "@/services/eventsApi";
 
 interface ActivitySystemBlockProps {
   events: EventConfig[];
   isLoading: boolean;
+  user: User | null;
 }
 
-export function ActivitySystemBlock({ events, isLoading }: ActivitySystemBlockProps) {
+export function ActivitySystemBlock({ events, isLoading, user }: ActivitySystemBlockProps) {
   const recentEvents = events.slice(0, 3);
+  const tokensRemaining = user?.tokens_remaining ?? 0;
+  const tokensTotal = user?.tokens_total ?? 1000;
 
   return (
     <Card className="bg-zinc-900/30 border-white/10 h-full">
@@ -59,17 +63,29 @@ export function ActivitySystemBlock({ events, isLoading }: ActivitySystemBlockPr
         {/* System Status */}
         <div className="space-y-3 pt-4 border-t border-white/5">
           <p className="text-xs font-medium text-zinc-500 uppercase tracking-wider">System Health</p>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-3 gap-2">
             <div className="bg-black/20 rounded-lg p-2 flex items-center justify-between border border-white/5">
-              <span className="text-xs text-zinc-400">AI Processor</span>
+              <span className="text-[11px] text-zinc-400 flex items-center gap-1">
+                <Server className="w-3 h-3" /> AI Processor
+              </span>
               <span className="flex items-center gap-1.5 text-[10px] text-emerald-400 font-medium bg-emerald-500/10 px-1.5 py-0.5 rounded">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
                 Operational
               </span>
             </div>
             <div className="bg-black/20 rounded-lg p-2 flex items-center justify-between border border-white/5">
-              <span className="text-xs text-zinc-400">Latency</span>
+              <span className="text-[11px] text-zinc-400 flex items-center gap-1">
+                <Clock4 className="w-3 h-3" /> Latency
+              </span>
               <span className="text-[10px] text-zinc-300 font-mono">~450ms</span>
+            </div>
+            <div className="bg-black/20 rounded-lg p-2 flex items-center justify-between border border-white/5">
+              <span className="text-[11px] text-zinc-400 flex items-center gap-1">
+                <Coins className="w-3 h-3 text-yellow-400" /> Tokens
+              </span>
+              <span className="text-[10px] text-yellow-400 font-medium bg-yellow-500/10 px-1.5 py-0.5 rounded">
+                {tokensRemaining.toLocaleString()} / {tokensTotal ? tokensTotal.toLocaleString() : "∞"}
+              </span>
             </div>
           </div>
         </div>

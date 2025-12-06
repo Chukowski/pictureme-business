@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useEventConfig } from '@/hooks/useEventConfig';
 import { useEventPhotos } from '@/hooks/useEventPhotos';
+import { useEventContext } from '@/contexts/EventContext';
 import { Loader2 } from 'lucide-react';
 import { Carousel, CarouselContent, CarouselItem, type CarouselApi } from '@/components/ui/carousel';
 import { QRCodeSVG } from 'qrcode.react';
@@ -18,8 +19,22 @@ const chunkArray = <T,>(array: T[], size: number): T[][] => {
 };
 
 export const EventFeedPage = () => {
-  const { userSlug, eventSlug } = useParams<{ userSlug: string; eventSlug: string }>();
-  const { config, loading: configLoading, error: configError } = useEventConfig(userSlug!, eventSlug!);
+  // Try to get config from context first (for short URLs), fallback to params
+  const eventContext = useEventContext();
+  const params = useParams<{ userSlug: string; eventSlug: string }>();
+  
+  const userSlug = eventContext?.userSlug || params.userSlug || '';
+  const eventSlug = eventContext?.eventSlug || params.eventSlug || '';
+  
+  // Only fetch if not provided by context
+  const { config: fetchedConfig, loading: fetchLoading, error: fetchError } = useEventConfig(
+    eventContext?.config ? '' : userSlug, 
+    eventContext?.config ? '' : eventSlug
+  );
+  
+  const config = eventContext?.config || fetchedConfig;
+  const configLoading = eventContext?.config ? false : fetchLoading;
+  const configError = eventContext?.config ? null : fetchError;
   const { photos, loading: photosLoading, error: photosError } = useEventPhotos(
     userSlug,
     eventSlug,

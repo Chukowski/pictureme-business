@@ -1,79 +1,19 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
-import { 
-  Sparkles, Plus, Zap, Layers, ArrowRight, 
-  Clock, LayoutTemplate, Activity, AlertCircle,
-  CheckCircle2, Image as ImageIcon, ShoppingBag,
-  ExternalLink, Heart, Download, Play
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { getCurrentUser, getUserEvents, getTokenStats, type User, type EventConfig } from "@/services/eventsApi";
-import { getPlanDisplayName } from "@/lib/planFeatures";
-import { 
-  getHomeContent, 
-  type HomeContentResponse,
-  type Announcement,
-  viewTemplate,
-  likeCreation
-} from "@/services/contentApi";
-import { cn } from "@/lib/utils";
+import { getTokenStats, getUserEvents, getCurrentUser, type User, type EventConfig } from "@/services/eventsApi";
+import { getHomeContent, type HomeContentResponse } from "@/services/contentApi";
 
-// Helper Components for Zone C
-const AnnouncementCard = ({ announcement }: { announcement: Announcement }) => {
-  const navigate = useNavigate();
-  const typeStyles: Record<string, { bg: string; text: string; icon: string }> = {
-    new_feature: { bg: 'bg-emerald-500/20', text: 'text-emerald-400', icon: '🚀' },
-    update: { bg: 'bg-blue-500/20', text: 'text-blue-400', icon: '📦' },
-    maintenance: { bg: 'bg-amber-500/20', text: 'text-amber-400', icon: '🔧' },
-    pro_tip: { bg: 'bg-purple-500/20', text: 'text-purple-400', icon: '💡' },
-    alert: { bg: 'bg-red-500/20', text: 'text-red-400', icon: '⚠️' },
-  };
-
-  const style = typeStyles[announcement.type] || typeStyles.update;
-
-  const handleAction = () => {
-    if (!announcement.cta_url) return;
-    if (announcement.cta_url.startsWith('/')) {
-      navigate(announcement.cta_url);
-    } else {
-      window.open(announcement.cta_url, '_blank');
-    }
-  };
-
-  return (
-    <div className="space-y-2 group">
-      <div className="flex items-center gap-2">
-        <Badge variant="outline" className={cn("border-0 text-[10px] px-1.5 py-0.5", style.bg, style.text)}>
-          <span className="mr-1">{style.icon}</span>
-          {announcement.type.replace('_', ' ').toUpperCase()}
-        </Badge>
-        <span className="text-xs text-zinc-500">
-          {new Date(announcement.created_at).toLocaleDateString()}
-        </span>
-      </div>
-      <h3 className="text-sm font-medium text-white group-hover:text-indigo-400 transition-colors">
-        {announcement.title}
-      </h3>
-      <p className="text-xs text-zinc-400 line-clamp-3">
-        {announcement.content}
-      </p>
-      {announcement.cta_label && announcement.cta_url && (
-        <Button 
-          size="sm" 
-          variant="link" 
-          className="p-0 h-auto text-indigo-400 text-xs mt-1 group-hover:translate-x-1 transition-transform" 
-          onClick={handleAction}
-        >
-          {announcement.cta_label} <ArrowRight className="w-3 h-3 ml-1" />
-        </Button>
-      )}
-    </div>
-  );
-};
+// Components
+import { UniversalActionBar } from "@/components/home/UniversalActionBar";
+import { LiveEventCard } from "@/components/home/LiveEventCard";
+import { SmartOnboarding } from "@/components/home/SmartOnboarding";
+import { ActivitySystemBlock } from "@/components/home/ActivitySystemBlock";
+import { ToolsGrid } from "@/components/home/ToolsGrid";
+import { PlanInsightsCard } from "@/components/home/PlanInsightsCard";
+import { WhatsNewBlock } from "@/components/home/WhatsNewBlock";
+import { RecommendedTemplates } from "@/components/home/RecommendedTemplates";
+import { DeveloperToolsCard } from "@/components/home/DeveloperToolsCard";
+import { CommunityHighlightsCard } from "@/components/home/CommunityHighlightsCard";
 
 export default function HomeDashboard() {
   const navigate = useNavigate();
@@ -127,10 +67,9 @@ export default function HomeDashboard() {
     }
   };
 
-  // Metrics
-  const activeEvents = events.filter(e => e.is_active).length;
-  const totalTemplates = events.reduce((acc, e) => acc + (e.templates?.length || 0), 0);
-  
+  // Find active event for "Live" card
+  const activeEvent = events.find(e => e.is_active);
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
@@ -140,339 +79,70 @@ export default function HomeDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white p-6 md:p-8 pt-24 md:pt-28">
-      {/* Background Effects */}
-      <div className="fixed top-0 left-0 w-full h-[500px] bg-gradient-to-b from-indigo-900/20 to-transparent pointer-events-none -z-10" />
-      
-      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
+    <div className="relative min-h-screen bg-black text-white p-6 md:p-8 pt-24 md:pt-28 overflow-hidden">
+      {/* Background Layers */}
+      <div className="absolute inset-0 bg-black -z-20" />
+      <div className="absolute top-0 left-0 w-full h-[520px] bg-gradient-to-b from-indigo-900/25 via-black/50 to-black pointer-events-none -z-10" />
+      <div className="absolute bottom-0 left-0 w-full h-[320px] bg-gradient-to-t from-black via-black/70 to-transparent pointer-events-none -z-10" />
+
+      <div className="max-w-7xl mx-auto space-y-8 relative z-10">
         
-        {/* Zone A: Welcome + Quick State (Left Column) */}
-        <div className="lg:col-span-3 space-y-6">
-          <div className="space-y-2">
-            <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-zinc-400">
-              Welcome back,<br />
-              {user?.full_name || user?.username || 'Creator'}
-            </h1>
-            <p className="text-sm text-zinc-500">
-              Let's create something amazing today.
-            </p>
-          </div>
-
-          {/* Plan Card */}
-          <Card className="bg-zinc-900/50 border-white/10 backdrop-blur-xl relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-20 h-20 bg-indigo-500/20 blur-2xl rounded-full -mr-10 -mt-10" />
-            <CardContent className="p-5 space-y-4">
-              <div className="flex items-center justify-between">
-                <Badge variant="outline" className="bg-indigo-500/10 text-indigo-400 border-indigo-500/20">
-                  {getPlanDisplayName(user?.role)}
-                </Badge>
-                <Button variant="ghost" size="icon" className="h-6 w-6 text-zinc-400" onClick={() => navigate('/admin/settings')}>
-                  <ArrowRight className="w-4 h-4" />
-                </Button>
-              </div>
-              
-              <div>
-                <div className="flex items-center justify-between text-sm mb-2">
-                  <span className="text-zinc-400">Tokens</span>
-                  <span className="text-white font-medium">
-                    {user?.tokens_remaining?.toLocaleString()} / {user?.tokens_total?.toLocaleString() || '∞'}
-                  </span>
-                </div>
-                <Progress value={((user?.tokens_remaining || 0) / (user?.tokens_total || 1000)) * 100} className="h-1.5 bg-zinc-800" />
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Quick Actions */}
-          <div className="space-y-3">
-            <p className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Quick Actions</p>
-            
-            <button 
-              onClick={() => navigate('/admin/events/create')}
-              className="w-full group flex items-center gap-3 p-3 rounded-xl bg-zinc-900/30 border border-white/10 hover:bg-zinc-900/60 hover:border-indigo-500/30 transition-all text-left"
-            >
-              <div className="h-8 w-8 rounded-lg bg-indigo-500/10 flex items-center justify-center text-indigo-400 group-hover:bg-indigo-500/20 transition-colors">
-                <Plus className="w-4 h-4" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-zinc-200 group-hover:text-white">Create Event</p>
-                <p className="text-[10px] text-zinc-500">Start a new photo session</p>
-              </div>
-            </button>
-
-            <button 
-              onClick={() => navigate('/admin/playground')}
-              className="w-full group flex items-center gap-3 p-3 rounded-xl bg-zinc-900/30 border border-white/10 hover:bg-zinc-900/60 hover:border-amber-500/30 transition-all text-left"
-            >
-              <div className="h-8 w-8 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-400 group-hover:bg-amber-500/20 transition-colors">
-                <Zap className="w-4 h-4" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-zinc-200 group-hover:text-white">AI Playground</p>
-                <p className="text-[10px] text-zinc-500">Test prompts & models</p>
-              </div>
-            </button>
-
-            <button 
-              onClick={() => navigate('/admin/marketplace')}
-              className="w-full group flex items-center gap-3 p-3 rounded-xl bg-zinc-900/30 border border-white/10 hover:bg-zinc-900/60 hover:border-purple-500/30 transition-all text-left"
-            >
-              <div className="h-8 w-8 rounded-lg bg-purple-500/10 flex items-center justify-center text-purple-400 group-hover:bg-purple-500/20 transition-colors">
-                <ShoppingBag className="w-4 h-4" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-zinc-200 group-hover:text-white">Marketplace</p>
-                <p className="text-[10px] text-zinc-500">Explore templates</p>
-              </div>
-            </button>
+        {/* HEADER SECTION */}
+        <div className="space-y-4">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+            <div className="space-y-1">
+              <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-zinc-400">
+                Welcome back, {user?.full_name?.split(' ')[0] || user?.username || 'Creator'}
+              </h1>
+              <p className="text-sm text-zinc-500">Here's what's happening with your events today.</p>
+            </div>
+            {/* Universal Action Bar (Moved here for better alignment) */}
+            <UniversalActionBar />
           </div>
         </div>
 
-        {/* Zone B: Activity Overview (Center/Wide Column) */}
-        <div className="lg:col-span-6 space-y-8">
+        {/* SMART ONBOARDING (Conditional) */}
+        <SmartOnboarding events={events} />
+
+        {/* LIVE EVENT CARD (Conditional) */}
+        {activeEvent && <LiveEventCard event={activeEvent} />}
+
+        {/* MAIN GRID LAYOUT */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           
-          {/* Stats Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-            <Card className="bg-zinc-900/30 border-white/10">
-              <CardContent className="p-4">
-                <p className="text-xs text-zinc-500 mb-1">Total Events</p>
-                <p className="text-2xl font-bold text-white">{events.length}</p>
-              </CardContent>
-            </Card>
-            <Card className="bg-zinc-900/30 border-white/10">
-              <CardContent className="p-4">
-                <p className="text-xs text-zinc-500 mb-1">Active Now</p>
-                <div className="flex items-center gap-2">
-                  <p className="text-2xl font-bold text-white">{activeEvents}</p>
-                  {activeEvents > 0 && <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />}
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="bg-zinc-900/30 border-white/10">
-              <CardContent className="p-4">
-                <p className="text-xs text-zinc-500 mb-1">Templates</p>
-                <p className="text-2xl font-bold text-white">{totalTemplates}</p>
-              </CardContent>
-            </Card>
+          {/* LEFT COLUMN (Primary: Stats, Tools, Activity) - Spans 8/12 */}
+          <div className="lg:col-span-8 space-y-8">
+            
+            {/* Tools Grid */}
+            <ToolsGrid />
+
+            {/* Recommended Templates Slider */}
+            <RecommendedTemplates content={content} />
+
+            {/* Activity & System Combined Block */}
+            <ActivitySystemBlock events={events} isLoading={isLoading} user={user} />
+
           </div>
 
-          {/* Recent Activity / Start Here */}
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-white">Recent Activity</h2>
-              <Button variant="link" className="text-zinc-500 hover:text-white text-xs" onClick={() => navigate('/admin/events')}>
-                View All
-              </Button>
+          {/* RIGHT COLUMN (Secondary: Insights, Updates) - Spans 4/12 */}
+          <div className="lg:col-span-4 space-y-6">
+            
+            {/* Plan & Tokens Insight */}
+            <PlanInsightsCard user={user} />
+
+            {/* What's New Feed (Tabbed) */}
+            <div className="h-[400px]">
+               <WhatsNewBlock content={content} />
             </div>
 
-            {events.length === 0 ? (
-              // Empty State
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Card 
-                  className="bg-gradient-to-br from-zinc-900 to-zinc-950 border-white/10 hover:border-indigo-500/50 transition-all cursor-pointer group"
-                  onClick={() => navigate('/admin/events/create')}
-                >
-                  <CardContent className="p-6 flex flex-col items-center text-center space-y-3">
-                    <div className="p-3 rounded-full bg-indigo-500/10 text-indigo-400 group-hover:scale-110 transition-transform">
-                      <Sparkles className="w-6 h-6" />
-                    </div>
-                    <div>
-                      <h3 className="font-medium text-white">Create your first event</h3>
-                      <p className="text-xs text-zinc-500 mt-1">Set up a photo booth in minutes</p>
-                    </div>
-                  </CardContent>
-                </Card>
-                
-                <Card 
-                  className="bg-gradient-to-br from-zinc-900 to-zinc-950 border-white/10 hover:border-amber-500/50 transition-all cursor-pointer group"
-                  onClick={() => navigate('/admin/playground')}
-                >
-                  <CardContent className="p-6 flex flex-col items-center text-center space-y-3">
-                    <div className="p-3 rounded-full bg-amber-500/10 text-amber-400 group-hover:scale-110 transition-transform">
-                      <Zap className="w-6 h-6" />
-                    </div>
-                    <div>
-                      <h3 className="font-medium text-white">Try AI Playground</h3>
-                      <p className="text-xs text-zinc-500 mt-1">Test prompts and models instantly</p>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            ) : (
-              // Recent List
-              <div className="space-y-3">
-                {events.slice(0, 5).map(event => (
-                  <div 
-                    key={event._id}
-                    onClick={() => navigate(`/admin/events/edit/${event._id}`)}
-                    className="flex items-center justify-between p-3 rounded-xl bg-zinc-900/30 border border-white/5 hover:bg-zinc-900/50 hover:border-white/10 transition-all cursor-pointer group"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-lg bg-zinc-800 flex items-center justify-center text-zinc-500 group-hover:text-white transition-colors">
-                        <LayoutTemplate className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-white group-hover:text-indigo-400 transition-colors">{event.title}</p>
-                        <p className="text-xs text-zinc-500">/{event.slug}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      {event.is_active && (
-                        <Button
-                          size="sm"
-                          className="h-7 px-3 text-[10px] font-medium gap-1.5 bg-emerald-900/30 text-emerald-400 hover:bg-emerald-900/50 border border-emerald-500/20 rounded-full mr-1"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            navigate(`/admin/events/${event._id}/live`);
-                          }}
-                        >
-                          <Play className="w-2.5 h-2.5 fill-current" />
-                          Live
-                        </Button>
-                      )}
-                      <Badge variant="outline" className={`text-[10px] border-0 ${event.is_active ? 'bg-emerald-500/10 text-emerald-400' : 'bg-zinc-500/10 text-zinc-500'}`}>
-                        {event.is_active ? 'Active' : 'Draft'}
-                      </Badge>
-                      <ArrowRight className="w-4 h-4 text-zinc-600 group-hover:text-zinc-400" />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+            {/* Developer Tools (Business Only) */}
+            <DeveloperToolsCard user={user} />
+
+            {/* Community Highlights (optional, only if content exists) */}
+            <CommunityHighlightsCard content={content} />
+
           </div>
-
-          {/* System Health (Optional Module) */}
-          <Card className="bg-zinc-900/20 border-white/5">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2 mb-3">
-                <Activity className="w-4 h-4 text-emerald-400" />
-                <span className="text-xs font-medium text-zinc-300">System Status</span>
-              </div>
-              <div className="grid grid-cols-3 gap-4 text-xs">
-                <div>
-                  <p className="text-zinc-500">AI Processor</p>
-                  <p className="text-emerald-400 flex items-center gap-1">
-                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                    Operational
-                  </p>
-                </div>
-                <div>
-                  <p className="text-zinc-500">Avg. Latency</p>
-                  <p className="text-zinc-300">~4.2s</p>
-                </div>
-                <div>
-                  <p className="text-zinc-500">Service</p>
-                  <p className="text-zinc-300">v2.4.0</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
         </div>
-
-        {/* Zone C: Dynamic Content Feed (Right Column) */}
-        <div className="lg:col-span-3 space-y-6">
-          <Card className="bg-indigo-900/10 border-indigo-500/20 h-full">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-indigo-300 flex items-center gap-2">
-                <Zap className="w-4 h-4" />
-                What's New
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Announcements Feed */}
-              {content?.announcements && content.announcements.length > 0 ? (
-                <div className="space-y-4">
-                  {content.announcements.slice(0, 3).map(announcement => (
-                    <AnnouncementCard key={announcement.id} announcement={announcement} />
-                  ))}
-                  <Button variant="link" className="text-xs text-indigo-400 p-0 h-auto w-full text-center" onClick={() => {}}>
-                    View All Announcements →
-                  </Button>
-                </div>
-              ) : (
-                // Fallback / Default Static Content if no API announcements
-                <div className="space-y-6">
-                  {/* Live Event Mode Promo */}
-                  <div className="space-y-2">
-                    <Badge className="bg-indigo-500 text-white hover:bg-indigo-600">New Feature</Badge>
-                    <h3 className="text-sm font-medium text-white">Live Event Mode</h3>
-                    <p className="text-xs text-zinc-400">
-                      Monitor your events in real-time with our new command center. Track uploads, approve photos, and manage stations.
-                    </p>
-                    <Button size="sm" variant="link" className="p-0 h-auto text-indigo-400" onClick={() => navigate('/admin/events')}>
-                      Try it out →
-                    </Button>
-                  </div>
-
-                  {/* Pro Tip */}
-                  <div className="space-y-2 pt-4 border-t border-white/5">
-                    <h3 className="text-sm font-medium text-white">Pro Tip</h3>
-                    <p className="text-xs text-zinc-400">
-                      Use the "Playground" to test prompts before creating templates. It saves tokens and time.
-                    </p>
-                  </div>
-
-                  {/* Maintenance */}
-                  <div className="space-y-2 pt-4 border-t border-white/5">
-                    <div className="flex items-center gap-2 text-amber-400">
-                      <AlertCircle className="w-4 h-4" />
-                      <span className="text-xs font-medium">Maintenance</span>
-                    </div>
-                    <p className="text-xs text-zinc-400">
-                      Scheduled maintenance on Sunday at 2 AM UTC. Services may be interrupted for 15 mins.
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {/* Featured Templates */}
-              {content?.featured_templates && content.featured_templates.length > 0 && (
-                <div className="pt-4 border-t border-white/5">
-                  <h3 className="text-xs font-medium text-zinc-400 mb-3 uppercase tracking-wider flex items-center gap-2">
-                    <Sparkles className="w-3 h-3" /> Featured Templates
-                  </h3>
-                  <div className="grid grid-cols-3 gap-2">
-                    {content.featured_templates.slice(0, 3).map(template => (
-                      <div 
-                        key={template.id} 
-                        className="aspect-square rounded-lg bg-zinc-800 bg-cover bg-center border border-white/5 hover:border-indigo-500/50 transition-all cursor-pointer group relative"
-                        style={{ backgroundImage: `url(${template.thumbnail_url || '/placeholder-template.jpg'})` }}
-                        onClick={() => viewTemplate(template.template_id)}
-                      >
-                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                          <ExternalLink className="w-4 h-4 text-white" />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Trending */}
-              {content?.trending_templates && content.trending_templates.length > 0 && (
-                <div className="pt-4 border-t border-white/5">
-                  <h3 className="text-xs font-medium text-zinc-400 mb-3 uppercase tracking-wider flex items-center gap-2">
-                    <Activity className="w-3 h-3" /> Trending Now
-                  </h3>
-                  <div className="space-y-2">
-                     {content.trending_templates.slice(0, 3).map((template, i) => (
-                       <div key={template.id} className="flex items-center gap-3 group cursor-pointer">
-                          <div className="w-8 h-8 rounded bg-zinc-800 flex items-center justify-center text-zinc-500 text-xs font-bold border border-white/5 group-hover:border-amber-500/30 group-hover:text-amber-400 transition-colors">
-                            {i + 1}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                             <p className="text-xs font-medium text-zinc-300 truncate group-hover:text-white transition-colors">{template.template_name}</p>
-                             <p className="text-[10px] text-zinc-500">{template.use_count} uses</p>
-                          </div>
-                       </div>
-                     ))}
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
       </div>
     </div>
   );

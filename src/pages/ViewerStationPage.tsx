@@ -15,6 +15,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { useEventConfig } from '@/hooks/useEventConfig';
+import { useEventContext } from '@/contexts/EventContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -43,10 +44,25 @@ import { isMockMode, getMockAlbumByCode, MockAlbum } from '@/dev/mockAlbums';
 type ViewerState = 'pin' | 'scan' | 'loading' | 'viewing' | 'error';
 
 export function ViewerStationPage() {
-  const { userSlug, eventSlug } = useParams<{ userSlug: string; eventSlug: string }>();
+  // Try to get config from context first (for short URLs)
+  const eventContext = useEventContext();
+  const params = useParams<{ userSlug: string; eventSlug: string }>();
+  
+  const userSlug = eventContext?.userSlug || params.userSlug || '';
+  const eventSlug = eventContext?.eventSlug || params.eventSlug || '';
+  
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { config, loading: configLoading, error: configError } = useEventConfig(userSlug!, eventSlug!);
+  
+  // Only fetch if not provided by context
+  const { config: fetchedConfig, loading: fetchLoading, error: fetchError } = useEventConfig(
+    eventContext?.config ? '' : userSlug, 
+    eventContext?.config ? '' : eventSlug
+  );
+  
+  const config = eventContext?.config || fetchedConfig;
+  const configLoading = eventContext?.config ? false : fetchLoading;
+  const configError = eventContext?.config ? null : fetchError;
 
   // Start directly in scan mode - no PIN required for viewer station
   const [state, setState] = useState<ViewerState>('scan');

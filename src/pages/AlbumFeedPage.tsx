@@ -8,6 +8,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useEventConfig } from '@/hooks/useEventConfig';
+import { useEventContext } from '@/contexts/EventContext';
 import { 
   Loader2, ArrowLeft, Download, Share2, Mail, MessageSquare, 
   CheckCircle2, XCircle, MonitorPlay, Printer, Lock, Unlock,
@@ -44,13 +45,29 @@ interface AlbumInfo {
 }
 
 export default function AlbumFeedPage() {
-  const { userSlug, eventSlug, albumId } = useParams<{ 
+  // Try to get config from context first (for short URLs), fallback to params
+  const eventContext = useEventContext();
+  const params = useParams<{ 
     userSlug: string; 
     eventSlug: string; 
     albumId: string;
   }>();
+  
+  const userSlug = eventContext?.userSlug || params.userSlug || '';
+  const eventSlug = eventContext?.eventSlug || params.eventSlug || '';
+  const albumId = params.albumId;
+  
   const navigate = useNavigate();
-  const { config, loading, error } = useEventConfig(userSlug!, eventSlug!);
+  
+  // Only fetch if not provided by context
+  const { config: fetchedConfig, loading: fetchLoading, error: fetchError } = useEventConfig(
+    eventContext?.config ? '' : userSlug, 
+    eventContext?.config ? '' : eventSlug
+  );
+  
+  const config = eventContext?.config || fetchedConfig;
+  const loading = eventContext?.config ? false : fetchLoading;
+  const error = eventContext?.config ? null : fetchError;
 
   const [albumInfo, setAlbumInfo] = useState<AlbumInfo | null>(null);
   const [photos, setPhotos] = useState<AlbumPhoto[]>([]);

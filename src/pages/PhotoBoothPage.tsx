@@ -30,11 +30,31 @@ interface AlbumData {
   currentStation?: string;
 }
 
-export const PhotoBoothPage = () => {
-  const { userSlug, eventSlug } = useParams<{ userSlug: string; eventSlug: string }>();
+interface PhotoBoothPageProps {
+  configOverride?: import('@/services/eventsApi').EventConfig | null;
+  userSlugOverride?: string;
+  eventSlugOverride?: string;
+}
+
+export const PhotoBoothPage = ({ configOverride, userSlugOverride, eventSlugOverride }: PhotoBoothPageProps = {}) => {
+  const params = useParams<{ userSlug: string; eventSlug: string; eventId: string }>();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { config, loading, error } = useEventConfig(userSlug!, eventSlug!);
+  
+  // Use overrides if provided (for short URLs), otherwise use params
+  const userSlug = userSlugOverride || params.userSlug || '';
+  const eventSlug = eventSlugOverride || params.eventSlug || '';
+  
+  // Only fetch config if not provided as override
+  const { config: fetchedConfig, loading: fetchLoading, error: fetchError } = useEventConfig(
+    configOverride ? '' : userSlug, 
+    configOverride ? '' : eventSlug
+  );
+  
+  // Use override config if provided, otherwise use fetched config
+  const config = configOverride || fetchedConfig;
+  const loading = configOverride ? false : fetchLoading;
+  const error = configOverride ? null : fetchError;
 
   // Album Tracking
   const albumId = searchParams.get('album');

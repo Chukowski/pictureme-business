@@ -14,7 +14,7 @@ export function LiveEventCard({ event }: LiveEventCardProps) {
   if (!event.is_active) return null;
 
   return (
-    <Card className="bg-gradient-to-r from-emerald-900/30 to-zinc-900 border-emerald-500/30 overflow-hidden relative group mb-8">
+    <Card className="bg-zinc-900 bg-gradient-to-r from-emerald-900/30 to-zinc-900 border-emerald-500/30 overflow-hidden relative group mb-8">
       <div className="absolute top-0 right-0 p-4">
         <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 text-xs font-bold animate-pulse">
           <span className="w-2 h-2 rounded-full bg-emerald-500" />
