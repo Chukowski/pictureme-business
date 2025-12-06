@@ -6,9 +6,10 @@ import { toast } from "sonner";
 
 interface UniversalActionBarProps {
   activeEvent?: EventConfig;
+  isBusinessUser?: boolean;
 }
 
-export function UniversalActionBar({ activeEvent }: UniversalActionBarProps) {
+export function UniversalActionBar({ activeEvent, isBusinessUser = false }: UniversalActionBarProps) {
   const navigate = useNavigate();
 
   const handleStaffDashboard = () => {
@@ -42,29 +43,36 @@ export function UniversalActionBar({ activeEvent }: UniversalActionBarProps) {
       variant: "ghost" as const,
       className: "text-zinc-400 hover:text-white hover:bg-zinc-800",
     },
-    {
-      label: "Staff Dashboard",
-      icon: Users,
-      onClick: handleStaffDashboard,
-      variant: "ghost" as const,
-      className: "text-zinc-400 hover:text-white hover:bg-zinc-800",
-    },
+    isBusinessUser
+      ? {
+          label: "Staff Dashboard",
+          icon: Users,
+          onClick: handleStaffDashboard,
+          variant: "ghost" as const,
+          className: "text-zinc-400 hover:text-white hover:bg-zinc-800",
+        }
+      : null,
   ];
 
   return (
     <div className="flex flex-wrap items-center gap-3 py-4">
-      {actions.map((action, index) => (
-        <Button
-          key={index}
-          size="sm"
-          variant={action.variant}
-          className={`h-9 px-4 text-xs font-medium rounded-full gap-2 ${action.className}`}
-          onClick={action.onClick}
-        >
-          <action.icon className="w-3.5 h-3.5" />
-          {action.label}
-        </Button>
-      ))}
+      {actions
+        .filter(Boolean)
+        .map((action, index) => {
+          const item = action!;
+          return (
+            <Button
+              key={index}
+              size="sm"
+              variant={item.variant}
+              className={`h-9 px-4 text-xs font-medium rounded-full gap-2 ${item.className}`}
+              onClick={item.onClick}
+            >
+              <item.icon className="w-3.5 h-3.5" />
+              {item.label}
+            </Button>
+          );
+        })}
     </div>
   );
 }

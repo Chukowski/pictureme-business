@@ -222,7 +222,7 @@ export default function StudioTab({ currentUser }: StudioTabProps) {
     const selectedModelData = MODELS.find(m => m.id === selectedModel);
 
     return (
-        <div className="flex h-full gap-6">
+        <div className="flex flex-col lg:flex-row h-full gap-6">
             {/* Hidden File Inputs */}
             <input type="file" ref={fileInputRefStart} className="hidden" accept="image/*" onChange={(e) => onFileChange(e, 'start')} />
             <input type="file" ref={fileInputRefEnd} className="hidden" accept="image/*" onChange={(e) => onFileChange(e, 'end')} />
@@ -230,7 +230,7 @@ export default function StudioTab({ currentUser }: StudioTabProps) {
             <input type="file" ref={fileInputRefTarget} className="hidden" accept="image/*" onChange={(e) => onFileChange(e, 'target')} />
 
             {/* Left Control Panel */}
-            <div className="w-96 flex flex-col gap-4 shrink-0">
+            <div className="w-full lg:w-96 flex flex-col gap-4 shrink-0">
                 {/* Mode Tabs */}
                 <div className="flex p-1 bg-zinc-900/50 border border-white/10 rounded-xl backdrop-blur-sm">
                     <button

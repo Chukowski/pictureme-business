@@ -32,7 +32,6 @@ import SuperAdminAnalytics from "./components/super-admin/SuperAdminAnalytics";
 import SuperAdminSettings from "./components/super-admin/SuperAdminSettings";
 import SuperAdminDevTools from "./components/super-admin/SuperAdminDevTools";
 import PublicProfile from "./pages/PublicProfile";
-import AccountSettings from "./pages/AccountSettings";
 import AlbumFeedPage from "./pages/AlbumFeedPage";
 import StaffDashboard from "./pages/StaffDashboard";
 import ViewerDisplayPage from "./pages/ViewerDisplayPage";
@@ -43,6 +42,17 @@ import BigScreenPage from "./pages/BigScreenPage";
 import { TermsPage } from "./pages/TermsPage";
 import { PrivacyPage } from "./pages/PrivacyPage";
 import ShortUrlEventPage from "./pages/ShortUrlEventPage";
+
+// Creator Imports
+import { CreatorLayout } from "./components/creator/CreatorLayout";
+import CreatorDashboard from "./pages/creator/CreatorDashboard";
+import CreatorPlaceholder from "./pages/creator/CreatorPlaceholder";
+import CreatorCreatePage from "./pages/creator/CreatorCreatePage";
+import CreatorBoothPage from "./pages/creator/CreatorBoothPage";
+import CreatorTemplatesPage from "./pages/creator/CreatorTemplatesPage";
+import CreatorBillingPage from "./pages/creator/CreatorBillingPage";
+import CreatorSupportPage from "./pages/creator/CreatorSupportPage";
+import { CreatorOnly } from "./components/routing/CreatorOnly";
 
 // CopilotKit imports (self-hosted, no cloud required)
 import { CopilotKit } from "@copilotkit/react-core";
@@ -69,9 +79,10 @@ const ConditionalAkitoWidget = () => {
   const shouldHideAkito = excludedPaths.some(path => location.pathname.includes(path)) ||
     // Also hide on dynamic event routes (/:userSlug/:eventSlug) but not admin routes
     (location.pathname.split('/').length >= 3 && 
-     !location.pathname.startsWith('/admin') && 
-     !location.pathname.startsWith('/super-admin') &&
-     !location.pathname.startsWith('/profile'));
+    !location.pathname.startsWith('/admin') && 
+    !location.pathname.startsWith('/super-admin') &&
+    !location.pathname.startsWith('/creator') && // Allow in creator dashboard
+    !location.pathname.startsWith('/profile'));
   
   if (shouldHideAkito) {
     return null;
@@ -92,13 +103,27 @@ const FloatingSidebarToggle = () => {
   );
 };
 
+const SettingsRedirect = () => {
+  const user = getCurrentUser();
+  const isBusiness = user?.role?.startsWith("business") && user.role !== "business_pending";
+  return (
+    <Navigate 
+      to={isBusiness ? "/admin/settings/business" : "/admin/settings/creator"}
+      replace
+    />
+  );
+};
+
 import { ENV } from "@/config/env";
+import { getCurrentUser } from "@/services/eventsApi";
 
 import PlaygroundPage from "./pages/PlaygroundPage";
 import LiveEventPage from "./pages/LiveEventPage";
 import HomeDashboard from "./pages/HomeDashboard";
+import CreatorSettingsPage from "./pages/settings/CreatorSettingsPage";
 
 import { TopNavbar } from "./components/TopNavbar";
+import { BusinessOnly } from "./components/routing/BusinessOnly";
 
 // Get user info for CopilotKit context
 const getUserProperties = () => {
@@ -119,20 +144,11 @@ const getUserProperties = () => {
 };
 
 // Get API URL with HTTPS enforcement for production
-// This is a function to ensure it's evaluated when needed, not at module load time
 const getApiUrl = (): string => {
-  // Always use ENV.API_URL which has built-in HTTPS enforcement
-  // The ENV getter in env.ts handles all the logic including:
-  // 1. Reading from window.ENV
-  // 2. Deriving from current origin if not set
-  // 3. Enforcing HTTPS for production URLs
   let url = ENV.API_URL;
-  
-  // Fallback for dev only
   if (!url && import.meta.env.DEV) {
     url = "http://localhost:3002";
   }
-  
   return url;
 };
 
@@ -141,9 +157,10 @@ const AppContent = () => {
   const location = useLocation();
   const apiUrl = getApiUrl();
   
-  // Only initialize CopilotKit on admin and super-admin pages
+  // Only initialize CopilotKit on admin, super-admin, and creator pages
   const shouldInitCopilot = location.pathname.startsWith('/admin') || 
-                            location.pathname.startsWith('/super-admin');
+                            location.pathname.startsWith('/super-admin') ||
+                            location.pathname.startsWith('/creator');
   
   return (
     <>
@@ -189,27 +206,76 @@ const AppContent = () => {
               <Route path="*" element={<SuperAdminOverview />} />
             </Route>
 
-            {/* Admin Routes */}
+            {/* CREATOR ROUTES (INDIVIDUAL) */}
+            <Route path="/creator" element={
+              <CreatorOnly>
+                <CreatorLayout />
+              </CreatorOnly>
+            }>
+               <Route index element={<Navigate to="/creator/dashboard" replace />} />
+               <Route path="dashboard" element={<CreatorDashboard />} />
+               <Route path="create" element={<CreatorCreatePage />} />
+               <Route path="booth" element={<CreatorBoothPage />} />
+               <Route path="booth/:eventId" element={<CreatorBoothPage />} />
+               <Route path="templates" element={<CreatorTemplatesPage />} />
+               <Route path="billing" element={<CreatorBillingPage />} />
+               <Route path="support" element={<CreatorSupportPage />} />
+               <Route path="settings" element={<CreatorSettingsPage />} />
+               <Route path="*" element={<CreatorPlaceholder />} />
+            </Route>
+
+            {/* ADMIN ROUTES (BUSINESS) */}
             <Route path="/admin/auth" element={<AdminAuth />} />
             <Route path="/admin/register" element={<AdminRegister />} />
-            <Route path="/admin" element={<Navigate to="/admin/home" replace />} />
-            <Route path="/admin/home" element={<HomeDashboard />} />
-            <Route path="/admin/events" element={<AdminDashboard />} />
+            
+            {/* Main Admin Redirect */}
+            <Route path="/admin" element={
+               // If business, go to home. If creator, go to creator dashboard.
+               // We can use a component to check this or just rely on guards.
+               // For now, redirect to home, and let HomeDashboard redirect creator if needed, 
+               // OR explicit check here.
+               <Navigate to="/admin/home" replace />
+            } />
+
+            <Route path="/admin/home" element={
+              <BusinessOnly>
+                <HomeDashboard />
+              </BusinessOnly>
+            } />
+            
+            <Route path="/admin/events" element={
+              <BusinessOnly>
+                <AdminDashboard />
+              </BusinessOnly>
+            } />
             <Route path="/admin/events/create" element={<AdminEventForm />} />
             <Route path="/admin/events/edit/:eventId" element={<AdminEventForm />} />
             <Route path="/admin/events/:eventId/photos" element={<AdminEventPhotos />} />
             <Route path="/admin/events/:eventId/live" element={<LiveEventPage />} />
-            <Route path="/admin/settings" element={<AccountSettings />} />
+            
+            <Route path="/admin/settings" element={<SettingsRedirect />} />
+            {/* Removed CreatorSettingsPage from here, moved to /creator/settings */}
+            {/* But keep it here temporarily for transition if needed, but safer to force separate paths */}
+            <Route path="/admin/settings/creator" element={<Navigate to="/creator/settings" replace />} />
+
+            <Route
+              path="/admin/settings/business"
+              element={
+                <BusinessOnly>
+                  <BusinessSettingsPage />
+                </BusinessOnly>
+              }
+            />
             {/* Billing and Tokens now redirect to Business Settings */}
-            <Route path="/admin/billing" element={<Navigate to="/admin/business" replace />} />
-            <Route path="/admin/tokens" element={<Navigate to="/admin/business" replace />} />
+            <Route path="/admin/billing" element={<Navigate to="/admin/settings/business" replace />} />
+            <Route path="/admin/tokens" element={<Navigate to="/admin/settings/business" replace />} />
             <Route path="/admin/marketplace" element={<AdminDashboard />} />
             <Route path="/admin/playground" element={<PlaygroundPage />} />
             <Route path="/admin/analytics" element={<AdminDashboard />} />
             <Route path="/admin/studio" element={<AdminDashboard />} />
             <Route path="/admin/albums" element={<AdminDashboard />} />
             <Route path="/admin/organization" element={<OrganizationSettingsPage />} />
-            <Route path="/admin/business" element={<BusinessSettingsPage />} />
+            <Route path="/admin/business" element={<Navigate to="/admin/settings/business" replace />} />
             <Route path="/admin/staff/:eventId" element={<StaffDashboard />} />
             {/* Catch-all for unknown admin routes - show 404 */}
             <Route path="/admin/*" element={<NotFound />} />

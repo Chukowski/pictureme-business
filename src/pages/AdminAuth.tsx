@@ -79,8 +79,14 @@ export default function AdminAuth() {
       localStorage.setItem('user', JSON.stringify(user));
       localStorage.setItem('auth_token', token); // Store token for API calls
       
-      // Redirect to admin dashboard
-      navigate("/admin");
+      // Redirect based on role
+      const isBusiness = user.role?.startsWith('business') && user.role !== 'business_pending';
+      if (isBusiness) {
+        navigate("/admin/home");
+      } else {
+        navigate("/creator/dashboard");
+      }
+      
       setIsLoading(false);
     } catch (error: any) {
       toast.error(error.message || "Login failed");

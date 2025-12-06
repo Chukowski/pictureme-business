@@ -16,6 +16,15 @@ export function PlanInsightsCard({ user }: PlanInsightsCardProps) {
   
   const tokensUsed = (user?.tokens_total || 0) - (user?.tokens_remaining || 0);
   const progress = ((user?.tokens_remaining || 0) / (user?.tokens_total || 1000)) * 100;
+  const isBusiness = user?.role?.startsWith('business') && user.role !== 'business_pending';
+
+  const handleUpgradeClick = () => {
+    if (isBusiness) {
+      navigate('/admin/settings/business?tab=billing&showPlans=true');
+    } else {
+      navigate('/creator/billing');
+    }
+  };
 
   return (
     <Card className="bg-gradient-to-br from-zinc-900 to-black border-white/10 overflow-hidden relative">
@@ -68,7 +77,7 @@ export function PlanInsightsCard({ user }: PlanInsightsCardProps) {
           <Button 
             size="sm" 
             className="w-full bg-white text-black hover:bg-zinc-200"
-            onClick={() => navigate('/admin/business')}
+            onClick={handleUpgradeClick}
           >
             Upgrade Plan <ArrowRight className="w-3 h-3 ml-1" />
           </Button>

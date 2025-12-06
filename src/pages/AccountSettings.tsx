@@ -232,12 +232,16 @@ export default function AccountSettings() {
 
   if (!currentUser) return null;
 
+  const backDestination = currentUser?.role?.startsWith('business') && currentUser.role !== 'business_pending' 
+    ? '/admin/home' 
+    : '/creator/dashboard';
+
   return (
     <div className="min-h-screen bg-black text-white">
       {/* Header with Cover Image */}
       <div className="relative">
         {/* Cover Image */}
-        <div className="h-48 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 relative group">
+        <div className="h-48 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 relative group sm:rounded-b-none rounded-lg overflow-hidden">
           {(coverPreview || currentUser?.cover_image_url) && (
             <img
               src={coverPreview || currentUser?.cover_image_url}
@@ -263,7 +267,7 @@ export default function AccountSettings() {
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => navigate('/admin')}
+          onClick={() => navigate(backDestination)}
           className="absolute top-4 left-4 bg-black/50 hover:bg-black/70 backdrop-blur-sm"
         >
           <ArrowLeft className="w-5 h-5" />

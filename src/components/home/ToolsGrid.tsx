@@ -9,9 +9,10 @@ import { toast } from "sonner";
 
 interface ToolsGridProps {
   activeEvent?: EventConfig;
+  isBusinessUser?: boolean;
 }
 
-export function ToolsGrid({ activeEvent }: ToolsGridProps) {
+export function ToolsGrid({ activeEvent, isBusinessUser = false }: ToolsGridProps) {
   const navigate = useNavigate();
 
   const handleStaffClick = () => {
@@ -42,7 +43,7 @@ export function ToolsGrid({ activeEvent }: ToolsGridProps) {
       bg: "bg-indigo-500/10",
       border: "group-hover:border-indigo-500/30",
     },
-    {
+    isBusinessUser && {
       label: "Staff Dashboard",
       description: "Manage team",
       icon: Users,
@@ -73,23 +74,26 @@ export function ToolsGrid({ activeEvent }: ToolsGridProps) {
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 mb-8">
-      {tools.map((tool, index) => (
-        <Card 
-          key={index}
-          className={`bg-zinc-900/40 border-white/5 transition-all duration-300 cursor-pointer group hover:bg-zinc-900 hover:-translate-y-1 hover:shadow-lg ${tool.border}`}
-          onClick={tool.onClick}
-        >
-          <CardContent className="p-4 flex flex-col items-center text-center h-full justify-center space-y-3">
-            <div className={`p-3 rounded-xl ${tool.bg} ${tool.color} mb-1 transition-transform group-hover:scale-110`}>
-              <tool.icon className="w-6 h-6" />
-            </div>
-            <div>
-              <h3 className="font-medium text-sm text-zinc-200 group-hover:text-white">{tool.label}</h3>
-              <p className="text-[10px] text-zinc-500 mt-0.5">{tool.description}</p>
-            </div>
-          </CardContent>
-        </Card>
-      ))}
+      {tools.filter(Boolean).map((tool, index) => {
+        const item = tool!;
+        return (
+          <Card 
+            key={index}
+            className={`bg-zinc-900/40 border-white/5 transition-all duration-300 cursor-pointer group hover:bg-zinc-900 hover:-translate-y-1 hover:shadow-lg ${item.border}`}
+            onClick={item.onClick}
+          >
+            <CardContent className="p-4 flex flex-col items-center text-center h-full justify-center space-y-3">
+              <div className={`p-3 rounded-xl ${item.bg} ${item.color} mb-1 transition-transform group-hover:scale-110`}>
+                <item.icon className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="font-medium text-sm text-zinc-200 group-hover:text-white">{item.label}</h3>
+                <p className="text-[10px] text-zinc-500 mt-0.5">{item.description}</p>
+              </div>
+            </CardContent>
+          </Card>
+        );
+      })}
     </div>
   );
 }

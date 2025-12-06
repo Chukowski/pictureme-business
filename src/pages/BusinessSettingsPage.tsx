@@ -105,6 +105,7 @@ export function BusinessSettingsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [user, setUser] = useState<User | null>(null);
   const [activeTab, setActiveTab] = useState(() => searchParams.get('tab') || 'overview');
+  const [shouldOpenPlans, setShouldOpenPlans] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   
   // Organization data
@@ -162,7 +163,7 @@ export function BusinessSettingsPage() {
       const isBusiness = userData.role?.startsWith('business') && userData.role !== 'business_pending';
       if (!isBusiness) {
         toast.error('Business account required');
-        navigate('/admin');
+        navigate('/admin/settings/creator');
         return;
       }
       
@@ -179,6 +180,15 @@ export function BusinessSettingsPage() {
       setActiveTab(tabParam);
     }
   }, [searchParams, activeTab]);
+
+  useEffect(() => {
+    if (searchParams.get('showPlans') === 'true') {
+      setShouldOpenPlans(true);
+      const params = new URLSearchParams(searchParams);
+      params.delete('showPlans');
+      setSearchParams(params, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
 
   const handleTabChange = (value: string) => {
     setActiveTab(value);
@@ -566,7 +576,10 @@ export function BusinessSettingsPage() {
           {/* Billing Tab - Full BillingTab Component */}
           <TabsContent value="billing" className="space-y-6">
             {user && (
-              <BillingTab currentUser={user as unknown as EventsUser} />
+              <BillingTab 
+                currentUser={user as unknown as EventsUser} 
+                openPlansModal={shouldOpenPlans}
+              />
             )}
           </TabsContent>
         </Tabs>

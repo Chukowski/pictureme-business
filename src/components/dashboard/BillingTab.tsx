@@ -53,6 +53,7 @@ import { toast } from "sonner";
 
 interface BillingTabProps {
   currentUser: User;
+  openPlansModal?: boolean;
 }
 
 interface Plan {
@@ -235,7 +236,7 @@ const normalizeRole = (role: string): string => {
   return role.toLowerCase().replace(/[_\s]+/g, ' ').trim();
 };
 
-export default function BillingTab({ currentUser }: BillingTabProps) {
+export default function BillingTab({ currentUser, openPlansModal = false }: BillingTabProps) {
   // Helper to get plan from user role
   const getPlanFromUserRole = (): Plan | null => {
     const userRole = currentUser?.role || currentUser?.subscription_tier || '';
@@ -274,7 +275,13 @@ export default function BillingTab({ currentUser }: BillingTabProps) {
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
   const [currentPlan, setCurrentPlan] = useState<Plan | null>(null);
   const [isUpgrading, setIsUpgrading] = useState(false);
-  const [showPlansDialog, setShowPlansDialog] = useState(false);
+  const [showPlansDialog, setShowPlansDialog] = useState(openPlansModal);
+
+  useEffect(() => {
+    if (openPlansModal) {
+      setShowPlansDialog(true);
+    }
+  }, [openPlansModal]);
   const [connectStatus, setConnectStatus] = useState<StripeConnectStatus | null>(null);
   const [isConnecting, setIsConnecting] = useState(false);
   const [planType, setPlanType] = useState<'individual' | 'business'>('business');
@@ -283,6 +290,21 @@ export default function BillingTab({ currentUser }: BillingTabProps) {
   const isBusinessUser = currentUser?.role?.includes('business') || 
                          currentUser?.subscription_tier?.includes('event') ||
                          currentUser?.subscription_tier?.includes('masters');
+  
+  // Determine if user is on an individual plan
+  const isIndividualUser = !isBusinessUser || 
+                           currentPlan?.id === 'spark' || 
+                           currentPlan?.id === 'vibe' || 
+                           currentPlan?.id === 'studio';
+  
+  // Get the appropriate plans to show for upgrade
+  const getUpgradePlans = () => {
+    if (isIndividualUser && !isBusinessUser) {
+      // Individual users see individual plans + option to go business
+      return INDIVIDUAL_PLANS;
+    }
+    return BUSINESS_PLANS;
+  };
 
   useEffect(() => {
     fetchBillingData();
@@ -601,11 +623,14 @@ export default function BillingTab({ currentUser }: BillingTabProps) {
                 <DialogHeader>
                   <DialogTitle>Choose Your Plan</DialogTitle>
                   <DialogDescription className="text-zinc-400">
-                    Select the plan that best fits your business needs
+                    {isIndividualUser && !isBusinessUser 
+                      ? "Select the plan that best fits your creative needs"
+                      : "Select the plan that best fits your business needs"
+                    }
                   </DialogDescription>
                 </DialogHeader>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-                  {PLANS.map((plan) => (
+                  {getUpgradePlans().map((plan) => (
                     <div
                       key={plan.id}
                       className={`relative p-6 rounded-xl border ${
@@ -683,6 +708,23 @@ export default function BillingTab({ currentUser }: BillingTabProps) {
                 <p className="text-xs text-zinc-500 text-center mt-4 px-4">
                   {PLAN_NOTE}
                 </p>
+                
+                {/* Option to switch to business plans for individual users */}
+                {isIndividualUser && !isBusinessUser && (
+                  <div className="text-center mt-4 pt-4 border-t border-white/10">
+                    <p className="text-sm text-zinc-400">
+                      Running events for clients?{' '}
+                      <a 
+                        href="/apply"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-indigo-400 hover:text-indigo-300 underline"
+                      >
+                        Explore Business Plans
+                      </a>
+                    </p>
+                  </div>
+                )}
               </DialogContent>
             </Dialog>
 

@@ -69,6 +69,7 @@ export default function HomeDashboard() {
 
   // Find active event for "Live" card
   const activeEvent = events.find(e => e.is_active);
+  const isBusinessUser = user?.role?.startsWith('business') && user.role !== 'business_pending';
 
   if (isLoading) {
     return (
@@ -97,7 +98,7 @@ export default function HomeDashboard() {
               <p className="text-sm text-zinc-500">Here's what's happening with your events today.</p>
             </div>
             {/* Universal Action Bar (Moved here for better alignment) */}
-            <UniversalActionBar activeEvent={activeEvent} />
+            <UniversalActionBar activeEvent={activeEvent} isBusinessUser={isBusinessUser} />
           </div>
         </div>
 
@@ -114,7 +115,7 @@ export default function HomeDashboard() {
           <div className="lg:col-span-8 space-y-8">
             
             {/* Tools Grid */}
-            <ToolsGrid activeEvent={activeEvent} />
+            <ToolsGrid activeEvent={activeEvent} isBusinessUser={isBusinessUser} />
 
             {/* Recommended Templates Slider */}
             <RecommendedTemplates content={content} />

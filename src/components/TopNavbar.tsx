@@ -25,6 +25,7 @@ export function TopNavbar() {
   const currentUser = getCurrentUser();
   const userRole = currentUser?.role || 'individual';
   const hasAlbumTracking = hasFeature(userRole, 'albumTracking');
+  const isBusinessUser = userRole.startsWith('business') && userRole !== 'business_pending';
 
   // Paths where navbar should be completely hidden
   const isHiddenPath = 
@@ -34,6 +35,7 @@ export function TopNavbar() {
     location.pathname === '/apply' ||
     location.pathname === '/admin/auth' ||
     location.pathname === '/admin/register' ||
+    location.pathname.startsWith('/creator') || // Hide in creator dashboard
     [
     '/registration',
     '/booth',
@@ -290,23 +292,23 @@ export function TopNavbar() {
                   <span>View Profile</span>
                 </DropdownMenuItem>
                 
-                {userRole.startsWith('business') && userRole !== 'business_pending' && (
+                {isBusinessUser ? (
                   <DropdownMenuItem 
-                    onClick={() => navigate('/admin/business')}
+                    onClick={() => navigate('/admin/settings/business')}
                     className="flex items-center gap-2 px-2 py-1.5 cursor-pointer hover:bg-white/5 rounded-md focus:bg-white/5 focus:text-white text-indigo-400"
                   >
                     <Building2 className="w-4 h-4" />
                     <span>Business Settings</span>
                   </DropdownMenuItem>
+                ) : (
+                  <DropdownMenuItem 
+                    onClick={() => navigate('/admin/settings/creator')}
+                    className="flex items-center gap-2 px-2 py-1.5 cursor-pointer hover:bg-white/5 rounded-md focus:bg-white/5 focus:text-white"
+                  >
+                    <Settings className="w-4 h-4 text-zinc-400" />
+                    <span>Account Settings</span>
+                  </DropdownMenuItem>
                 )}
-
-                <DropdownMenuItem 
-                  onClick={() => navigate('/admin/settings')}
-                  className="flex items-center gap-2 px-2 py-1.5 cursor-pointer hover:bg-white/5 rounded-md focus:bg-white/5 focus:text-white"
-                >
-                  <Settings className="w-4 h-4 text-zinc-400" />
-                  <span>Account Settings</span>
-                </DropdownMenuItem>
                 
                 <DropdownMenuItem 
                   onClick={() => window.open('https://discord.gg/pictureme', '_blank')}
