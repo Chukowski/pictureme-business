@@ -146,8 +146,9 @@ export default function AlbumFeedPage() {
           id: album.code,
           visitorName: album.owner_name,
           visitorNumber: 0,
-          isComplete: album.status === 'completed',
-          isPaid: album.payment_status === 'paid',
+          isComplete: album.status === 'completed' || album.status === 'paid',
+          // Album is considered paid if payment_status is 'paid' OR status is 'paid' or 'completed'
+          isPaid: album.payment_status === 'paid' || album.status === 'paid' || album.status === 'completed',
           createdAt: new Date(album.created_at),
         });
 

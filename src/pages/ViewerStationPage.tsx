@@ -36,7 +36,7 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { getAlbum, getAlbumPhotos, createAlbumCheckout, Album, AlbumPhoto } from '@/services/eventsApi';
+import { getAlbum, getAlbumPhotos, createAlbumCheckout, updateAlbumStatus, Album, AlbumPhoto } from '@/services/eventsApi';
 import { ScanAlbumQR } from '@/components/album';
 import { StaffPINLogin } from '@/components/staff';
 import { isMockMode, getMockAlbumByCode, MockAlbum } from '@/dev/mockAlbums';
@@ -151,8 +151,26 @@ export function ViewerStationPage() {
     handleScan(manualCode.trim().toUpperCase());
   };
 
-  // Handle unlock
+  // Handle unlock - mark album as paid (staff action)
   const handleUnlock = async () => {
+    if (!album) return;
+    setIsUnlocking(true);
+    try {
+      // Mark album as paid directly (staff override)
+      await updateAlbumStatus(album.code, 'paid');
+      // Reload album to get updated status
+      await loadAlbum(album.code);
+      toast.success('Album unlocked!');
+    } catch (error) {
+      console.error('Failed to unlock album:', error);
+      toast.error('Failed to unlock album');
+    } finally {
+      setIsUnlocking(false);
+    }
+  };
+  
+  // Handle payment checkout (for visitor self-service)
+  const handlePayment = async () => {
     if (!album) return;
     setIsUnlocking(true);
     try {
@@ -209,7 +227,17 @@ export function ViewerStationPage() {
   }
 
   const primaryColor = config.theme?.primaryColor || '#6366F1';
-  const isLocked = album && 'payment_status' in album && album.payment_status === 'unpaid';
+  
+  // Album is unlocked if:
+  // - payment_status is 'paid' OR
+  // - status is 'completed' or 'paid'
+  // Album is locked only if it requires payment and hasn't been paid/completed
+  const requiresPayment = config.albumTracking?.payment?.enabled && config.albumTracking?.payment?.requirePayment;
+  const isPaidOrCompleted = album && (
+    ('payment_status' in album && album.payment_status === 'paid') ||
+    ('status' in album && (album.status === 'completed' || album.status === 'paid'))
+  );
+  const isLocked = requiresPayment && !isPaidOrCompleted;
 
   // When in scan mode, show the QR scanner directly (full screen)
   if (state === 'scan' || state === 'pin') {
