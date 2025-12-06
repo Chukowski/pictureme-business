@@ -332,13 +332,24 @@ export default function BillingTab({ currentUser }: BillingTabProps) {
           }
         }
         
-        if (matchedPlan) {
-          setCurrentPlan({ ...matchedPlan, current: true });
-          // Set plan type based on matched plan
-          setPlanType(INDIVIDUAL_PLANS.some(p => p.id === matchedPlan!.id) ? 'individual' : 'business');
+        // Determine role-based desired plan (fallback / override)
+        const rolePlan = getPlanFromUserRole();
+
+        let finalPlan = matchedPlan;
+
+        // If API says starter/pro but role is masters, override to masters for display
+        if (rolePlan && rolePlan.id === 'masters' && finalPlan && finalPlan.id !== 'masters') {
+          finalPlan = rolePlan;
+        }
+
+        if (finalPlan) {
+          setCurrentPlan({ ...finalPlan, current: true });
+          setPlanType(INDIVIDUAL_PLANS.some(p => p.id === finalPlan!.id) ? 'individual' : 'business');
+        } else if (rolePlan) {
+          console.log('⚠️ No plan match from API, using role plan');
+          setCurrentPlan(rolePlan);
         } else {
-          // Fallback to user role/tier mapping
-          console.log('⚠️ No plan match from API, falling back to user role');
+          console.log('⚠️ No plan match from API or role');
           setCurrentPlan(getPlanFromUserRole());
         }
       } else {
