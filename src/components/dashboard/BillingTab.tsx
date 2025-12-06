@@ -433,9 +433,12 @@ export default function BillingTab({ currentUser }: BillingTabProps) {
 
       if (response.ok) {
         const data = await response.json();
-        if (data.client_secret) {
-          // Would need Stripe Elements to complete - for now show message
+        if (data.checkout_url) {
+          window.location.href = data.checkout_url;
+        } else if (data.client_secret) {
           toast.info("Payment setup initiated. Please complete in Stripe.");
+        } else {
+          toast.error("Failed to start payment method setup");
         }
       } else {
         toast.error("Failed to set up payment method");
@@ -493,6 +496,26 @@ export default function BillingTab({ currentUser }: BillingTabProps) {
       }
     } catch (error) {
       toast.error("Failed to open dashboard");
+    }
+  };
+
+  // Cancel Stripe Connect (clear connect ID)
+  const handleCancelConnect = async () => {
+    try {
+      const token = localStorage.getItem("auth_token");
+      const response = await fetch(`${ENV.API_URL}/api/billing/connect`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (response.ok) {
+        toast.success("Stripe Connect reset. You can restart onboarding.");
+        await fetchBillingData();
+      } else {
+        const err = await response.json();
+        toast.error(err.error || "Failed to reset Stripe Connect");
+      }
+    } catch (error) {
+      toast.error("Failed to reset Stripe Connect");
     }
   };
 
@@ -929,6 +952,15 @@ export default function BillingTab({ currentUser }: BillingTabProps) {
                     </p>
                   </div>
                 )}
+                <div className="mt-4 flex justify-center">
+                  <Button
+                    variant="outline"
+                    className="border-zinc-700 text-zinc-400 hover:bg-zinc-800"
+                    onClick={handleCancelConnect}
+                  >
+                    Cancel / Reset Stripe Connect
+                  </Button>
+                </div>
               </div>
             )}
           </CardContent>
