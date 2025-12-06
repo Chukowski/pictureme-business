@@ -234,6 +234,27 @@ export async function getEventConfig(userSlug: string, eventSlug: string): Promi
 }
 
 /**
+ * Get event configuration by event ID (short URL format)
+ * URL format: /e/:eventId/:eventSlug
+ */
+export async function getEventConfigById(eventId: number, eventSlug: string): Promise<EventConfig> {
+  const response = await fetch(`${getApiUrl()}/api/e/${eventId}/${eventSlug}`);
+
+  if (!response.ok) {
+    if (response.status === 404) {
+      throw new Error('Event not found');
+    }
+    throw new Error(`Failed to load event: ${response.statusText}`);
+  }
+
+  const data = await response.json();
+  if (data.postgres_event_id !== undefined) {
+    data.postgres_event_id = Number(data.postgres_event_id);
+  }
+  return data;
+}
+
+/**
  * Get photos for event feed
  */
 export async function getEventPhotos(userSlug: string, eventSlug: string, limit: number = 20, offset: number = 0): Promise<PhotoFeed[]> {

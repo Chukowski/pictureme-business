@@ -31,7 +31,7 @@ export default function BusinessDashboard({ currentUser, initialTab }: BusinessD
     useEffect(() => {
         const path = location.pathname;
         const tabFromPath = pathToTab[path] || initialTab || "events";
-        setActiveTab(tabFromPath);
+            setActiveTab(tabFromPath);
     }, [location.pathname, initialTab]);
 
     return (

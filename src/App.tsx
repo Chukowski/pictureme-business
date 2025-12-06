@@ -42,6 +42,7 @@ import ViewerStationPage from "./pages/ViewerStationPage";
 import BigScreenPage from "./pages/BigScreenPage";
 import { TermsPage } from "./pages/TermsPage";
 import { PrivacyPage } from "./pages/PrivacyPage";
+import ShortUrlEventPage from "./pages/ShortUrlEventPage";
 
 // CopilotKit imports (self-hosted, no cloud required)
 import { CopilotKit } from "@copilotkit/react-core";
@@ -164,6 +165,10 @@ const AppContent = () => {
 
             {/* Share page - no sidebar, clean display */}
             <Route path="/share/:shareCode" element={<SharePage />} />
+
+            {/* Short URL event routes - /e/:eventId/:eventSlug */}
+            <Route path="/e/:eventId/:eventSlug" element={<ShortUrlEventPage />} />
+            <Route path="/e/:eventId/:eventSlug/*" element={<ShortUrlEventPage />} />
 
             {/* Admin routes - no sidebar */}
             <Route path="/apply" element={<ApplyPage />} />
