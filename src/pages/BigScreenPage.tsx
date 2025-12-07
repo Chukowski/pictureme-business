@@ -291,14 +291,30 @@ export function BigScreenPage() {
                   <img
                     src={photoUrl}
                     alt={`Photo ${index + 1}`}
-                    className="w-full h-auto object-contain bg-zinc-900"
+                    className={cn(
+                      "w-full h-auto object-contain bg-zinc-900",
+                      !featuredAlbum.is_paid && "blur-md"
+                    )}
                   />
+                  {/* Watermark overlay for unpaid albums */}
+                  {!featuredAlbum.is_paid && (
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                      <div className="bg-black/60 backdrop-blur-sm px-8 py-4 rounded-2xl border border-white/20">
+                        <p className="text-white text-2xl font-bold tracking-wider">
+                          PREVIEW
+                        </p>
+                      </div>
+                    </div>
+                  )}
                   {/* Gradient overlay at bottom */}
                   <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/60 to-transparent" />
                   {/* Photo number badge */}
                   <div 
-                    className="absolute bottom-4 right-4 px-4 py-2 rounded-full flex items-center gap-2 text-white font-bold text-lg backdrop-blur-sm"
-                    style={{ backgroundColor: `${primaryColor}CC` }}
+                    className={cn(
+                      "absolute bottom-4 right-4 px-4 py-2 rounded-full flex items-center gap-2 text-white font-bold text-lg backdrop-blur-sm",
+                      !featuredAlbum.is_paid && "bg-amber-600/90"
+                    )}
+                    style={{ backgroundColor: featuredAlbum.is_paid ? `${primaryColor}CC` : undefined }}
                   >
                     <Sparkles className="w-4 h-4" />
                     {index + 1} / {featuredPhotos.length}
@@ -306,6 +322,15 @@ export function BigScreenPage() {
                 </div>
               ))}
             </div>
+            
+            {/* Unpaid banner */}
+            {!featuredAlbum.is_paid && (
+              <div className="mt-6 text-center animate-pulse">
+                <Badge className="bg-amber-500/20 text-amber-400 border border-amber-500/30 text-lg px-6 py-2">
+                  💳 Payment pending - Photos will unlock after purchase
+                </Badge>
+              </div>
+            )}
           </div>
         ) : (
           /* Idle State - Event Branding with QR */

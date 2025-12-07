@@ -15,6 +15,7 @@ function getApiUrl(): string {
 export interface FeaturedAlbum {
   album_code: string;
   visitor_name?: string;
+  is_paid: boolean;
   event_id: number;
   user_slug: string;
   event_slug: string;
@@ -27,6 +28,7 @@ export interface FeaturedAlbum {
 export async function broadcastToBigScreen(data: {
   albumCode: string;
   visitorName?: string;
+  isPaid: boolean;
   eventId: number | string;
   userSlug: string;
   eventSlug: string;
@@ -42,6 +44,7 @@ export async function broadcastToBigScreen(data: {
       body: JSON.stringify({
         album_code: data.albumCode,
         visitor_name: data.visitorName || '',
+        is_paid: data.isPaid,
         user_slug: data.userSlug,
         event_slug: data.eventSlug,
       }),
