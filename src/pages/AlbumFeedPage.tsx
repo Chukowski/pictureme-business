@@ -1221,21 +1221,24 @@ export default function AlbumFeedPage() {
                 </CardContent>
               </Card>
 
-              {/* QR Code - Real QR that links to booth with album */}
+              {/* QR Code - Links to the shared album view */}
               <Card className="bg-zinc-900/80 border-white/10 backdrop-blur-sm">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-white text-sm flex items-center gap-2 font-bold">
                     <QrCode className="w-4 h-4 text-[#D1F349]" />
-                    Album QR Code
+                    Share Album
                   </CardTitle>
                   <CardDescription className="text-zinc-400 text-xs">
-                    Scan to add more photos
+                    Scan to view & share this album
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="p-4 pt-0 text-center space-y-3">
                   <div className="p-4 bg-white rounded-lg inline-block">
                     <QRCodeSVG 
-                      value={`${window.location.origin}/${userSlug}/${eventSlug}/booth?album=${albumId}`}
+                      value={config?.postgres_event_id 
+                        ? `${window.location.origin}/e/${config.postgres_event_id}/${eventSlug}/album/${albumId}`
+                        : `${window.location.origin}/${userSlug}/${eventSlug}/album/${albumId}`
+                      }
                       size={96}
                       level="M"
                       includeMargin={false}
@@ -1259,9 +1262,11 @@ export default function AlbumFeedPage() {
                       <Button
                         size="sm"
                         onClick={async () => {
-                          const boothUrl = `${window.location.origin}/${userSlug}/${eventSlug}/booth?album=${albumId}`;
-                          await navigator.clipboard.writeText(boothUrl);
-                          toast.success('Booth URL copied!');
+                          const albumUrl = config?.postgres_event_id 
+                            ? `${window.location.origin}/e/${config.postgres_event_id}/${eventSlug}/album/${albumId}`
+                            : `${window.location.origin}/${userSlug}/${eventSlug}/album/${albumId}`;
+                          await navigator.clipboard.writeText(albumUrl);
+                          toast.success('Album URL copied!');
                         }}
                         className="flex-1 bg-white/10 hover:bg-white/20 text-white border border-white/20 text-xs font-medium"
                       >

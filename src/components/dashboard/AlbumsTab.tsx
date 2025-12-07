@@ -436,9 +436,14 @@ export default function AlbumsTab({ currentUser }: AlbumsTabProps) {
             <div className="mt-4">
               <button
                 onClick={() => {
-                  const displayUrl = `${window.location.origin}/${currentUser.slug}/${selectedEvent.slug}/display`;
+                  let displayUrl: string;
+                  if (selectedEvent.postgres_event_id) {
+                    displayUrl = `${window.location.origin}/e/${selectedEvent.postgres_event_id}/${selectedEvent.slug}/bigscreen`;
+                  } else {
+                    displayUrl = `${window.location.origin}/${currentUser.slug}/${selectedEvent.slug}/bigscreen`;
+                  }
                   window.open(displayUrl, 'bigscreen', 'width=1920,height=1080');
-                  toast.success('Display window opened! Move it to your big screen.');
+                  toast.success('Big Screen opened! Move it to your display.');
                 }}
                 className="w-full h-auto py-3 flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500/20 to-purple-500/20 border border-cyan-500/30 text-cyan-400 hover:from-cyan-500/30 hover:to-purple-500/30 transition-all"
                 title="Open big screen display for viewer station"

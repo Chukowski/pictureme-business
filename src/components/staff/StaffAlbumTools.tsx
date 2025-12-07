@@ -251,12 +251,20 @@ export function StaffAlbumTools({
   };
 
   const handleOpenDisplay = () => {
-    if (!userSlug || !eventSlug) {
+    if (!eventSlug) {
       toast.error('Event URLs not configured');
       return;
     }
-    const displayUrl = `${window.location.origin}/${userSlug}/${eventSlug}/display`;
-    window.open(displayUrl, '_blank');
+    let displayUrl: string;
+    if (postgresEventId) {
+      displayUrl = `${window.location.origin}/e/${postgresEventId}/${eventSlug}/bigscreen`;
+    } else if (userSlug) {
+      displayUrl = `${window.location.origin}/${userSlug}/${eventSlug}/bigscreen`;
+    } else {
+      toast.error('Unable to open Big Screen');
+      return;
+    }
+    window.open(displayUrl, 'bigscreen', 'width=1920,height=1080');
   };
 
   return (
@@ -732,10 +740,13 @@ export function StaffAlbumTools({
                 </div>
               )}
 
-              {bigScreenMode && showQR && userSlug && eventSlug && (
+              {bigScreenMode && showQR && eventSlug && (
                 <div className="flex justify-center p-4 bg-white rounded-lg">
                   <QRCodeSVG 
-                    value={`${window.location.origin}/${userSlug}/${eventSlug}/display`}
+                    value={postgresEventId 
+                      ? `${window.location.origin}/e/${postgresEventId}/${eventSlug}/bigscreen`
+                      : `${window.location.origin}/${userSlug}/${eventSlug}/bigscreen`
+                    }
                     size={150}
                   />
                 </div>

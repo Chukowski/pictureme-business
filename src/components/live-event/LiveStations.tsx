@@ -66,23 +66,33 @@ export function LiveStations({ event, mode = 'grid' }: LiveStationsProps) {
   ];
 
   const getStationUrl = (type: string) => {
-    if (!event?.user_slug || !event?.slug) return '';
+    if (!event?.slug) return '';
     const baseUrl = window.location.origin;
     
     // URL mapping for different station types
     let path = type;
     if (type === 'bigscreen') {
-      path = 'display'; // Big Screen maps to /:userSlug/:eventSlug/display
+      path = 'bigscreen';
     } else if (type === 'booth') {
-      path = 'booth'; // Main Booth maps to /:userSlug/:eventSlug/booth
+      path = 'booth';
     } else if (type === 'registration') {
       path = 'registration';
     } else if (type === 'viewer') {
       path = 'viewer';
     }
 
-    // Construct URL: baseUrl / userSlug / eventSlug / path
-    return `${baseUrl}/${event.user_slug}/${event.slug}/${path}`;
+    // Prefer short URL format with event ID if available
+    if (event?.postgres_event_id || event?.id) {
+      const eventId = event.postgres_event_id || event.id;
+      return `${baseUrl}/e/${eventId}/${event.slug}/${path}`;
+    }
+    
+    // Fallback to user slug format
+    if (event?.user_slug) {
+      return `${baseUrl}/${event.user_slug}/${event.slug}/${path}`;
+    }
+    
+    return '';
   };
 
   const handleCopy = (id: string, type: string) => {

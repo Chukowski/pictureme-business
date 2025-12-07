@@ -29,6 +29,7 @@ import { AlbumStation } from '@/services/eventsApi';
 interface StationLinksCardProps {
   userSlug: string;
   eventSlug: string;
+  postgresEventId?: number;
   stations?: AlbumStation[];
   albumTrackingEnabled?: boolean;
 }
@@ -58,6 +59,7 @@ const stationColors: Record<string, string> = {
 export function StationLinksCard({
   userSlug,
   eventSlug,
+  postgresEventId,
   stations,
   albumTrackingEnabled = false,
 }: StationLinksCardProps) {
@@ -66,13 +68,16 @@ export function StationLinksCard({
   // Use provided stations or defaults
   const displayStations = stations?.length ? stations : (albumTrackingEnabled ? defaultStations : []);
 
+  // Helper to build URL with short format preference
+  const buildUrl = (path: string) => {
+    if (postgresEventId) {
+      return `${window.location.origin}/e/${postgresEventId}/${eventSlug}/${path}`;
+    }
+    return `${window.location.origin}/${userSlug}/${eventSlug}/${path}`;
+  };
+
   const handleCopy = async (station: AlbumStation) => {
-    const url = getStationUrl({
-      userSlug,
-      eventSlug,
-      stationType: station.type,
-      stationId: station.id,
-    });
+    const url = buildUrl(station.type);
     
     const success = await copyToClipboard(url);
     if (success) {
@@ -85,17 +90,12 @@ export function StationLinksCard({
   };
 
   const handleOpen = (station: AlbumStation) => {
-    const url = getStationUrl({
-      userSlug,
-      eventSlug,
-      stationType: station.type,
-      stationId: station.id,
-    });
+    const url = buildUrl(station.type);
     openInNewTab(url);
   };
 
   // Get big screen URL
-  const bigScreenUrl = `${window.location.origin}/${userSlug}/${eventSlug}/bigscreen`;
+  const bigScreenUrl = buildUrl('bigscreen');
 
   if (!albumTrackingEnabled && displayStations.length === 0) {
     return null;

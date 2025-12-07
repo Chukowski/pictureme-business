@@ -192,7 +192,15 @@ export function ViewerStationPage() {
 
   // Handle big screen - open display page
   const handleBigScreen = () => {
-    const displayUrl = `${window.location.origin}/${userSlug}/${eventSlug}/display?album=${album?.code}`;
+    let displayUrl: string;
+    if (config?.postgres_event_id && eventSlug) {
+      displayUrl = `${window.location.origin}/e/${config.postgres_event_id}/${eventSlug}/bigscreen`;
+    } else {
+      displayUrl = `${window.location.origin}/${userSlug}/${eventSlug}/bigscreen`;
+    }
+    if (album?.code) {
+      displayUrl += `?album=${album.code}`;
+    }
     window.open(displayUrl, 'bigscreen', 'width=1920,height=1080');
     toast.success('Big Screen Display opened!');
   };
