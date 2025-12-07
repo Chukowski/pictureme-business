@@ -246,12 +246,25 @@ export function BigScreenPage() {
         {featuredAlbum && featuredPhotos.length > 0 ? (
           <div className="animate-in fade-in duration-500 w-full max-w-7xl">
             {/* Featured Header */}
-            <div className="flex items-center justify-center gap-4 mb-6">
-              <Star className="w-10 h-10 text-[#D1F349] fill-[#D1F349] animate-pulse" />
-              <h2 className="text-4xl font-bold text-white tracking-tight">
-                {featuredAlbum.album_code}
-              </h2>
-              <Star className="w-10 h-10 text-[#D1F349] fill-[#D1F349] animate-pulse" />
+            <div className="flex flex-col items-center justify-center gap-2 mb-6">
+              <div className="flex items-center gap-4">
+                <Star className="w-10 h-10 text-[#D1F349] fill-[#D1F349] animate-pulse" />
+                {featuredAlbum.visitor_name ? (
+                  <h2 className="text-5xl font-bold text-white tracking-tight">
+                    {featuredAlbum.visitor_name}
+                  </h2>
+                ) : (
+                  <h2 className="text-4xl font-bold text-white tracking-tight">
+                    {featuredAlbum.album_code}
+                  </h2>
+                )}
+                <Star className="w-10 h-10 text-[#D1F349] fill-[#D1F349] animate-pulse" />
+              </div>
+              {featuredAlbum.visitor_name && (
+                <p className="text-xl text-zinc-400 font-mono">
+                  Album: {featuredAlbum.album_code}
+                </p>
+              )}
             </div>
 
             {/* Photo Grid - Large Display */}
@@ -393,7 +406,7 @@ export function BigScreenPage() {
               {featuredAlbum ? (
                 <Badge className="bg-[#D1F349] text-black">
                   <Star className="w-3 h-3 mr-1 fill-current" />
-                  Featuring: {featuredAlbum.album_code}
+                  Featuring: {featuredAlbum.visitor_name || featuredAlbum.album_code}
                 </Badge>
               ) : (
                 <Badge

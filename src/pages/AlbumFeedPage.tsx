@@ -1185,6 +1185,7 @@ export default function AlbumFeedPage({ albumIdOverride }: AlbumFeedPageProps = 
                           if (checked && albumId && config?.postgres_event_id) {
                             const success = await broadcastToBigScreen({
                               albumCode: albumId,
+                              visitorName: albumInfo?.visitorName,
                               eventId: config.postgres_event_id,
                               userSlug,
                               eventSlug,
