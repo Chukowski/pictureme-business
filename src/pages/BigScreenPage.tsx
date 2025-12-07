@@ -116,6 +116,15 @@ export function BigScreenPage() {
     const cleanup = pollBigScreen(
       config.postgres_event_id,
       (album) => {
+        // Debug log
+        if (album) {
+          console.log('🖥️ BigScreen received album:', {
+            album_code: album.album_code,
+            visitor_name: album.visitor_name,
+            is_paid: album.is_paid,
+            is_paid_type: typeof album.is_paid,
+          });
+        }
         // Only update if album changed
         setFeaturedAlbum((prev) => {
           if (!album && !prev) return prev;

@@ -1183,6 +1183,12 @@ export default function AlbumFeedPage({ albumIdOverride }: AlbumFeedPageProps = 
                         onCheckedChange={async (checked) => {
                           setBigScreenMode(checked);
                           if (checked && albumId && config?.postgres_event_id) {
+                            console.log('🖥️ Sending to BigScreen:', {
+                              albumCode: albumId,
+                              visitorName: albumInfo?.visitorName,
+                              isPaid: albumInfo?.isPaid,
+                              albumInfo,
+                            });
                             const success = await broadcastToBigScreen({
                               albumCode: albumId,
                               visitorName: albumInfo?.visitorName,
@@ -1192,7 +1198,7 @@ export default function AlbumFeedPage({ albumIdOverride }: AlbumFeedPageProps = 
                               eventSlug,
                             });
                             if (success) {
-                              toast.success('Album sent to Big Screen');
+                              toast.success(`Album sent to Big Screen (${albumInfo?.isPaid ? 'paid' : 'unpaid'})`);
                             } else {
                               toast.error('Failed to send to Big Screen');
                               setBigScreenMode(false);
