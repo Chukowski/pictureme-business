@@ -23,6 +23,7 @@ import { toast } from 'sonner';
 import { EventNotFound } from '@/components/EventNotFound';
 import { getAlbum, getAlbumPhotos, createAlbumCheckout, updateAlbumStatus, deleteAlbumPhoto, Album, sendAlbumEmail, getEmailStatus, requestAlbumPayment } from '@/services/eventsApi';
 import { QRCodeSVG } from 'qrcode.react';
+import { broadcastToBigScreen, clearBigScreen } from '@/services/bigScreenBroadcast';
 
 // Mock photo data - will be replaced with real API
 interface AlbumPhoto {
@@ -213,6 +214,19 @@ export default function AlbumFeedPage() {
     } catch (error) {
       console.error('Failed to mark complete:', error);
       toast.error('Failed to mark album as complete');
+    }
+  };
+
+  const handleMarkPaid = async () => {
+    if (!albumId || !albumInfo) return;
+    
+    try {
+      await updateAlbumStatus(albumId, 'paid');
+      setAlbumInfo({ ...albumInfo, isPaid: true });
+      toast.success('Album marked as paid - now unlocked!');
+    } catch (error) {
+      console.error('Failed to mark as paid:', error);
+      toast.error('Failed to mark album as paid');
     }
   };
 
@@ -578,7 +592,14 @@ export default function AlbumFeedPage() {
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => navigate(-1)}
+              onClick={() => {
+                // Navigate to staff dashboard if staff, otherwise go back
+                if (isStaff) {
+                  navigate(`/${userSlug}/${eventSlug}/staff`);
+                } else {
+                  navigate(-1);
+                }
+              }}
               className="text-zinc-400 hover:text-white"
             >
               <ArrowLeft className="w-5 h-5" />
@@ -611,7 +632,10 @@ export default function AlbumFeedPage() {
                 variant="outline"
                 size="sm"
                 onClick={() => setShowStaffTools(!showStaffTools)}
-                className="border-white/20 text-zinc-300"
+                className={showStaffTools 
+                  ? "bg-[#D1F349] text-black border-[#D1F349] hover:bg-[#c5e73d]" 
+                  : "bg-zinc-800 border-white/20 text-white hover:bg-zinc-700"
+                }
               >
                 Staff Tools
               </Button>
@@ -929,6 +953,29 @@ export default function AlbumFeedPage() {
                       <CheckCircle2 className="w-4 h-4 mr-2" />
                       Mark Complete
                     </Button>
+                    {config?.albumTracking?.rules?.printReady && (
+                      <Button
+                        size="sm"
+                        onClick={handleMarkPaid}
+                        disabled={albumInfo?.isPaid}
+                        className={albumInfo?.isPaid 
+                          ? "w-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-medium cursor-default"
+                          : "w-full bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 font-medium"
+                        }
+                      >
+                        {albumInfo?.isPaid ? (
+                          <>
+                            <Unlock className="w-4 h-4 mr-2" />
+                            Paid & Unlocked
+                          </>
+                        ) : (
+                          <>
+                            <CreditCard className="w-4 h-4 mr-2" />
+                            Mark as Paid
+                          </>
+                        )}
+                      </Button>
+                    )}
                     <Button
                       size="sm"
                       onClick={handleDownloadAll}
@@ -970,7 +1017,25 @@ export default function AlbumFeedPage() {
                       <p className="text-xs text-zinc-500 uppercase tracking-wider font-medium">Big Screen Mode</p>
                       <Switch
                         checked={bigScreenMode}
-                        onCheckedChange={setBigScreenMode}
+                        onCheckedChange={async (checked) => {
+                          setBigScreenMode(checked);
+                          if (checked && albumId && config?.postgres_event_id) {
+                            const success = await broadcastToBigScreen({
+                              albumCode: albumId,
+                              eventId: config.postgres_event_id,
+                              userSlug,
+                              eventSlug,
+                            });
+                            if (success) {
+                              toast.success('Album sent to Big Screen');
+                            } else {
+                              toast.error('Failed to send to Big Screen');
+                              setBigScreenMode(false);
+                            }
+                          } else if (config?.postgres_event_id) {
+                            await clearBigScreen(config.postgres_event_id);
+                          }
+                        }}
                         className="data-[state=checked]:bg-[#D1F349]"
                       />
                     </div>

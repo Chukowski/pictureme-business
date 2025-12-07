@@ -23,11 +23,15 @@ import {
   Users,
   Clock,
   Loader2,
+  Star,
+  Sparkles,
 } from 'lucide-react';
-import { getEventAlbums, Album } from '@/services/eventsApi';
+import { getEventAlbums, getAlbumPhotos, Album } from '@/services/eventsApi';
 import { AlbumStackCard } from '@/components/album';
 import { isMockMode, getMockAlbums, getMockAlbumStats, MockAlbum } from '@/dev/mockAlbums';
 import { cn } from '@/lib/utils';
+import { pollBigScreen, FeaturedAlbum } from '@/services/bigScreenBroadcast';
+import { QRCodeSVG } from 'qrcode.react';
 
 const REFRESH_INTERVAL = 10000; // 10 seconds
 
@@ -55,6 +59,8 @@ export function BigScreenPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
   const [stats, setStats] = useState({ total: 0, completed: 0, in_progress: 0, photos: 0 });
+  const [featuredAlbum, setFeaturedAlbum] = useState<FeaturedAlbum | null>(null);
+  const [featuredPhotos, setFeaturedPhotos] = useState<string[]>([]);
 
   const useMock = isMockMode();
   const focusedAlbum = searchParams.get('album');
@@ -103,6 +109,55 @@ export function BigScreenPage() {
     return () => clearInterval(interval);
   }, [loadAlbums]);
 
+  // Poll for BigScreen updates from API
+  useEffect(() => {
+    if (!config?.postgres_event_id) return;
+
+    const cleanup = pollBigScreen(
+      config.postgres_event_id,
+      (album) => {
+        // Only update if album changed
+        setFeaturedAlbum((prev) => {
+          if (!album && !prev) return prev;
+          if (!album) return null;
+          if (prev && prev.album_code === album.album_code && prev.timestamp === album.timestamp) {
+            return prev;
+          }
+          return album;
+        });
+      },
+      3000 // Poll every 3 seconds
+    );
+
+    return cleanup;
+  }, [config?.postgres_event_id]);
+
+  // Load featured album photos when it changes
+  useEffect(() => {
+    if (!featuredAlbum) {
+      setFeaturedPhotos([]);
+      return;
+    }
+
+    const loadFeaturedPhotos = async () => {
+      try {
+        const photos = await getAlbumPhotos(featuredAlbum.album_code);
+        const urls = photos.map((p: { url?: string; processed_image_url?: string }) => 
+          p.url || p.processed_image_url || ''
+        ).filter(Boolean);
+        setFeaturedPhotos(urls);
+      } catch (error) {
+        console.error('Failed to load featured album photos:', error);
+        setFeaturedPhotos([]);
+      }
+    };
+
+    loadFeaturedPhotos();
+    // Refresh featured photos periodically
+    const interval = setInterval(loadFeaturedPhotos, REFRESH_INTERVAL);
+    return () => clearInterval(interval);
+  }, [featuredAlbum]);
+
   // Loading state
   if (configLoading || isLoading) {
     return (
@@ -136,7 +191,7 @@ export function BigScreenPage() {
     : albums;
 
   return (
-    <div className="min-h-screen bg-zinc-950 overflow-hidden">
+    <div className="min-h-screen bg-zinc-950 overflow-hidden flex flex-col">
       {/* Header */}
       <header
         className="sticky top-0 z-10 border-b border-zinc-800/50 backdrop-blur-xl"
@@ -186,56 +241,132 @@ export function BigScreenPage() {
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-6 py-8">
-        {displayAlbums.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-32">
-            <div
-              className="w-24 h-24 rounded-full flex items-center justify-center mb-6"
-              style={{ backgroundColor: `${primaryColor}20` }}
-            >
-              <Camera className="w-12 h-12" style={{ color: primaryColor }} />
+      <main className="flex-1 flex items-center justify-center px-6 py-8">
+        {/* Featured Album Display - Full Screen Photos */}
+        {featuredAlbum && featuredPhotos.length > 0 ? (
+          <div className="animate-in fade-in duration-500 w-full max-w-7xl">
+            {/* Featured Header */}
+            <div className="flex items-center justify-center gap-4 mb-6">
+              <Star className="w-10 h-10 text-[#D1F349] fill-[#D1F349] animate-pulse" />
+              <h2 className="text-4xl font-bold text-white tracking-tight">
+                {featuredAlbum.album_code}
+              </h2>
+              <Star className="w-10 h-10 text-[#D1F349] fill-[#D1F349] animate-pulse" />
             </div>
-            <h2 className="text-2xl font-semibold text-white mb-2">
-              Waiting for Albums
-            </h2>
-            <p className="text-zinc-400 text-center max-w-md">
-              Albums will appear here as guests register and take photos at the event.
-            </p>
+
+            {/* Photo Grid - Large Display */}
+            <div className={cn(
+              "grid gap-8 mx-auto",
+              featuredPhotos.length === 1 && "grid-cols-1 max-w-3xl",
+              featuredPhotos.length === 2 && "grid-cols-2 max-w-5xl",
+              featuredPhotos.length === 3 && "grid-cols-3 max-w-6xl",
+              featuredPhotos.length >= 4 && "grid-cols-2 lg:grid-cols-4 max-w-7xl"
+            )}>
+              {featuredPhotos.map((photoUrl, index) => (
+                <div
+                  key={`${featuredAlbum.album_code}-${index}`}
+                  className={cn(
+                    "relative rounded-3xl overflow-hidden",
+                    "animate-in fade-in zoom-in-95 duration-700",
+                    "ring-2 ring-white/10 hover:ring-white/30 transition-all"
+                  )}
+                  style={{ 
+                    animationDelay: `${index * 200}ms`,
+                    boxShadow: `0 30px 60px -15px ${primaryColor}50, 0 0 40px -10px ${primaryColor}30`
+                  }}
+                >
+                  <img
+                    src={photoUrl}
+                    alt={`Photo ${index + 1}`}
+                    className="w-full h-auto object-contain bg-zinc-900"
+                  />
+                  {/* Gradient overlay at bottom */}
+                  <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/60 to-transparent" />
+                  {/* Photo number badge */}
+                  <div 
+                    className="absolute bottom-4 right-4 px-4 py-2 rounded-full flex items-center gap-2 text-white font-bold text-lg backdrop-blur-sm"
+                    style={{ backgroundColor: `${primaryColor}CC` }}
+                  >
+                    <Sparkles className="w-4 h-4" />
+                    {index + 1} / {featuredPhotos.length}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-            {displayAlbums.map((album, index) => {
-              // Get first photo as cover
-              const coverPhoto = 'photos' in album && album.photos.length > 0
-                ? album.photos[0].url || album.photos[0].thumbnail_url
-                : undefined;
-              
-              const photoCount = 'photos' in album ? album.photos.length : 0;
+          /* Idle State - Event Branding with QR */
+          <div className="flex flex-col items-center justify-center text-center animate-in fade-in duration-1000">
+            {/* Event Logo */}
+            {config.branding?.logoPath ? (
+              <img 
+                src={config.branding.logoPath} 
+                alt={config.title}
+                className="h-32 md:h-48 object-contain mb-8 drop-shadow-2xl"
+              />
+            ) : (
+              <div 
+                className="w-32 h-32 md:w-48 md:h-48 rounded-3xl flex items-center justify-center mb-8"
+                style={{ 
+                  backgroundColor: `${primaryColor}20`,
+                  boxShadow: `0 0 60px ${primaryColor}40`
+                }}
+              >
+                <Camera className="w-16 h-16 md:w-24 md:h-24" style={{ color: primaryColor }} />
+              </div>
+            )}
+            
+            {/* Event Title */}
+            <h1 className="text-4xl md:text-6xl font-bold text-white mb-4 tracking-tight">
+              {config.title}
+            </h1>
+            
+            {/* Tagline */}
+            <p className="text-xl md:text-2xl text-zinc-400 mb-12 max-w-2xl">
+              {config.theme?.tagline || 'AI-Powered Photo Experience'}
+            </p>
 
-              return (
+            {/* QR Code Section */}
+            <div className="relative">
+              {/* Glowing background */}
+              <div 
+                className="absolute inset-0 blur-3xl opacity-30 rounded-full"
+                style={{ backgroundColor: primaryColor }}
+              />
+              
+              <div className="relative bg-white p-6 md:p-8 rounded-3xl shadow-2xl">
+                <QRCodeSVG 
+                  value={`${window.location.origin}/${userSlug}/${eventSlug}/registration`}
+                  size={200}
+                  level="M"
+                  includeMargin={false}
+                  bgColor="#ffffff"
+                  fgColor="#000000"
+                />
+              </div>
+            </div>
+            
+            <p className="text-zinc-500 mt-8 text-lg">
+              Scan to create your album
+            </p>
+
+            {/* Animated particles/sparkles */}
+            <div className="absolute inset-0 pointer-events-none overflow-hidden">
+              {[...Array(6)].map((_, i) => (
                 <div
-                  key={album.id || album.code}
-                  className={cn(
-                    'animate-in fade-in slide-in-from-bottom-4',
-                    'duration-500'
-                  )}
-                  style={{ animationDelay: `${index * 50}ms` }}
-                >
-                  <AlbumStackCard
-                    albumId={String(album.id)}
-                    albumCode={album.code}
-                    ownerName={album.owner_name}
-                    status={album.status as any}
-                    paymentStatus={'payment_status' in album ? album.payment_status as any : 'free'}
-                    photoCount={photoCount}
-                    maxPhotos={'max_photos' in album ? album.max_photos : 5}
-                    coverPhotoUrl={coverPhoto}
-                    createdAt={album.created_at}
-                    primaryColor={primaryColor}
-                  />
-                </div>
-              );
-            })}
+                  key={i}
+                  className="absolute w-2 h-2 rounded-full animate-pulse"
+                  style={{
+                    backgroundColor: primaryColor,
+                    opacity: 0.3,
+                    left: `${15 + i * 15}%`,
+                    top: `${20 + (i % 3) * 25}%`,
+                    animationDelay: `${i * 0.5}s`,
+                    animationDuration: '3s'
+                  }}
+                />
+              ))}
+            </div>
           </div>
         )}
       </main>
@@ -259,13 +390,20 @@ export function BigScreenPage() {
                   Powered by {config.theme.brandName}
                 </span>
               )}
-              <Badge
-                variant="outline"
-                className="border-zinc-700 text-zinc-400"
-              >
-                <Monitor className="w-3 h-3 mr-1" />
-                Big Screen Mode
-              </Badge>
+              {featuredAlbum ? (
+                <Badge className="bg-[#D1F349] text-black">
+                  <Star className="w-3 h-3 mr-1 fill-current" />
+                  Featuring: {featuredAlbum.album_code}
+                </Badge>
+              ) : (
+                <Badge
+                  variant="outline"
+                  className="border-zinc-700 text-zinc-400"
+                >
+                  <Monitor className="w-3 h-3 mr-1" />
+                  Big Screen Mode
+                </Badge>
+              )}
             </div>
           </div>
         </div>

@@ -6,7 +6,7 @@ import { EventNotFound } from '@/components/EventNotFound';
 import { EventFeedPage } from './EventFeedPage';
 import AlbumFeedPage from './AlbumFeedPage';
 import StaffDashboard from './StaffDashboard';
-import ViewerDisplayPage from './ViewerDisplayPage';
+// ViewerDisplayPage removed - now using BigScreenPage for both /display and /bigscreen
 import ViewerStationPage from './ViewerStationPage';
 import BigScreenPage from './BigScreenPage';
 import { EventProvider } from '@/contexts/EventContext';
@@ -68,13 +68,11 @@ export const ShortUrlEventPage = () => {
       return renderWithProvider(<StaffDashboard />);
     
     case 'display':
-      return renderWithProvider(<ViewerDisplayPage />);
+    case 'bigscreen':
+      return renderWithProvider(<BigScreenPage />);
     
     case 'viewer':
       return renderWithProvider(<ViewerStationPage />);
-    
-    case 'bigscreen':
-      return renderWithProvider(<BigScreenPage />);
     
     case 'registration':
     case 'booth':

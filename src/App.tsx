@@ -268,7 +268,7 @@ const AppContent = () => {
             <Route path="/:userSlug/:eventSlug/feed" element={<EventFeedPage />} />
             <Route path="/:userSlug/:eventSlug/album/:albumId" element={<AlbumFeedPage />} />
             <Route path="/:userSlug/:eventSlug/staff" element={<StaffDashboard />} />
-            <Route path="/:userSlug/:eventSlug/display" element={<ViewerDisplayPage />} />
+            <Route path="/:userSlug/:eventSlug/display" element={<Navigate to="../bigscreen" replace />} />
             
             {/* Station-specific routes for multi-station flow */}
             <Route path="/:userSlug/:eventSlug/registration" element={<PhotoBoothPage />} />

@@ -45,6 +45,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { ENV } from '@/config/env';
+import { broadcastToBigScreen } from '@/services/bigScreenBroadcast';
 
 // Mock data types
 interface Album {
@@ -936,13 +937,22 @@ export default function StaffDashboard() {
                         variant="outline"
                         className="h-auto py-4 flex-col gap-2 bg-zinc-900/50 border-white/10 hover:bg-cyan-500/20 hover:border-cyan-500/30 text-zinc-300 hover:text-white"
                         onClick={() => {
-                          const displayUrl = `${window.location.origin}/${effectiveUserSlug}/${effectiveEventSlug}/display`;
+                          // Build URL - prefer short URL format if we have postgres_event_id
+                          let displayUrl: string;
+                          if (config?.postgres_event_id && effectiveEventSlug) {
+                            displayUrl = `${window.location.origin}/e/${config.postgres_event_id}/${effectiveEventSlug}/bigscreen`;
+                          } else if (effectiveUserSlug && effectiveEventSlug) {
+                            displayUrl = `${window.location.origin}/${effectiveUserSlug}/${effectiveEventSlug}/bigscreen`;
+                          } else {
+                            toast.error('Unable to open Big Screen - missing event info');
+                            return;
+                          }
                           window.open(displayUrl, 'bigscreen', 'width=1920,height=1080');
-                          toast.success('Display window opened! Move it to your big screen.');
+                          toast.success('Big Screen window opened! Move it to your display.');
                         }}
                       >
                         <MonitorPlay className="w-6 h-6 text-cyan-400" />
-                        <span>Open Display Window</span>
+                        <span>Open Big Screen</span>
                       </Button>
                       <Button
                         variant="outline"
@@ -966,25 +976,46 @@ export default function StaffDashboard() {
                           type="text"
                           placeholder="Enter album code..."
                           className="flex-1 px-3 py-2 rounded-lg bg-zinc-800 border border-white/10 text-white placeholder:text-zinc-500"
-                          onKeyDown={(e) => {
+                          id="bigscreen-album-input"
+                          onKeyDown={async (e) => {
                             if (e.key === 'Enter') {
                               const input = e.target as HTMLInputElement;
-                              if (input.value) {
-                                localStorage.setItem(`display_album_${eventSlug}`, input.value);
-                                toast.success(`Sending album ${input.value} to display...`);
-                                input.value = '';
+                              if (input.value && config?.postgres_event_id) {
+                                const success = await broadcastToBigScreen({
+                                  albumCode: input.value,
+                                  eventId: config.postgres_event_id,
+                                  userSlug: effectiveUserSlug,
+                                  eventSlug: effectiveEventSlug,
+                                });
+                                if (success) {
+                                  toast.success(`Album ${input.value} sent to Big Screen!`);
+                                  input.value = '';
+                                } else {
+                                  toast.error('Failed to send to Big Screen');
+                                }
                               }
                             }
                           }}
                         />
                         <Button
                           className="bg-cyan-600 hover:bg-cyan-500 text-white"
-                          onClick={(e) => {
-                            const input = (e.target as HTMLElement).parentElement?.querySelector('input');
-                            if (input?.value) {
-                              localStorage.setItem(`display_album_${eventSlug}`, input.value);
-                              toast.success(`Sending album ${input.value} to display...`);
-                              input.value = '';
+                          onClick={async () => {
+                            const input = document.getElementById('bigscreen-album-input') as HTMLInputElement;
+                            if (input?.value && config?.postgres_event_id) {
+                              const success = await broadcastToBigScreen({
+                                albumCode: input.value,
+                                eventId: config.postgres_event_id,
+                                userSlug: effectiveUserSlug,
+                                eventSlug: effectiveEventSlug,
+                              });
+                              if (success) {
+                                toast.success(`Album ${input.value} sent to Big Screen!`);
+                                input.value = '';
+                              } else {
+                                toast.error('Failed to send to Big Screen');
+                              }
+                            } else if (!input?.value) {
+                              toast.error('Please enter an album code');
                             }
                           }}
                         >
