@@ -28,6 +28,13 @@ import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import { getCurrentUser } from "@/services/eventsApi";
 import { CameraCapture } from "@/components/CameraCapture";
@@ -170,6 +177,61 @@ export default function CreatorStudioPage() {
   const [historyLoaded, setHistoryLoaded] = useState(false);
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [showSaveTemplate, setShowSaveTemplate] = useState(false);
+  
+  // History actions
+  const handleDeleteHistory = (id: string) => {
+    setHistory((prev) => prev.filter((item) => item.id !== id));
+  };
+
+  const handleReusePrompt = (item: HistoryItem) => {
+    setPrompt(item.prompt || "");
+    if (item.model) setModel(item.model);
+    if (item.ratio) setAspectRatio(item.ratio);
+    setMode(item.type);
+    setViewState("create");
+    toast.success("Prompt reloaded from history");
+  };
+
+  const handleUseAsTemplate = (item: HistoryItem) => {
+    if (item.type === "video") {
+      toast.error("Solo puedes usar imágenes como template");
+      return;
+    }
+    const tmpl: MarketplaceTemplate = {
+      id: `history-${item.id}`,
+      name: "From history",
+      prompt: item.prompt,
+      images: [item.url],
+      ai_model: item.model,
+      aspectRatio: item.ratio,
+      type: "image",
+    };
+    setSelectedTemplate(tmpl);
+    if (item.prompt) setPrompt(item.prompt);
+    if (item.ratio) setAspectRatio(item.ratio);
+    setMode("image");
+    setViewState("create");
+    toast.success("Imagen guardada como template");
+  };
+
+  const handleDownload = async (item: HistoryItem) => {
+    try {
+      const response = await fetch(item.url);
+      if (!response.ok) throw new Error("Download failed");
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = item.type === "video" ? "creation.mp4" : "creation.png";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error(e);
+      toast.error("No se pudo descargar");
+    }
+  };
 
   // Load templates from API
   const fetchTemplates = async () => {
@@ -710,9 +772,33 @@ export default function CreatorStudioPage() {
                                                  <p className="text-xs text-zinc-300 line-clamp-2 leading-relaxed">
                                                     {item.prompt}
                                                  </p>
-                                                 <div className="pt-2 flex gap-2">
-                                                     <Button size="sm" className="h-8 flex-1 bg-white text-black hover:bg-zinc-200 text-xs font-bold">Download</Button>
-                                                     <Button size="icon" className="h-8 w-8 bg-white/10 hover:bg-white/20"><MoreHorizontal className="w-4 h-4" /></Button>
+                                                 <div className="pt-2 flex justify-end gap-2">
+                                                     <Button 
+                                                        size="sm" 
+                                                        className="h-8 bg-white text-black hover:bg-zinc-200 text-xs font-bold px-3"
+                                                        onClick={() => handleDownload(item)}
+                                                     >
+                                                        Download
+                                                     </Button>
+                                                     <DropdownMenu>
+                                                         <DropdownMenuTrigger asChild>
+                                                             <Button size="icon" className="h-8 w-8 bg-white/10 hover:bg-white/20">
+                                                                 <MoreHorizontal className="w-4 h-4" />
+                                                             </Button>
+                                                         </DropdownMenuTrigger>
+                                                         <DropdownMenuContent align="end" className="bg-zinc-900 border-white/10 text-white w-52">
+                                                             <DropdownMenuItem onClick={() => handleReusePrompt(item)} className="cursor-pointer">
+                                                                 Reusar prompt
+                                                             </DropdownMenuItem>
+                                                             <DropdownMenuItem disabled={item.type === "video"} onClick={() => handleUseAsTemplate(item)} className="cursor-pointer">
+                                                                 Usar imagen como template
+                                                             </DropdownMenuItem>
+                                                             <DropdownMenuSeparator className="bg-white/10" />
+                                                             <DropdownMenuItem onClick={() => handleDeleteHistory(item.id)} className="cursor-pointer text-red-400 focus:text-red-400">
+                                                                 Eliminar
+                                                             </DropdownMenuItem>
+                                                         </DropdownMenuContent>
+                                                     </DropdownMenu>
                                                  </div>
                                             </div>
                                         </div>
