@@ -9,7 +9,8 @@ import {
   HelpCircle,
   LogOut,
   Settings,
-  User as UserIcon
+  User as UserIcon,
+  Sparkles
 } from "lucide-react";
 import { getCurrentUser, logoutUser, User } from "@/services/eventsApi";
 import { cn } from "@/lib/utils";
@@ -43,16 +44,14 @@ export function CreatorLayout() {
   const navItems = [
     { id: 'overview', label: 'Overview', icon: LayoutDashboard, path: '/creator/dashboard' },
     { id: 'create', label: 'Create', icon: PlusCircle, path: '/creator/create' },
-    { id: 'booth', label: 'My Booth', icon: Image, path: '/creator/booth' },
     { id: 'templates', label: 'Templates', icon: ShoppingBag, path: '/creator/templates' },
-    { id: 'billing', label: 'Billing', icon: CreditCard, path: '/creator/billing' },
-    { id: 'support', label: 'Support', icon: HelpCircle, path: '/creator/support' },
+    { id: 'assist', label: 'Assist', icon: Sparkles, path: '/creator/chat' },
   ];
 
   return (
     <div className="min-h-screen bg-black text-white flex flex-col">
       {/* Top Header / Navigation Tabs */}
-      <header className="sticky top-0 z-50 bg-black/80 backdrop-blur-md border-b border-white/10">
+      <header className="sticky top-0 z-50 bg-black border-b border-transparent">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           
           {/* Logo / Brand */}
@@ -119,8 +118,17 @@ export function CreatorLayout() {
                 <DropdownMenuItem onClick={() => navigate('/creator/settings')} className="cursor-pointer">
                   <Settings className="w-4 h-4 mr-2" /> Settings
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate(`/profile/${user?.username}`)} className="cursor-pointer">
+                <DropdownMenuItem 
+                  onClick={() => {
+                    const profileId = user?.username || user?.slug || user?.id;
+                    if (profileId) navigate(`/profile/${profileId}`);
+                  }} 
+                  className="cursor-pointer"
+                >
                   <UserIcon className="w-4 h-4 mr-2" /> Public Profile
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate('/creator/billing')} className="cursor-pointer">
+                  <CreditCard className="w-4 h-4 mr-2" /> Billing
                 </DropdownMenuItem>
                 
                 <DropdownMenuSeparator className="bg-white/10" />
@@ -160,7 +168,7 @@ export function CreatorLayout() {
       {/* Main Content */}
       <main className={cn(
         "flex-1 w-full mx-auto",
-        location.pathname.includes('/settings') ? "" : "max-w-7xl px-4 sm:px-6 py-8"
+        location.pathname.includes('/settings') || location.pathname.includes('/studio') ? "p-0" : "max-w-7xl px-4 sm:px-6 py-8"
       )}>
         <Outlet />
       </main>

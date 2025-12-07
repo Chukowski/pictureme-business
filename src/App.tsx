@@ -49,6 +49,7 @@ import CreatorDashboard from "./pages/creator/CreatorDashboard";
 import CreatorPlaceholder from "./pages/creator/CreatorPlaceholder";
 import CreatorCreatePage from "./pages/creator/CreatorCreatePage";
 import CreatorBoothPage from "./pages/creator/CreatorBoothPage";
+import CreatorStudioPage from "./pages/creator/CreatorStudioPage";
 import CreatorTemplatesPage from "./pages/creator/CreatorTemplatesPage";
 import CreatorBillingPage from "./pages/creator/CreatorBillingPage";
 import CreatorSupportPage from "./pages/creator/CreatorSupportPage";
@@ -57,39 +58,8 @@ import { CreatorOnly } from "./components/routing/CreatorOnly";
 // CopilotKit imports (self-hosted, no cloud required)
 import { CopilotKit } from "@copilotkit/react-core";
 import { AkitoCopilotActions } from "./components/AkitoCopilotActions";
-import { AkitoWidget } from "./components/AkitoWidget";
 
-// Conditional Akito Widget - only shows on admin pages
-const ConditionalAkitoWidget = () => {
-  const location = useLocation();
-  
-  // Pages where Akito should NOT appear
-  const excludedPaths = [
-    '/registration',
-    '/booth',
-    '/playground',
-    '/viewer',
-    '/bigscreen',
-    '/feed',
-    '/album/',
-    '/share/',
-  ];
-  
-  // Check if current path should exclude Akito
-  const shouldHideAkito = excludedPaths.some(path => location.pathname.includes(path)) ||
-    // Also hide on dynamic event routes (/:userSlug/:eventSlug) but not admin routes
-    (location.pathname.split('/').length >= 3 && 
-    !location.pathname.startsWith('/admin') && 
-    !location.pathname.startsWith('/super-admin') &&
-    !location.pathname.startsWith('/creator') && // Allow in creator dashboard
-    !location.pathname.startsWith('/profile'));
-  
-  if (shouldHideAkito) {
-    return null;
-  }
-  
-  return <AkitoWidget />;
-};
+import ChatPage from "./pages/ChatPage";
 
 const queryClient = new QueryClient();
 
@@ -170,7 +140,6 @@ const AppContent = () => {
           properties={getUserProperties()}
         >
           <AkitoCopilotActions />
-          <ConditionalAkitoWidget />
         </CopilotKit>
       )}
       <TopNavbar />
@@ -214,9 +183,11 @@ const AppContent = () => {
             }>
                <Route index element={<Navigate to="/creator/dashboard" replace />} />
                <Route path="dashboard" element={<CreatorDashboard />} />
-               <Route path="create" element={<CreatorCreatePage />} />
-               <Route path="booth" element={<CreatorBoothPage />} />
-               <Route path="booth/:eventId" element={<CreatorBoothPage />} />
+               <Route path="chat" element={<ChatPage />} />
+               <Route path="create" element={<Navigate to="/creator/studio" replace />} />
+               <Route path="booth" element={<Navigate to="/creator/studio" replace />} />
+               <Route path="booth/:eventId" element={<Navigate to="/creator/studio" replace />} />
+               <Route path="studio" element={<CreatorStudioPage />} />
                <Route path="templates" element={<CreatorTemplatesPage />} />
                <Route path="billing" element={<CreatorBillingPage />} />
                <Route path="support" element={<CreatorSupportPage />} />
@@ -270,6 +241,15 @@ const AppContent = () => {
             <Route path="/admin/billing" element={<Navigate to="/admin/settings/business" replace />} />
             <Route path="/admin/tokens" element={<Navigate to="/admin/settings/business" replace />} />
             <Route path="/admin/marketplace" element={<AdminDashboard />} />
+            <Route path="/admin/chat" element={
+              <BusinessOnly>
+                <div className="min-h-screen bg-black pt-24 px-4 pb-4">
+                  <div className="max-w-7xl mx-auto">
+                    <ChatPage />
+                  </div>
+                </div>
+              </BusinessOnly>
+            } />
             <Route path="/admin/playground" element={<PlaygroundPage />} />
             <Route path="/admin/analytics" element={<AdminDashboard />} />
             <Route path="/admin/studio" element={<AdminDashboard />} />

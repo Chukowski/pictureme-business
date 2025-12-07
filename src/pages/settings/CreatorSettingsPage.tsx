@@ -1,6 +1,5 @@
-import AccountSettings from "@/pages/AccountSettings";
+import CreatorSettings from "@/components/creator/CreatorSettings";
 
 export default function CreatorSettingsPage() {
-  return <AccountSettings />;
+  return <CreatorSettings />;
 }
-

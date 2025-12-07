@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { FolderKanban, BarChart3, ShoppingBag, BookOpen, Gamepad2, Settings, Menu, LogOut, User, Building2, Users, Coins } from "lucide-react";
+import { FolderKanban, BarChart3, ShoppingBag, BookOpen, Gamepad2, Settings, Menu, LogOut, User, Building2, Users, Coins, Sparkles } from "lucide-react";
 import { getCurrentUser, logoutUser } from "@/services/eventsApi";
 import { hasFeature } from "@/lib/planFeatures";
 import { cn } from "@/lib/utils";
@@ -160,6 +160,7 @@ export function TopNavbar() {
     { id: 'events', label: 'Events', icon: FolderKanban, path: '/admin/events' },
     { id: 'analytics', label: 'Analytics', icon: BarChart3, path: '/admin/analytics' },
     { id: 'marketplace', label: 'Marketplace', icon: ShoppingBag, path: '/admin/marketplace' },
+    { id: 'assist', label: 'Assist', icon: Sparkles, path: '/admin/chat' },
     { id: 'playground', label: 'Playground', icon: Gamepad2, path: '/admin/playground' },
   ];
 

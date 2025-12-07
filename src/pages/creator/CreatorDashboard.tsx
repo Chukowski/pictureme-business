@@ -79,7 +79,7 @@ export default function CreatorDashboard() {
         
         <div className="flex items-center gap-3">
              <Button 
-                onClick={() => navigate('/creator/create')} 
+                onClick={() => navigate('/creator/studio')} 
                 className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-full px-6 shadow-lg shadow-indigo-900/20"
              >
                 <Plus className="w-4 h-4 mr-2" />
@@ -87,6 +87,9 @@ export default function CreatorDashboard() {
              </Button>
         </div>
       </div>
+
+      {/* Smart Onboarding */}
+      <CreatorSmartOnboarding events={events} />
 
       {/* Quick Actions (Shortcuts) */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -96,7 +99,7 @@ export default function CreatorDashboard() {
             desc="Start from scratch"
             color="text-amber-400"
             bg="bg-amber-500/10"
-            onClick={() => navigate('/creator/create')}
+            onClick={() => navigate('/creator/studio')}
         />
         <ShortcutCard 
             icon={Image}
@@ -104,7 +107,7 @@ export default function CreatorDashboard() {
             desc="View your gallery"
             color="text-indigo-400"
             bg="bg-indigo-500/10"
-            onClick={() => navigate('/creator/booth')}
+            onClick={() => navigate('/creator/studio')}
         />
         <ShortcutCard 
             icon={ShoppingBag}
@@ -124,9 +127,6 @@ export default function CreatorDashboard() {
         />
       </div>
 
-      {/* Smart Onboarding */}
-      <CreatorSmartOnboarding events={events} />
-
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
         {/* Left Column: Personal Booth & Recent Activity */}
@@ -134,7 +134,7 @@ export default function CreatorDashboard() {
             
             {/* Personal Booth Direct Access */}
             {personalBooth && (
-               <Card className="bg-zinc-900 border-white/10 overflow-hidden relative group cursor-pointer hover:border-indigo-500/30 transition-colors" onClick={() => navigate(`/creator/booth/${personalBooth._id}`)}>
+               <Card className="bg-zinc-900 border-white/10 overflow-hidden relative group cursor-pointer hover:border-indigo-500/30 transition-colors" onClick={() => navigate(`/creator/studio`)}>
                    <div className="absolute top-0 right-0 p-4">
                         <Badge className="bg-green-500/10 text-green-400 border-green-500/20 hover:bg-green-500/20">Active</Badge>
                    </div>
@@ -153,7 +153,7 @@ export default function CreatorDashboard() {
                                  </Button>
                                  <Button size="sm" variant="outline" className="border-white/10 hover:bg-white/5" onClick={(e) => {
                                      e.stopPropagation();
-                                     navigate('/creator/booth');
+                                     navigate('/creator/studio');
                                  }}>
                                      View All
                                  </Button>
@@ -174,7 +174,7 @@ export default function CreatorDashboard() {
                 {recentEvents.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {recentEvents.map(event => (
-                            <Card key={event._id} className="bg-zinc-900 border-white/5 hover:border-white/10 transition-all cursor-pointer group" onClick={() => navigate(`/creator/booth/${event._id}`)}>
+                            <Card key={event._id} className="bg-zinc-900 border-white/5 hover:border-white/10 transition-all cursor-pointer group" onClick={() => navigate(`/creator/studio`)}>
                                 <CardContent className="p-0 relative aspect-video">
                                     {/* Cover Image Placeholder */}
                                     <div className="absolute inset-0 bg-zinc-800 rounded-t-lg overflow-hidden">
