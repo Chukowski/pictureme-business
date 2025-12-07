@@ -863,18 +863,16 @@ export default function AlbumFeedPage() {
             {photos.length > 0 && (
               <div className="mt-6 flex justify-center gap-4">
                 <Button
-                  variant="outline"
                   onClick={handleShareAlbum}
-                  className="border-white/20 text-zinc-300"
+                  className="bg-white/10 hover:bg-white/20 text-white border border-white/20 font-medium"
                 >
                   <Share2 className="w-4 h-4 mr-2" />
                   Share Album
                 </Button>
                 {!requiresPayment && (
                   <Button
-                    variant="outline"
                     onClick={handleDownloadAll}
-                    className="border-white/20 text-zinc-300"
+                    className="bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 border border-indigo-500/30 font-medium"
                   >
                     <Download className="w-4 h-4 mr-2" />
                     Download All
@@ -887,29 +885,28 @@ export default function AlbumFeedPage() {
           {/* Sidebar - Staff Tools */}
           {isStaff && showStaffTools && (
             <div className="lg:col-span-1 space-y-4">
-              <Card className="bg-zinc-900/50 border-white/10">
-                <CardHeader>
-                  <CardTitle className="text-white text-lg">Staff Tools</CardTitle>
+              <Card className="bg-zinc-900/80 border-white/10 backdrop-blur-sm">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-white text-lg font-bold">Staff Tools</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {/* Approval */}
                   {selectedPhoto && (
                     <div className="space-y-2">
-                      <p className="text-sm text-zinc-400">Selected Photo</p>
+                      <p className="text-xs text-zinc-500 uppercase tracking-wider font-medium">Selected Photo</p>
                       <div className="flex gap-2">
                         <Button
                           size="sm"
                           onClick={() => handleApprovePhoto(selectedPhoto, true)}
-                          className="flex-1 bg-green-600 hover:bg-green-500"
+                          className="flex-1 bg-emerald-500 hover:bg-emerald-400 text-black font-semibold"
                         >
                           <CheckCircle2 className="w-4 h-4 mr-1" />
                           Approve
                         </Button>
                         <Button
                           size="sm"
-                          variant="outline"
                           onClick={() => handleApprovePhoto(selectedPhoto, false)}
-                          className="flex-1 border-red-500/50 text-red-400 hover:bg-red-500/10"
+                          className="flex-1 bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30"
                         >
                           <XCircle className="w-4 h-4 mr-1" />
                           Reject
@@ -922,22 +919,20 @@ export default function AlbumFeedPage() {
 
                   {/* Album Actions */}
                   <div className="space-y-2">
-                    <p className="text-sm text-zinc-400">Album Actions</p>
+                    <p className="text-xs text-zinc-500 uppercase tracking-wider font-medium">Album Actions</p>
                     <Button
                       size="sm"
-                      variant="outline"
                       onClick={handleMarkComplete}
                       disabled={albumInfo?.isComplete}
-                      className="w-full border-white/20 text-zinc-300"
+                      className="w-full bg-white/10 hover:bg-white/20 text-white border border-white/20 font-medium disabled:opacity-40"
                     >
                       <CheckCircle2 className="w-4 h-4 mr-2" />
                       Mark Complete
                     </Button>
                     <Button
                       size="sm"
-                      variant="outline"
                       onClick={handleDownloadAll}
-                      className="w-full border-white/20 text-zinc-300"
+                      className="w-full bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 border border-indigo-500/30 font-medium"
                     >
                       <Download className="w-4 h-4 mr-2" />
                       Download All
@@ -948,21 +943,19 @@ export default function AlbumFeedPage() {
 
                   {/* Send Options */}
                   <div className="space-y-2">
-                    <p className="text-sm text-zinc-400">Send Album</p>
+                    <p className="text-xs text-zinc-500 uppercase tracking-wider font-medium">Send Album</p>
                     <Button
                       size="sm"
-                      variant="outline"
                       onClick={handleSendEmail}
-                      className="w-full border-white/20 text-zinc-300"
+                      className="w-full bg-white/10 hover:bg-white/20 text-white border border-white/20 font-medium"
                     >
                       <Mail className="w-4 h-4 mr-2" />
                       Send via Email
                     </Button>
                     <Button
                       size="sm"
-                      variant="outline"
                       onClick={handleSendWhatsApp}
-                      className="w-full border-white/20 text-zinc-300"
+                      className="w-full bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 font-medium"
                     >
                       <MessageSquare className="w-4 h-4 mr-2" />
                       Send via WhatsApp
@@ -974,15 +967,15 @@ export default function AlbumFeedPage() {
                   {/* Presentation */}
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <p className="text-sm text-zinc-400">Big Screen Mode</p>
+                      <p className="text-xs text-zinc-500 uppercase tracking-wider font-medium">Big Screen Mode</p>
                       <Switch
                         checked={bigScreenMode}
                         onCheckedChange={setBigScreenMode}
-                        className="data-[state=checked]:bg-cyan-600"
+                        className="data-[state=checked]:bg-[#D1F349]"
                       />
                     </div>
                     {bigScreenMode && (
-                      <p className="text-xs text-cyan-400">
+                      <p className="text-xs text-[#D1F349]">
                         <MonitorPlay className="w-3 h-3 inline mr-1" />
                         Album is now showing on the big screen
                       </p>
@@ -995,8 +988,7 @@ export default function AlbumFeedPage() {
                   <Button
                     size="sm"
                     onClick={handlePrint}
-                    className="w-full"
-                    style={{ backgroundColor: primaryColor }}
+                    className="w-full bg-[#D1F349] hover:bg-[#c5e73d] text-black font-bold shadow-lg shadow-[#D1F349]/20"
                     disabled={photos.length === 0}
                   >
                     <Printer className="w-4 h-4 mr-2" />
@@ -1006,10 +998,10 @@ export default function AlbumFeedPage() {
               </Card>
 
               {/* QR Code - Real QR that links to booth with album */}
-              <Card className="bg-zinc-900/50 border-white/10">
+              <Card className="bg-zinc-900/80 border-white/10 backdrop-blur-sm">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-white text-sm flex items-center gap-2">
-                    <QrCode className="w-4 h-4 text-cyan-400" />
+                  <CardTitle className="text-white text-sm flex items-center gap-2 font-bold">
+                    <QrCode className="w-4 h-4 text-[#D1F349]" />
                     Album QR Code
                   </CardTitle>
                   <CardDescription className="text-zinc-400 text-xs">
@@ -1026,30 +1018,28 @@ export default function AlbumFeedPage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <p className="text-xs font-mono text-cyan-400 bg-cyan-500/10 px-2 py-1 rounded">
+                    <p className="text-xs font-mono text-[#D1F349] bg-[#D1F349]/10 px-3 py-1.5 rounded-lg border border-[#D1F349]/20">
                       {albumId}
                     </p>
                     <div className="flex gap-2">
                       <Button
                         size="sm"
-                        variant="outline"
                         onClick={async () => {
                           await navigator.clipboard.writeText(albumId || '');
                           toast.success('Album code copied!');
                         }}
-                        className="flex-1 border-white/20 text-zinc-300 text-xs"
+                        className="flex-1 bg-white/10 hover:bg-white/20 text-white border border-white/20 text-xs font-medium"
                       >
                         Copy Code
                       </Button>
                       <Button
                         size="sm"
-                        variant="outline"
                         onClick={async () => {
                           const boothUrl = `${window.location.origin}/${userSlug}/${eventSlug}/booth?album=${albumId}`;
                           await navigator.clipboard.writeText(boothUrl);
                           toast.success('Booth URL copied!');
                         }}
-                        className="flex-1 border-white/20 text-zinc-300 text-xs"
+                        className="flex-1 bg-white/10 hover:bg-white/20 text-white border border-white/20 text-xs font-medium"
                       >
                         Copy URL
                       </Button>
