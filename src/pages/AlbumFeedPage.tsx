@@ -55,7 +55,11 @@ interface AlbumInfo {
 // Alias for photo type
 type Photo = AlbumPhoto;
 
-export default function AlbumFeedPage() {
+interface AlbumFeedPageProps {
+  albumIdOverride?: string;
+}
+
+export default function AlbumFeedPage({ albumIdOverride }: AlbumFeedPageProps = {}) {
   // Try to get config from context first (for short URLs), fallback to params
   const eventContext = useEventContext();
   const params = useParams<{ 
@@ -66,7 +70,7 @@ export default function AlbumFeedPage() {
   
   const userSlug = eventContext?.userSlug || params.userSlug || '';
   const eventSlug = eventContext?.eventSlug || params.eventSlug || '';
-  const albumId = params.albumId;
+  const albumId = albumIdOverride || params.albumId;
   
   const navigate = useNavigate();
   

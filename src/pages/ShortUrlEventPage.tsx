@@ -59,6 +59,10 @@ export const ShortUrlEventPage = () => {
     </EventProvider>
   );
 
+  // Extract albumId if present in subPath
+  const albumIdMatch = subPath.match(/^album\/(.+)$/);
+  const extractedAlbumId = albumIdMatch ? albumIdMatch[1] : null;
+
   // Route to the appropriate component based on subpath
   switch (subPath) {
     case 'feed':
@@ -80,8 +84,8 @@ export const ShortUrlEventPage = () => {
     case '':
     default:
       // For album routes like /album/:albumId
-      if (subPath.startsWith('album/')) {
-        return renderWithProvider(<AlbumFeedPage />);
+      if (extractedAlbumId) {
+        return renderWithProvider(<AlbumFeedPage albumIdOverride={extractedAlbumId} />);
       }
       // Default to PhotoBoothPage with config override
       return renderWithProvider(
