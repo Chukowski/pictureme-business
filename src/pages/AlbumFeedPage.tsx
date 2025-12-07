@@ -12,8 +12,14 @@ import { useEventContext } from '@/contexts/EventContext';
 import { 
   Loader2, ArrowLeft, Download, Share2, Mail, MessageSquare, 
   CheckCircle2, XCircle, MonitorPlay, Printer, Lock, Unlock,
-  QrCode, ExternalLink, CreditCard, ShoppingCart, Clock, Trash2
+  QrCode, ExternalLink, CreditCard, ShoppingCart, Clock, Trash2, Camera,
+  X, ChevronLeft, ChevronRight, Facebook, Twitter, Link2, Copy
 } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -24,6 +30,7 @@ import { EventNotFound } from '@/components/EventNotFound';
 import { getAlbum, getAlbumPhotos, createAlbumCheckout, updateAlbumStatus, deleteAlbumPhoto, Album, sendAlbumEmail, getEmailStatus, requestAlbumPayment } from '@/services/eventsApi';
 import { QRCodeSVG } from 'qrcode.react';
 import { broadcastToBigScreen, clearBigScreen } from '@/services/bigScreenBroadcast';
+import { ENV } from '@/config/env';
 
 // Mock photo data - will be replaced with real API
 interface AlbumPhoto {
@@ -44,6 +51,9 @@ interface AlbumInfo {
   isPaid: boolean;
   createdAt: Date;
 }
+
+// Alias for photo type
+type Photo = AlbumPhoto;
 
 export default function AlbumFeedPage() {
   // Try to get config from context first (for short URLs), fallback to params
@@ -80,6 +90,9 @@ export default function AlbumFeedPage() {
   const [emailInput, setEmailInput] = useState('');
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [emailConfigured, setEmailConfigured] = useState(true);
+  const [previewPhoto, setPreviewPhoto] = useState<Photo | null>(null);
+  const [showShareMenu, setShowShareMenu] = useState(false);
+  const [shareTarget, setShareTarget] = useState<'album' | Photo | null>(null);
 
   // Check email configuration
   useEffect(() => {
@@ -288,8 +301,7 @@ export default function AlbumFeedPage() {
     toast.info('Preparing ZIP download...');
     
     // Use the backend ZIP endpoint to download all photos
-    const API_URL = import.meta.env.VITE_API_URL || '';
-    const zipUrl = `${API_URL}/api/albums/${albumId}/download`;
+    const zipUrl = `${ENV.API_URL}/api/albums/${albumId}/download`;
     
     // Create a link and trigger download
     const link = document.createElement('a');
@@ -460,23 +472,85 @@ export default function AlbumFeedPage() {
     }
   };
 
-  const handleShareAlbum = async () => {
-    const shareUrl = window.location.href;
-    
+  // Share functions
+  const getShareText = (photo?: Photo) => {
+    const eventName = config?.title || 'the event';
+    const brandName = config?.theme?.brandName || 'PictureMe.Now';
+    if (photo) {
+      return `Check out my photo from ${eventName}! 📸✨ #${eventName.replace(/\s+/g, '')} #${brandName.replace(/\s+/g, '')}`;
+    }
+    return `Check out my ${photos.length} photos from ${eventName}! 📸✨ #${eventName.replace(/\s+/g, '')} #${brandName.replace(/\s+/g, '')}`;
+  };
+
+  const getShareUrl = (photo?: Photo) => {
+    // For now, share the album URL. In future could have individual photo pages
+    return window.location.href;
+  };
+
+  const handleShareAlbum = () => {
+    setShareTarget('album');
+    setShowShareMenu(true);
+  };
+
+  const handleSharePhoto = (photo: Photo) => {
+    setShareTarget(photo);
+    setShowShareMenu(true);
+  };
+
+  const shareToFacebook = () => {
+    const url = encodeURIComponent(getShareUrl(shareTarget === 'album' ? undefined : shareTarget as Photo));
+    window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}`, '_blank', 'width=600,height=400');
+    setShowShareMenu(false);
+  };
+
+  const shareToTwitter = () => {
+    const text = encodeURIComponent(getShareText(shareTarget === 'album' ? undefined : shareTarget as Photo));
+    const url = encodeURIComponent(getShareUrl(shareTarget === 'album' ? undefined : shareTarget as Photo));
+    window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, '_blank', 'width=600,height=400');
+    setShowShareMenu(false);
+  };
+
+  const shareToWhatsApp = () => {
+    const text = encodeURIComponent(`${getShareText(shareTarget === 'album' ? undefined : shareTarget as Photo)} ${getShareUrl(shareTarget === 'album' ? undefined : shareTarget as Photo)}`);
+    window.open(`https://wa.me/?text=${text}`, '_blank');
+    setShowShareMenu(false);
+  };
+
+  const shareNative = async () => {
+    const photo = shareTarget === 'album' ? undefined : shareTarget as Photo;
     if (navigator.share) {
       try {
         await navigator.share({
-          title: `${albumInfo?.visitorName || 'My'} Photo Album`,
-          text: `Check out my photos from ${config?.title}!`,
-          url: shareUrl,
+          title: photo ? 'My Photo' : `${albumInfo?.visitorName || 'My'} Photo Album`,
+          text: getShareText(photo),
+          url: getShareUrl(photo),
         });
       } catch (err) {
-        // User cancelled or error
+        // User cancelled
       }
-    } else {
-      // Fallback to clipboard
-      await navigator.clipboard.writeText(shareUrl);
-      toast.success('Album link copied to clipboard!');
+    }
+    setShowShareMenu(false);
+  };
+
+  const copyShareLink = async () => {
+    const photo = shareTarget === 'album' ? undefined : shareTarget as Photo;
+    await navigator.clipboard.writeText(getShareUrl(photo));
+    toast.success('Link copied to clipboard!');
+    setShowShareMenu(false);
+  };
+
+  // Photo preview navigation
+  const currentPhotoIndex = previewPhoto ? photos.findIndex(p => p.id === previewPhoto.id) : -1;
+  
+  const goToPrevPhoto = () => {
+    if (currentPhotoIndex > 0) {
+      setPreviewPhoto(photos[currentPhotoIndex - 1]);
+    }
+  };
+
+  const goToNextPhoto = () => {
+    if (currentPhotoIndex < photos.length - 1) {
+      setPreviewPhoto(photos[currentPhotoIndex + 1]);
     }
   };
 
@@ -585,61 +659,94 @@ export default function AlbumFeedPage() {
 
   return (
     <div className="min-h-screen bg-zinc-950">
-      {/* Header */}
-      <header className="sticky top-0 z-40 bg-zinc-950/80 backdrop-blur-lg border-b border-white/10">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => {
-                // Navigate to staff dashboard if staff, otherwise go back
-                if (isStaff) {
-                  navigate(`/${userSlug}/${eventSlug}/staff`);
-                } else {
-                  navigate(-1);
-                }
-              }}
-              className="text-zinc-400 hover:text-white"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </Button>
-            <div>
-              <h1 className="text-xl font-bold text-white">
-                {albumInfo?.visitorName || `Visitor #${albumInfo?.visitorNumber}`}
-              </h1>
-              <p className="text-sm text-zinc-400">
-                {photos.length} photos • {config.title}
-              </p>
+      {/* Header - Different for Staff vs Visitor */}
+      <header 
+        className="sticky top-0 z-40 border-b border-white/10 backdrop-blur-xl"
+        style={{ backgroundColor: isStaff ? 'rgba(9,9,11,0.8)' : `${primaryColor}15` }}
+      >
+        <div className="max-w-7xl mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              {isStaff ? (
+                // Staff view - back button
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => navigate(`/${userSlug}/${eventSlug}/staff`)}
+                  className="text-zinc-400 hover:text-white"
+                >
+                  <ArrowLeft className="w-5 h-5" />
+                </Button>
+              ) : (
+                // Visitor view - event branding
+                config.branding?.logoPath ? (
+                  <img 
+                    src={config.branding.logoPath} 
+                    alt={config.title}
+                    className="h-10 object-contain"
+                  />
+                ) : (
+                  <div 
+                    className="w-10 h-10 rounded-lg flex items-center justify-center"
+                    style={{ backgroundColor: primaryColor }}
+                  >
+                    <Camera className="w-5 h-5 text-white" />
+                  </div>
+                )
+              )}
+              <div>
+                <h1 className="text-xl font-bold text-white">
+                  {isStaff 
+                    ? (albumInfo?.visitorName || `Visitor #${albumInfo?.visitorNumber}`)
+                    : (albumInfo?.visitorName ? `${albumInfo.visitorName}'s Photos` : 'Your Photos')
+                  }
+                </h1>
+                <p className="text-sm text-zinc-400">
+                  {photos.length} photo{photos.length !== 1 ? 's' : ''} • {config.title}
+                </p>
+              </div>
             </div>
-          </div>
-          
-          <div className="flex items-center gap-2">
-            {albumInfo?.isComplete && (
-              <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
-                <CheckCircle2 className="w-3 h-3 mr-1" />
-                Complete
-              </Badge>
-            )}
-            {!albumInfo?.isPaid && config.albumTracking?.rules?.printReady && (
-              <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30">
-                <Lock className="w-3 h-3 mr-1" />
-                Payment Required
-              </Badge>
-            )}
-            {isStaff && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowStaffTools(!showStaffTools)}
-                className={showStaffTools 
-                  ? "bg-[#D1F349] text-black border-[#D1F349] hover:bg-[#c5e73d]" 
-                  : "bg-zinc-800 border-white/20 text-white hover:bg-zinc-700"
-                }
-              >
-                Staff Tools
-              </Button>
-            )}
+            
+            <div className="flex items-center gap-2">
+              {/* Visitor: show ready badge with brand color */}
+              {albumInfo?.isComplete && !isStaff && (
+                <Badge 
+                  className="text-white border-0"
+                  style={{ backgroundColor: primaryColor }}
+                >
+                  <CheckCircle2 className="w-3 h-3 mr-1" />
+                  Ready
+                </Badge>
+              )}
+              {/* Staff: show complete badge */}
+              {albumInfo?.isComplete && isStaff && (
+                <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
+                  <CheckCircle2 className="w-3 h-3 mr-1" />
+                  Complete
+                </Badge>
+              )}
+              {/* Payment required badge */}
+              {!albumInfo?.isPaid && config.albumTracking?.rules?.printReady && (
+                <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30">
+                  <Lock className="w-3 h-3 mr-1" />
+                  {isStaff ? 'Payment Required' : 'Locked'}
+                </Badge>
+              )}
+              {/* Staff tools button */}
+              {isStaff && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowStaffTools(!showStaffTools)}
+                  className={showStaffTools 
+                    ? "bg-[#D1F349] text-black border-[#D1F349] hover:bg-[#c5e73d]" 
+                    : "bg-zinc-800 border-white/20 text-white hover:bg-zinc-700"
+                  }
+                >
+                  Staff Tools
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       </header>
@@ -790,15 +897,21 @@ export default function AlbumFeedPage() {
                     className={`relative group rounded-xl overflow-hidden border-2 transition-all cursor-pointer ${
                       selectedPhoto === photo.id 
                         ? 'border-cyan-500 ring-2 ring-cyan-500/50' 
-                        : 'border-white/10 hover:border-white/20'
+                        : 'border-white/10 hover:border-white/30'
                     } ${!photo.approved && 'opacity-60'}`}
-                    onClick={() => setSelectedPhoto(photo.id === selectedPhoto ? null : photo.id)}
+                    onClick={() => {
+                      if (isStaff) {
+                        setSelectedPhoto(photo.id === selectedPhoto ? null : photo.id);
+                      } else {
+                        setPreviewPhoto(photo);
+                      }
+                    }}
                     onContextMenu={(e) => e.preventDefault()}
                   >
                     <img
                       src={photo.url}
                       alt={photo.templateName}
-                      className="w-full aspect-[3/4] object-cover"
+                      className="w-full aspect-[3/4] object-cover transition-transform group-hover:scale-105"
                       draggable={false}
                       onDragStart={(e) => e.preventDefault()}
                     />
@@ -815,63 +928,79 @@ export default function AlbumFeedPage() {
                       </div>
                     )}
                     
-                    {/* Overlay */}
+                    {/* Overlay with actions */}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
                       <div className="absolute bottom-0 left-0 right-0 p-3">
                         <p className="text-white text-sm font-medium">{photo.templateName}</p>
                         <p className="text-zinc-400 text-xs">{photo.stationName}</p>
                       </div>
+                      {/* Click to view indicator for visitors */}
+                      {!isStaff && (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <div className="bg-black/50 backdrop-blur-sm rounded-full p-3">
+                            <ExternalLink className="w-6 h-6 text-white" />
+                          </div>
+                        </div>
+                      )}
                     </div>
 
-                    {/* Approval badge and delete button */}
+                    {/* Staff badges */}
                     {isStaff && (
-                      <>
-                        <div className="absolute top-2 right-2">
-                          {photo.approved ? (
-                            <Badge className="bg-green-500/80 text-white text-xs">
-                              <CheckCircle2 className="w-3 h-3" />
-                            </Badge>
-                          ) : (
-                            <Badge className="bg-amber-500/80 text-white text-xs">
-                              Pending
-                            </Badge>
-                          )}
-                        </div>
-                        {/* Staff action buttons */}
-                        <div className="absolute top-2 left-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeletePhoto(photo.id);
-                            }}
-                            className="p-1.5 rounded-lg bg-red-500/80 hover:bg-red-600 text-white"
-                            title="Delete photo"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDownloadSingle(photo);
-                            }}
-                            className="p-1.5 rounded-lg bg-blue-500/80 hover:bg-blue-600 text-white"
-                            title="Download photo"
-                          >
-                            <Download className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handlePrintSingle(photo);
-                            }}
-                            className="p-1.5 rounded-lg bg-purple-500/80 hover:bg-purple-600 text-white"
-                            title="Print photo"
-                          >
-                            <Printer className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </>
+                      <div className="absolute top-2 right-2">
+                        {photo.approved ? (
+                          <Badge className="bg-green-500/80 text-white text-xs">
+                            <CheckCircle2 className="w-3 h-3" />
+                          </Badge>
+                        ) : (
+                          <Badge className="bg-amber-500/80 text-white text-xs">
+                            Pending
+                          </Badge>
+                        )}
+                      </div>
                     )}
+
+                    {/* Action buttons - visible to all on hover */}
+                    <div className="absolute top-2 left-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      {/* Staff-only: Delete */}
+                      {isStaff && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeletePhoto(photo.id);
+                          }}
+                          className="p-1.5 rounded-lg bg-red-500/80 hover:bg-red-600 text-white"
+                          title="Delete photo"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                      {/* Download - visible to all when not payment-locked */}
+                      {!requiresPayment && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDownloadSingle(photo);
+                          }}
+                          className="p-1.5 rounded-lg bg-blue-500/80 hover:bg-blue-600 text-white"
+                          title="Download photo"
+                        >
+                          <Download className="w-4 h-4" />
+                        </button>
+                      )}
+                      {/* Staff-only: Print */}
+                      {isStaff && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handlePrintSingle(photo);
+                          }}
+                          className="p-1.5 rounded-lg bg-purple-500/80 hover:bg-purple-600 text-white"
+                          title="Print photo"
+                        >
+                          <Printer className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -883,8 +1012,38 @@ export default function AlbumFeedPage() {
               </div>
             )}
 
-            {/* Share Button - visible to all */}
-            {photos.length > 0 && (
+            {/* Action Buttons - visible to all */}
+            {photos.length > 0 && !isStaff && (
+              <div className="mt-8 flex flex-col items-center gap-4">
+                {/* Primary action - Download All */}
+                {!requiresPayment && (
+                  <Button
+                    onClick={handleDownloadAll}
+                    size="lg"
+                    className="text-black font-bold shadow-lg px-8"
+                    style={{ 
+                      backgroundColor: primaryColor,
+                      boxShadow: `0 10px 40px -10px ${primaryColor}80`
+                    }}
+                  >
+                    <Download className="w-5 h-5 mr-2" />
+                    Download All Photos
+                  </Button>
+                )}
+                {/* Secondary action - Share */}
+                <Button
+                  onClick={handleShareAlbum}
+                  variant="outline"
+                  className="bg-white/5 hover:bg-white/10 text-white border border-white/20"
+                >
+                  <Share2 className="w-4 h-4 mr-2" />
+                  Share Album
+                </Button>
+              </div>
+            )}
+
+            {/* Staff view - simple buttons */}
+            {photos.length > 0 && isStaff && !showStaffTools && (
               <div className="mt-6 flex justify-center gap-4">
                 <Button
                   onClick={handleShareAlbum}
@@ -1116,6 +1275,206 @@ export default function AlbumFeedPage() {
           )}
         </div>
       </div>
+
+      {/* Fixed Footer for visitors - branding */}
+      {!isStaff && (
+        <footer className="fixed bottom-0 left-0 right-0 border-t border-white/10 bg-zinc-950/90 backdrop-blur-lg py-3 z-30">
+          <div className="max-w-7xl mx-auto px-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              {config.branding?.logoPath && (
+                <img 
+                  src={config.branding.logoPath} 
+                  alt={config.title}
+                  className="h-6 object-contain opacity-70"
+                />
+              )}
+              <span className="text-zinc-500 text-xs hidden sm:inline">
+                {config.title}
+              </span>
+            </div>
+            <div className="text-zinc-500 text-xs text-right">
+              <span>© {new Date().getFullYear()} </span>
+              <span className="hidden sm:inline">Powered by </span>
+              <a 
+                href="https://pictureme.now" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-zinc-400 hover:text-white transition-colors"
+              >
+                PictureMe.Now
+              </a>
+              <span className="text-zinc-600 mx-1">by</span>
+              <a 
+                href="https://akitapr.com" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-zinc-400 hover:text-white transition-colors"
+              >
+                Akitá
+              </a>
+            </div>
+          </div>
+        </footer>
+      )}
+      
+      {/* Spacer for fixed footer */}
+      {!isStaff && <div className="h-16" />}
+
+      {/* Photo Preview Modal */}
+      <Dialog open={!!previewPhoto} onOpenChange={() => setPreviewPhoto(null)}>
+        <DialogContent className="max-w-4xl w-full bg-zinc-950/95 backdrop-blur-xl border-white/10 p-0 overflow-hidden">
+          <DialogTitle className="sr-only">Photo Preview</DialogTitle>
+          {previewPhoto && (
+            <div className="relative">
+              {/* Close button */}
+              <button
+                onClick={() => setPreviewPhoto(null)}
+                className="absolute top-4 right-4 z-10 p-2 rounded-full bg-black/50 hover:bg-black/70 text-white transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              {/* Navigation arrows */}
+              {currentPhotoIndex > 0 && (
+                <button
+                  onClick={goToPrevPhoto}
+                  className="absolute left-4 top-1/2 -translate-y-1/2 z-10 p-2 rounded-full bg-black/50 hover:bg-black/70 text-white transition-colors"
+                >
+                  <ChevronLeft className="w-6 h-6" />
+                </button>
+              )}
+              {currentPhotoIndex < photos.length - 1 && (
+                <button
+                  onClick={goToNextPhoto}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 z-10 p-2 rounded-full bg-black/50 hover:bg-black/70 text-white transition-colors"
+                >
+                  <ChevronRight className="w-6 h-6" />
+                </button>
+              )}
+
+              {/* Photo */}
+              <img
+                src={previewPhoto.url}
+                alt={previewPhoto.templateName}
+                className="w-full max-h-[70vh] object-contain bg-black"
+              />
+
+              {/* Bottom bar with actions */}
+              <div className="p-4 bg-zinc-900/90 border-t border-white/10">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-white font-medium">{previewPhoto.templateName}</p>
+                    <p className="text-zinc-400 text-sm">
+                      Photo {currentPhotoIndex + 1} of {photos.length}
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    {!requiresPayment && (
+                      <Button
+                        size="sm"
+                        onClick={() => handleDownloadSingle(previewPhoto)}
+                        className="bg-white/10 hover:bg-white/20 text-white"
+                      >
+                        <Download className="w-4 h-4 mr-2" />
+                        Download
+                      </Button>
+                    )}
+                    <Button
+                      size="sm"
+                      onClick={() => handleSharePhoto(previewPhoto)}
+                      style={{ backgroundColor: primaryColor }}
+                      className="text-black font-medium"
+                    >
+                      <Share2 className="w-4 h-4 mr-2" />
+                      Share
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Share Menu Modal */}
+      <Dialog open={showShareMenu} onOpenChange={setShowShareMenu}>
+        <DialogContent className="max-w-sm bg-zinc-900 border-white/10">
+          <DialogTitle className="text-white text-lg font-bold mb-4">
+            Share {shareTarget === 'album' ? 'Album' : 'Photo'}
+          </DialogTitle>
+          
+          <div className="space-y-3">
+            {/* Event branding */}
+            <div className="flex items-center gap-3 p-3 bg-zinc-800/50 rounded-lg mb-4">
+              {config?.branding?.logoPath && (
+                <img 
+                  src={config.branding.logoPath} 
+                  alt={config.title}
+                  className="h-8 object-contain"
+                />
+              )}
+              <div>
+                <p className="text-white text-sm font-medium">{config?.title}</p>
+                <p className="text-zinc-400 text-xs">
+                  {shareTarget === 'album' ? `${photos.length} photos` : 'Share this photo'}
+                </p>
+              </div>
+            </div>
+
+            {/* Share buttons */}
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                onClick={shareToFacebook}
+                className="bg-[#1877F2] hover:bg-[#1877F2]/80 text-white"
+              >
+                <Facebook className="w-4 h-4 mr-2" />
+                Facebook
+              </Button>
+              <Button
+                onClick={shareToTwitter}
+                className="bg-black hover:bg-zinc-800 text-white border border-white/20"
+              >
+                <Twitter className="w-4 h-4 mr-2" />
+                X / Twitter
+              </Button>
+              <Button
+                onClick={shareToWhatsApp}
+                className="bg-[#25D366] hover:bg-[#25D366]/80 text-white"
+              >
+                <MessageSquare className="w-4 h-4 mr-2" />
+                WhatsApp
+              </Button>
+              {navigator.share && (
+                <Button
+                  onClick={shareNative}
+                  className="bg-zinc-700 hover:bg-zinc-600 text-white"
+                >
+                  <Share2 className="w-4 h-4 mr-2" />
+                  More...
+                </Button>
+              )}
+            </div>
+
+            {/* Copy link */}
+            <Button
+              onClick={copyShareLink}
+              variant="outline"
+              className="w-full bg-white/5 border-white/20 text-white hover:bg-white/10"
+            >
+              <Copy className="w-4 h-4 mr-2" />
+              Copy Link
+            </Button>
+
+            {/* Share text preview */}
+            <div className="p-3 bg-zinc-800/30 rounded-lg">
+              <p className="text-zinc-400 text-xs mb-1">Share message:</p>
+              <p className="text-zinc-300 text-sm">
+                {getShareText(shareTarget === 'album' ? undefined : shareTarget as Photo)}
+              </p>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
