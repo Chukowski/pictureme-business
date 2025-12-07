@@ -271,33 +271,76 @@ export default function AlbumFeedPage() {
       return;
     }
     
-    toast.info('Preparing download...');
+    toast.info('Preparing ZIP download...');
     
-    // Download each photo
-    for (let i = 0; i < photos.length; i++) {
-      const photo = photos[i];
-      if (!photo.url) continue;
-      
-      try {
-        const response = await fetch(photo.url);
-        const blob = await response.blob();
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `photo-${albumId}-${i + 1}.jpg`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-        
-        // Small delay between downloads
-        await new Promise(resolve => setTimeout(resolve, 500));
-      } catch (error) {
-        console.error(`Failed to download photo ${i + 1}:`, error);
-      }
+    // Use the backend ZIP endpoint to download all photos
+    const API_URL = import.meta.env.VITE_API_URL || '';
+    const zipUrl = `${API_URL}/api/albums/${albumId}/download`;
+    
+    // Create a link and trigger download
+    const link = document.createElement('a');
+    link.href = zipUrl;
+    link.download = `album-${albumId}.zip`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    toast.success('Download started!');
+  };
+
+  // Download single photo
+  const handleDownloadSingle = (photo: Photo) => {
+    const link = document.createElement('a');
+    link.href = photo.url;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    link.download = `photo-${photo.id}.jpg`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success('Opening photo for download...');
+  };
+
+  // Print single photo
+  const handlePrintSingle = (photo: Photo) => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      toast.error('Please allow popups to print');
+      return;
     }
     
-    toast.success(`Downloaded ${photos.length} photos!`);
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Print Photo</title>
+          <style>
+            body { 
+              margin: 0; 
+              display: flex; 
+              justify-content: center; 
+              align-items: center; 
+              min-height: 100vh; 
+              background: white; 
+            }
+            img { 
+              max-width: 100%; 
+              max-height: 100vh; 
+              object-fit: contain; 
+            }
+            @media print {
+              body { -webkit-print-color-adjust: exact; }
+              @page { size: auto; margin: 0.5cm; }
+            }
+          </style>
+        </head>
+        <body>
+          <img src="${photo.url}" onload="setTimeout(() => { window.print(); }, 500);" />
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+    toast.success('Opening print dialog...');
   };
   
   const handlePrint = () => {
@@ -770,17 +813,39 @@ export default function AlbumFeedPage() {
                             </Badge>
                           )}
                         </div>
-                        {/* Delete button */}
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeletePhoto(photo.id);
-                          }}
-                          className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg bg-red-500/80 hover:bg-red-600 text-white"
-                          title="Delete photo"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        {/* Staff action buttons */}
+                        <div className="absolute top-2 left-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeletePhoto(photo.id);
+                            }}
+                            className="p-1.5 rounded-lg bg-red-500/80 hover:bg-red-600 text-white"
+                            title="Delete photo"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDownloadSingle(photo);
+                            }}
+                            className="p-1.5 rounded-lg bg-blue-500/80 hover:bg-blue-600 text-white"
+                            title="Download photo"
+                          >
+                            <Download className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handlePrintSingle(photo);
+                            }}
+                            className="p-1.5 rounded-lg bg-purple-500/80 hover:bg-purple-600 text-white"
+                            title="Print photo"
+                          >
+                            <Printer className="w-4 h-4" />
+                          </button>
+                        </div>
                       </>
                     )}
                   </div>
