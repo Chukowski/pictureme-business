@@ -5,7 +5,7 @@
  * Uses html5-qrcode library for cross-browser support.
  */
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { QrCode, Camera, X, Keyboard, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -35,77 +35,18 @@ export function ScanAlbumQR({
   const [showManualEntry, setShowManualEntry] = useState(false);
   const [manualCode, setManualCode] = useState('');
   const [scanStatus, setScanStatus] = useState<'idle' | 'scanning' | 'success' | 'error'>('idle');
+  const [shouldStartScanner, setShouldStartScanner] = useState(false);
   const scannerRef = useRef<Html5Qrcode | null>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const scannedRef = useRef(false); // Prevent double-scan
-
-  // Start camera for QR scanning
-  const startScanning = async () => {
-    if (!containerRef.current) return;
-    
-    try {
-      setIsScanning(true);
-      setScanStatus('scanning');
-      scannedRef.current = false;
-      
-      // Create scanner instance
-      scannerRef.current = new Html5Qrcode('qr-reader');
-      
-      await scannerRef.current.start(
-        { facingMode: 'environment' },
-        {
-          fps: 10,
-          qrbox: { width: 250, height: 250 },
-          aspectRatio: 1.0,
-        },
-        (decodedText) => {
-          // Prevent double triggers
-          if (scannedRef.current) return;
-          scannedRef.current = true;
-          
-          console.log('✅ QR Code detected:', decodedText);
-          
-          // Extract album code from URL if it's a full URL
-          let albumCode = decodedText.trim();
-          
-          // Check if it's a URL containing /album/ path
-          const albumMatch = albumCode.match(/\/album\/([A-Za-z0-9]+)/);
-          if (albumMatch) {
-            albumCode = albumMatch[1].toUpperCase();
-          } else {
-            // If it's just a code, use it directly
-            albumCode = albumCode.toUpperCase();
-          }
-          
-          setScanStatus('success');
-          stopScanning();
-          
-          setTimeout(() => {
-            onScan(albumCode);
-          }, 300);
-        },
-        (errorMessage) => {
-          // Ignore "No QR code found" errors - they happen continuously while scanning
-          if (!errorMessage.includes('No QR code found') && !errorMessage.includes('NotFoundException')) {
-            console.warn('QR scan error:', errorMessage);
-          }
-        }
-      );
-      
-    } catch (error) {
-      console.error('Camera access error:', error);
-      toast.error('Could not access camera. Please use manual entry.');
-      setIsScanning(false);
-      setScanStatus('error');
-      setShowManualEntry(true);
-    }
-  };
+  const scannedRef = useRef(false);
 
   // Stop camera
-  const stopScanning = async () => {
+  const stopScanning = useCallback(async () => {
     if (scannerRef.current) {
       try {
-        await scannerRef.current.stop();
+        const state = scannerRef.current.getState();
+        if (state === 2) { // SCANNING state
+          await scannerRef.current.stop();
+        }
         scannerRef.current.clear();
       } catch (err) {
         console.warn('Error stopping scanner:', err);
@@ -113,9 +54,91 @@ export function ScanAlbumQR({
       scannerRef.current = null;
     }
     setIsScanning(false);
-    if (scanStatus !== 'success') {
-      setScanStatus('idle');
-    }
+    setShouldStartScanner(false);
+  }, []);
+
+  // Initialize scanner after DOM is ready
+  useEffect(() => {
+    if (!shouldStartScanner) return;
+
+    const initScanner = async () => {
+      // Wait a tick for React to render the element
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      const element = document.getElementById('qr-reader');
+      if (!element) {
+        console.error('QR reader element not found');
+        toast.error('Scanner initialization failed. Please try again.');
+        setScanStatus('error');
+        setIsScanning(false);
+        setShouldStartScanner(false);
+        return;
+      }
+
+      try {
+        scannedRef.current = false;
+        scannerRef.current = new Html5Qrcode('qr-reader');
+        
+        await scannerRef.current.start(
+          { facingMode: 'environment' },
+          {
+            fps: 10,
+            qrbox: { width: 200, height: 200 },
+            aspectRatio: 1.0,
+          },
+          (decodedText) => {
+            // Prevent double triggers
+            if (scannedRef.current) return;
+            scannedRef.current = true;
+            
+            console.log('✅ QR Code detected:', decodedText);
+            
+            // Extract album code from URL if it's a full URL
+            let albumCode = decodedText.trim();
+            
+            // Check if it's a URL containing /album/ path
+            const albumMatch = albumCode.match(/\/album\/([A-Za-z0-9]+)/);
+            if (albumMatch) {
+              albumCode = albumMatch[1].toUpperCase();
+            } else {
+              // If it's just a code, use it directly
+              albumCode = albumCode.toUpperCase();
+            }
+            
+            setScanStatus('success');
+            stopScanning();
+            
+            setTimeout(() => {
+              onScan(albumCode);
+            }, 300);
+          },
+          (errorMessage) => {
+            // Ignore "No QR code found" errors - they happen continuously
+            if (!errorMessage.includes('No QR code found') && !errorMessage.includes('NotFoundException')) {
+              console.warn('QR scan error:', errorMessage);
+            }
+          }
+        );
+        
+        setScanStatus('scanning');
+        
+      } catch (error) {
+        console.error('Camera access error:', error);
+        toast.error('Could not access camera. Please use manual entry.');
+        setIsScanning(false);
+        setShouldStartScanner(false);
+        setScanStatus('error');
+        setShowManualEntry(true);
+      }
+    };
+
+    initScanner();
+  }, [shouldStartScanner, onScan, stopScanning]);
+
+  // Start camera for QR scanning
+  const startScanning = () => {
+    setIsScanning(true);
+    setShouldStartScanner(true);
   };
 
   // Handle manual code submission
@@ -170,12 +193,15 @@ export function ScanAlbumQR({
             <div 
               className="relative aspect-square rounded-2xl overflow-hidden border-2"
               style={{ borderColor: primaryColor }}
-              ref={containerRef}
             >
-              {isScanning ? (
+              {/* Always render the qr-reader div, but hide when not scanning */}
+              <div 
+                id="qr-reader" 
+                className={`w-full h-full ${isScanning ? 'block' : 'hidden'}`}
+              />
+              
+              {isScanning && (
                 <>
-                  {/* html5-qrcode renders the video here */}
-                  <div id="qr-reader" className="w-full h-full" />
                   {/* Scanning overlay */}
                   <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                     <div 
@@ -189,7 +215,9 @@ export function ScanAlbumQR({
                     style={{ backgroundColor: primaryColor }}
                   />
                 </>
-              ) : (
+              )}
+              
+              {!isScanning && (
                 <div 
                   className="w-full h-full flex flex-col items-center justify-center"
                   style={{ backgroundColor: `${primaryColor}10` }}
@@ -323,6 +351,9 @@ export function ScanAlbumQR({
           width: 100% !important;
           height: 100% !important;
           object-fit: cover !important;
+        }
+        #qr-reader__header_message {
+          display: none !important;
         }
       `}</style>
     </div>
