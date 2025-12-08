@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+// Force HMR update
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -19,6 +20,7 @@ import { EditorSectionProps } from "./types";
 import { Template } from "@/services/eventsApi";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BadgeTemplateEditor, BadgeTemplateConfig, DEFAULT_BADGE_CONFIG } from "@/components/templates/BadgeTemplateEditor";
+import { BadgeDesignerPro } from "@/badge-pro";
 import { exportTemplates, importTemplates } from "@/services/templateStorage";
 import { uploadTemplateImage } from "@/services/templateStorage";
 import { toast } from "sonner";
@@ -73,8 +75,14 @@ export function EventTemplates({ formData, setFormData, onPreviewModeChange }: E
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
     if (onPreviewModeChange) {
-      // Only show badge preview when explicitly on badge tab
-      onPreviewModeChange(tab === 'badge' ? 'badge' : 'event');
+      const isBadgePro = tab === 'badge-pro';
+      const isBadge = tab === 'badge';
+      
+      if (isBadgePro) {
+        onPreviewModeChange('badge-pro' as any);
+      } else {
+        onPreviewModeChange(isBadge ? 'badge' : 'event');
+      }
     }
   };
 
@@ -231,6 +239,7 @@ export function EventTemplates({ formData, setFormData, onPreviewModeChange }: E
   };
 
   const currentTemplate = editingTemplateIndex !== null ? templates[editingTemplateIndex] : null;
+  const albumCode = (formData as any)?.slug || (formData as any)?._id || '';
 
   return (
     <div className="space-y-8">
@@ -249,10 +258,16 @@ export function EventTemplates({ formData, setFormData, onPreviewModeChange }: E
               AI Templates
             </TabsTrigger>
              {badgeEnabled && (
-              <TabsTrigger value="badge" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white text-zinc-400">
-                <LayoutTemplate className="w-4 h-4 mr-2" />
-                Visitor Badge
-              </TabsTrigger>
+              <>
+                <TabsTrigger value="badge" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white text-zinc-400">
+                  <LayoutTemplate className="w-4 h-4 mr-2" />
+                  Visitor Badge
+                </TabsTrigger>
+                <TabsTrigger value="badge-pro" className="data-[state=active]:bg-emerald-600 data-[state=active]:text-white text-zinc-400">
+                  <LayoutTemplate className="w-4 h-4 mr-2" />
+                  Badge Pro
+                </TabsTrigger>
+              </>
             )}
           </TabsList>
 
@@ -497,6 +512,28 @@ export function EventTemplates({ formData, setFormData, onPreviewModeChange }: E
                     config={formData.badgeTemplate || DEFAULT_BADGE_CONFIG} 
                     onChange={updateBadgeTemplate}
                     eventName={formData.title}
+                  />
+                </CardContent>
+              </Card>
+            </TabsContent>
+          )}
+
+          {badgeEnabled && (
+            <TabsContent value="badge-pro" className="space-y-6">
+              <Card className="bg-zinc-900/20 border-white/5 backdrop-blur-sm">
+                <CardContent className="p-6 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-lg font-semibold text-white">Badge Creator Pro</h3>
+                      <p className="text-sm text-zinc-400">Print-ready layout with DPI, bleed, and presets.</p>
+                    </div>
+                    <Badge className="bg-indigo-500/20 text-indigo-300 border-indigo-500/40">Beta</Badge>
+                  </div>
+                  <BadgeDesignerPro
+                    config={formData.badgeTemplate || DEFAULT_BADGE_CONFIG}
+                    onChange={updateBadgeTemplate}
+                    eventName={formData.title}
+                    albumCode={albumCode}
                   />
                 </CardContent>
               </Card>

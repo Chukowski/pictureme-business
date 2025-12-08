@@ -2,19 +2,24 @@ import { EventFormData } from "./types";
 import { QrCode, User, Calendar, PartyPopper, Sparkles, LayoutTemplate } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import { BadgeVisualEditor } from "@/badge-pro/BadgeVisualEditor";
+import { BadgeTemplateConfig } from "@/components/templates/BadgeTemplateEditor";
 
 interface LivePreviewProps {
   formData: EventFormData;
   currentStep: string;
-  previewMode?: 'event' | 'badge' | 'template';
+  previewMode?: 'event' | 'badge' | 'template' | 'badge-pro';
+  onBadgeChange?: (config: BadgeTemplateConfig) => void;
 }
 
-export function LivePreview({ formData, currentStep, previewMode }: LivePreviewProps) {
+export function LivePreview({ formData, currentStep, previewMode, onBadgeChange }: LivePreviewProps) {
   const { theme, title, description, branding, badgeTemplate, templates } = formData;
+  const albumCode = (formData as any).slug || 'CODE';
   
   // Determine what to preview based on explicit mode only
   // Badge preview only shows when explicitly set to 'badge' mode
   const showBadgePreview = previewMode === 'badge';
+  const showBadgeProPreview = previewMode === 'badge-pro';
   
   // Calculate theme styles
   const bgStyle = theme.mode === 'dark' ? 'bg-zinc-900' : 'bg-white';
@@ -24,6 +29,22 @@ export function LivePreview({ formData, currentStep, previewMode }: LivePreviewP
   const primaryBtnStyle = {
     backgroundColor: theme.primaryColor,
     color: '#ffffff',
+  };
+
+  // Badge Pro Visual Editor Content
+  const BadgeProContent = () => {
+    if (!badgeTemplate) return null;
+    return (
+      <div className="w-full h-full flex items-center justify-center p-4">
+        <BadgeVisualEditor
+          config={badgeTemplate}
+          onChange={onBadgeChange || (() => {})}
+          eventName={title}
+          albumCode={albumCode}
+          className="border-zinc-800 shadow-2xl"
+        />
+      </div>
+    );
   };
 
   // Badge preview dimensions
@@ -234,8 +255,10 @@ export function LivePreview({ formData, currentStep, previewMode }: LivePreviewP
   );
 
   return (
-    <div className={`min-h-full w-full flex flex-col ${showBadgePreview ? 'bg-zinc-950' : bgStyle} transition-colors duration-300 relative`}>
-      {showBadgePreview ? (
+    <div className={`min-h-full w-full flex flex-col ${showBadgePreview || showBadgeProPreview ? 'bg-zinc-950' : bgStyle} transition-colors duration-300 relative`}>
+      {showBadgeProPreview ? (
+        <BadgeProContent />
+      ) : showBadgePreview ? (
         <div className="flex-1 flex items-center justify-center p-4">
           <BadgePreviewContent />
         </div>
@@ -247,7 +270,8 @@ export function LivePreview({ formData, currentStep, previewMode }: LivePreviewP
       
       {/* Preview Context Badge */}
       <div className="absolute bottom-4 left-1/2 -translate-x-1/2 px-3 py-1 bg-black/50 backdrop-blur-md rounded-full border border-white/10 text-[10px] text-white/80 pointer-events-none">
-         Previewing: {showBadgePreview ? 'Visitor Badge' :
+         Previewing: {showBadgeProPreview ? 'Badge Visual Editor' :
+                      showBadgePreview ? 'Visitor Badge' :
                       currentStep === 'setup' ? 'Start Screen' : 
                       currentStep === 'design' ? 'Theme' :
                       currentStep === 'experience' ? 'Templates' :

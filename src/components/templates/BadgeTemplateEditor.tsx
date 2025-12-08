@@ -34,7 +34,8 @@ import {
   Download,
   Sparkles,
   Palette,
-  CheckCircle2
+  CheckCircle2,
+  ScanLine
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -45,6 +46,7 @@ export interface ElementPosition {
   y: number; // percentage from top (0-100)
   width?: number; // percentage of badge width (optional)
   height?: number; // percentage of badge height (optional)
+  fontSize?: number; // custom font size override
 }
 
 // Custom element positions for visual editor
@@ -55,8 +57,11 @@ export interface CustomElementPositions {
   dateTime?: ElementPosition;
   customField1?: ElementPosition;
   customField2?: ElementPosition;
+  albumCode?: ElementPosition;
   qrCode?: ElementPosition;
 }
+
+export type BadgeEditorTab = 'design' | 'content' | 'ai';
 
 export interface BadgeTemplateConfig {
   enabled: boolean;
@@ -79,6 +84,7 @@ export interface BadgeTemplateConfig {
     showName: boolean;
     showDateTime: boolean;
     showEventName: boolean;
+    showAlbumCode: boolean;
     customField1: string;
     customField2: string;
   };
@@ -121,6 +127,9 @@ interface BadgeTemplateEditorProps {
   eventName?: string;
   disabled?: boolean;
   className?: string;
+  initialTab?: BadgeEditorTab;
+  activeTab?: BadgeEditorTab;
+  onTabChange?: (tab: BadgeEditorTab) => void;
 }
 
 // Layout options with dimensions
@@ -190,6 +199,7 @@ export const DEFAULT_ELEMENT_POSITIONS: CustomElementPositions = {
   dateTime: { x: 50, y: 68 },
   customField1: { x: 50, y: 74 },
   customField2: { x: 50, y: 80 },
+  albumCode: { x: 50, y: 84 },
   qrCode: { x: 50, y: 88, width: 15, height: 15 },
 };
 
@@ -209,6 +219,7 @@ export const DEFAULT_BADGE_CONFIG: BadgeTemplateConfig = {
     showName: true,
     showDateTime: true,
     showEventName: true,
+    showAlbumCode: false,
     customField1: '',
     customField2: '',
   },
@@ -240,12 +251,29 @@ export function BadgeTemplateEditor({
   onChange,
   eventName = 'Event Name',
   disabled = false,
-  className
+  className,
+  initialTab = 'design',
+  activeTab: controlledTab,
+  onTabChange,
 }: BadgeTemplateEditorProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [isUploadingRef, setIsUploadingRef] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const refImageInputRef = useRef<HTMLInputElement>(null);
+  const [activeTab, setActiveTab] = useState<BadgeEditorTab>(controlledTab || initialTab);
+
+  // Keep internal tab in sync when controlled value changes
+  React.useEffect(() => {
+    if (controlledTab && controlledTab !== activeTab) {
+      setActiveTab(controlledTab);
+    }
+  }, [controlledTab]);
+
+  const handleTabChange = (tab: string) => {
+    const next = (tab as BadgeEditorTab) || 'design';
+    setActiveTab(next);
+    onTabChange?.(next);
+  };
 
   const updateConfig = (updates: Partial<BadgeTemplateConfig>) => {
     onChange({ ...config, ...updates });
@@ -414,7 +442,7 @@ export function BadgeTemplateEditor({
       </div>
 
       {config.enabled && (
-        <Tabs defaultValue="design" className="w-full">
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
           <TabsList className="grid w-full grid-cols-3 bg-zinc-900/50 border border-white/10 rounded-lg p-1">
             <TabsTrigger 
               value="design" 
@@ -621,6 +649,7 @@ export function BadgeTemplateEditor({
                   { key: 'showName', label: 'Visitor Name', icon: User },
                   { key: 'showDateTime', label: 'Date & Time', icon: Calendar },
                   { key: 'showEventName', label: 'Event Name', icon: PartyPopper },
+                  { key: 'showAlbumCode', label: 'Album Code', icon: ScanLine },
                 ].map((field) => (
                   <div key={field.key} className="flex items-center justify-between p-2.5 rounded-lg bg-white/5 border border-white/10">
                     <div className="flex items-center gap-2">

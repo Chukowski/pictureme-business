@@ -36,6 +36,8 @@ export function ScanAlbumQR({
   const [scanStatus, setScanStatus] = useState<'idle' | 'scanning' | 'success' | 'error'>('idle');
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const detectorRef = useRef<BarcodeDetector | null>(null);
+  const rafRef = useRef<number | null>(null);
 
   // Start camera for QR scanning
   const startScanning = async () => {
@@ -54,10 +56,26 @@ export function ScanAlbumQR({
         videoRef.current.play();
       }
 
-      // In production, you would use a QR scanning library like @zxing/browser
-      // For now, we'll simulate scanning after a delay
-      // This is a placeholder - real implementation would use BarcodeDetector API or zxing
-      
+      // Initialize native BarcodeDetector if available
+      if ('BarcodeDetector' in window) {
+        try {
+          detectorRef.current = new BarcodeDetector({ formats: ['qr_code'] });
+          // Kick off detection loop once video has metadata
+          const onCanPlay = () => {
+            runDetection();
+            videoRef.current?.removeEventListener('canplay', onCanPlay);
+          };
+          videoRef.current?.addEventListener('canplay', onCanPlay);
+        } catch (err) {
+          console.warn('BarcodeDetector init failed', err);
+          toast.error('QR scanner not supported. Use manual entry.');
+          setShowManualEntry(true);
+        }
+      } else {
+        toast.error('QR scanner not supported in this browser. Use manual entry.');
+        setShowManualEntry(true);
+      }
+
     } catch (error) {
       console.error('Camera access error:', error);
       toast.error('Could not access camera. Please use manual entry.');
@@ -69,6 +87,10 @@ export function ScanAlbumQR({
 
   // Stop camera
   const stopScanning = () => {
+    if (rafRef.current) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(track => track.stop());
       streamRef.current = null;
@@ -106,6 +128,30 @@ export function ScanAlbumQR({
     setTimeout(() => {
       onScan(mockAlbumId);
     }, 500);
+  };
+
+  // Detection loop using native BarcodeDetector
+  const runDetection = async () => {
+    if (!isScanning || scanStatus !== 'scanning') return;
+    if (!videoRef.current || !detectorRef.current) {
+      rafRef.current = requestAnimationFrame(runDetection);
+      return;
+    }
+    try {
+      const barcodes = await detectorRef.current.detect(videoRef.current);
+      if (barcodes.length > 0) {
+        const raw = barcodes[0].rawValue?.trim();
+        if (raw) {
+          setScanStatus('success');
+          stopScanning();
+          setTimeout(() => onScan(raw), 300);
+          return;
+        }
+      }
+    } catch (err) {
+      console.warn('Barcode detect error', err);
+    }
+    rafRef.current = requestAnimationFrame(runDetection);
   };
 
   // Cleanup on unmount

@@ -28,7 +28,9 @@ import {
   ChevronDown,
   Users,
   UserPlus,
-  Check
+  Check,
+  FileText,
+  Image as ImageIcon
 } from 'lucide-react';
 import {
   Select,
@@ -45,6 +47,8 @@ import QRCode from 'qrcode';
 import { BadgeTemplateConfig } from '@/components/templates/BadgeTemplateEditor';
 import { processImageWithAI, downloadImageAsBase64 } from '@/services/aiProcessor';
 import { Template } from '@/services/eventsApi';
+import { exportBadgeAsPdf, exportBadgeAsPng, printBadgeAsPdf } from '@/badge-pro/exportUtils';
+import { BadgePrintSettings } from '@/badge-pro/types';
 
 type FlowState = 'mode-select' | 'input' | 'camera' | 'preview' | 'creating' | 'group-continue' | 'badge' | 'complete';
 type BadgeMode = 'individual' | 'group';
@@ -558,332 +562,76 @@ export function RegistrationBadgeFlow({
   }, [startCamera]);
 
   // Download badge with real QR code using badge template settings (including custom positions)
-  const downloadBadge = useCallback(async () => {
+  const downloadBadge = useCallback(async (format: 'png' | 'pdf' = 'png') => {
     // Use processed photo if available, otherwise use captured photo
     const photoToUse = processedPhoto || capturedPhoto;
-    if (!photoToUse || !albumCode) return;
+    if (!photoToUse || !albumCode || !badgeTemplate) return;
     
-    // Create a canvas with badge layout from template
-    const canvas = document.createElement('canvas');
-    const layout = badgeTemplate?.layout || 'portrait';
-    
-    // Set dimensions based on layout
-    if (layout === 'portrait') {
-      canvas.width = 600;
-      canvas.height = 800;
-    } else if (layout === 'landscape') {
-      canvas.width = 800;
-      canvas.height = 600;
-    } else {
-      canvas.width = 600;
-      canvas.height = 600;
-    }
-    
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    
-    // Check if using custom positions from visual editor
-    const useCustom = badgeTemplate?.useCustomPositions && badgeTemplate?.customPositions;
-    const customPos = badgeTemplate?.customPositions;
-    
-    // Draw background from template or use primary color
-    if (badgeTemplate?.backgroundUrl) {
-      const bgImg = new Image();
-      bgImg.crossOrigin = 'anonymous';
-      await new Promise<void>((resolve) => {
-        bgImg.onload = () => {
-          ctx.drawImage(bgImg, 0, 0, canvas.width, canvas.height);
-          resolve();
-        };
-        bgImg.onerror = () => {
-          ctx.fillStyle = badgeTemplate?.backgroundColor || primaryColor;
-          ctx.fillRect(0, 0, canvas.width, canvas.height);
-          resolve();
-        };
-        bgImg.src = badgeTemplate.backgroundUrl!;
-      });
-    } else {
-      ctx.fillStyle = badgeTemplate?.backgroundColor || primaryColor;
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-    }
-    
-    // Calculate photo size and position
-    const photoSizePercent = useCustom && customPos?.photo?.width 
-      ? customPos.photo.width / 100
-      : (badgeTemplate?.photoPlacement?.size === 'small' ? 0.25 
-        : badgeTemplate?.photoPlacement?.size === 'large' ? 0.45 : 0.35);
-    const photoSize = Math.min(canvas.width, canvas.height) * photoSizePercent;
-    
-    // Use custom positions or default centered positions
-    const photoX = useCustom && customPos?.photo 
-      ? (customPos.photo.x / 100) * canvas.width - photoSize / 2
-      : (canvas.width - photoSize) / 2;
-    const photoY = useCustom && customPos?.photo 
-      ? (customPos.photo.y / 100) * canvas.height - photoSize / 2
-      : 40;
-    
-    // Load and draw photo
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    
-    await new Promise<void>((resolve) => {
-      img.onload = () => {
-        ctx.save();
-        
-        // Apply shape from template
-        const shape = badgeTemplate?.photoPlacement?.shape || 'circle';
-        if (shape === 'circle') {
-          ctx.beginPath();
-          ctx.arc(photoX + photoSize/2, photoY + photoSize/2, photoSize/2, 0, Math.PI * 2);
-          ctx.closePath();
-          ctx.clip();
-        } else if (shape === 'rounded') {
-          ctx.beginPath();
-          ctx.roundRect(photoX, photoY, photoSize, photoSize, photoSize * 0.1);
-          ctx.closePath();
-          ctx.clip();
-        }
-        
-        // Calculate "object-fit: cover" dimensions to maintain aspect ratio
-        const imgAspect = img.width / img.height;
-        const containerAspect = 1; // Square container (photoSize x photoSize)
-        
-        let drawWidth, drawHeight, drawX, drawY;
-        
-        if (imgAspect > containerAspect) {
-          // Image is wider - fit height, crop width
-          drawHeight = photoSize;
-          drawWidth = photoSize * imgAspect;
-          drawX = photoX - (drawWidth - photoSize) / 2;
-          drawY = photoY;
-        } else {
-          // Image is taller - fit width, crop height
-          drawWidth = photoSize;
-          drawHeight = photoSize / imgAspect;
-          drawX = photoX;
-          drawY = photoY - (drawHeight - photoSize) / 2;
-        }
-        
-        ctx.drawImage(img, drawX, drawY, drawWidth, drawHeight);
-        ctx.restore();
-        
-        // Draw border around photo
-        ctx.strokeStyle = 'rgba(255,255,255,0.3)';
-        ctx.lineWidth = 4;
-        if (shape === 'circle') {
-          ctx.beginPath();
-          ctx.arc(photoX + photoSize/2, photoY + photoSize/2, photoSize/2, 0, Math.PI * 2);
-          ctx.stroke();
-        } else {
-          ctx.beginPath();
-          ctx.roundRect(photoX, photoY, photoSize, photoSize, shape === 'rounded' ? photoSize * 0.1 : 0);
-          ctx.stroke();
-        }
-        
-        resolve();
-      };
-      img.onerror = () => resolve();
-      img.src = photoToUse;
-    });
-    
-    // Draw text with template styles and custom positions
-    const textStyle = badgeTemplate?.textStyle;
-    ctx.textAlign = 'center';
-    
-    // Name
-    if (badgeTemplate?.fields?.showName !== false && visitorName) {
-      ctx.fillStyle = textStyle?.nameColor || 'white';
-      const nameFontSize = Math.round(canvas.height * (textStyle?.nameFontSize || 5) / 100);
-      ctx.font = `bold ${nameFontSize}px ${textStyle?.fontFamily || 'sans-serif'}`;
+    const isGroup = badgeMode === 'group';
+    const name = isGroup ? (groupMemberNames[selectedGroupMember] || `Member ${selectedGroupMember + 1}`) : visitorName;
+    const filename = `badge-${albumCode}${isGroup ? `-${selectedGroupMember+1}` : ''}.${format}`;
+
+    // Construct dynamic data for the renderer
+    const badgeData = {
+      photoUrl: photoToUse,
+      name: name,
+      eventName: eventName,
+      date: new Date().toLocaleDateString(),
+      albumCode: albumCode,
+    };
+
+    // Extract print settings if they exist (cast to any if needed as BadgeTemplateConfig might not show it in type yet)
+    const printSettings = (badgeTemplate as any).print as BadgePrintSettings | undefined;
+
+    try {
+      toast.loading(`Generating ${format.toUpperCase()}...`);
       
-      const nameX = useCustom && customPos?.name 
-        ? (customPos.name.x / 100) * canvas.width 
-        : canvas.width / 2;
-      const nameY = useCustom && customPos?.name 
-        ? (customPos.name.y / 100) * canvas.height 
-        : photoY + photoSize + 50;
-      
-      ctx.fillText(visitorName, nameX, nameY);
-    }
-    
-    // Event name
-    if (badgeTemplate?.fields?.showEventName !== false) {
-      ctx.fillStyle = textStyle?.eventNameColor || 'rgba(255,255,255,0.9)';
-      const eventFontSize = Math.round(canvas.height * (textStyle?.eventNameFontSize || 3.5) / 100);
-      ctx.font = `${eventFontSize}px ${textStyle?.fontFamily || 'sans-serif'}`;
-      
-      const eventX = useCustom && customPos?.eventName 
-        ? (customPos.eventName.x / 100) * canvas.width 
-        : canvas.width / 2;
-      const eventY = useCustom && customPos?.eventName 
-        ? (customPos.eventName.y / 100) * canvas.height 
-        : photoY + photoSize + 90;
-      
-      ctx.fillText(eventName, eventX, eventY);
-    }
-    
-    // Date
-    if (badgeTemplate?.fields?.showDateTime !== false) {
-      ctx.fillStyle = textStyle?.dateTimeColor || 'rgba(255,255,255,0.7)';
-      const dateFontSize = Math.round(canvas.height * (textStyle?.dateTimeFontSize || 2.5) / 100);
-      ctx.font = `${dateFontSize}px ${textStyle?.fontFamily || 'sans-serif'}`;
-      
-      const dateX = useCustom && customPos?.dateTime 
-        ? (customPos.dateTime.x / 100) * canvas.width 
-        : canvas.width / 2;
-      const dateY = useCustom && customPos?.dateTime 
-        ? (customPos.dateTime.y / 100) * canvas.height 
-        : photoY + photoSize + 120;
-      
-      ctx.fillText(new Date().toLocaleDateString(), dateX, dateY);
-    }
-    
-    // Generate and draw real QR code
-    if (badgeTemplate?.qrCode?.enabled !== false) {
-      const qrUrl = `${window.location.origin}/${userSlug}/${eventSlug}/booth?album=${albumCode}`;
-      const qrSizePercent = useCustom && customPos?.qrCode?.width 
-        ? customPos.qrCode.width / 100
-        : (badgeTemplate?.qrCode?.size === 'small' ? 0.15 
-          : badgeTemplate?.qrCode?.size === 'large' ? 0.25 : 0.20);
-      const qrSize = Math.min(canvas.width, canvas.height) * qrSizePercent;
-      
-      const qrX = useCustom && customPos?.qrCode 
-        ? (customPos.qrCode.x / 100) * canvas.width - qrSize / 2
-        : (canvas.width - qrSize) / 2;
-      const qrY = useCustom && customPos?.qrCode 
-        ? (customPos.qrCode.y / 100) * canvas.height - qrSize / 2
-        : canvas.height - qrSize - 50;
-      
-      // Draw white background for QR
-      ctx.fillStyle = 'white';
-      const padding = 8;
-      ctx.beginPath();
-      ctx.roundRect(qrX - padding, qrY - padding, qrSize + padding * 2, qrSize + padding * 2, 8);
-      ctx.fill();
-      
-      // Generate QR code to canvas using qrcode library
-      try {
-        const qrDataUrl = await QRCode.toDataURL(qrUrl, {
-          width: qrSize,
-          margin: 0,
-          color: { dark: '#000000', light: '#ffffff' }
-        });
-        
-        const qrImg = new Image();
-        await new Promise<void>((resolveQr) => {
-          qrImg.onload = () => {
-            ctx.drawImage(qrImg, qrX, qrY, qrSize, qrSize);
-            resolveQr();
-          };
-          qrImg.onerror = () => resolveQr();
-          qrImg.src = qrDataUrl;
-        });
-      } catch (qrError) {
-        console.error('QR generation failed:', qrError);
+      if (format === 'pdf') {
+        await exportBadgeAsPdf(badgeTemplate, printSettings, albumCode, filename, badgeData);
+      } else {
+        await exportBadgeAsPng(badgeTemplate, printSettings, albumCode, filename, badgeData);
       }
       
-      // Draw album code below QR
-      ctx.fillStyle = 'rgba(255,255,255,0.9)';
-      ctx.font = 'bold 14px monospace';
-      ctx.fillText(albumCode, qrX + qrSize / 2, qrY + qrSize + padding + 20);
+      toast.dismiss();
+      toast.success(`Badge downloaded as ${format.toUpperCase()}!`);
+    } catch (err) {
+      console.error("Download failed", err);
+      toast.dismiss();
+      toast.error("Failed to download badge");
     }
-    
-    // Download
-    const link = document.createElement('a');
-    link.download = `badge-${albumCode}.png`;
-    link.href = canvas.toDataURL('image/png');
-    link.click();
-    
-    toast.success('Badge downloaded!');
-  }, [capturedPhoto, processedPhoto, albumCode, badgeTemplate, primaryColor, visitorName, eventName, userSlug, eventSlug]);
+  }, [capturedPhoto, processedPhoto, albumCode, badgeTemplate, visitorName, eventName, badgeMode, selectedGroupMember, groupMemberNames]);
 
   // Print badge - opens browser print dialog with template settings
-  const printBadge = useCallback(() => {
-    // Create a printable version of the badge
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) {
-      toast.error('Please allow popups to print');
-      return;
+  const printBadge = useCallback(async () => {
+    // Use processed photo if available, otherwise use captured photo
+    const photoToUse = processedPhoto || capturedPhoto;
+    if (!photoToUse || !albumCode || !badgeTemplate) return;
+    
+    const isGroup = badgeMode === 'group';
+    const name = isGroup ? (groupMemberNames[selectedGroupMember] || `Member ${selectedGroupMember + 1}`) : visitorName;
+
+    // Construct dynamic data for the renderer
+    const badgeData = {
+      photoUrl: photoToUse,
+      name: name,
+      eventName: eventName,
+      date: new Date().toLocaleDateString(),
+      albumCode: albumCode,
+    };
+
+    const printSettings = (badgeTemplate as any).print as BadgePrintSettings | undefined;
+
+    try {
+      toast.loading('Preparing print...');
+      await printBadgeAsPdf(badgeTemplate, printSettings, albumCode, badgeData);
+      toast.dismiss();
+      toast.success('Opening print dialog...');
+    } catch (err: any) {
+      console.error("Print failed", err);
+      toast.dismiss();
+      toast.error(err?.message || "Failed to prepare print document");
     }
-    
-    const qrUrl = `${window.location.origin}/${userSlug}/${eventSlug}/booth?album=${albumCode}`;
-    const bgColor = badgeTemplate?.backgroundColor || primaryColor;
-    const bgImage = badgeTemplate?.backgroundUrl ? `url(${badgeTemplate.backgroundUrl})` : 'none';
-    const photoShape = badgeTemplate?.photoPlacement?.shape === 'rounded' ? '15px' 
-      : badgeTemplate?.photoPlacement?.shape === 'square' ? '0' : '50%';
-    const nameColor = badgeTemplate?.textStyle?.nameColor || 'white';
-    const eventColor = badgeTemplate?.textStyle?.eventNameColor || 'rgba(255,255,255,0.9)';
-    const dateColor = badgeTemplate?.textStyle?.dateTimeColor || 'rgba(255,255,255,0.7)';
-    
-    printWindow.document.write(`
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>Badge - ${visitorName || albumCode}</title>
-          <style>
-            @page { size: 3in 4in; margin: 0; }
-            body { 
-              margin: 0; 
-              padding: 20px;
-              font-family: ${badgeTemplate?.textStyle?.fontFamily || 'system-ui, -apple-system, sans-serif'};
-              display: flex;
-              justify-content: center;
-              align-items: center;
-              min-height: 100vh;
-              background: ${bgColor};
-              background-image: ${bgImage};
-              background-size: cover;
-              background-position: center;
-            }
-            .badge {
-              padding: 30px;
-              text-align: center;
-              width: 280px;
-            }
-            .photo {
-              width: 120px;
-              height: 120px;
-              border-radius: ${photoShape};
-              object-fit: cover;
-              border: 4px solid rgba(255,255,255,0.3);
-              margin-bottom: 20px;
-            }
-            .name { font-size: 24px; font-weight: bold; margin-bottom: 8px; color: ${nameColor}; }
-            .event { font-size: 16px; margin-bottom: 4px; color: ${eventColor}; }
-            .date { font-size: 14px; margin-bottom: 20px; color: ${dateColor}; }
-            .qr-container { 
-              background: white; 
-              padding: 15px; 
-              border-radius: 8px; 
-              display: inline-block;
-              margin-bottom: 10px;
-            }
-            .code { font-family: monospace; font-size: 14px; color: rgba(255,255,255,0.9); }
-          </style>
-        </head>
-        <body>
-          <div class="badge">
-            <img src="${processedPhoto || capturedPhoto}" class="photo" />
-            ${badgeTemplate?.fields?.showName !== false && visitorName ? `<div class="name">${visitorName}</div>` : ''}
-            ${badgeTemplate?.fields?.showEventName !== false ? `<div class="event">${eventName}</div>` : ''}
-            ${badgeTemplate?.fields?.showDateTime !== false ? `<div class="date">${new Date().toLocaleDateString()}</div>` : ''}
-            ${badgeTemplate?.qrCode?.enabled !== false ? `
-              <div class="qr-container">
-                <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(qrUrl)}" width="100" height="100" />
-              </div>
-              <div class="code">${albumCode}</div>
-            ` : ''}
-          </div>
-          <script>
-            setTimeout(() => { window.print(); window.close(); }, 500);
-          </script>
-        </body>
-      </html>
-    `);
-    printWindow.document.close();
-    
-    toast.success('Opening print dialog...');
-  }, [capturedPhoto, processedPhoto, albumCode, visitorName, eventName, primaryColor, badgeTemplate, userSlug, eventSlug]);
+  }, [capturedPhoto, processedPhoto, albumCode, visitorName, eventName, primaryColor, badgeTemplate, userSlug, eventSlug, badgeMode, selectedGroupMember, groupMemberNames]);
 
   // Continue to next station
   const continueToNextStation = useCallback(() => {
@@ -1352,7 +1100,7 @@ export function RegistrationBadgeFlow({
                 
                 return (
                   <div 
-                    className="relative rounded-xl overflow-hidden"
+                    className="relative rounded-xl overflow-hidden shadow-lg"
                     style={{ 
                       backgroundColor: badgeTemplate?.backgroundUrl ? undefined : (badgeTemplate?.backgroundColor || primaryColor),
                       backgroundImage: badgeTemplate?.backgroundUrl ? `url(${badgeTemplate.backgroundUrl})` : undefined,
@@ -1440,7 +1188,7 @@ export function RegistrationBadgeFlow({
                           transform: 'translate(-50%, -50%)',
                         }}
                       >
-                        <div className="p-2 bg-white rounded-lg" data-qr-code>
+                        <div className="p-2 bg-white rounded-lg shadow-sm" data-qr-code>
                           <QRCodeSVG 
                             value={`${window.location.origin}/${userSlug}/${eventSlug}/booth?album=${albumCode}`}
                             size={60}
@@ -1448,7 +1196,9 @@ export function RegistrationBadgeFlow({
                             includeMargin={false}
                           />
                         </div>
-                        <p className="mt-1 font-mono text-xs text-white/80">{albumCode}</p>
+                        {badgeTemplate?.fields?.showAlbumCode && (
+                          <p className="mt-1 font-mono text-xs text-white/80 drop-shadow-md font-bold">{albumCode}</p>
+                        )}
                       </div>
                     )}
                   </div>
@@ -1457,18 +1207,30 @@ export function RegistrationBadgeFlow({
 
               {/* Actions */}
               <div className="grid grid-cols-2 gap-3">
-                <Button
-                  onClick={downloadBadge}
-                  variant="outline"
-                  className="border-zinc-700 text-zinc-300"
-                >
-                  <Download className="w-4 h-4 mr-2" />
-                  {badgeMode === 'group' ? `Download #${selectedGroupMember + 1}` : 'Download'}
-                </Button>
+                <div className="flex gap-2">
+                   <Button
+                    onClick={() => downloadBadge('png')}
+                    variant="outline"
+                    className="flex-1 border-zinc-700 text-zinc-300 px-2 hover:text-white hover:bg-zinc-800"
+                    title="Download PNG"
+                  >
+                    <ImageIcon className="w-4 h-4 mr-1" />
+                    PNG
+                  </Button>
+                   <Button
+                    onClick={() => downloadBadge('pdf')}
+                    variant="outline"
+                    className="flex-1 border-zinc-700 text-zinc-300 px-2 hover:text-white hover:bg-zinc-800"
+                    title="Download PDF"
+                  >
+                    <FileText className="w-4 h-4 mr-1" />
+                    PDF
+                  </Button>
+                </div>
                 <Button
                   onClick={printBadge}
                   variant="outline"
-                  className="border-zinc-700 text-zinc-300"
+                  className="border-zinc-700 text-zinc-300 hover:text-white hover:bg-zinc-800"
                 >
                   <Printer className="w-4 h-4 mr-2" />
                   {badgeMode === 'group' ? `Print #${selectedGroupMember + 1}` : 'Print'}
@@ -1485,7 +1247,7 @@ export function RegistrationBadgeFlow({
                         setProcessedPhoto(groupProcessedPhotos[i]);
                         setCapturedPhoto(groupPhotos[i]);
                         await new Promise(resolve => setTimeout(resolve, 100));
-                        await downloadBadge();
+                        await downloadBadge('pdf');
                         await new Promise(resolve => setTimeout(resolve, 500));
                       }
                       toast.success(`Downloaded ${groupProcessedPhotos.length} badges!`);
@@ -1534,4 +1296,3 @@ export function RegistrationBadgeFlow({
 }
 
 export default RegistrationBadgeFlow;
-

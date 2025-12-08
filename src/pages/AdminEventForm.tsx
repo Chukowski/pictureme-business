@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import {
   createEvent,
@@ -23,6 +23,7 @@ import { EventFormData } from "@/components/admin/event-editor/types";
 export default function AdminEventForm() {
   const navigate = useNavigate();
   const { eventId } = useParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const isEdit = Boolean(eventId);
 
   const currentUser = useMemo(() => getCurrentUser(), []);
@@ -30,7 +31,18 @@ export default function AdminEventForm() {
   const [isSaving, setIsSaving] = useState(false);
   
   // Navigation State
-  const [currentStep, setCurrentStep] = useState('setup');
+  const [currentStep, setCurrentStep] = useState(searchParams.get('step') || 'setup');
+  
+  // Update URL when step changes
+  useEffect(() => {
+    if (currentStep) {
+      setSearchParams(params => {
+        params.set('step', currentStep);
+        return params;
+      });
+    }
+  }, [currentStep, setSearchParams]);
+
   const [previewMode, setPreviewMode] = useState<'event' | 'badge' | 'template'>('event');
 
   // Event mode types
@@ -347,6 +359,7 @@ export default function AdminEventForm() {
           formData={formData} 
           currentStep={currentStep}
           previewMode={previewMode}
+          onBadgeChange={(config) => setFormData(prev => ({ ...prev, badgeTemplate: config }))}
         />
       }
     >

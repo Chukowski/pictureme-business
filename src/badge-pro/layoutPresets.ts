@@ -1,0 +1,80 @@
+import { DEFAULT_ELEMENT_POSITIONS } from "@/components/templates/BadgeTemplateEditor";
+import { BadgeLayoutTemplate } from "./types";
+
+export const BADGE_LAYOUT_PRESETS: BadgeLayoutTemplate[] = [
+  {
+    id: "vertical-id",
+    name: "Vertical ID Card",
+    description: "4x3\" portrait with hero photo and QR bottom-right.",
+    layout: "portrait",
+    print: { widthInches: 3, heightInches: 4, dpi: 300, bleedInches: 0.125, units: "in" },
+    positions: {
+      ...DEFAULT_ELEMENT_POSITIONS,
+      photo: { x: 50, y: 22, width: 34, height: 34 },
+      name: { x: 50, y: 60 },
+      eventName: { x: 50, y: 68 },
+      dateTime: { x: 50, y: 75 },
+      qrCode: { x: 84, y: 86, width: 14, height: 14 },
+    },
+  },
+  {
+    id: "horizontal-badge",
+    name: "Horizontal Badge",
+    description: "3.5x2\" landscape with balanced spacing.",
+    layout: "landscape",
+    print: { widthInches: 3.5, heightInches: 2, dpi: 300, bleedInches: 0.1, units: "in" },
+    positions: {
+      ...DEFAULT_ELEMENT_POSITIONS,
+      photo: { x: 24, y: 50, width: 30, height: 30 },
+      name: { x: 62, y: 46 },
+      eventName: { x: 62, y: 58 },
+      dateTime: { x: 62, y: 68 },
+      qrCode: { x: 85, y: 82, width: 14, height: 14 },
+    },
+  },
+  {
+    id: "minimal-qr-name",
+    name: "Minimal QR + Name",
+    description: "Compact QR plus attendee name for fast scanning.",
+    layout: "portrait",
+    print: { widthInches: 2.5, heightInches: 3.5, dpi: 300, bleedInches: 0.08, units: "in" },
+    positions: {
+      ...DEFAULT_ELEMENT_POSITIONS,
+      photo: { x: 50, y: 28, width: 26, height: 26 },
+      name: { x: 50, y: 58 },
+      eventName: { x: 50, y: 68 },
+      dateTime: { x: 50, y: 75 },
+      qrCode: { x: 50, y: 88, width: 18, height: 18 },
+    },
+  },
+  {
+    id: "photo-qr",
+    name: "Photo + QR",
+    description: "Full photo on the left, QR on the right.",
+    layout: "landscape",
+    print: { widthInches: 4, heightInches: 3, dpi: 300, bleedInches: 0.125, units: "in" },
+    positions: {
+      ...DEFAULT_ELEMENT_POSITIONS,
+      photo: { x: 30, y: 50, width: 40, height: 60 },
+      name: { x: 70, y: 40 },
+      eventName: { x: 70, y: 52 },
+      dateTime: { x: 70, y: 62 },
+      qrCode: { x: 76, y: 78, width: 18, height: 18 },
+    },
+  },
+  {
+    id: "branding-top-bottom",
+    name: "Branding Top/Bottom",
+    description: "Space for brand header/footer with centered content.",
+    layout: "portrait",
+    print: { widthInches: 3, heightInches: 4, dpi: 300, bleedInches: 0.1, units: "in" },
+    positions: {
+      ...DEFAULT_ELEMENT_POSITIONS,
+      photo: { x: 50, y: 32, width: 32, height: 32 },
+      name: { x: 50, y: 60 },
+      eventName: { x: 50, y: 68 },
+      dateTime: { x: 50, y: 76 },
+      qrCode: { x: 82, y: 82, width: 14, height: 14 },
+    },
+  },
+];
