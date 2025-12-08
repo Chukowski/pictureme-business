@@ -103,19 +103,44 @@ export function PlaygroundBadgeTest({ events, currentUser, onReloadEvents }: Pla
   };
 
   const processBadgeWithAI = async () => {
-    if (!testImageBase64 || !badgeConfig.aiPipeline?.enabled) return;
+    if (!testImageBase64 || testImageBase64.length < 100) {
+      toast.error("Please upload or select a test image first");
+      return;
+    }
+    
+    if (!badgeConfig.aiPipeline?.enabled) {
+      toast.error("AI Pipeline is not enabled for this badge template");
+      return;
+    }
     
     setIsBadgeProcessing(true);
     try {
+      console.log("🎨 Processing badge with AI, image length:", testImageBase64.length);
+      
       const result = await processImageWithAI({
-        imageBase64: testImageBase64,
-        prompt: badgeConfig.aiPipeline.prompt || "Enhance this portrait photo, professional lighting, clear background",
-        modelKey: badgeConfig.aiPipeline.model as any || "nanoBanana",
-        aspectRatio: "1:1",
+        userPhotoBase64: testImageBase64,
+        backgroundPrompt: badgeConfig.aiPipeline.prompt || "Enhance this portrait photo, professional lighting, clear background",
+        aiModel: badgeConfig.aiPipeline.model || "fal-ai/nano-banana/edit",
+        aspectRatio: "1:1" as any,
+        includeBranding: false,
+        eventId: selectedEvent?.postgres_event_id,
+        eventSlug: selectedEvent?.slug,
+        userSlug: selectedEvent?.user_slug,
+        billingContext: 'playground-badge',
       });
-      setBadgeProcessedImage(result.imageUrl);
+      
+      const outputUrl = result.imageUrl 
+        || (result as any).processedImageUrl 
+        || (result as any).url;
+      
+      if (!outputUrl) {
+        throw new Error("AI returned no image URL");
+      }
+      
+      setBadgeProcessedImage(outputUrl);
       toast.success("Badge photo enhanced!");
     } catch (error: any) {
+      console.error("Badge AI Processing error:", error);
       toast.error(error.message || "Failed to process badge photo");
     } finally {
       setIsBadgeProcessing(false);

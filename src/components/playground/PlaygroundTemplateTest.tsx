@@ -521,51 +521,73 @@ export function PlaygroundTemplateTest({ events, currentUser, onReloadEvents }: 
   const CanvasOverlay = (
     <>
       {/* HUD Widget */}
-      <div className="absolute top-4 right-4 pointer-events-auto">
-        <Card className="bg-zinc-950/90 backdrop-blur-md border-white/10 shadow-2xl w-64">
-           <div className="p-3 space-y-3">
-              <div className="flex items-center justify-between border-b border-white/5 pb-2">
-                 <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Session HUD</span>
-                 <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="h-4 w-4 text-zinc-600 hover:text-red-400" 
-                    title="Clear Session"
-                    onClick={() => {
-                      setProcessedResult(null);
-                      setTestImage(null);
-                      setTestImageBase64(null);
-                    }}
-                 >
-                   <Trash2 className="w-3 h-3" />
-                 </Button>
+      <div className="absolute top-4 right-4 pointer-events-auto z-10">
+        <div className="bg-black/80 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl w-64 overflow-hidden ring-1 ring-white/5">
+           {/* Header */}
+           <div className="px-4 py-3 border-b border-white/5 flex items-center justify-between bg-white/5">
+              <div className="flex items-center gap-2">
+                 <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                 <span className="text-[10px] font-bold text-white/70 uppercase tracking-wider">Live Session</span>
               </div>
-              
-              <div className="grid grid-cols-2 gap-2">
-                 <div className="bg-zinc-900/50 rounded p-2">
-                    <span className="text-[10px] text-zinc-500 block">Tokens Used</span>
-                    <span className="text-sm font-mono text-white">{tokensUsed}</span>
+              <Button 
+                 variant="ghost" 
+                 size="icon" 
+                 className="h-5 w-5 text-zinc-500 hover:text-red-400 hover:bg-white/5 rounded-full" 
+                 title="Reset Session"
+                 onClick={() => {
+                   setProcessedResult(null);
+                   setTestImage(null);
+                   setTestImageBase64(null);
+                   setTokensUsed(0);
+                 }}
+              >
+                <Trash2 className="w-3 h-3" />
+              </Button>
+           </div>
+           
+           <div className="p-4 space-y-4">
+              {/* Stats Grid */}
+              <div className="grid grid-cols-2 gap-3">
+                 <div className="space-y-1">
+                    <span className="text-[10px] font-medium text-zinc-500 uppercase tracking-wide">Tokens</span>
+                    <div className="flex items-baseline gap-1">
+                       <span className="text-lg font-mono font-medium text-white">{tokensUsed}</span>
+                       <span className="text-[10px] text-zinc-600">used</span>
+                    </div>
                  </div>
-                 <div className="bg-zinc-900/50 rounded p-2">
-                    <span className="text-[10px] text-zinc-500 block">Model</span>
-                    <span className="text-xs font-medium text-white truncate">{AI_MODELS[selectedAiModel].name}</span>
+                 <div className="space-y-1">
+                    <span className="text-[10px] font-medium text-zinc-500 uppercase tracking-wide">Model</span>
+                    <div className="text-xs font-medium text-white truncate" title={AI_MODELS[selectedAiModel].name}>
+                       {AI_MODELS[selectedAiModel].name.split('(')[0].trim()}
+                    </div>
                  </div>
               </div>
 
+              {/* Seed Info */}
               {lastResultSeed && (
-                <div className="bg-indigo-500/10 rounded p-2 border border-indigo-500/20 flex items-center justify-between group cursor-pointer" onClick={() => {
-                  setCustomSeed(lastResultSeed);
-                  toast.success("Seed copied to settings");
-                }}>
-                   <div>
-                      <span className="text-[10px] text-indigo-300 block">Last Seed</span>
-                      <span className="text-xs font-mono text-indigo-100">{lastResultSeed}</span>
+                <div className="pt-3 border-t border-white/5">
+                   <div className="flex items-center justify-between group">
+                      <div className="space-y-0.5">
+                         <span className="text-[10px] font-medium text-zinc-500 uppercase tracking-wide block">Last Seed</span>
+                         <code className="text-xs text-indigo-300 font-mono block">{lastResultSeed}</code>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 text-zinc-500 hover:text-indigo-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={() => {
+                          setCustomSeed(lastResultSeed);
+                          toast.success("Seed copied to settings");
+                        }}
+                        title="Use this seed"
+                      >
+                         <Copy className="w-3 h-3" />
+                      </Button>
                    </div>
-                   <Copy className="w-3 h-3 text-indigo-400 opacity-0 group-hover:opacity-100 transition-opacity" />
                 </div>
               )}
            </div>
-        </Card>
+        </div>
       </div>
 
       {/* Run Again Bar - Only visible when result exists */}
