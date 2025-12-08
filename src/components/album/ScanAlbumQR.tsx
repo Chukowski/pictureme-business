@@ -2,7 +2,7 @@
  * ScanAlbumQR Component
  * 
  * Reusable QR scanner component for scanning visitor badges.
- * Used at booth stations, playground stations, and viewer stations.
+ * Uses html5-qrcode library for cross-browser support.
  */
 
 import { useState, useEffect, useRef } from 'react';
@@ -10,6 +10,7 @@ import { QrCode, Camera, X, Keyboard, AlertCircle, CheckCircle2 } from 'lucide-r
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
+import { Html5Qrcode } from 'html5-qrcode';
 
 interface ScanAlbumQRProps {
   onScan: (albumId: string) => void;
@@ -34,48 +35,63 @@ export function ScanAlbumQR({
   const [showManualEntry, setShowManualEntry] = useState(false);
   const [manualCode, setManualCode] = useState('');
   const [scanStatus, setScanStatus] = useState<'idle' | 'scanning' | 'success' | 'error'>('idle');
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-  const detectorRef = useRef<BarcodeDetector | null>(null);
-  const rafRef = useRef<number | null>(null);
+  const scannerRef = useRef<Html5Qrcode | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const scannedRef = useRef(false); // Prevent double-scan
 
   // Start camera for QR scanning
   const startScanning = async () => {
+    if (!containerRef.current) return;
+    
     try {
       setIsScanning(true);
       setScanStatus('scanning');
+      scannedRef.current = false;
       
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment' }
-      });
+      // Create scanner instance
+      scannerRef.current = new Html5Qrcode('qr-reader');
       
-      streamRef.current = stream;
-      
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        videoRef.current.play();
-      }
-
-      // Initialize native BarcodeDetector if available
-      if ('BarcodeDetector' in window) {
-        try {
-          detectorRef.current = new BarcodeDetector({ formats: ['qr_code'] });
-          // Kick off detection loop once video has metadata
-          const onCanPlay = () => {
-            runDetection();
-            videoRef.current?.removeEventListener('canplay', onCanPlay);
-          };
-          videoRef.current?.addEventListener('canplay', onCanPlay);
-        } catch (err) {
-          console.warn('BarcodeDetector init failed', err);
-          toast.error('QR scanner not supported. Use manual entry.');
-          setShowManualEntry(true);
+      await scannerRef.current.start(
+        { facingMode: 'environment' },
+        {
+          fps: 10,
+          qrbox: { width: 250, height: 250 },
+          aspectRatio: 1.0,
+        },
+        (decodedText) => {
+          // Prevent double triggers
+          if (scannedRef.current) return;
+          scannedRef.current = true;
+          
+          console.log('✅ QR Code detected:', decodedText);
+          
+          // Extract album code from URL if it's a full URL
+          let albumCode = decodedText.trim();
+          
+          // Check if it's a URL containing /album/ path
+          const albumMatch = albumCode.match(/\/album\/([A-Za-z0-9]+)/);
+          if (albumMatch) {
+            albumCode = albumMatch[1].toUpperCase();
+          } else {
+            // If it's just a code, use it directly
+            albumCode = albumCode.toUpperCase();
+          }
+          
+          setScanStatus('success');
+          stopScanning();
+          
+          setTimeout(() => {
+            onScan(albumCode);
+          }, 300);
+        },
+        (errorMessage) => {
+          // Ignore "No QR code found" errors - they happen continuously while scanning
+          if (!errorMessage.includes('No QR code found') && !errorMessage.includes('NotFoundException')) {
+            console.warn('QR scan error:', errorMessage);
+          }
         }
-      } else {
-        toast.error('QR scanner not supported in this browser. Use manual entry.');
-        setShowManualEntry(true);
-      }
-
+      );
+      
     } catch (error) {
       console.error('Camera access error:', error);
       toast.error('Could not access camera. Please use manual entry.');
@@ -86,17 +102,20 @@ export function ScanAlbumQR({
   };
 
   // Stop camera
-  const stopScanning = () => {
-    if (rafRef.current) {
-      cancelAnimationFrame(rafRef.current);
-      rafRef.current = null;
-    }
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
-      streamRef.current = null;
+  const stopScanning = async () => {
+    if (scannerRef.current) {
+      try {
+        await scannerRef.current.stop();
+        scannerRef.current.clear();
+      } catch (err) {
+        console.warn('Error stopping scanner:', err);
+      }
+      scannerRef.current = null;
     }
     setIsScanning(false);
-    setScanStatus('idle');
+    if (scanStatus !== 'success') {
+      setScanStatus('idle');
+    }
   };
 
   // Handle manual code submission
@@ -107,7 +126,6 @@ export function ScanAlbumQR({
       return;
     }
     
-    // Validate code format (example: ALBUM-XXXX-XXXX)
     if (code.length < 4) {
       toast.error('Code too short. Please check and try again.');
       return;
@@ -119,45 +137,12 @@ export function ScanAlbumQR({
     }, 500);
   };
 
-  // Simulate QR detection (placeholder for real implementation)
-  const simulateScan = () => {
-    // In production, this would be called by the QR detection library
-    const mockAlbumId = `ALBUM-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
-    setScanStatus('success');
-    stopScanning();
-    setTimeout(() => {
-      onScan(mockAlbumId);
-    }, 500);
-  };
-
-  // Detection loop using native BarcodeDetector
-  const runDetection = async () => {
-    if (!isScanning || scanStatus !== 'scanning') return;
-    if (!videoRef.current || !detectorRef.current) {
-      rafRef.current = requestAnimationFrame(runDetection);
-      return;
-    }
-    try {
-      const barcodes = await detectorRef.current.detect(videoRef.current);
-      if (barcodes.length > 0) {
-        const raw = barcodes[0].rawValue?.trim();
-        if (raw) {
-          setScanStatus('success');
-          stopScanning();
-          setTimeout(() => onScan(raw), 300);
-          return;
-        }
-      }
-    } catch (err) {
-      console.warn('Barcode detect error', err);
-    }
-    rafRef.current = requestAnimationFrame(runDetection);
-  };
-
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      stopScanning();
+      if (scannerRef.current) {
+        scannerRef.current.stop().catch(() => {});
+      }
     };
   }, []);
 
@@ -185,17 +170,14 @@ export function ScanAlbumQR({
             <div 
               className="relative aspect-square rounded-2xl overflow-hidden border-2"
               style={{ borderColor: primaryColor }}
+              ref={containerRef}
             >
               {isScanning ? (
                 <>
-                  <video
-                    ref={videoRef}
-                    className="w-full h-full object-cover"
-                    playsInline
-                    muted
-                  />
+                  {/* html5-qrcode renders the video here */}
+                  <div id="qr-reader" className="w-full h-full" />
                   {/* Scanning overlay */}
-                  <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                     <div 
                       className="w-48 h-48 border-2 rounded-lg animate-pulse"
                       style={{ borderColor: primaryColor }}
@@ -203,7 +185,7 @@ export function ScanAlbumQR({
                   </div>
                   {/* Scanning line animation */}
                   <div 
-                    className="absolute left-1/2 -translate-x-1/2 w-48 h-0.5 animate-scan-line"
+                    className="absolute left-1/2 -translate-x-1/2 w-48 h-0.5 animate-scan-line pointer-events-none"
                     style={{ backgroundColor: primaryColor }}
                   />
                 </>
@@ -250,18 +232,6 @@ export function ScanAlbumQR({
                 </Button>
               )}
 
-              {/* Dev button to simulate scan */}
-              {isScanning && import.meta.env.DEV && (
-                <Button
-                  onClick={simulateScan}
-                  variant="outline"
-                  size="sm"
-                  className="w-full border-amber-500/30 text-amber-400"
-                >
-                  [DEV] Simulate Scan
-                </Button>
-              )}
-
               {allowManualEntry && (
                 <Button
                   onClick={() => {
@@ -294,7 +264,7 @@ export function ScanAlbumQR({
               <Input
                 value={manualCode}
                 onChange={(e) => setManualCode(e.target.value.toUpperCase())}
-                placeholder="ALBUM-XXXX-XXXX"
+                placeholder="ABCD1234"
                 className="text-center text-xl font-mono bg-black/40 border-white/20 text-white h-14"
                 onKeyDown={(e) => e.key === 'Enter' && handleManualSubmit()}
               />
@@ -333,7 +303,7 @@ export function ScanAlbumQR({
         )}
       </div>
 
-      {/* CSS for scan line animation */}
+      {/* CSS for scan line animation and hide html5-qrcode UI */}
       <style>{`
         @keyframes scan-line {
           0%, 100% { top: 25%; opacity: 0; }
@@ -342,10 +312,21 @@ export function ScanAlbumQR({
         .animate-scan-line {
           animation: scan-line 2s ease-in-out infinite;
         }
+        /* Hide html5-qrcode default UI elements */
+        #qr-reader__scan_region {
+          background: transparent !important;
+        }
+        #qr-reader__dashboard {
+          display: none !important;
+        }
+        #qr-reader video {
+          width: 100% !important;
+          height: 100% !important;
+          object-fit: cover !important;
+        }
       `}</style>
     </div>
   );
 }
 
 export default ScanAlbumQR;
-
