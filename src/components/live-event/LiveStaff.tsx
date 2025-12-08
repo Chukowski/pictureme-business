@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { QrCode, Users, ShieldCheck, Camera, ExternalLink, Copy, RefreshCw } from "lucide-react";
+import { QrCode, Users, ShieldCheck, Camera, Monitor, Copy } from "lucide-react";
 import { toast } from "sonner";
 import { QRCodeSVG } from "qrcode.react";
 import { useState } from "react";
@@ -23,8 +23,20 @@ export function LiveStaff({ event }: LiveStaffProps) {
   };
 
   const openStaffPanel = () => {
-    if (!event?._id) return;
-    const url = `${window.location.origin}/admin/staff/${event._id}`;
+    if (!event?.postgres_event_id) {
+      toast.error('Event ID not found');
+      return;
+    }
+    const url = `${window.location.origin}/e/${event.postgres_event_id}/${event.slug}/staff`;
+    window.open(url, '_blank');
+  };
+
+  const openBigScreen = () => {
+    if (!event?.postgres_event_id) {
+      toast.error('Event ID not found');
+      return;
+    }
+    const url = `${window.location.origin}/e/${event.postgres_event_id}/${event.slug}/bigscreen`;
     window.open(url, '_blank');
   };
 
@@ -35,32 +47,38 @@ export function LiveStaff({ event }: LiveStaffProps) {
            <CardTitle className="text-white text-base">Staff Quick Actions</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
             <Button 
-              variant="outline" 
-              className="h-24 flex flex-col gap-2 border-white/10 hover:bg-white/5 hover:border-white/20"
+              className="h-24 flex flex-col gap-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-white"
               onClick={() => setShowRegQr(!showRegQr)}
             >
-              <QrCode className="w-6 h-6 text-purple-400" />
+              <QrCode className="w-6 h-6 text-[#D1F349]" />
               <span className="text-xs">{showRegQr ? 'Hide QR' : 'Registration QR'}</span>
             </Button>
             <Button 
-              variant="outline" 
-              className="h-24 flex flex-col gap-2 border-white/10 hover:bg-white/5 hover:border-white/20"
+              className="h-24 flex flex-col gap-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-white"
               onClick={() => window.open(getRegistrationUrl().replace('registration', 'booth'), '_blank')}
             >
               <Camera className="w-6 h-6 text-cyan-400" />
               <span className="text-xs">Open Booth</span>
             </Button>
             <Button 
-              variant="outline" 
-              className="h-24 flex flex-col gap-2 border-white/10 hover:bg-white/5 hover:border-white/20"
+              className="h-24 flex flex-col gap-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-white"
               onClick={openStaffPanel}
             >
               <ShieldCheck className="w-6 h-6 text-emerald-400" />
               <span className="text-xs">Full Staff Panel</span>
             </Button>
-             <Button variant="outline" className="h-24 flex flex-col gap-2 border-white/10 hover:bg-white/5 hover:border-white/20">
+            <Button 
+              className="h-24 flex flex-col gap-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-white"
+              onClick={openBigScreen}
+            >
+              <Monitor className="w-6 h-6 text-purple-400" />
+              <span className="text-xs">Open Big Screen</span>
+            </Button>
+            <Button 
+              className="h-24 flex flex-col gap-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-white"
+            >
               <Users className="w-6 h-6 text-amber-400" />
               <span className="text-xs">Manage Team</span>
             </Button>

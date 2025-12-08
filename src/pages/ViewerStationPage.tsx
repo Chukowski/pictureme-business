@@ -40,6 +40,7 @@ import { getAlbum, getAlbumPhotos, createAlbumCheckout, updateAlbumStatus, Album
 import { ScanAlbumQR } from '@/components/album';
 import { StaffPINLogin } from '@/components/staff';
 import { isMockMode, getMockAlbumByCode, MockAlbum } from '@/dev/mockAlbums';
+import { broadcastToBigScreen } from '@/services/bigScreenBroadcast';
 
 type ViewerState = 'pin' | 'scan' | 'loading' | 'viewing' | 'error';
 
@@ -190,19 +191,30 @@ export function ViewerStationPage() {
     // TODO: Implement print queue API
   };
 
-  // Handle big screen - open display page
-  const handleBigScreen = () => {
-    let displayUrl: string;
-    if (config?.postgres_event_id && eventSlug) {
-      displayUrl = `${window.location.origin}/e/${config.postgres_event_id}/${eventSlug}/bigscreen`;
+  // Handle big screen - send album to big screen via API
+  const handleBigScreen = async () => {
+    if (!album || !config?.postgres_event_id) {
+      toast.error('Cannot send to Big Screen - missing album or event info');
+      return;
+    }
+
+    // Determine if album is paid
+    const isPaid = album.payment_status === 'paid' || album.status === 'paid';
+
+    const success = await broadcastToBigScreen({
+      albumCode: album.code,
+      visitorName: album.owner_name,
+      isPaid,
+      eventId: config.postgres_event_id,
+      userSlug,
+      eventSlug,
+    });
+
+    if (success) {
+      toast.success(`Album ${album.code} sent to Big Screen!`);
     } else {
-      displayUrl = `${window.location.origin}/${userSlug}/${eventSlug}/bigscreen`;
+      toast.error('Failed to send to Big Screen');
     }
-    if (album?.code) {
-      displayUrl += `?album=${album.code}`;
-    }
-    window.open(displayUrl, 'bigscreen', 'width=1920,height=1080');
-    toast.success('Big Screen Display opened!');
   };
 
   // Loading state
