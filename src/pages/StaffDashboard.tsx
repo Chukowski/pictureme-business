@@ -569,10 +569,9 @@ export default function StaffDashboard() {
             {/* Only show Admin Area button to the event owner */}
             {isEventOwner && (
               <Button
-                variant="outline"
                 size="sm"
                 onClick={() => navigate('/admin')}
-                className="ml-4 border-white/20 text-zinc-300 hover:text-white hover:bg-zinc-800"
+                className="ml-4 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white border border-zinc-700"
               >
                 <LayoutDashboard className="w-4 h-4 mr-2" />
                 Admin Area
@@ -589,12 +588,11 @@ export default function StaffDashboard() {
               )}
             </div>
             <Button
-              variant="outline"
               size="sm"
               onClick={() => setIsPolling(!isPolling)}
-              className={`border-white/20 hover:bg-zinc-800 ${isPolling ? 'text-green-400 hover:text-green-300' : 'text-zinc-400 hover:text-white'}`}
+              className={`bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 ${isPolling ? 'text-green-400 hover:text-green-300' : 'text-zinc-400 hover:text-white'}`}
             >
-              {isPolling ? 'Live' : 'Paused'}
+              {isPolling ? 'Paused' : 'Live'}
             </Button>
             <Button
               onClick={() => setShowScanner(true)}
@@ -605,10 +603,9 @@ export default function StaffDashboard() {
               Scan Badge
             </Button>
             <Button
-              variant="outline"
               size="icon"
               onClick={handleRefresh}
-              className="border-white/20 text-zinc-300 hover:text-white hover:bg-zinc-800"
+              className="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white border border-zinc-700"
               disabled={isLoading}
             >
               <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
@@ -673,6 +670,12 @@ export default function StaffDashboard() {
               Tools
             </TabsTrigger>
             <TabsTrigger 
+              value="stations" 
+              className="text-zinc-400 data-[state=active]:bg-white/10 data-[state=active]:text-white"
+            >
+              Stations
+            </TabsTrigger>
+            <TabsTrigger 
               value="analytics" 
               className="text-zinc-400 data-[state=active]:bg-white/10 data-[state=active]:text-white"
             >
@@ -699,7 +702,7 @@ export default function StaffDashboard() {
                   className="pl-10 bg-zinc-900/50 border-white/10 text-white"
                 />
               </div>
-              <Button variant="outline" className="border-white/20 text-zinc-300 hover:text-white hover:bg-zinc-800">
+              <Button className="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white border border-zinc-700">
                 <Filter className="w-4 h-4 mr-2" />
                 Filter
               </Button>
@@ -892,6 +895,266 @@ export default function StaffDashboard() {
             />
           </TabsContent>
 
+          {/* Stations Tab */}
+          <TabsContent value="stations">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {/* Registration Station */}
+              <Card className="bg-zinc-900/50 border-white/10">
+                <CardHeader>
+                  <CardTitle className="text-white flex items-center gap-2">
+                    <Users className="w-5 h-5 text-purple-400" />
+                    Registration
+                  </CardTitle>
+                  <CardDescription className="text-zinc-400">
+                    Where visitors register and get their album
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="p-3 rounded-lg bg-black/30 border border-white/5">
+                    <p className="text-xs text-zinc-500 mb-1 font-mono break-all">
+                      {config?.postgres_event_id 
+                        ? `${window.location.origin}/e/${config.postgres_event_id}/${effectiveEventSlug}/registration`
+                        : `${window.location.origin}/${effectiveUserSlug}/${effectiveEventSlug}/registration`
+                      }
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      className="flex-1 bg-zinc-800 hover:bg-zinc-700 text-white"
+                      onClick={() => {
+                        const url = config?.postgres_event_id 
+                          ? `${window.location.origin}/e/${config.postgres_event_id}/${effectiveEventSlug}/registration`
+                          : `${window.location.origin}/${effectiveUserSlug}/${effectiveEventSlug}/registration`;
+                        navigator.clipboard.writeText(url);
+                        toast.success('URL copied!');
+                      }}
+                    >
+                      <Copy className="w-4 h-4 mr-2" />
+                      Copy
+                    </Button>
+                    <Button
+                      size="sm"
+                      className="flex-1 bg-purple-600 hover:bg-purple-500 text-white"
+                      onClick={() => {
+                        const url = config?.postgres_event_id 
+                          ? `${window.location.origin}/e/${config.postgres_event_id}/${effectiveEventSlug}/registration`
+                          : `${window.location.origin}/${effectiveUserSlug}/${effectiveEventSlug}/registration`;
+                        window.open(url, '_blank');
+                      }}
+                    >
+                      Open
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Photo Booth Station */}
+              <Card className="bg-zinc-900/50 border-white/10">
+                <CardHeader>
+                  <CardTitle className="text-white flex items-center gap-2">
+                    <Camera className="w-5 h-5 text-cyan-400" />
+                    Photo Booth
+                  </CardTitle>
+                  <CardDescription className="text-zinc-400">
+                    Where visitors take their photos
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="p-3 rounded-lg bg-black/30 border border-white/5">
+                    <p className="text-xs text-zinc-500 mb-1 font-mono break-all">
+                      {config?.postgres_event_id 
+                        ? `${window.location.origin}/e/${config.postgres_event_id}/${effectiveEventSlug}/booth`
+                        : `${window.location.origin}/${effectiveUserSlug}/${effectiveEventSlug}/booth`
+                      }
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      className="flex-1 bg-zinc-800 hover:bg-zinc-700 text-white"
+                      onClick={() => {
+                        const url = config?.postgres_event_id 
+                          ? `${window.location.origin}/e/${config.postgres_event_id}/${effectiveEventSlug}/booth`
+                          : `${window.location.origin}/${effectiveUserSlug}/${effectiveEventSlug}/booth`;
+                        navigator.clipboard.writeText(url);
+                        toast.success('URL copied!');
+                      }}
+                    >
+                      <Copy className="w-4 h-4 mr-2" />
+                      Copy
+                    </Button>
+                    <Button
+                      size="sm"
+                      className="flex-1 bg-cyan-600 hover:bg-cyan-500 text-white"
+                      onClick={() => {
+                        const url = config?.postgres_event_id 
+                          ? `${window.location.origin}/e/${config.postgres_event_id}/${effectiveEventSlug}/booth`
+                          : `${window.location.origin}/${effectiveUserSlug}/${effectiveEventSlug}/booth`;
+                        window.open(url, '_blank');
+                      }}
+                    >
+                      Open
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Viewer/Gallery Station */}
+              <Card className="bg-zinc-900/50 border-white/10">
+                <CardHeader>
+                  <CardTitle className="text-white flex items-center gap-2">
+                    <Eye className="w-5 h-5 text-emerald-400" />
+                    Viewer / Gallery
+                  </CardTitle>
+                  <CardDescription className="text-zinc-400">
+                    Where visitors view and share their albums
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="p-3 rounded-lg bg-black/30 border border-white/5">
+                    <p className="text-xs text-zinc-500 mb-1 font-mono break-all">
+                      {config?.postgres_event_id 
+                        ? `${window.location.origin}/e/${config.postgres_event_id}/${effectiveEventSlug}/viewer`
+                        : `${window.location.origin}/${effectiveUserSlug}/${effectiveEventSlug}/viewer`
+                      }
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      className="flex-1 bg-zinc-800 hover:bg-zinc-700 text-white"
+                      onClick={() => {
+                        const url = config?.postgres_event_id 
+                          ? `${window.location.origin}/e/${config.postgres_event_id}/${effectiveEventSlug}/viewer`
+                          : `${window.location.origin}/${effectiveUserSlug}/${effectiveEventSlug}/viewer`;
+                        navigator.clipboard.writeText(url);
+                        toast.success('URL copied!');
+                      }}
+                    >
+                      <Copy className="w-4 h-4 mr-2" />
+                      Copy
+                    </Button>
+                    <Button
+                      size="sm"
+                      className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white"
+                      onClick={() => {
+                        const url = config?.postgres_event_id 
+                          ? `${window.location.origin}/e/${config.postgres_event_id}/${effectiveEventSlug}/viewer`
+                          : `${window.location.origin}/${effectiveUserSlug}/${effectiveEventSlug}/viewer`;
+                        window.open(url, '_blank');
+                      }}
+                    >
+                      Open
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Event Feed */}
+              <Card className="bg-zinc-900/50 border-white/10">
+                <CardHeader>
+                  <CardTitle className="text-white flex items-center gap-2">
+                    <BookOpen className="w-5 h-5 text-pink-400" />
+                    Event Feed
+                  </CardTitle>
+                  <CardDescription className="text-zinc-400">
+                    Live feed of all event photos
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="p-3 rounded-lg bg-black/30 border border-white/5">
+                    <p className="text-xs text-zinc-500 mb-1 font-mono break-all">
+                      {config?.postgres_event_id 
+                        ? `${window.location.origin}/e/${config.postgres_event_id}/${effectiveEventSlug}/feed`
+                        : `${window.location.origin}/${effectiveUserSlug}/${effectiveEventSlug}/feed`
+                      }
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      className="flex-1 bg-zinc-800 hover:bg-zinc-700 text-white"
+                      onClick={() => {
+                        const url = config?.postgres_event_id 
+                          ? `${window.location.origin}/e/${config.postgres_event_id}/${effectiveEventSlug}/feed`
+                          : `${window.location.origin}/${effectiveUserSlug}/${effectiveEventSlug}/feed`;
+                        navigator.clipboard.writeText(url);
+                        toast.success('URL copied!');
+                      }}
+                    >
+                      <Copy className="w-4 h-4 mr-2" />
+                      Copy
+                    </Button>
+                    <Button
+                      size="sm"
+                      className="flex-1 bg-pink-600 hover:bg-pink-500 text-white"
+                      onClick={() => {
+                        const url = config?.postgres_event_id 
+                          ? `${window.location.origin}/e/${config.postgres_event_id}/${effectiveEventSlug}/feed`
+                          : `${window.location.origin}/${effectiveUserSlug}/${effectiveEventSlug}/feed`;
+                        window.open(url, '_blank');
+                      }}
+                    >
+                      Open
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Staff Dashboard */}
+              <Card className="bg-zinc-900/50 border-white/10">
+                <CardHeader>
+                  <CardTitle className="text-white flex items-center gap-2">
+                    <LayoutDashboard className="w-5 h-5 text-[#D1F349]" />
+                    Staff Dashboard
+                  </CardTitle>
+                  <CardDescription className="text-zinc-400">
+                    This dashboard (current page)
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="p-3 rounded-lg bg-black/30 border border-white/5">
+                    <p className="text-xs text-zinc-500 mb-1 font-mono break-all">
+                      {config?.postgres_event_id 
+                        ? `${window.location.origin}/e/${config.postgres_event_id}/${effectiveEventSlug}/staff`
+                        : `${window.location.origin}/${effectiveUserSlug}/${effectiveEventSlug}/staff`
+                      }
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      className="flex-1 bg-zinc-800 hover:bg-zinc-700 text-white"
+                      onClick={() => {
+                        const url = config?.postgres_event_id 
+                          ? `${window.location.origin}/e/${config.postgres_event_id}/${effectiveEventSlug}/staff`
+                          : `${window.location.origin}/${effectiveUserSlug}/${effectiveEventSlug}/staff`;
+                        navigator.clipboard.writeText(url);
+                        toast.success('URL copied!');
+                      }}
+                    >
+                      <Copy className="w-4 h-4 mr-2" />
+                      Copy
+                    </Button>
+                    <Button
+                      size="sm"
+                      className="flex-1 bg-[#D1F349] hover:bg-[#c5e73d] text-black"
+                      onClick={() => {
+                        const url = config?.postgres_event_id 
+                          ? `${window.location.origin}/e/${config.postgres_event_id}/${effectiveEventSlug}/staff`
+                          : `${window.location.origin}/${effectiveUserSlug}/${effectiveEventSlug}/staff`;
+                        window.open(url, '_blank');
+                      }}
+                    >
+                      Open
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
           {/* Analytics Tab */}
           <TabsContent value="analytics">
             <StaffStationAnalytics 
@@ -981,8 +1244,12 @@ export default function StaffDashboard() {
                             if (e.key === 'Enter') {
                               const input = e.target as HTMLInputElement;
                               if (input.value && config?.postgres_event_id) {
+                                // Find the album to get isPaid status
+                                const albumData = albums.find(a => a.id === input.value);
                                 const success = await broadcastToBigScreen({
                                   albumCode: input.value,
+                                  visitorName: albumData?.visitorName,
+                                  isPaid: albumData?.isPaid || false,
                                   eventId: config.postgres_event_id,
                                   userSlug: effectiveUserSlug,
                                   eventSlug: effectiveEventSlug,
@@ -1002,8 +1269,12 @@ export default function StaffDashboard() {
                           onClick={async () => {
                             const input = document.getElementById('bigscreen-album-input') as HTMLInputElement;
                             if (input?.value && config?.postgres_event_id) {
+                              // Find the album to get isPaid status
+                              const albumData = albums.find(a => a.id === input.value);
                               const success = await broadcastToBigScreen({
                                 albumCode: input.value,
+                                visitorName: albumData?.visitorName,
+                                isPaid: albumData?.isPaid || false,
                                 eventId: config.postgres_event_id,
                                 userSlug: effectiveUserSlug,
                                 eventSlug: effectiveEventSlug,
