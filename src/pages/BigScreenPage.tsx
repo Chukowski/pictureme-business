@@ -35,6 +35,114 @@ import { QRCodeSVG } from 'qrcode.react';
 
 const REFRESH_INTERVAL = 10000; // 10 seconds
 
+// PhotoCard component - detects orientation and sets grid span
+function PhotoCard({ 
+  photoUrl, 
+  index, 
+  total, 
+  isPaid, 
+  primaryColor,
+  isLandscape
+}: { 
+  photoUrl: string; 
+  index: number; 
+  total: number; 
+  isPaid: boolean; 
+  primaryColor: string;
+  isLandscape?: boolean;
+}) {
+  const [span, setSpan] = useState("col-span-1 row-span-1");
+  const [orientation, setOrientation] = useState<'landscape' | 'portrait' | 'square' | null>(null);
+
+  useEffect(() => {
+    if (typeof isLandscape === 'boolean') {
+      setSpan(isLandscape ? "col-span-2 row-span-1" : "col-span-1 row-span-2");
+      setOrientation(isLandscape ? 'landscape' : 'portrait');
+      return;
+    }
+
+    const img = new Image();
+    img.onload = () => {
+      const ratio = img.width / img.height;
+      // Logic for bento grid sizing
+      if (ratio > 1.2) {
+        // Landscape -> 2 cols x 1 row
+        setSpan("col-span-2 row-span-1"); 
+        setOrientation('landscape');
+      } else if (ratio < 0.8) {
+        // Portrait -> 1 col x 2 rows
+        setSpan("col-span-1 row-span-2");
+        setOrientation('portrait');
+      } else {
+        // Square-ish -> 1 col x 1 row (or 2x2 for emphasis if it's the first photo)
+        setSpan(index === 0 ? "col-span-2 row-span-2" : "col-span-1 row-span-1");
+        setOrientation('square');
+      }
+    };
+    img.src = photoUrl;
+  }, [photoUrl, index, isLandscape]);
+
+  return (
+    <div
+      className={cn(
+        "relative rounded-2xl overflow-hidden w-full h-full bg-zinc-900",
+        "ring-1 ring-white/10 transition-all duration-500 hover:ring-white/30",
+        "animate-in fade-in zoom-in-95 duration-500",
+        span // Apply calculated span
+      )}
+      style={{ 
+        animationDelay: `${index * 100}ms`,
+        boxShadow: `0 10px 30px -10px ${primaryColor}20`,
+      }}
+    >
+      {/* Main image */}
+      <img
+        src={photoUrl}
+        alt={`Photo ${index + 1}`}
+        className={cn(
+          "w-full h-full object-cover", // Fill the calculated span
+          !isPaid && "blur-md opacity-80"
+        )}
+      />
+      {/* Watermark overlay for unpaid albums */}
+      {!isPaid && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none bg-black/20 backdrop-blur-[2px] z-20">
+          <div className="bg-black/70 backdrop-blur-md px-6 py-3 rounded-xl border border-white/20 shadow-2xl transform -rotate-6">
+            <p className="text-white text-xl font-bold tracking-widest uppercase drop-shadow-md">
+              Preview
+            </p>
+          </div>
+        </div>
+      )}
+      
+      {/* Photo number badge */}
+      <div 
+        className={cn(
+          "absolute bottom-3 right-3 px-2.5 py-1 rounded-full flex items-center gap-1.5 text-white font-medium text-xs backdrop-blur-md border border-white/10 shadow-sm z-20",
+          !isPaid ? "bg-amber-500/80" : "bg-black/40"
+        )}
+      >
+        <Sparkles className="w-3 h-3 opacity-80" />
+        {index + 1}/{total}
+      </div>
+
+      {/* Orientation badge */}
+      {orientation && (
+        <div
+          className={cn(
+            "absolute top-3 left-3 px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide backdrop-blur-md border border-white/10 text-white",
+            orientation === 'landscape' && "bg-blue-500/70",
+            orientation === 'portrait' && "bg-purple-500/70",
+            orientation === 'square' && "bg-green-500/70"
+          )}
+        >
+          {orientation === 'landscape' ? 'H' : orientation === 'portrait' ? 'V' : 'SQ'}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function BigScreenPage() {
   // Try to get config from context first (for short URLs)
   const eventContext = useEventContext();
@@ -61,9 +169,39 @@ export function BigScreenPage() {
   const [stats, setStats] = useState({ total: 0, completed: 0, in_progress: 0, photos: 0 });
   const [featuredAlbum, setFeaturedAlbum] = useState<FeaturedAlbum | null>(null);
   const [featuredPhotos, setFeaturedPhotos] = useState<string[]>([]);
+  const [sortedPhotos, setSortedPhotos] = useState<{url: string, isLandscape: boolean}[]>([]);
 
   const useMock = isMockMode();
   const focusedAlbum = searchParams.get('album');
+
+  // ... existing loadAlbums logic ...
+
+  // Sort photos by orientation
+  useEffect(() => {
+    if (featuredPhotos.length === 0) {
+      setSortedPhotos([]);
+      return;
+    }
+
+    const loadImages = async () => {
+      const loaded = await Promise.all(featuredPhotos.map(url => {
+        return new Promise<{url: string, isLandscape: boolean}>((resolve) => {
+          const img = new Image();
+          img.onload = () => resolve({ url, isLandscape: img.width > img.height });
+          img.onerror = () => resolve({ url, isLandscape: false }); // Fallback
+          img.src = url;
+        });
+      }));
+
+      // Sort: Landscapes first, then Portraits
+      const landscapes = loaded.filter(p => p.isLandscape);
+      const portraits = loaded.filter(p => !p.isLandscape);
+      
+      setSortedPhotos([...landscapes, ...portraits]);
+    };
+
+    loadImages();
+  }, [featuredPhotos]);
 
   // Load albums
   const loadAlbums = useCallback(async () => {
@@ -151,9 +289,10 @@ export function BigScreenPage() {
     const loadFeaturedPhotos = async () => {
       try {
         const photos = await getAlbumPhotos(featuredAlbum.album_code);
-        const urls = photos.map((p: { url?: string; processed_image_url?: string }) => 
-          p.url || p.processed_image_url || ''
-        ).filter(Boolean);
+        // NOTE: future feature - include template/booth name per photo when backend provides it.
+        const urls = photos
+          .map((p: any) => p.url ?? p.processed_image_url ?? '')
+          .filter(Boolean);
         setFeaturedPhotos(urls);
       } catch (error) {
         console.error('Failed to load featured album photos:', error);
@@ -249,86 +388,58 @@ export function BigScreenPage() {
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="flex-1 flex items-center justify-center px-6 py-8">
+      {/* Main Content - Fill viewport without scroll */}
+      <main className="flex-1 overflow-hidden px-8 pb-6">
         {/* Featured Album Display - Full Screen Photos */}
         {featuredAlbum && featuredPhotos.length > 0 ? (
-          <div className="animate-in fade-in duration-500 w-full max-w-7xl">
-            {/* Featured Header */}
-            <div className="flex flex-col items-center justify-center gap-2 mb-6">
-              <div className="flex items-center gap-4">
-                <Star className="w-10 h-10 text-[#D1F349] fill-[#D1F349] animate-pulse" />
-                {featuredAlbum.visitor_name ? (
-                  <h2 className="text-5xl font-bold text-white tracking-tight">
-                    {featuredAlbum.visitor_name}
-                  </h2>
-                ) : (
-                  <h2 className="text-4xl font-bold text-white tracking-tight">
+          <div className="animate-in fade-in duration-500 w-full h-full flex flex-col max-w-[1600px] mx-auto">
+            {/* Featured Header - Compact */}
+            <div className="flex items-center justify-center gap-3 mb-4 shrink-0">
+              <Star className="w-7 h-7 text-[#D1F349] fill-[#D1F349] animate-pulse" />
+              <div className="text-center">
+                <h2 className="text-2xl font-bold text-white tracking-tight">
+                  {featuredAlbum.visitor_name || featuredAlbum.album_code}
+                </h2>
+                {featuredAlbum.visitor_name && (
+                  <p className="text-xs text-zinc-400 font-mono">
                     {featuredAlbum.album_code}
-                  </h2>
+                  </p>
                 )}
-                <Star className="w-10 h-10 text-[#D1F349] fill-[#D1F349] animate-pulse" />
               </div>
-              {featuredAlbum.visitor_name && (
-                <p className="text-xl text-zinc-400 font-mono">
-                  Album: {featuredAlbum.album_code}
-                </p>
-              )}
+              <Star className="w-7 h-7 text-[#D1F349] fill-[#D1F349] animate-pulse" />
             </div>
 
-            {/* Photo Grid - Large Display */}
-            <div className={cn(
-              "grid gap-8 mx-auto",
-              featuredPhotos.length === 1 && "grid-cols-1 max-w-3xl",
-              featuredPhotos.length === 2 && "grid-cols-2 max-w-5xl",
-              featuredPhotos.length === 3 && "grid-cols-3 max-w-6xl",
-              featuredPhotos.length >= 4 && "grid-cols-2 lg:grid-cols-4 max-w-7xl"
-            )}>
-              {featuredPhotos.map((photoUrl, index) => (
-                <div
+            {/* Bento Grid Layout - Dense packing similar to reference */}
+            <div
+              className="w-full h-full grid gap-4 p-6 overflow-hidden"
+              style={{ 
+                gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+                gridAutoRows: '200px',
+                gridAutoFlow: 'dense',
+                height: 'calc(100vh - 180px)',
+                alignContent: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              {sortedPhotos.length > 0 ? sortedPhotos.map((photo, index) => (
+                <PhotoCard
                   key={`${featuredAlbum.album_code}-${index}`}
-                  className={cn(
-                    "relative rounded-3xl overflow-hidden",
-                    "animate-in fade-in zoom-in-95 duration-700",
-                    "ring-2 ring-white/10 hover:ring-white/30 transition-all"
-                  )}
-                  style={{ 
-                    animationDelay: `${index * 200}ms`,
-                    boxShadow: `0 30px 60px -15px ${primaryColor}50, 0 0 40px -10px ${primaryColor}30`
-                  }}
-                >
-                  <img
-                    src={photoUrl}
-                    alt={`Photo ${index + 1}`}
-                    className={cn(
-                      "w-full h-auto object-contain bg-zinc-900",
-                      !featuredAlbum.is_paid && "blur-md"
-                    )}
-                  />
-                  {/* Watermark overlay for unpaid albums */}
-                  {!featuredAlbum.is_paid && (
-                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                      <div className="bg-black/60 backdrop-blur-sm px-8 py-4 rounded-2xl border border-white/20">
-                        <p className="text-white text-2xl font-bold tracking-wider">
-                          PREVIEW
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                  {/* Gradient overlay at bottom */}
-                  <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/60 to-transparent" />
-                  {/* Photo number badge */}
-                  <div 
-                    className={cn(
-                      "absolute bottom-4 right-4 px-4 py-2 rounded-full flex items-center gap-2 text-white font-bold text-lg backdrop-blur-sm",
-                      !featuredAlbum.is_paid && "bg-amber-600/90"
-                    )}
-                    style={{ backgroundColor: featuredAlbum.is_paid ? `${primaryColor}CC` : undefined }}
-                  >
-                    <Sparkles className="w-4 h-4" />
-                    {index + 1} / {featuredPhotos.length}
-                  </div>
-                </div>
+                  photoUrl={photo.url}
+                  index={index}
+                  total={sortedPhotos.length}
+                  isPaid={featuredAlbum.is_paid}
+                  primaryColor={primaryColor}
+                  isLandscape={photo.isLandscape}
+                />
+              )) : featuredPhotos.map((photoUrl, index) => (
+                <PhotoCard
+                  key={`${featuredAlbum.album_code}-${index}`}
+                  photoUrl={photoUrl}
+                  index={index}
+                  total={featuredPhotos.length}
+                  isPaid={featuredAlbum.is_paid}
+                  primaryColor={primaryColor}
+                />
               ))}
             </div>
             
