@@ -15,7 +15,7 @@ import {
   CheckCircle2, XCircle, Clock, Settings, RefreshCw,
   MonitorPlay, Printer, Mail, MessageSquare, Lock, Unlock,
   Search, Filter, MoreVertical, Eye, BarChart3, Copy, Download,
-  DollarSign, LayoutDashboard, Trash2, Bell
+  DollarSign, Radio, Trash2, Bell
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -906,15 +906,15 @@ export default function StaffDashboard() {
               </h1>
               <p className="text-sm text-zinc-400">{config.title}</p>
             </div>
-            {/* Only show Admin Area button to the event owner */}
+            {/* Only show Live Dashboard button to the event owner */}
             {isEventOwner && (
               <Button
                 size="sm"
-                onClick={() => navigate('/admin')}
-                className="ml-4 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white border border-zinc-700"
+                onClick={() => navigate(`/admin/events/${config._id}/live`)}
+                className="ml-4 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 border border-emerald-500/30"
               >
-                <LayoutDashboard className="w-4 h-4 mr-2" />
-                Admin Area
+                <Radio className="w-4 h-4 mr-2" />
+                Live Dashboard
               </Button>
             )}
           </div>
@@ -1581,7 +1581,7 @@ export default function StaffDashboard() {
               <Card className="bg-zinc-900/50 border-white/10">
                 <CardHeader>
                   <CardTitle className="text-white flex items-center gap-2">
-                    <LayoutDashboard className="w-5 h-5 text-[#D1F349]" />
+                    <Users className="w-5 h-5 text-[#D1F349]" />
                     Staff Dashboard
                   </CardTitle>
                   <CardDescription className="text-zinc-400">

@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { FolderKanban, BarChart3, ShoppingBag, BookOpen, Gamepad2, Settings, Menu, LogOut, User, Building2, Users, Coins, Sparkles } from "lucide-react";
-import { getCurrentUser, logoutUser } from "@/services/eventsApi";
+import { FolderKanban, BarChart3, ShoppingBag, BookOpen, Gamepad2, Settings, Menu, LogOut, User, Building2, Users, Coins, Sparkles, Radio, ChevronDown } from "lucide-react";
+import { getCurrentUser, logoutUser, getUserEvents, type EventConfig } from "@/services/eventsApi";
 import { hasFeature } from "@/lib/planFeatures";
 import { cn } from "@/lib/utils";
 import {
@@ -21,6 +21,8 @@ export function TopNavbar() {
   const [isHovered, setIsHovered] = useState(false);
   const lastInteraction = useRef(Date.now());
   const [tokenStats, setTokenStats] = useState<{ current_tokens: number } | null>(null);
+  const [userEvents, setUserEvents] = useState<EventConfig[]>([]);
+  const [eventsDropdownOpen, setEventsDropdownOpen] = useState(false);
   
   const currentUser = getCurrentUser();
   const userRole = currentUser?.role || 'individual';
@@ -101,6 +103,22 @@ export function TopNavbar() {
     };
   }, [isHiddenPath]);
 
+  // Load user events for Live Mode shortcuts
+  useEffect(() => {
+    if (isHiddenPath) return;
+    
+    const loadEvents = async () => {
+      try {
+        const events = await getUserEvents();
+        setUserEvents(events || []);
+      } catch (error) {
+        console.error("Failed to load events", error);
+      }
+    };
+    
+    loadEvents();
+  }, [isHiddenPath]);
+
   // Handle Auto-Hide Logic
   useEffect(() => {
     if (isHiddenPath) {
@@ -171,6 +189,9 @@ export function TopNavbar() {
 
   // Get display values
   const tokens = tokenStats?.current_tokens ?? currentUser?.tokens_remaining ?? 0;
+  
+  // Get active/live events for quick access
+  const activeEvents = userEvents.filter(e => e.is_active !== false).slice(0, 3);
 
   return (
     <AnimatePresence>
@@ -204,6 +225,74 @@ export function TopNavbar() {
             <nav className="flex items-center gap-1">
               {navItems.map((item) => {
                 const active = isActive(item.path);
+                
+                // Special handling for Events - make it a dropdown
+                if (item.id === 'events') {
+                  return (
+                    <DropdownMenu key={item.id} open={eventsDropdownOpen} onOpenChange={setEventsDropdownOpen}>
+                      <DropdownMenuTrigger asChild>
+                        <button
+                          className={cn(
+                            "group flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all",
+                            active 
+                              ? "bg-white/10 text-white shadow-inner" 
+                              : "text-zinc-400 hover:text-zinc-200 hover:bg-white/5"
+                          )}
+                        >
+                          <item.icon className={cn("w-3.5 h-3.5", active && "text-indigo-400")} />
+                          <span className={cn(
+                            "hidden sm:inline-block whitespace-nowrap transition-all duration-300", 
+                            !active && "opacity-0 w-0 overflow-hidden group-hover:opacity-100 group-hover:w-auto"
+                          )}>
+                            {item.label}
+                          </span>
+                          <ChevronDown className="w-3 h-3 opacity-50" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="start" className="w-56 bg-zinc-900 border-white/10 text-white p-2 mt-2">
+                        <DropdownMenuItem 
+                          onClick={() => {
+                            navigate('/admin/events');
+                            setEventsDropdownOpen(false);
+                            handleInteraction();
+                          }}
+                          className="flex items-center gap-2 px-2 py-1.5 cursor-pointer hover:bg-white/5 rounded-md focus:bg-white/5 focus:text-white"
+                        >
+                          <FolderKanban className="w-4 h-4 text-zinc-400" />
+                          <span>All Events</span>
+                        </DropdownMenuItem>
+                        
+                        {activeEvents.length > 0 && (
+                          <>
+                            <DropdownMenuSeparator className="bg-white/10 my-1" />
+                            <div className="px-2 py-1 text-[10px] text-zinc-500 font-medium uppercase tracking-wide">
+                              Quick Access
+                            </div>
+                            {activeEvents.map((event) => (
+                              <DropdownMenuItem 
+                                key={event._id}
+                                onClick={() => {
+                                  navigate(`/admin/events/${event._id}/live`);
+                                  setEventsDropdownOpen(false);
+                                  handleInteraction();
+                                }}
+                                className="flex items-center gap-2 px-2 py-1.5 cursor-pointer hover:bg-white/5 rounded-md focus:bg-white/5 focus:text-white text-emerald-400"
+                              >
+                                <Radio className="w-4 h-4" />
+                                <div className="flex-1 min-w-0">
+                                  <div className="text-xs truncate">{event.title}</div>
+                                  <div className="text-[10px] text-zinc-500">Live Mode</div>
+                                </div>
+                              </DropdownMenuItem>
+                            ))}
+                          </>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  );
+                }
+                
+                // Regular nav items
                 return (
                   <button
                     key={item.id}
