@@ -172,12 +172,12 @@ export default function StaffDashboard() {
   const recentlyNotifiedRef = useRef<Set<string>>(new Set());
   const lastNotifiedPaymentCodesRef = useRef<Set<string>>(new Set());
   
-  // Polling state
-  const [isPolling, setIsPolling] = useState(false); // Start with polling OFF
+  // Polling state - ON by default like LiveEventPage
+  const [isPolling, setIsPolling] = useState(true); // Start with polling ON
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const isLoadingRef = useRef(false); // Prevent concurrent requests
-  const POLLING_INTERVAL = 15000; // 15 seconds
+  const POLLING_INTERVAL = 5000; // 5 seconds (same as LiveEventPage)
   
   // Get effective user/event slugs for URLs
   const effectiveUserSlug = userSlug || config?.user_slug || '';
@@ -1069,7 +1069,7 @@ export default function StaffDashboard() {
               onClick={() => setIsPolling(!isPolling)}
               className={`bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 ${isPolling ? 'text-green-400 hover:text-green-300' : 'text-zinc-400 hover:text-white'}`}
             >
-              {isPolling ? 'Paused' : 'Live'}
+              {isPolling ? 'Live' : 'Paused'}
             </Button>
             <Button
               onClick={() => setShowScanner(true)}

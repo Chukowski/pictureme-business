@@ -158,6 +158,7 @@ export default function AdminEventForm() {
         includeName: true,
         includeDateTime: true,
         customFields: [],
+        saveBadgePhotoToAlbum: true, // Save badge photo to album gallery (default: enabled)
       },
     },
     

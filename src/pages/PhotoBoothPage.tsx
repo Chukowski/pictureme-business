@@ -130,11 +130,13 @@ export const PhotoBoothPage = ({ configOverride, userSlugOverride, eventSlugOver
         const photos = await getAlbumPhotos(albumId);
         // Ensure photos is always an array
         const photoList = Array.isArray(photos) ? photos : [];
+        // Filter out 'registration' station photos from count (badge photos don't count against limit)
+        const countablePhotos = photoList.filter(p => p.station_type !== 'registration');
         setAlbumData({
           id: album.code,
           visitorName: album.owner_name,
           visitorNumber: 0,
-          currentPhotos: photoList.length,
+          currentPhotos: countablePhotos.length,
           maxPhotos: config?.albumTracking?.rules?.maxPhotosPerAlbum || 5,
           currentStation: stationType || 'Photo Booth',
         });
@@ -540,6 +542,7 @@ export const PhotoBoothPage = ({ configOverride, userSlugOverride, eventSlugOver
           primaryColor={config.theme?.primaryColor}
           badgeTemplate={config.badgeTemplate}
           templates={config.templates}
+          saveBadgePhotoToAlbum={config.albumTracking?.badgeIntegration?.saveBadgePhotoToAlbum ?? true}
           onComplete={(albumCode) => {
             // Navigate to booth with the new album
             navigate(`/${userSlug}/${eventSlug}/booth?album=${albumCode}`);

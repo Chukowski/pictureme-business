@@ -88,6 +88,7 @@ export interface BadgeIntegration {
   includeName: boolean;
   includeDateTime: boolean;
   customFields?: string[];
+  saveBadgePhotoToAlbum: boolean; // Save the AI-generated badge photo to the visitor's album
 }
 
 export interface AlbumTrackingConfig {

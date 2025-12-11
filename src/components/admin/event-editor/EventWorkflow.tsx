@@ -207,13 +207,27 @@ export function EventWorkflow({ formData, setFormData }: EditorSectionProps) {
                 </div>
 
                 {formData.albumTracking.badgeIntegration.autoGenerateBadge && (
-                  <div className="p-4 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center gap-3">
-                    <LayoutTemplate className="w-5 h-5 text-purple-300" />
-                    <div>
-                      <p className="text-sm text-purple-200">Badge Template is active</p>
-                      <p className="text-xs text-purple-300/70">Edit the design in the <strong>Experience</strong> tab.</p>
+                  <>
+                    <div className="p-4 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center gap-3">
+                      <LayoutTemplate className="w-5 h-5 text-purple-300" />
+                      <div>
+                        <p className="text-sm text-purple-200">Badge Template is active</p>
+                        <p className="text-xs text-purple-300/70">Edit the design in the <strong>Experience</strong> tab.</p>
+                      </div>
                     </div>
-                  </div>
+
+                    <div className="flex items-center justify-between p-3 rounded-lg bg-black/30 border border-white/5">
+                      <div>
+                        <Label className="text-zinc-300 font-medium">Save Badge Photo to Album</Label>
+                        <p className="text-xs text-zinc-500">Include the AI-generated badge photo in the visitor's album gallery</p>
+                      </div>
+                      <Switch
+                        checked={formData.albumTracking.badgeIntegration.saveBadgePhotoToAlbum ?? false}
+                        onCheckedChange={(c) => updateBadge({ saveBadgePhotoToAlbum: c })}
+                        className="data-[state=checked]:bg-purple-600"
+                      />
+                    </div>
+                  </>
                 )}
               </CardContent>
             </Card>

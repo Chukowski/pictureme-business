@@ -61,6 +61,7 @@ interface RegistrationBadgeFlowProps {
   primaryColor?: string;
   badgeTemplate?: BadgeTemplateConfig;
   templates?: Template[]; // Event templates for AI pipeline source
+  saveBadgePhotoToAlbum?: boolean; // Whether to save the AI badge photo to the album
   onComplete?: (albumCode: string) => void;
 }
 
@@ -72,6 +73,7 @@ export function RegistrationBadgeFlow({
   primaryColor = '#6366F1',
   badgeTemplate,
   templates = [],
+  saveBadgePhotoToAlbum = true,
   onComplete
 }: RegistrationBadgeFlowProps) {
   const [state, setState] = useState<FlowState>('mode-select');
@@ -356,29 +358,32 @@ export function RegistrationBadgeFlow({
       setAlbumCode(album.code);
       
       // Save the badge photo to the album (with station_type = 'registration')
-      // This allows users to see their badge photo in the album
-      try {
-        setProcessingStatus('Saving badge photo...');
-        
-        // Save to cloud storage first
-        const cloudResult = await savePhotoToCloud({
-          originalImageBase64: capturedPhoto,
-          processedImageBase64: finalPhoto,
-          backgroundId: 'registration',
-          backgroundName: 'Registration Badge',
-          prompt: '',
-          userSlug,
-          eventSlug,
-        });
-        
-        if (cloudResult?.shareCode) {
-          // Add to album with registration station type
-          await addAlbumPhoto(album.code, cloudResult.shareCode, 'registration');
-          console.log('✅ Badge photo saved to album:', { albumCode: album.code, photoShareCode: cloudResult.shareCode });
+      // This allows users to see their badge photo in the album gallery
+      // Note: This runs when saveBadgePhotoToAlbum is true (opt-in setting)
+      if (saveBadgePhotoToAlbum) {
+        try {
+          setProcessingStatus('Saving badge photo to album...');
+          
+          // Save to cloud storage first
+          const cloudResult = await savePhotoToCloud({
+            originalImageBase64: capturedPhoto,
+            processedImageBase64: finalPhoto,
+            backgroundId: 'registration-badge',
+            backgroundName: 'Badge Photo',
+            prompt: '',
+            userSlug,
+            eventSlug,
+          });
+          
+          if (cloudResult?.shareCode) {
+            // Add to album with registration station type
+            await addAlbumPhoto(album.code, cloudResult.shareCode, 'registration');
+            console.log('✅ Badge photo saved to album:', { albumCode: album.code, photoShareCode: cloudResult.shareCode });
+          }
+        } catch (saveError) {
+          console.warn('⚠️ Failed to save badge photo to album (non-critical):', saveError);
+          // Don't fail the whole flow if saving fails
         }
-      } catch (saveError) {
-        console.warn('⚠️ Failed to save badge photo to album (non-critical):', saveError);
-        // Don't fail the whole flow if saving fails
       }
       
       setState('badge');
@@ -391,7 +396,7 @@ export function RegistrationBadgeFlow({
       setIsCreating(false);
       setProcessingStatus('');
     }
-  }, [capturedPhoto, eventId, visitorName, visitorEmail, badgeTemplate, templates, eventSlug, userSlug]);
+  }, [capturedPhoto, eventId, visitorName, visitorEmail, badgeTemplate, templates, eventSlug, userSlug, saveBadgePhotoToAlbum]);
 
   // Add photo to group (for group mode)
   const addPhotoToGroup = useCallback(async () => {
@@ -497,24 +502,26 @@ export function RegistrationBadgeFlow({
         setAlbumCode(album.code);
       }
       
-      // Save photo to cloud storage and add to album
-      setProcessingStatus('Saving photo...');
-      try {
-        const cloudPhoto = await savePhotoToCloud({
-          originalImageBase64: capturedPhoto,
-          processedImageBase64: finalPhoto,
-          backgroundId: 'registration-group',
-          backgroundName: 'Group Registration',
-          prompt: '',
-          userSlug,
-          eventSlug,
-        });
-        
-        // Add photo to album with special station_type that doesn't count toward limit
-        await addAlbumPhoto(currentAlbumCode, cloudPhoto.shareCode, 'registration-group');
-      } catch (saveError) {
-        console.warn('Failed to save group photo to album:', saveError);
-        // Continue anyway - the photo is still captured
+      // Save photo to cloud storage and add to album (if enabled)
+      if (saveBadgePhotoToAlbum) {
+        setProcessingStatus('Saving photo to album...');
+        try {
+          const cloudPhoto = await savePhotoToCloud({
+            originalImageBase64: capturedPhoto,
+            processedImageBase64: finalPhoto,
+            backgroundId: 'registration-group',
+            backgroundName: 'Group Badge Photo',
+            prompt: '',
+            userSlug,
+            eventSlug,
+          });
+          
+          // Add photo to album with special station_type that doesn't count toward limit
+          await addAlbumPhoto(currentAlbumCode, cloudPhoto.shareCode, 'registration-group');
+        } catch (saveError) {
+          console.warn('Failed to save group photo to album:', saveError);
+          // Continue anyway - the photo is still captured
+        }
       }
       
       // Add photo to group photos arrays (original and processed)
@@ -1098,6 +1105,23 @@ export function RegistrationBadgeFlow({
                 const layout = badgeTemplate?.layout || 'portrait';
                 const aspectRatio = layout === 'landscape' ? '4/3' : layout === 'square' ? '1/1' : '3/4';
                 
+                // Helper function to get transform based on text alignment
+                const getTextTransform = (textAlign?: string) => {
+                  if (textAlign === 'left') return 'translate(0, -50%)';
+                  if (textAlign === 'right') return 'translate(-100%, -50%)';
+                  return 'translate(-50%, -50%)';
+                };
+                
+                // Current date/time for preview
+                const now = new Date();
+                const dateStr = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+                
+                // Get display name
+                const displayName = badgeMode === 'group' 
+                  ? (groupMemberNames[selectedGroupMember] || `Member ${selectedGroupMember + 1}`)
+                  : visitorName;
+                
                 return (
                   <div 
                     className="relative rounded-xl overflow-hidden shadow-lg"
@@ -1112,15 +1136,15 @@ export function RegistrationBadgeFlow({
                   >
                     {/* Photo with template shape and custom position */}
                     <div 
-                      className={`absolute overflow-hidden border-4 border-white/30 ${
+                      className={`absolute overflow-hidden border-2 border-white/30 shadow-lg ${
                         badgeTemplate?.photoPlacement?.shape === 'rounded' ? 'rounded-xl' :
                         badgeTemplate?.photoPlacement?.shape === 'square' ? 'rounded-none' : 'rounded-full'
                       }`}
                       style={{
-                        width: `${(useCustom && customPos?.photo?.width) || (badgeTemplate?.photoPlacement?.size === 'small' ? 20 : badgeTemplate?.photoPlacement?.size === 'large' ? 40 : 30)}%`,
+                        width: `${(useCustom && customPos?.photo?.width) || (badgeTemplate?.photoPlacement?.size === 'small' ? 25 : badgeTemplate?.photoPlacement?.size === 'large' ? 45 : 35)}%`,
                         aspectRatio: '1/1',
                         left: `${(useCustom && customPos?.photo?.x) || 50}%`,
-                        top: `${(useCustom && customPos?.photo?.y) || 25}%`,
+                        top: `${(useCustom && customPos?.photo?.y) || 20}%`,
                         transform: 'translate(-50%, -50%)',
                       }}
                     >
@@ -1133,72 +1157,95 @@ export function RegistrationBadgeFlow({
                     
                     {/* Name - for groups show member name, for individual show visitor name */}
                     {badgeTemplate?.fields?.showName !== false && (
-                      <p 
-                        className="absolute text-lg font-bold whitespace-nowrap"
+                      <div 
+                        className="absolute whitespace-nowrap"
                         style={{ 
                           color: badgeTemplate?.textStyle?.nameColor || 'white',
                           left: `${(useCustom && customPos?.name?.x) || 50}%`,
                           top: `${(useCustom && customPos?.name?.y) || 55}%`,
-                          transform: 'translate(-50%, -50%)',
+                          transform: getTextTransform(customPos?.name?.textAlign),
+                          fontSize: `${((customPos?.name?.fontSize || badgeTemplate?.textStyle?.nameFontSize || 6) * 3)}px`,
+                          fontWeight: 'bold',
+                          fontFamily: badgeTemplate?.textStyle?.fontFamily,
                         }}
                       >
-                        {badgeMode === 'group' 
-                          ? (groupMemberNames[selectedGroupMember] || `Member ${selectedGroupMember + 1}`)
-                          : visitorName}
-                      </p>
+                        {displayName}
+                      </div>
                     )}
                     
                     {/* Event name */}
                     {badgeTemplate?.fields?.showEventName !== false && (
-                      <p 
-                        className="absolute text-sm whitespace-nowrap"
+                      <div 
+                        className="absolute whitespace-nowrap"
                         style={{ 
                           color: badgeTemplate?.textStyle?.eventNameColor || 'rgba(255,255,255,0.8)',
                           left: `${(useCustom && customPos?.eventName?.x) || 50}%`,
                           top: `${(useCustom && customPos?.eventName?.y) || 62}%`,
-                          transform: 'translate(-50%, -50%)',
+                          transform: getTextTransform(customPos?.eventName?.textAlign),
+                          fontSize: `${((customPos?.eventName?.fontSize || badgeTemplate?.textStyle?.eventNameFontSize || 3.5) * 3)}px`,
+                          fontFamily: badgeTemplate?.textStyle?.fontFamily,
                         }}
                       >
                         {eventName}
-                      </p>
+                      </div>
                     )}
                     
-                    {/* Date */}
+                    {/* Date/Time - shown on separate lines like Badge Pro */}
                     {badgeTemplate?.fields?.showDateTime !== false && (
-                      <p 
-                        className="absolute text-xs whitespace-nowrap"
+                      <div 
+                        className="absolute"
                         style={{ 
                           color: badgeTemplate?.textStyle?.dateTimeColor || 'rgba(255,255,255,0.6)',
                           left: `${(useCustom && customPos?.dateTime?.x) || 50}%`,
                           top: `${(useCustom && customPos?.dateTime?.y) || 68}%`,
-                          transform: 'translate(-50%, -50%)',
+                          transform: getTextTransform(customPos?.dateTime?.textAlign),
+                          fontSize: `${((customPos?.dateTime?.fontSize || badgeTemplate?.textStyle?.dateTimeFontSize || 2.8) * 3)}px`,
+                          textAlign: (customPos?.dateTime?.textAlign as any) || 'center',
+                          fontFamily: badgeTemplate?.textStyle?.fontFamily,
                         }}
                       >
-                        {new Date().toLocaleDateString()}
-                      </p>
+                        <div>{dateStr}</div>
+                        <div>{timeStr}</div>
+                      </div>
                     )}
                     
-                    {/* Real QR Code */}
-                    {badgeTemplate?.qrCode?.enabled !== false && (
+                    {/* Album Code - separate element like Badge Pro */}
+                    {badgeTemplate?.fields?.showAlbumCode && (
                       <div 
-                        className="absolute flex flex-col items-center"
-                        style={{
-                          left: `${(useCustom && customPos?.qrCode?.x) || 50}%`,
-                          top: `${(useCustom && customPos?.qrCode?.y) || 85}%`,
-                          transform: 'translate(-50%, -50%)',
+                        className="absolute whitespace-nowrap font-mono font-bold"
+                        style={{ 
+                          color: badgeTemplate?.textStyle?.dateTimeColor || 'rgba(255,255,255,0.6)',
+                          left: `${(useCustom && customPos?.albumCode?.x) || 85}%`,
+                          top: `${(useCustom && customPos?.albumCode?.y) || 90}%`,
+                          transform: getTextTransform(customPos?.albumCode?.textAlign),
+                          fontSize: `${((customPos?.albumCode?.fontSize || badgeTemplate?.textStyle?.dateTimeFontSize || 2.8) * 3)}px`,
+                          fontFamily: badgeTemplate?.textStyle?.fontFamily,
                         }}
                       >
-                        <div className="p-2 bg-white rounded-lg shadow-sm" data-qr-code>
+                        {albumCode}
+                      </div>
+                    )}
+                    
+                    {/* QR Code */}
+                    {badgeTemplate?.qrCode?.enabled !== false && (
+                      <div 
+                        className="absolute"
+                        style={{
+                          left: `${(useCustom && customPos?.qrCode?.x) || 85}%`,
+                          top: `${(useCustom && customPos?.qrCode?.y) || 75}%`,
+                          transform: 'translate(-50%, -50%)',
+                          width: `${(useCustom && customPos?.qrCode?.width) || (badgeTemplate?.qrCode?.size === 'small' ? 15 : badgeTemplate?.qrCode?.size === 'large' ? 25 : 20)}%`,
+                        }}
+                      >
+                        <div className="bg-white p-1 rounded-md shadow-sm aspect-square flex items-center justify-center" data-qr-code>
                           <QRCodeSVG 
                             value={`${window.location.origin}/${userSlug}/${eventSlug}/booth?album=${albumCode}`}
                             size={60}
                             level="M"
                             includeMargin={false}
+                            className="w-full h-full"
                           />
                         </div>
-                        {badgeTemplate?.fields?.showAlbumCode && (
-                          <p className="mt-1 font-mono text-xs text-white/80 drop-shadow-md font-bold">{albumCode}</p>
-                        )}
                       </div>
                     )}
                   </div>
