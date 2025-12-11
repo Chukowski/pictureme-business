@@ -130,10 +130,11 @@ export default function AdminAnalyticsTab({ currentUser }: AdminAnalyticsTabProp
       // Load download analytics for the first event (or selected event)
       if (eventsData.length > 0) {
         const firstEvent = eventsData[0];
-        if (firstEvent.postgresId) {
-          setSelectedEventId(firstEvent.postgresId);
+        const eventId = firstEvent.postgres_event_id;
+        if (eventId) {
+          setSelectedEventId(eventId);
           try {
-            const downloads = await getDownloadAnalytics(firstEvent.postgresId, days);
+            const downloads = await getDownloadAnalytics(eventId, days);
             setDownloadStats(downloads);
           } catch (downloadError) {
             console.warn("Failed to load download analytics:", downloadError);
