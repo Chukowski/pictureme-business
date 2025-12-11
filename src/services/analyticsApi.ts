@@ -201,6 +201,38 @@ export async function getStationAnalytics(eventId?: number, days: number = 30): 
   return response.json();
 }
 
+// ==================== Download Analytics ====================
+
+export interface DownloadAnalytics {
+  total_downloads: number;
+  total_photos_downloaded: number;
+  unique_albums: number;
+  downloads_by_type: Record<string, number>;
+}
+
+/**
+ * Get download analytics for an event (staff print/sales tracking)
+ */
+export async function getDownloadAnalytics(eventId: number, days: number = 30): Promise<DownloadAnalytics> {
+  const token = getAuthToken();
+  if (!token) {
+    throw new Error('Not authenticated');
+  }
+
+  const response = await fetch(`${getApiUrl()}/api/analytics/downloads?event_id=${eventId}&days=${days}`, {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ detail: 'Failed to load download analytics' }));
+    throw new Error(error.detail || 'Failed to load download analytics');
+  }
+
+  return response.json();
+}
+
 // ==================== Dashboard Overview ====================
 
 export interface DashboardStats {
@@ -208,13 +240,14 @@ export interface DashboardStats {
   albums: AlbumSummary;
   stations: StationAnalytics[];
   tokenUsage: TokenUsageByType[];
+  downloads?: DownloadAnalytics;
 }
 
 /**
  * Get all dashboard statistics in one call
  */
-export async function getDashboardStats(days: number = 30): Promise<DashboardStats> {
-  const [tokens, albums, stations, tokenUsage] = await Promise.all([
+export async function getDashboardStats(days: number = 30, eventId?: number): Promise<DashboardStats> {
+  const [tokens, albums, stations, tokenUsage, downloads] = await Promise.all([
     getTokenStats().catch(() => ({
       current_tokens: 0,
       tokens_used_month: 0,
@@ -222,7 +255,7 @@ export async function getDashboardStats(days: number = 30): Promise<DashboardSta
       forecast_days: 0,
       tokens_total: 0,
     })),
-    getAlbumSummary(undefined, days).catch(() => ({
+    getAlbumSummary(eventId, days).catch(() => ({
       total_albums: 0,
       completed_albums: 0,
       in_progress_albums: 0,
@@ -230,10 +263,16 @@ export async function getDashboardStats(days: number = 30): Promise<DashboardSta
       total_photos: 0,
       period_days: days,
     })),
-    getStationAnalytics(undefined, days).catch(() => []),
+    getStationAnalytics(eventId, days).catch(() => []),
     getTokenUsageByType(days).catch(() => []),
+    eventId ? getDownloadAnalytics(eventId, days).catch(() => ({
+      total_downloads: 0,
+      total_photos_downloaded: 0,
+      unique_albums: 0,
+      downloads_by_type: {},
+    })) : Promise.resolve(undefined),
   ]);
 
-  return { tokens, albums, stations, tokenUsage };
+  return { tokens, albums, stations, tokenUsage, downloads };
 }
 
