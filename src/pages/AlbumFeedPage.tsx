@@ -27,7 +27,7 @@ import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { EventNotFound } from '@/components/EventNotFound';
-import { getAlbum, getAlbumPhotos, createAlbumCheckout, updateAlbumStatus, deleteAlbumPhoto, Album, sendAlbumEmail, getEmailStatus, requestAlbumPayment } from '@/services/eventsApi';
+import { getAlbum, getAlbumPhotos, createAlbumCheckout, updateAlbumStatus, deleteAlbumPhoto, Album, sendAlbumEmail, getEmailStatus, requestAlbumPayment, trackAlbumDownload } from '@/services/eventsApi';
 import { QRCodeSVG } from 'qrcode.react';
 import { broadcastToBigScreen, clearBigScreen } from '@/services/bigScreenBroadcast';
 import { ENV } from '@/config/env';
@@ -320,6 +320,7 @@ export default function AlbumFeedPage({ albumIdOverride }: AlbumFeedPageProps = 
     toast.info('Preparing ZIP download...');
     
     // Use the backend ZIP endpoint to download all photos
+    // Note: ZIP download tracking is handled by the backend endpoint
     const zipUrl = `${ENV.API_URL}/api/albums/${albumId}/download`;
     
     // Create a link and trigger download
@@ -338,6 +339,11 @@ export default function AlbumFeedPage({ albumIdOverride }: AlbumFeedPageProps = 
     if (downloadsBlocked) {
       toast.error('Please complete payment to download photos');
       return;
+    }
+    
+    // Track single photo download for analytics (only for staff/admin)
+    if (albumId && isStaff) {
+      trackAlbumDownload(albumId, 1, 'single');
     }
     
     const link = document.createElement('a');

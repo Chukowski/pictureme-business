@@ -5,8 +5,10 @@ import { toast } from "sonner";
 import { getUserEvents, type User, type EventConfig } from "@/services/eventsApi";
 import { 
   getDashboardStats, 
+  getDownloadAnalytics,
   type AlbumSummary, 
-  type StationAnalytics
+  type StationAnalytics,
+  type DownloadAnalytics
 } from "@/services/analyticsApi";
 import {
   BarChart3,
@@ -19,7 +21,9 @@ import {
   BookOpen,
   CheckCircle,
   CreditCard,
-  Zap
+  Zap,
+  Download,
+  Printer
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -64,6 +68,8 @@ export default function AdminAnalyticsTab({ currentUser }: AdminAnalyticsTabProp
   // Real statistics from API
   const [albumStats, setAlbumStats] = useState<AlbumSummary | null>(null);
   const [stationStats, setStationStats] = useState<StationAnalytics[]>([]);
+  const [downloadStats, setDownloadStats] = useState<DownloadAnalytics | null>(null);
+  const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
 
   useEffect(() => {
     loadAnalytics(rangeDays);
@@ -120,6 +126,20 @@ export default function AdminAnalyticsTab({ currentUser }: AdminAnalyticsTabProp
       const analyticsResults = await Promise.all(analyticsPromises);
       const validAnalytics = analyticsResults.filter((a): a is EventAnalytics => a !== null);
       setAnalytics(validAnalytics);
+
+      // Load download analytics for the first event (or selected event)
+      if (eventsData.length > 0) {
+        const firstEvent = eventsData[0];
+        if (firstEvent.postgresId) {
+          setSelectedEventId(firstEvent.postgresId);
+          try {
+            const downloads = await getDownloadAnalytics(firstEvent.postgresId, days);
+            setDownloadStats(downloads);
+          } catch (downloadError) {
+            console.warn("Failed to load download analytics:", downloadError);
+          }
+        }
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to load analytics";
       toast.error(message);
@@ -235,6 +255,94 @@ export default function AdminAnalyticsTab({ currentUser }: AdminAnalyticsTabProp
           </CardContent>
         </Card>
       </div>
+
+      {/* Download/Print Analytics */}
+      {downloadStats && (downloadStats.total_downloads > 0 || downloadStats.total_photos_downloaded > 0) && (
+        <div>
+          <h2 className="text-xl font-semibold text-white mb-6 flex items-center gap-2">
+            <Printer className="w-5 h-5 text-orange-400" />
+            Download & Print Analytics (Last {rangeDays} Days)
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {/* Total Downloads */}
+            <Card className="bg-zinc-900/50 border-white/10 backdrop-blur-sm">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-zinc-400">Total Downloads</CardTitle>
+                <div className="p-2 rounded-lg bg-orange-500/10">
+                  <Download className="h-4 w-4 text-orange-400" />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-orange-400">
+                  {downloadStats.total_downloads}
+                </div>
+                <p className="text-xs text-zinc-500 mt-1">
+                  Download sessions
+                </p>
+              </CardContent>
+            </Card>
+
+            {/* Photos Downloaded */}
+            <Card className="bg-zinc-900/50 border-white/10 backdrop-blur-sm">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-zinc-400">Photos Downloaded</CardTitle>
+                <div className="p-2 rounded-lg bg-amber-500/10">
+                  <ImageIcon className="h-4 w-4 text-amber-400" />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-amber-400">
+                  {downloadStats.total_photos_downloaded}
+                </div>
+                <p className="text-xs text-zinc-500 mt-1">
+                  Photos for print/sales
+                </p>
+              </CardContent>
+            </Card>
+
+            {/* Unique Albums */}
+            <Card className="bg-zinc-900/50 border-white/10 backdrop-blur-sm">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-zinc-400">Unique Albums</CardTitle>
+                <div className="p-2 rounded-lg bg-yellow-500/10">
+                  <BookOpen className="h-4 w-4 text-yellow-400" />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-yellow-400">
+                  {downloadStats.unique_albums}
+                </div>
+                <p className="text-xs text-zinc-500 mt-1">
+                  Albums with downloads
+                </p>
+              </CardContent>
+            </Card>
+
+            {/* Download Types */}
+            <Card className="bg-zinc-900/50 border-white/10 backdrop-blur-sm">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-zinc-400">By Type</CardTitle>
+                <div className="p-2 rounded-lg bg-lime-500/10">
+                  <BarChart3 className="h-4 w-4 text-lime-400" />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-1">
+                  {Object.entries(downloadStats.downloads_by_type || {}).map(([type, count]) => (
+                    <div key={type} className="flex justify-between text-sm">
+                      <span className="text-zinc-400 capitalize">{type}</span>
+                      <span className="text-white font-medium">{count}</span>
+                    </div>
+                  ))}
+                  {Object.keys(downloadStats.downloads_by_type || {}).length === 0 && (
+                    <span className="text-zinc-500 text-sm">No data yet</span>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      )}
 
       {/* Station Analytics */}
       {stationStats.length > 0 && (

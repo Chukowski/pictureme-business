@@ -832,6 +832,38 @@ export async function deleteAlbum(albumCode: string, staffPin?: string): Promise
   return { photosDeleted: result.photos_deleted || 0 };
 }
 
+/**
+ * Track album photo download for analytics (print/sales tracking)
+ * @param albumCode - The album code
+ * @param photoCount - Number of photos downloaded (1 for single, N for all)
+ * @param downloadType - 'zip' for all photos, 'single' for individual photo
+ */
+export async function trackAlbumDownload(
+  albumCode: string, 
+  photoCount: number, 
+  downloadType: 'zip' | 'single' | 'print'
+): Promise<void> {
+  try {
+    const token = getAuthToken();
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    
+    await fetch(getApiPath(`/albums/${albumCode}/track-download`, true), {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ 
+        photo_count: photoCount, 
+        download_type: downloadType 
+      })
+    });
+    // Fire and forget - don't block on analytics
+  } catch (error) {
+    console.warn('Failed to track download:', error);
+  }
+}
+
 export async function getEventAlbums(eventId: number): Promise<Album[]> {
   const token = getAuthToken();
   const response = await fetch(getApiPath(`/albums/event/${eventId}`, true), {
