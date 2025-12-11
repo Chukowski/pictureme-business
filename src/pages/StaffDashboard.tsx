@@ -15,7 +15,7 @@ import {
   CheckCircle2, XCircle, Clock, Settings, RefreshCw,
   MonitorPlay, Printer, Mail, MessageSquare, Lock, Unlock,
   Search, Filter, MoreVertical, Eye, BarChart3, Copy, Download,
-  DollarSign, LayoutDashboard, Trash2
+  DollarSign, LayoutDashboard, Trash2, Bell
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -33,7 +33,16 @@ import { toast } from 'sonner';
 import { EventNotFound } from '@/components/EventNotFound';
 import { ScanAlbumQR } from '@/components/album';
 import { StaffAlbumTools, StaffStationAnalytics } from '@/components/staff';
-import { getEventAlbums, getEventAlbumsWithPin, updateAlbumStatus, sendAlbumEmailByCode, getEmailStatus, getCurrentUser, deleteAlbum } from '@/services/eventsApi';
+import { getEventAlbums, getEventAlbumsWithPin, updateAlbumStatus, sendAlbumEmailByCode, getEmailStatus, getCurrentUser, deleteAlbum, getPaymentRequests, type PaymentRequest } from '@/services/eventsApi';
+import { MonitorUp } from 'lucide-react';
+
+// BigScreen request type (similar to PaymentRequest but for display requests)
+interface BigScreenRequest {
+  code: string;
+  owner_name?: string;
+  photo_count: number;
+  created_at: string;
+}
 import {
   AlertDialog,
   AlertDialogAction,
@@ -140,6 +149,29 @@ export default function StaffDashboard() {
     config.user_slug === currentUser.slug
   ), [currentUser, config]);
   
+  // Payment requests state
+  const [paymentRequests, setPaymentRequests] = useState<PaymentRequest[]>([]);
+  const prevPaymentRequestsCount = useRef(0);
+  
+  // BigScreen requests state - initialize from localStorage
+  const [bigScreenRequests, setBigScreenRequests] = useState<BigScreenRequest[]>(() => {
+    try {
+      const saved = localStorage.getItem('bigscreen_requests');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        // Filter out requests older than 30 minutes
+        const thirtyMinutesAgo = Date.now() - 30 * 60 * 1000;
+        return parsed.filter((r: BigScreenRequest) => new Date(r.created_at).getTime() > thirtyMinutesAgo);
+      }
+    } catch (e) { /* ignore */ }
+    return [];
+  });
+  const prevBigScreenRequestsCount = useRef(0);
+  
+  // Global deduplication ref - defined early so all functions can use it
+  const recentlyNotifiedRef = useRef<Set<string>>(new Set());
+  const lastNotifiedPaymentCodesRef = useRef<Set<string>>(new Set());
+  
   // Polling state
   const [isPolling, setIsPolling] = useState(false); // Start with polling OFF
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
@@ -210,8 +242,10 @@ export default function StaffDashboard() {
         visitorNumber: 0,
         photoCount: a.photo_count || 0,
         maxPhotos: config.albumTracking?.rules?.maxPhotosPerAlbum || 5,
-        isComplete: a.status === 'completed',
-        isPaid: a.payment_status === 'paid',
+        isComplete: a.status === 'completed' || a.status === 'paid',
+        // Album is paid ONLY if payment_status is 'paid' OR status is explicitly 'paid'
+        // 'completed' status means photos are done, NOT that payment is done
+        isPaid: a.payment_status === 'paid' || a.status === 'paid',
         createdAt: new Date(a.created_at),
         lastPhotoAt: a.updated_at ? new Date(a.updated_at) : new Date(a.created_at),
       }));
@@ -310,10 +344,318 @@ export default function StaffDashboard() {
     };
   }, [isAuthorized, config?.postgres_event_id, isPolling]);
 
+  // Load payment requests (silent - no notifications, just data refresh)
+  const loadPaymentRequests = useCallback(async (showNotification = false) => {
+    if (!config?.postgres_event_id) return;
+    try {
+      let requests = await getPaymentRequests(config.postgres_event_id);
+      
+      // Filter out dismissed requests
+      requests = requests.filter(r => !dismissedPaymentRequestsRef.current.has(r.code));
+      
+      // Find truly new requests (codes we haven't notified about)
+      const newRequests = requests.filter(r => !lastNotifiedPaymentCodesRef.current.has(r.code));
+      
+      // Notify for new requests only if explicitly requested AND we have prior context
+      if (showNotification && newRequests.length > 0 && prevPaymentRequestsCount.current > 0) {
+        const newestRequest = newRequests[0];
+        
+        // Deduplicate using recentlyNotifiedRef
+        const notificationKey = `pay-${newestRequest.code}`;
+        if (!recentlyNotifiedRef.current.has(notificationKey)) {
+          recentlyNotifiedRef.current.add(notificationKey);
+          setTimeout(() => recentlyNotifiedRef.current.delete(notificationKey), 30000);
+          
+          // Play notification sound
+          try {
+            const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            oscillator.frequency.value = 800;
+            oscillator.type = 'sine';
+            gainNode.gain.value = 0.3;
+            oscillator.start();
+            setTimeout(() => { oscillator.frequency.value = 1000; }, 150);
+            setTimeout(() => { oscillator.stop(); audioContext.close(); }, 300);
+          } catch (e) { /* ignore audio errors */ }
+          
+          toast.info(`💳 New payment request!`, {
+            description: `${newestRequest?.owner_name || newestRequest?.code || 'A visitor'} wants to pay`,
+            duration: 10000,
+          });
+        }
+        
+        // Mark these as notified
+        newRequests.forEach(r => lastNotifiedPaymentCodesRef.current.add(r.code));
+      }
+      
+      // On first load, just track existing codes without notifying
+      if (prevPaymentRequestsCount.current === 0) {
+        requests.forEach(r => lastNotifiedPaymentCodesRef.current.add(r.code));
+      }
+      
+      prevPaymentRequestsCount.current = requests.length;
+      setPaymentRequests(requests);
+    } catch (error) {
+      console.error('Failed to load payment requests:', error);
+    }
+  }, [config?.postgres_event_id]);
+
+  // Poll for payment requests every 5 seconds (faster than album polling)
+  useEffect(() => {
+    if (!isAuthorized || !config?.postgres_event_id) return;
+    
+    // Initial load (no notification)
+    loadPaymentRequests(false);
+    
+    // Poll every 5 seconds (with notification for new requests)
+    const interval = setInterval(() => loadPaymentRequests(true), 5000);
+    return () => clearInterval(interval);
+  }, [isAuthorized, config?.postgres_event_id, loadPaymentRequests]);
+
+  // Helper function to handle incoming bigscreen request
+  const handleBigScreenRequestNotification = useCallback((albumData: { code: string; owner_name?: string; photo_count?: number }) => {
+    // Deduplicate: ignore if we already notified for this album in the last 10 seconds
+    const notificationKey = `${albumData.code}-${Math.floor(Date.now() / 10000)}`; // 10 second window
+    if (recentlyNotifiedRef.current.has(notificationKey)) {
+      console.log('📺 Ignoring duplicate bigscreen notification for:', albumData.code);
+      return;
+    }
+    recentlyNotifiedRef.current.add(notificationKey);
+    // Clean up old entries after 15 seconds
+    setTimeout(() => recentlyNotifiedRef.current.delete(notificationKey), 15000);
+    
+    console.log('📺 BigScreen request detected!', albumData);
+    
+    // Play notification sound
+    try {
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      oscillator.frequency.value = 600;
+      oscillator.type = 'sine';
+      gainNode.gain.value = 0.3;
+      oscillator.start();
+      setTimeout(() => { oscillator.frequency.value = 800; }, 100);
+      setTimeout(() => { oscillator.frequency.value = 1000; }, 200);
+      setTimeout(() => { oscillator.stop(); audioContext.close(); }, 350);
+    } catch (e) { /* ignore audio errors */ }
+    
+    toast.info('📺 Big Screen Request!', {
+      description: `${albumData.owner_name || albumData.code || 'A visitor'} wants to display photos`,
+      duration: 15000,
+    });
+    
+    // Add to requests (avoid duplicates) and persist to localStorage
+    setBigScreenRequests(prev => {
+      if (prev.some(r => r.code === albumData.code)) return prev;
+      const updated = [{
+        code: albumData.code,
+        owner_name: albumData.owner_name,
+        photo_count: albumData.photo_count || 0,
+        created_at: new Date().toISOString(),
+      }, ...prev];
+      localStorage.setItem('bigscreen_requests', JSON.stringify(updated));
+      return updated;
+    });
+  }, []);
+
+  // BroadcastChannel listener for same-origin notifications (works across tabs)
+  useEffect(() => {
+    if (!isAuthorized) return;
+
+    try {
+      const channel = new BroadcastChannel('pictureme_staff_notifications');
+      console.log('📡 BroadcastChannel listening for notifications');
+      
+      channel.onmessage = (event) => {
+        console.log('📡 BroadcastChannel message received:', event.data);
+        const message = event.data;
+        
+        if (message.type === 'bigscreen_request' && message.data) {
+          handleBigScreenRequestNotification(message.data);
+        }
+        
+        if (message.type === 'payment_request' && message.data) {
+          console.log('💳 Payment request via BroadcastChannel:', message.data);
+          // Refresh payment requests list with notification enabled
+          loadPaymentRequests(true);
+        }
+      };
+      
+      return () => {
+        channel.close();
+      };
+    } catch (e) {
+      console.log('BroadcastChannel not supported');
+    }
+  }, [isAuthorized, handleBigScreenRequestNotification, loadPaymentRequests]);
+
+  // WebSocket connection for real-time notifications (cross-device)
+  useEffect(() => {
+    if (!isAuthorized || !config?.postgres_event_id) return;
+
+    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsHost = ENV.API_URL?.replace(/^https?:\/\//, '') || window.location.host;
+    const wsUrl = `${wsProtocol}//${wsHost}/ws/albums/${config.postgres_event_id}`;
+    
+    console.log('🔌 WebSocket connecting to:', wsUrl);
+    
+    let ws: WebSocket | null = null;
+    let reconnectTimeout: NodeJS.Timeout | null = null;
+    
+    const connect = () => {
+      try {
+        ws = new WebSocket(wsUrl);
+        
+        ws.onopen = () => {
+          console.log('✅ WebSocket connected successfully');
+        };
+        
+        ws.onmessage = (event) => {
+          console.log('📨 WebSocket message received:', event.data);
+          try {
+            const message = JSON.parse(event.data);
+            console.log('📨 Parsed message:', message);
+            
+            // Handle big screen request
+            if (message.type === 'bigscreen_request' && message.data) {
+              handleBigScreenRequestNotification(message.data);
+            }
+            
+            // Handle payment request (real-time via WebSocket)
+            if (message.type === 'payment_request' && message.data) {
+              console.log('💳 Payment request detected!', message.data);
+              // Refresh payment requests list with notification
+              loadPaymentRequests(true);
+            }
+          } catch (e) {
+            console.error('Failed to parse WebSocket message:', e);
+          }
+        };
+        
+        ws.onclose = (event) => {
+          console.log('🔌 WebSocket closed:', event.code, event.reason);
+          // Reconnect after 5 seconds
+          reconnectTimeout = setTimeout(connect, 5000);
+        };
+        
+        ws.onerror = (error) => {
+          console.error('❌ WebSocket error:', error);
+          ws?.close();
+        };
+      } catch (e) {
+        console.error('WebSocket connection error:', e);
+      }
+    };
+    
+    connect();
+    
+    return () => {
+      if (reconnectTimeout) clearTimeout(reconnectTimeout);
+      if (ws) ws.close();
+    };
+  }, [isAuthorized, config?.postgres_event_id, loadPaymentRequests, handleBigScreenRequestNotification]);
+
+  // Handle marking album as paid from payment notification
+  const handleMarkPaidFromNotification = async (albumCode: string) => {
+    try {
+      await updateAlbumStatus(albumCode, 'paid');
+      toast.success('Album marked as paid!');
+      // Remove from notified codes so it won't show again
+      lastNotifiedPaymentCodesRef.current.delete(albumCode);
+      // Refresh without notification (we already acted on it)
+      loadPaymentRequests(false);
+      loadAlbums();
+    } catch (error) {
+      toast.error('Failed to mark as paid');
+    }
+  };
+  
+  // Track dismissed payment requests to prevent them from reappearing
+  const dismissedPaymentRequestsRef = useRef<Set<string>>(new Set());
+  
+  // Initialize dismissed requests from localStorage on mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('dismissed_payment_requests');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        dismissedPaymentRequestsRef.current = new Set(parsed);
+      }
+    } catch { /* ignore */ }
+  }, []);
+
+  // Handle dismissing a payment request notification
+  // Note: This only hides from UI. The visitor can send a new request if needed.
+  // The payment_status stays as 'requested' until staff marks as paid or it expires.
+  const handleDismissPaymentRequest = (albumCode: string) => {
+    // Add to dismissed set and persist
+    dismissedPaymentRequestsRef.current.add(albumCode);
+    try {
+      localStorage.setItem('dismissed_payment_requests', JSON.stringify([...dismissedPaymentRequestsRef.current]));
+    } catch { /* ignore */ }
+    
+    // Remove from UI
+    setPaymentRequests(prev => prev.filter(r => r.code !== albumCode));
+    // Keep in notified codes so it won't trigger notification again
+    lastNotifiedPaymentCodesRef.current.add(albumCode);
+    toast.info('Request dismissed');
+  };
+
+  // Handle sending album to big screen from notification
+  const handleSendToBigScreenFromNotification = async (albumCode: string, ownerName?: string) => {
+    if (!config?.postgres_event_id) return;
+    
+    try {
+      // Find the album to get the real isPaid status
+      const albumFromList = albums.find(a => a.id === albumCode);
+      const albumIsPaid = albumFromList?.isPaid ?? false;
+      
+      const success = await broadcastToBigScreen({
+        albumCode,
+        visitorName: ownerName,
+        isPaid: albumIsPaid, // Use real payment status from album
+        eventId: config.postgres_event_id,
+        userSlug: effectiveUserSlug,
+        eventSlug: effectiveEventSlug,
+      });
+      
+      if (success) {
+        toast.success(`Album ${albumCode} sent to Big Screen!`);
+        // Remove from requests and persist to localStorage
+        setBigScreenRequests(prev => {
+          const updated = prev.filter(r => r.code !== albumCode);
+          localStorage.setItem('bigscreen_requests', JSON.stringify(updated));
+          return updated;
+        });
+      } else {
+        toast.error('Failed to send to Big Screen');
+      }
+    } catch (error) {
+      console.error('Failed to send to big screen:', error);
+      toast.error('Failed to send to Big Screen');
+    }
+  };
+
+  // Handle dismissing big screen request
+  const handleDismissBigScreenRequest = (albumCode: string) => {
+    setBigScreenRequests(prev => {
+      const updated = prev.filter(r => r.code !== albumCode);
+      localStorage.setItem('bigscreen_requests', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
   // Manual refresh
   const handleRefresh = () => {
     setIsLoading(true);
     loadAlbums();
+    loadPaymentRequests(false); // No notification on manual refresh
     toast.success('Data refreshed');
   };
 
@@ -580,6 +922,141 @@ export default function StaffDashboard() {
           </div>
           
           <div className="flex items-center gap-3">
+            {/* Payment Requests Bell */}
+            {paymentRequests.length > 0 && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    size="icon"
+                    className="relative bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 border border-amber-500/30 animate-pulse"
+                  >
+                    <Bell className="w-4 h-4" />
+                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-amber-500 text-black text-xs font-bold rounded-full flex items-center justify-center">
+                      {paymentRequests.length}
+                    </span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-80 bg-zinc-900 border-white/10">
+                  <div className="px-3 py-2 border-b border-white/10">
+                    <p className="font-semibold text-amber-400 flex items-center gap-2">
+                      <Bell className="w-4 h-4" />
+                      Payment Requests
+                    </p>
+                    <p className="text-xs text-zinc-500">Visitors waiting to pay</p>
+                  </div>
+                  <div className="max-h-64 overflow-y-auto">
+                    {paymentRequests.map((req) => (
+                      <div 
+                        key={req.code}
+                        className="px-3 py-2 hover:bg-white/5 flex items-center justify-between gap-2"
+                      >
+                        <div 
+                          className="flex-1 cursor-pointer"
+                          onClick={() => navigate(`/${effectiveUserSlug}/${effectiveEventSlug}/album/${req.code}`)}
+                        >
+                          <p className="font-mono text-sm text-white hover:text-cyan-400 transition-colors">{req.code}</p>
+                          <p className="text-xs text-zinc-400">
+                            {req.owner_name || 'Anonymous'} • {req.photo_count} photos
+                          </p>
+                        </div>
+                        <div className="flex gap-1">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleDismissPaymentRequest(req.code)}
+                            className="text-zinc-400 hover:text-red-400 text-xs px-2"
+                            title="Dismiss"
+                          >
+                            <XCircle className="w-3 h-3" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => navigate(`/${effectiveUserSlug}/${effectiveEventSlug}/album/${req.code}`)}
+                            className="text-zinc-400 hover:text-white text-xs px-2"
+                            title="View Album"
+                          >
+                            <Eye className="w-3 h-3" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            onClick={() => handleMarkPaidFromNotification(req.code)}
+                            className="bg-green-600 hover:bg-green-500 text-white text-xs"
+                          >
+                            <DollarSign className="w-3 h-3 mr-1" />
+                            Paid
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+            
+            {/* BigScreen Requests */}
+            {bigScreenRequests.length > 0 && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    size="icon"
+                    className="relative bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 border border-cyan-500/30 animate-pulse"
+                  >
+                    <MonitorUp className="w-4 h-4" />
+                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-cyan-500 text-black text-xs font-bold rounded-full flex items-center justify-center">
+                      {bigScreenRequests.length}
+                    </span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-80 bg-zinc-900 border-white/10">
+                  <div className="px-3 py-2 border-b border-white/10">
+                    <p className="font-semibold text-cyan-400 flex items-center gap-2">
+                      <MonitorUp className="w-4 h-4" />
+                      Big Screen Requests
+                    </p>
+                    <p className="text-xs text-zinc-500">Visitors want to display photos</p>
+                  </div>
+                  <div className="max-h-64 overflow-y-auto">
+                    {bigScreenRequests.map((req) => (
+                      <div 
+                        key={req.code}
+                        className="px-3 py-2 hover:bg-white/5 flex items-center justify-between gap-2"
+                      >
+                        <div 
+                          className="flex-1 cursor-pointer"
+                          onClick={() => navigate(`/${effectiveUserSlug}/${effectiveEventSlug}/album/${req.code}`)}
+                        >
+                          <p className="font-mono text-sm text-white hover:text-cyan-400 transition-colors">{req.code}</p>
+                          <p className="text-xs text-zinc-400">
+                            {req.owner_name || 'Anonymous'} • {req.photo_count} photos
+                          </p>
+                        </div>
+                        <div className="flex gap-1">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleDismissBigScreenRequest(req.code)}
+                            className="text-zinc-400 hover:text-red-400 text-xs px-2"
+                            title="Dismiss"
+                          >
+                            <XCircle className="w-3 h-3" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            onClick={() => handleSendToBigScreenFromNotification(req.code, req.owner_name)}
+                            className="bg-cyan-600 hover:bg-cyan-500 text-white text-xs"
+                          >
+                            <MonitorPlay className="w-3 h-3 mr-1" />
+                            Show
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+            
             {/* Polling indicator */}
             <div className="flex items-center gap-2 text-xs text-zinc-500">
               <div className={`w-2 h-2 rounded-full ${isPolling ? 'bg-green-500 animate-pulse' : 'bg-zinc-600'}`} />

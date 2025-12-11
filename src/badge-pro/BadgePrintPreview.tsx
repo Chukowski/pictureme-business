@@ -187,10 +187,17 @@ export async function renderBadgeToCanvas({
   const dateY = toPx(positions.dateTime?.y || 68, heightPx);
   const albumCodeY = toPx(positions.albumCode?.y || 75, heightPx);
 
-  ctx.textAlign = "center";
   ctx.shadowColor = "rgba(0,0,0,0.35)";
   ctx.shadowBlur = 4;
   ctx.textBaseline = "middle"; 
+
+  // Helper to get text X position based on alignment
+  const getTextX = (pos: typeof positions.name, defaultX: number) => {
+    const align = pos?.textAlign || 'center';
+    const x = toPx(pos?.x || defaultX, widthPx);
+    // For left align, x is the start; for right, x is the end; for center, x is center
+    return x;
+  };
 
   if (config.fields.showName) {
     const fontSize = positions.name?.fontSize 
@@ -201,7 +208,8 @@ export async function renderBadgeToCanvas({
        
     ctx.font = `bold ${fontSize}px ${config.textStyle?.fontFamily || 'sans-serif'}`;
     ctx.fillStyle = config.textStyle?.nameColor || "#ffffff";
-    ctx.fillText(data?.name || "John Doe", toPx(positions.name?.x || 50, widthPx), nameY);
+    ctx.textAlign = positions.name?.textAlign || "center";
+    ctx.fillText(data?.name || "John Doe", getTextX(positions.name, 50), nameY);
   }
 
   if (config.fields.showEventName) {
@@ -213,7 +221,8 @@ export async function renderBadgeToCanvas({
 
     ctx.font = `${fontSize}px sans-serif`;
     ctx.fillStyle = config.textStyle?.eventNameColor || "rgba(255,255,255,0.85)";
-    ctx.fillText(data?.eventName || "Event Name", toPx(positions.eventName?.x || 50, widthPx), eventY);
+    ctx.textAlign = positions.eventName?.textAlign || "center";
+    ctx.fillText(data?.eventName || "Event Name", getTextX(positions.eventName, 50), eventY);
   }
 
   if (config.fields.showDateTime) {
@@ -225,7 +234,16 @@ export async function renderBadgeToCanvas({
 
     ctx.font = `${fontSize}px sans-serif`;
     ctx.fillStyle = config.textStyle?.dateTimeColor || "rgba(255,255,255,0.7)";
-    ctx.fillText(data?.date || "Nov 28 • 2:30 PM", toPx(positions.dateTime?.x || 50, widthPx), dateY);
+    ctx.textAlign = positions.dateTime?.textAlign || "center";
+    
+    // Draw date and time on separate lines
+    const now = new Date();
+    const dateText = data?.date || now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    const timeText = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+    const lineHeight = fontSize * 1.3;
+    
+    ctx.fillText(dateText, getTextX(positions.dateTime, 50), dateY);
+    ctx.fillText(timeText, getTextX(positions.dateTime, 50), dateY + lineHeight);
   }
   
   if (config.fields.showAlbumCode) {
@@ -237,7 +255,8 @@ export async function renderBadgeToCanvas({
 
     ctx.font = `bold ${fontSize}px sans-serif`;
     ctx.fillStyle = config.textStyle?.dateTimeColor || "rgba(255,255,255,0.7)";
-    ctx.fillText(data?.albumCode || albumCode || "CODE", toPx(positions.albumCode?.x || 50, widthPx), albumCodeY);
+    ctx.textAlign = positions.albumCode?.textAlign || "center";
+    ctx.fillText(data?.albumCode || albumCode || "CODE", getTextX(positions.albumCode, 50), albumCodeY);
   }
 
   // QR

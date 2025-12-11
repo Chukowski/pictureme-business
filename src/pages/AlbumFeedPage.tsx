@@ -13,7 +13,7 @@ import {
   Loader2, ArrowLeft, Download, Share2, Mail, MessageSquare, 
   CheckCircle2, XCircle, MonitorPlay, Printer, Lock, Unlock,
   QrCode, ExternalLink, CreditCard, ShoppingCart, Clock, Trash2, Camera,
-  X, ChevronLeft, ChevronRight, Facebook, Twitter, Link2, Copy
+  X, ChevronLeft, ChevronRight, Facebook, Twitter, Link2, Copy, Eye
 } from 'lucide-react';
 import {
   Dialog,
@@ -127,12 +127,23 @@ export default function AlbumFeedPage({ albumIdOverride }: AlbumFeedPageProps = 
   // Check if payment is required for viewing/downloads (printReady = payment wall enabled)
   const requiresPayment = config?.albumTracking?.rules?.printReady === true && albumInfo?.isPaid !== true;
   
+  // Check if free preview is allowed (can see watermarked photos before paying)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const allowFreePreview = (config as any)?.rules?.allowFreePreview === true;
+  
   // Album is blocked if it needs approval OR payment (and user is not staff)
-  const albumIsBlocked = !isStaff && (requiresStaffApproval || requiresPayment);
+  // If allowFreePreview is enabled, album is NOT blocked - user can see watermarked previews
+  const albumIsBlocked = !isStaff && (requiresStaffApproval || (requiresPayment && !allowFreePreview));
   
   // Album is completely locked - can't even see blurred photos until paid
   // When printReady is enabled, album is locked until staff marks as paid
-  const albumIsLocked = !isStaff && requiresPayment;
+  // Respects showPaymentCardOnSharedAlbum setting - if false, shows photos instead of lock card
+  // If allowFreePreview is enabled, album is NOT locked - user can see watermarked photos
+  const showPaymentCard = (config as any)?.rules?.showPaymentCardOnSharedAlbum !== false;
+  const albumIsLocked = !isStaff && requiresPayment && showPaymentCard && !allowFreePreview;
+  
+  // Downloads are blocked if payment is required (even with free preview enabled)
+  const downloadsBlocked = !isStaff && requiresPayment;
   
   // Debug logging
   console.log('🔒 Album access check:', {
@@ -140,13 +151,17 @@ export default function AlbumFeedPage({ albumIdOverride }: AlbumFeedPageProps = 
     isPaid: albumInfo?.isPaid,
     printReady: config?.albumTracking?.rules?.printReady,
     requiresPayment,
+    allowFreePreview,
     albumIsLocked,
+    downloadsBlocked,
     albumInfo: albumInfo ? { id: albumInfo.id, isPaid: albumInfo.isPaid } : null
   });
   
   // Check if hard watermark should be applied
+  // Apply watermark if: watermark is enabled globally, OR payment required with hardWatermark setting, OR free preview mode
   const applyHardWatermark = config?.branding?.watermark?.enabled || 
-                            (requiresPayment && config?.rules?.hardWatermarkOnPreviews);
+                            (requiresPayment && (config as any)?.rules?.hardWatermarkOnPreviews) ||
+                            (requiresPayment && allowFreePreview);
 
   // Load album data
   useEffect(() => {
@@ -292,8 +307,8 @@ export default function AlbumFeedPage({ albumIdOverride }: AlbumFeedPageProps = 
   };
 
   const handleDownloadAll = async () => {
-    if (requiresPayment) {
-      toast.error('Please unlock the album first to download photos');
+    if (downloadsBlocked) {
+      toast.error('Please complete payment to download photos');
       return;
     }
     
@@ -320,6 +335,11 @@ export default function AlbumFeedPage({ albumIdOverride }: AlbumFeedPageProps = 
 
   // Download single photo
   const handleDownloadSingle = (photo: Photo) => {
+    if (downloadsBlocked) {
+      toast.error('Please complete payment to download photos');
+      return;
+    }
+    
     const link = document.createElement('a');
     link.href = photo.url;
     link.target = '_blank';
@@ -892,6 +912,38 @@ export default function AlbumFeedPage({ albumIdOverride }: AlbumFeedPageProps = 
               </div>
             )}
 
+            {/* Free Preview Banner - shown when viewing with watermarks before payment */}
+            {!albumIsBlocked && requiresPayment && allowFreePreview && (
+              <div className="mb-6 p-4 rounded-xl bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/30">
+                <div className="flex items-center justify-between flex-wrap gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-amber-500/30 flex items-center justify-center">
+                      <Eye className="w-5 h-5 text-amber-400" />
+                    </div>
+                    <div>
+                      <p className="text-amber-300 font-semibold">Preview Mode</p>
+                      <p className="text-amber-200/70 text-sm">Photos are watermarked. Complete payment to download in full quality.</p>
+                    </div>
+                  </div>
+                  <Button
+                    onClick={() => {
+                      // Scroll to payment section or show payment modal
+                      const stripeEnabled = (config as any)?.rules?.useStripeCodeForPayment || (config as any)?.rules?.enableQRToPayment;
+                      if (stripeEnabled) {
+                        handlePayWithStripe();
+                      } else {
+                        handleRequestCashPayment();
+                      }
+                    }}
+                    className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-black font-bold"
+                  >
+                    <CreditCard className="w-4 h-4 mr-2" />
+                    Unlock Photos
+                  </Button>
+                </div>
+              </div>
+            )}
+
             {/* Regular Photo Grid - Only shown when album is NOT blocked */}
             {!albumIsBlocked && (
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
@@ -1351,63 +1403,141 @@ export default function AlbumFeedPage({ albumIdOverride }: AlbumFeedPageProps = 
                 <X className="w-5 h-5" />
               </button>
 
-              {/* Navigation arrows */}
-              {currentPhotoIndex > 0 && (
-                <button
-                  onClick={goToPrevPhoto}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 z-10 p-2 rounded-full bg-black/50 hover:bg-black/70 text-white transition-colors"
-                >
-                  <ChevronLeft className="w-6 h-6" />
-                </button>
-              )}
-              {currentPhotoIndex < photos.length - 1 && (
-                <button
-                  onClick={goToNextPhoto}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 z-10 p-2 rounded-full bg-black/50 hover:bg-black/70 text-white transition-colors"
-                >
-                  <ChevronRight className="w-6 h-6" />
-                </button>
-              )}
-
-              {/* Photo */}
-              <img
-                src={previewPhoto.url}
-                alt={previewPhoto.templateName}
-                className="w-full max-h-[70vh] object-contain bg-black"
-              />
-
-              {/* Bottom bar with actions */}
-              <div className="p-4 bg-zinc-900/90 border-t border-white/10">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-white font-medium">{previewPhoto.templateName}</p>
-                    <p className="text-zinc-400 text-sm">
-                      Photo {currentPhotoIndex + 1} of {photos.length}
-                    </p>
-                  </div>
-                  <div className="flex gap-2">
-                    {!requiresPayment && (
-                      <Button
-                        size="sm"
-                        onClick={() => handleDownloadSingle(previewPhoto)}
-                        className="bg-white/10 hover:bg-white/20 text-white"
-                      >
-                        <Download className="w-4 h-4 mr-2" />
-                        Download
-                      </Button>
-                    )}
-                    <Button
-                      size="sm"
-                      onClick={() => handleSharePhoto(previewPhoto)}
-                      style={{ backgroundColor: primaryColor }}
-                      className="text-black font-medium"
-                    >
-                      <Share2 className="w-4 h-4 mr-2" />
-                      Share
-                    </Button>
+              {/* Free Preview Mode - Show payment prompt instead of full image */}
+              {downloadsBlocked && allowFreePreview ? (
+                <div className="relative">
+                  {/* Blurred background image */}
+                  <img
+                    src={previewPhoto.url}
+                    alt={previewPhoto.templateName}
+                    className="w-full max-h-[70vh] object-contain bg-black blur-xl opacity-30"
+                  />
+                  
+                  {/* Payment overlay */}
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="text-center p-8 max-w-md">
+                      {/* Lock icon */}
+                      <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-amber-500/30 to-orange-500/30 flex items-center justify-center border border-amber-500/40">
+                        <Lock className="w-10 h-10 text-amber-400" />
+                      </div>
+                      
+                      <h3 className="text-2xl font-bold text-white mb-3">
+                        Unlock Your Photos
+                      </h3>
+                      
+                      <p className="text-zinc-400 mb-6">
+                        Complete payment to view and download your photos in full quality without watermarks.
+                      </p>
+                      
+                      <div className="space-y-3 w-full">
+                        {((config as any)?.rules?.useStripeCodeForPayment || (config as any)?.rules?.enableQRToPayment) ? (
+                          <>
+                            <Button
+                              onClick={() => {
+                                setPreviewPhoto(null);
+                                handlePayWithStripe();
+                              }}
+                              size="lg"
+                              className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-black font-bold"
+                            >
+                              <CreditCard className="w-5 h-5 mr-2" />
+                              Pay with Card
+                            </Button>
+                            
+                            <Button
+                              onClick={() => {
+                                setPreviewPhoto(null);
+                                handleRequestCashPayment();
+                              }}
+                              size="lg"
+                              className="w-full bg-white/10 hover:bg-white/20 text-white border border-white/30"
+                            >
+                              <ShoppingCart className="w-5 h-5 mr-2" />
+                              Pay at Counter (Cash)
+                            </Button>
+                          </>
+                        ) : (
+                          <Button
+                            onClick={() => {
+                              setPreviewPhoto(null);
+                              handleRequestCashPayment();
+                            }}
+                            size="lg"
+                            className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-black font-bold"
+                          >
+                            <ShoppingCart className="w-5 h-5 mr-2" />
+                            Pay at Counter
+                          </Button>
+                        )}
+                      </div>
+                      
+                      <p className="text-xs text-zinc-500 mt-4">
+                        Your {photos.length} photo{photos.length !== 1 ? 's are' : ' is'} waiting for you!
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
+              ) : (
+                <>
+                  {/* Navigation arrows */}
+                  {currentPhotoIndex > 0 && (
+                    <button
+                      onClick={goToPrevPhoto}
+                      className="absolute left-4 top-1/2 -translate-y-1/2 z-10 p-2 rounded-full bg-black/50 hover:bg-black/70 text-white transition-colors"
+                    >
+                      <ChevronLeft className="w-6 h-6" />
+                    </button>
+                  )}
+                  {currentPhotoIndex < photos.length - 1 && (
+                    <button
+                      onClick={goToNextPhoto}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 z-10 p-2 rounded-full bg-black/50 hover:bg-black/70 text-white transition-colors"
+                    >
+                      <ChevronRight className="w-6 h-6" />
+                    </button>
+                  )}
+
+                  {/* Photo */}
+                  <img
+                    src={previewPhoto.url}
+                    alt={previewPhoto.templateName}
+                    className="w-full max-h-[70vh] object-contain bg-black"
+                  />
+
+                  {/* Bottom bar with actions */}
+                  <div className="p-4 bg-zinc-900/90 border-t border-white/10">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-white font-medium">{previewPhoto.templateName}</p>
+                        <p className="text-zinc-400 text-sm">
+                          Photo {currentPhotoIndex + 1} of {photos.length}
+                        </p>
+                      </div>
+                      <div className="flex gap-2">
+                        {!requiresPayment && (
+                          <Button
+                            size="sm"
+                            onClick={() => handleDownloadSingle(previewPhoto)}
+                            className="bg-white/10 hover:bg-white/20 text-white"
+                          >
+                            <Download className="w-4 h-4 mr-2" />
+                            Download
+                          </Button>
+                        )}
+                        <Button
+                          size="sm"
+                          onClick={() => handleSharePhoto(previewPhoto)}
+                          style={{ backgroundColor: primaryColor }}
+                          className="text-black font-medium"
+                        >
+                          <Share2 className="w-4 h-4 mr-2" />
+                          Share
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           )}
         </DialogContent>

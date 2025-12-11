@@ -35,110 +35,176 @@ import { QRCodeSVG } from 'qrcode.react';
 
 const REFRESH_INTERVAL = 10000; // 10 seconds
 
-// PhotoCard component - detects orientation and sets grid span
+// PhotoCard component - gallery style
 function PhotoCard({ 
   photoUrl, 
   index, 
-  total, 
   isPaid, 
   primaryColor,
-  isLandscape
+  blurEnabled = true,
+  watermarkText = 'PREVIEW',
+  onClick
 }: { 
   photoUrl: string; 
   index: number; 
-  total: number; 
   isPaid: boolean; 
   primaryColor: string;
-  isLandscape?: boolean;
+  blurEnabled?: boolean;
+  watermarkText?: string;
+  onClick?: () => void;
 }) {
-  const [span, setSpan] = useState("col-span-1 row-span-1");
-  const [orientation, setOrientation] = useState<'landscape' | 'portrait' | 'square' | null>(null);
-
-  useEffect(() => {
-    if (typeof isLandscape === 'boolean') {
-      setSpan(isLandscape ? "col-span-2 row-span-1" : "col-span-1 row-span-2");
-      setOrientation(isLandscape ? 'landscape' : 'portrait');
-      return;
-    }
-
-    const img = new Image();
-    img.onload = () => {
-      const ratio = img.width / img.height;
-      // Logic for bento grid sizing
-      if (ratio > 1.2) {
-        // Landscape -> 2 cols x 1 row
-        setSpan("col-span-2 row-span-1"); 
-        setOrientation('landscape');
-      } else if (ratio < 0.8) {
-        // Portrait -> 1 col x 2 rows
-        setSpan("col-span-1 row-span-2");
-        setOrientation('portrait');
-      } else {
-        // Square-ish -> 1 col x 1 row (or 2x2 for emphasis if it's the first photo)
-        setSpan(index === 0 ? "col-span-2 row-span-2" : "col-span-1 row-span-1");
-        setOrientation('square');
-      }
-    };
-    img.src = photoUrl;
-  }, [photoUrl, index, isLandscape]);
-
   return (
     <div
       className={cn(
-        "relative rounded-2xl overflow-hidden w-full h-full bg-zinc-900",
-        "ring-1 ring-white/10 transition-all duration-500 hover:ring-white/30",
+        "relative rounded-xl overflow-hidden bg-black/60 cursor-pointer",
+        "ring-1 ring-white/10 transition-all duration-300 hover:ring-2 hover:ring-white/30 hover:scale-[1.02]",
         "animate-in fade-in zoom-in-95 duration-500",
-        span // Apply calculated span
+        "aspect-[3/4]" // Fixed aspect ratio for gallery consistency
       )}
       style={{ 
-        animationDelay: `${index * 100}ms`,
-        boxShadow: `0 10px 30px -10px ${primaryColor}20`,
+        animationDelay: `${index * 80}ms`,
+        boxShadow: `0 8px 24px -8px ${primaryColor}30`,
       }}
+      onClick={onClick}
     >
       {/* Main image */}
       <img
         src={photoUrl}
         alt={`Photo ${index + 1}`}
         className={cn(
-          "w-full h-full object-cover", // Fill the calculated span
-          !isPaid && "blur-md opacity-80"
+          "w-full h-full object-cover",
+          !isPaid && blurEnabled && "blur-md opacity-80"
         )}
       />
+      
       {/* Watermark overlay for unpaid albums */}
       {!isPaid && (
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none bg-black/20 backdrop-blur-[2px] z-20">
-          <div className="bg-black/70 backdrop-blur-md px-6 py-3 rounded-xl border border-white/20 shadow-2xl transform -rotate-6">
-            <p className="text-white text-xl font-bold tracking-widest uppercase drop-shadow-md">
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          {/* Diagonal watermark text */}
+          <div 
+            className="text-white/25 text-3xl font-bold transform -rotate-45 select-none whitespace-nowrap"
+            style={{ textShadow: '0 2px 8px rgba(0,0,0,0.5)' }}
+          >
+            {watermarkText}
+          </div>
+        </div>
+      )}
+      
+      {/* Blur overlay badge */}
+      {!isPaid && blurEnabled && (
+        <div className="absolute bottom-3 left-3 right-3">
+          <div className="bg-black/70 backdrop-blur-sm px-3 py-1.5 rounded-lg border border-white/20 text-center">
+            <p className="text-white/90 text-xs font-medium tracking-wide uppercase">
               Preview
             </p>
           </div>
         </div>
       )}
-      
-      {/* Photo number badge */}
-      <div 
-        className={cn(
-          "absolute bottom-3 right-3 px-2.5 py-1 rounded-full flex items-center gap-1.5 text-white font-medium text-xs backdrop-blur-md border border-white/10 shadow-sm z-20",
-          !isPaid ? "bg-amber-500/80" : "bg-black/40"
-        )}
+    </div>
+  );
+}
+
+// Lightbox component for full preview
+function PhotoLightbox({
+  photo,
+  isPaid,
+  blurEnabled,
+  watermarkText,
+  onClose,
+  onPrev,
+  onNext,
+  currentIndex,
+  total
+}: {
+  photo: string;
+  isPaid: boolean;
+  blurEnabled: boolean;
+  watermarkText: string;
+  onClose: () => void;
+  onPrev: () => void;
+  onNext: () => void;
+  currentIndex: number;
+  total: number;
+}) {
+  // Close on escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+      if (e.key === 'ArrowLeft') onPrev();
+      if (e.key === 'ArrowRight') onNext();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose, onPrev, onNext]);
+
+  return (
+    <div 
+      className="fixed inset-0 z-50 bg-black/95 backdrop-blur-md flex items-center justify-center animate-in fade-in duration-200"
+      onClick={onClose}
+    >
+      {/* Close button */}
+      <button 
+        className="absolute top-6 right-6 p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors z-10"
+        onClick={onClose}
       >
-        <Sparkles className="w-3 h-3 opacity-80" />
-        {index + 1}/{total}
+        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+
+      {/* Navigation arrows */}
+      {total > 1 && (
+        <>
+          <button
+            className="absolute left-6 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/10 hover:bg-white/20 transition-colors z-10"
+            onClick={(e) => { e.stopPropagation(); onPrev(); }}
+          >
+            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <button
+            className="absolute right-6 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/10 hover:bg-white/20 transition-colors z-10"
+            onClick={(e) => { e.stopPropagation(); onNext(); }}
+          >
+            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+        </>
+      )}
+
+      {/* Photo counter */}
+      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 px-4 py-2 rounded-full bg-white/10 text-white text-sm font-medium">
+        {currentIndex + 1} / {total}
       </div>
 
-      {/* Orientation badge */}
-      {orientation && (
-        <div
+      {/* Main image container */}
+      <div 
+        className="relative max-w-[90vw] max-h-[85vh] flex items-center justify-center"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <img
+          src={photo}
+          alt="Full preview"
           className={cn(
-            "absolute top-3 left-3 px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide backdrop-blur-md border border-white/10 text-white",
-            orientation === 'landscape' && "bg-blue-500/70",
-            orientation === 'portrait' && "bg-purple-500/70",
-            orientation === 'square' && "bg-green-500/70"
+            "max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl",
+            !isPaid && blurEnabled && "blur-lg"
           )}
-        >
-          {orientation === 'landscape' ? 'H' : orientation === 'portrait' ? 'V' : 'SQ'}
-        </div>
-      )}
+        />
+        
+        {/* Watermark overlay for unpaid */}
+        {!isPaid && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div 
+              className="text-white/30 text-6xl font-bold transform -rotate-45 select-none whitespace-nowrap"
+              style={{ textShadow: '0 4px 16px rgba(0,0,0,0.5)' }}
+            >
+              {watermarkText}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -170,6 +236,7 @@ export function BigScreenPage() {
   const [featuredAlbum, setFeaturedAlbum] = useState<FeaturedAlbum | null>(null);
   const [featuredPhotos, setFeaturedPhotos] = useState<string[]>([]);
   const [sortedPhotos, setSortedPhotos] = useState<{url: string, isLandscape: boolean}[]>([]);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
   const useMock = isMockMode();
   const focusedAlbum = searchParams.get('album');
@@ -332,6 +399,9 @@ export function BigScreenPage() {
   }
 
   const primaryColor = config.theme?.primaryColor || '#6366F1';
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const blurOnUnpaidGallery = (config as any).rules?.blurOnUnpaidGallery !== false;
+  const watermarkText = config?.branding?.watermark?.text || config?.theme?.brandName || 'PREVIEW';
 
   // Filter albums if focused
   const displayAlbums = focusedAlbum
@@ -388,16 +458,16 @@ export function BigScreenPage() {
         </div>
       </header>
 
-      {/* Main Content - Fill viewport without scroll */}
-      <main className="flex-1 overflow-hidden px-8 pb-6">
-        {/* Featured Album Display - Full Screen Photos */}
+      {/* Main Content - Fixed viewport gallery */}
+      <main className="flex-1 overflow-hidden p-6" style={{ height: 'calc(100vh - 100px)' }}>
+        {/* Featured Album Display - Gallery Grid */}
         {featuredAlbum && featuredPhotos.length > 0 ? (
-          <div className="animate-in fade-in duration-500 w-full h-full flex flex-col max-w-[1600px] mx-auto">
+          <div className="animate-in fade-in duration-500 w-full h-full flex flex-col">
             {/* Featured Header - Compact */}
             <div className="flex items-center justify-center gap-3 mb-4 shrink-0">
-              <Star className="w-7 h-7 text-[#D1F349] fill-[#D1F349] animate-pulse" />
+              <Star className="w-6 h-6 text-[#D1F349] fill-[#D1F349] animate-pulse" />
               <div className="text-center">
-                <h2 className="text-2xl font-bold text-white tracking-tight">
+                <h2 className="text-xl font-bold text-white tracking-tight">
                   {featuredAlbum.visitor_name || featuredAlbum.album_code}
                 </h2>
                 {featuredAlbum.visitor_name && (
@@ -406,51 +476,39 @@ export function BigScreenPage() {
                   </p>
                 )}
               </div>
-              <Star className="w-7 h-7 text-[#D1F349] fill-[#D1F349] animate-pulse" />
+              <Star className="w-6 h-6 text-[#D1F349] fill-[#D1F349] animate-pulse" />
+              
+              {/* Unpaid indicator */}
+              {!featuredAlbum.is_paid && (
+                <Badge className="ml-4 bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                  💳 Payment pending
+                </Badge>
+              )}
             </div>
 
-            {/* Bento Grid Layout - Dense packing similar to reference */}
-            <div
-              className="w-full h-full grid gap-4 p-6 overflow-hidden"
-              style={{ 
-                gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-                gridAutoRows: '200px',
-                gridAutoFlow: 'dense',
-                height: 'calc(100vh - 180px)',
-                alignContent: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              {sortedPhotos.length > 0 ? sortedPhotos.map((photo, index) => (
-                <PhotoCard
-                  key={`${featuredAlbum.album_code}-${index}`}
-                  photoUrl={photo.url}
-                  index={index}
-                  total={sortedPhotos.length}
-                  isPaid={featuredAlbum.is_paid}
-                  primaryColor={primaryColor}
-                  isLandscape={photo.isLandscape}
-                />
-              )) : featuredPhotos.map((photoUrl, index) => (
-                <PhotoCard
-                  key={`${featuredAlbum.album_code}-${index}`}
-                  photoUrl={photoUrl}
-                  index={index}
-                  total={featuredPhotos.length}
-                  isPaid={featuredAlbum.is_paid}
-                  primaryColor={primaryColor}
-                />
-              ))}
-            </div>
-            
-            {/* Unpaid banner */}
-            {!featuredAlbum.is_paid && (
-              <div className="mt-6 text-center animate-pulse">
-                <Badge className="bg-amber-500/20 text-amber-400 border border-amber-500/30 text-lg px-6 py-2">
-                  💳 Payment pending - Photos will unlock after purchase
-                </Badge>
+            {/* Gallery Grid - Responsive like album feed */}
+            <div className="flex-1 flex items-center justify-center overflow-hidden">
+              <div 
+                className="grid gap-4 w-full max-w-4xl mx-auto p-4"
+                style={{
+                  gridTemplateColumns: `repeat(${Math.min(Math.max(sortedPhotos.length || featuredPhotos.length, 1), 3)}, minmax(200px, 300px))`,
+                  justifyContent: 'center',
+                }}
+              >
+                {(sortedPhotos.length > 0 ? sortedPhotos : featuredPhotos.map(url => ({ url }))).map((photo, index) => (
+                  <PhotoCard
+                    key={`${featuredAlbum.album_code}-${index}`}
+                    photoUrl={typeof photo === 'string' ? photo : photo.url}
+                    index={index}
+                    isPaid={featuredAlbum.is_paid}
+                    primaryColor={primaryColor}
+                    blurEnabled={blurOnUnpaidGallery}
+                    watermarkText={watermarkText}
+                    onClick={() => setLightboxIndex(index)}
+                  />
+                ))}
               </div>
-            )}
+            </div>
           </div>
         ) : (
           /* Idle State - Event Branding with QR */
@@ -566,6 +624,29 @@ export function BigScreenPage() {
           </div>
         </div>
       </footer>
+
+      {/* Photo Lightbox */}
+      {lightboxIndex !== null && featuredAlbum && (() => {
+        const photos = sortedPhotos.length > 0 ? sortedPhotos.map(p => p.url) : featuredPhotos;
+        const totalPhotos = photos.length;
+        return (
+          <PhotoLightbox
+            photo={photos[lightboxIndex] || ''}
+            isPaid={featuredAlbum.is_paid}
+            blurEnabled={blurOnUnpaidGallery}
+            watermarkText={watermarkText}
+            currentIndex={lightboxIndex}
+            total={totalPhotos}
+            onClose={() => setLightboxIndex(null)}
+            onPrev={() => setLightboxIndex(prev => 
+              prev !== null ? (prev - 1 + totalPhotos) % totalPhotos : null
+            )}
+            onNext={() => setLightboxIndex(prev => 
+              prev !== null ? (prev + 1) % totalPhotos : null
+            )}
+          />
+        );
+      })()}
     </div>
   );
 }

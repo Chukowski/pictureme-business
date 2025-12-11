@@ -5,7 +5,7 @@
  * Includes photo approval, album completion, sending, and presentation controls.
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   CheckCircle2, XCircle, Mail, MessageSquare, MonitorPlay,
   Printer, Download, QrCode, Users, Clock, Camera,
@@ -80,6 +80,38 @@ export function StaffAlbumTools({
   const [showQR, setShowQR] = useState(false);
   const [copiedUrl, setCopiedUrl] = useState(false);
   const [paymentRequests, setPaymentRequests] = useState<PaymentRequest[]>([]);
+  const prevPaymentRequestsCount = useRef(0);
+
+  // Play notification sound when new payment request arrives
+  const playNotificationSound = () => {
+    try {
+      // Create a simple notification sound using Web Audio API
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      oscillator.frequency.value = 800;
+      oscillator.type = 'sine';
+      gainNode.gain.value = 0.3;
+      
+      oscillator.start();
+      
+      // Two-tone notification
+      setTimeout(() => {
+        oscillator.frequency.value = 1000;
+      }, 150);
+      
+      setTimeout(() => {
+        oscillator.stop();
+        audioContext.close();
+      }, 300);
+    } catch (e) {
+      console.log('Could not play notification sound');
+    }
+  };
 
   // Check email configuration and load albums on mount
   useEffect(() => {
@@ -128,6 +160,18 @@ export function StaffAlbumTools({
     if (!postgresEventId) return;
     try {
       const requests = await getPaymentRequests(postgresEventId);
+      
+      // Check if we have new payment requests
+      if (requests.length > prevPaymentRequestsCount.current && prevPaymentRequestsCount.current > 0) {
+        // New payment request arrived!
+        playNotificationSound();
+        toast.info(`💳 New payment request!`, {
+          description: `${requests[0]?.owner_name || requests[0]?.code || 'A visitor'} wants to pay`,
+          duration: 10000,
+        });
+      }
+      
+      prevPaymentRequestsCount.current = requests.length;
       setPaymentRequests(requests);
     } catch (error) {
       console.error('Failed to load payment requests:', error);

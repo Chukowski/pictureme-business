@@ -36,7 +36,7 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { getAlbum, getAlbumPhotos, createAlbumCheckout, updateAlbumStatus, Album, AlbumPhoto } from '@/services/eventsApi';
+import { getAlbum, getAlbumPhotos, requestAlbumPayment, requestBigScreen, Album, AlbumPhoto } from '@/services/eventsApi';
 import { ScanAlbumQR } from '@/components/album';
 import { StaffPINLogin } from '@/components/staff';
 import { isMockMode, getMockAlbumByCode, MockAlbum } from '@/dev/mockAlbums';
@@ -152,39 +152,6 @@ export function ViewerStationPage() {
     handleScan(manualCode.trim().toUpperCase());
   };
 
-  // Handle unlock - mark album as paid (staff action)
-  const handleUnlock = async () => {
-    if (!album) return;
-    setIsUnlocking(true);
-    try {
-      // Mark album as paid directly (staff override)
-      await updateAlbumStatus(album.code, 'paid');
-      // Reload album to get updated status
-      await loadAlbum(album.code);
-      toast.success('Album unlocked!');
-    } catch (error) {
-      console.error('Failed to unlock album:', error);
-      toast.error('Failed to unlock album');
-    } finally {
-      setIsUnlocking(false);
-    }
-  };
-  
-  // Handle payment checkout (for visitor self-service)
-  const handlePayment = async () => {
-    if (!album) return;
-    setIsUnlocking(true);
-    try {
-      const checkoutUrl = await createAlbumCheckout(album.code);
-      window.location.href = checkoutUrl;
-    } catch (error) {
-      console.error('Failed to create checkout:', error);
-      toast.error('Failed to start payment');
-    } finally {
-      setIsUnlocking(false);
-    }
-  };
-
   // Handle print queue
   const handlePrintQueue = () => {
     toast.info('Added to print queue');
@@ -199,21 +166,97 @@ export function ViewerStationPage() {
     }
 
     // Determine if album is paid
-    const isPaid = album.payment_status === 'paid' || album.status === 'paid';
+    const albumIsPaid = album.payment_status === 'paid' || album.status === 'paid';
 
-    const success = await broadcastToBigScreen({
-      albumCode: album.code,
-      visitorName: album.owner_name,
-      isPaid,
-      eventId: config.postgres_event_id,
-      userSlug,
-      eventSlug,
-    });
+    try {
+      const success = await broadcastToBigScreen({
+        albumCode: album.code,
+        visitorName: album.owner_name,
+        isPaid: albumIsPaid,
+        eventId: config.postgres_event_id,
+        userSlug,
+        eventSlug,
+      });
 
-    if (success) {
-      toast.success(`Album ${album.code} sent to Big Screen!`);
-    } else {
+      if (success) {
+        toast.success(`Album ${album.code} sent to Big Screen!`);
+      } else {
+        toast.error('Failed to send to Big Screen');
+      }
+    } catch (error) {
+      console.error('Failed to send to Big Screen:', error);
       toast.error('Failed to send to Big Screen');
+    }
+  };
+
+  // Handle payment request (visitor wants to pay at counter)
+  const handleRequestPayment = async () => {
+    if (!album) return;
+    setIsUnlocking(true);
+    try {
+      await requestAlbumPayment(album.code);
+      
+      // Also broadcast via BroadcastChannel for same-origin tabs (backup for WebSocket/polling)
+      try {
+        const channel = new BroadcastChannel('pictureme_staff_notifications');
+        channel.postMessage({
+          type: 'payment_request',
+          data: {
+            code: album.code,
+            owner_name: album.owner_name,
+            photo_count: photos.length,
+            created_at: new Date().toISOString(),
+          }
+        });
+        channel.close();
+        console.log('💳 BroadcastChannel payment request sent');
+      } catch (e) {
+        console.log('BroadcastChannel not supported');
+      }
+      
+      toast.success('Payment request sent! Staff will assist you shortly.', {
+        duration: 10000,
+      });
+    } catch (error) {
+      console.error('Failed to request payment:', error);
+      toast.error('Failed to send payment request');
+    } finally {
+      setIsUnlocking(false);
+    }
+  };
+
+  // Handle big screen request (send notification to staff who will approve)
+  const handleRequestBigScreen = async () => {
+    if (!album) return;
+    console.log('📺 Requesting big screen for album:', album.code);
+    try {
+      const result = await requestBigScreen(album.code);
+      console.log('📺 Big screen request result:', result);
+      
+      // Also broadcast via BroadcastChannel for same-origin tabs (backup for WebSocket)
+      try {
+        const channel = new BroadcastChannel('pictureme_staff_notifications');
+        channel.postMessage({
+          type: 'bigscreen_request',
+          data: {
+            code: album.code,
+            owner_name: album.owner_name,
+            photo_count: photos.length,
+            created_at: new Date().toISOString(),
+          }
+        });
+        channel.close();
+        console.log('📺 BroadcastChannel message sent');
+      } catch (e) {
+        console.log('BroadcastChannel not supported');
+      }
+      
+      toast.success('Request sent! Staff will display your photos shortly.', {
+        duration: 10000,
+      });
+    } catch (error) {
+      console.error('Failed to request big screen:', error);
+      toast.error('Failed to send request');
     }
   };
 
@@ -258,7 +301,26 @@ export function ViewerStationPage() {
     ('status' in album && album.status === 'paid')
   );
   const requiresPayment = config.albumTracking?.rules?.printReady === true && !isPaid;
-  const isLocked = requiresPayment;
+  
+  // Free preview settings (same logic as AlbumFeedPage)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const allowFreePreview = (config as any)?.rules?.allowFreePreview === true;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const blurOnUnpaidGallery = (config as any)?.rules?.blurOnUnpaidGallery !== false;
+  
+  // isLocked = show full lock screen (no photos visible)
+  // If allowFreePreview is enabled, show photos with watermark instead
+  const isLocked = requiresPayment && !allowFreePreview;
+  
+  // Apply blur only if blurOnUnpaidGallery is enabled AND payment required AND not in free preview
+  const applyBlur = requiresPayment && blurOnUnpaidGallery && !allowFreePreview;
+  
+  // Apply watermark if payment required (with or without free preview)
+  const applyWatermark = requiresPayment;
+  const watermarkText = config?.branding?.watermark?.text || config?.theme?.brandName || 'PREVIEW';
+  
+  // Downloads blocked if payment required
+  const downloadsBlocked = requiresPayment;
 
   // When in scan mode, show the QR scanner directly (full screen)
   if (state === 'scan' || state === 'pin') {
@@ -340,10 +402,10 @@ export function ViewerStationPage() {
                   </div>
 
                   <div className="flex items-center gap-2">
-                    {isLocked ? (
-                      <Badge className="bg-red-500/20 text-red-400">
+                    {requiresPayment ? (
+                      <Badge className={allowFreePreview ? "bg-amber-500/20 text-amber-400" : "bg-red-500/20 text-red-400"}>
                         <Lock className="w-3 h-3 mr-1" />
-                        Locked
+                        {allowFreePreview ? 'Preview' : 'Locked'}
                       </Badge>
                     ) : (
                       <Badge className="bg-green-500/20 text-green-400">
@@ -354,10 +416,11 @@ export function ViewerStationPage() {
                   </div>
                 </div>
 
-                {/* Action buttons */}
-                <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-zinc-800">
+                {/* Action buttons - mobile optimized */}
+                <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2 mt-4 pt-4 border-t border-zinc-800">
                   {/* Scan Another - Primary action for viewer station */}
                   <Button
+                    size="sm"
                     onClick={() => {
                       setAlbum(null);
                       setPhotos([]);
@@ -366,59 +429,93 @@ export function ViewerStationPage() {
                       navigate(`/${userSlug}/${eventSlug}/viewer`);
                     }}
                     variant="outline"
-                    className="border-cyan-500/50 text-cyan-400 hover:bg-cyan-500/10"
+                    className="border-cyan-500/50 text-cyan-400 hover:bg-cyan-500/10 text-xs sm:text-sm"
                   >
-                    <QrCode className="w-4 h-4 mr-2" />
+                    <QrCode className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
                     Scan Another
                   </Button>
-                  {isLocked && (
+                  
+                  {/* Request Payment - Visitor action to notify staff */}
+                  {requiresPayment && (
                     <Button
-                      onClick={handleUnlock}
+                      size="sm"
+                      onClick={handleRequestPayment}
                       disabled={isUnlocking}
                       style={{ backgroundColor: primaryColor }}
+                      className="text-xs sm:text-sm"
                     >
                       {isUnlocking ? (
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        <Loader2 className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2 animate-spin" />
                       ) : (
-                        <CreditCard className="w-4 h-4 mr-2" />
+                        <CreditCard className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
                       )}
-                      Unlock Album
+                      Pay
                     </Button>
                   )}
-                  <Button variant="outline" onClick={handleBigScreen} className="border-zinc-700">
-                    <Monitor className="w-4 h-4 mr-2" />
-                    Show on Big Screen
+                  
+                  {/* Big Screen Request - sends notification to staff */}
+                  <Button 
+                    size="sm"
+                    variant="outline" 
+                    onClick={handleRequestBigScreen} 
+                    className="border-zinc-700 text-xs sm:text-sm"
+                  >
+                    <Monitor className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                    Big Screen
                   </Button>
+                  
                   <Button
+                    size="sm"
                     variant="outline"
                     onClick={() => loadAlbum(album.code)}
-                    className="border-zinc-700"
+                    className="border-zinc-700 text-xs sm:text-sm"
                   >
-                    <RefreshCw className="w-4 h-4 mr-2" />
+                    <RefreshCw className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
                     Refresh
                   </Button>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Photo Grid */}
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {/* Photo Grid - matches AlbumFeedPage layout */}
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
               {photos.map((photo) => (
                 <div
                   key={photo.id}
-                  className={`relative aspect-square rounded-lg overflow-hidden cursor-pointer transition-transform hover:scale-105 ${
-                    isLocked ? 'blur-sm' : ''
-                  }`}
-                  onClick={() => !isLocked && setSelectedPhoto(photo.photo_url)}
+                  className="relative group rounded-xl overflow-hidden border-2 border-white/10 hover:border-white/30 transition-all cursor-pointer"
+                  onClick={() => !downloadsBlocked && setSelectedPhoto(photo.photo_url)}
                 >
                   <img
                     src={photo.thumbnail_url || photo.photo_url}
                     alt="Album photo"
-                    className="w-full h-full object-cover"
+                    className={`w-full aspect-[3/4] object-cover transition-transform group-hover:scale-105 ${applyBlur ? 'blur-md' : ''}`}
                   />
+                  
+                  {/* Watermark overlay - shown when payment required */}
+                  {applyWatermark && (
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                      <div 
+                        className="text-white/30 text-lg sm:text-2xl font-bold transform -rotate-45 select-none"
+                        style={{ textShadow: '0 0 10px rgba(0,0,0,0.5)' }}
+                      >
+                        {watermarkText}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Hover overlay with expand icon */}
+                  {!isLocked && !downloadsBlocked && (
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <div className="bg-black/50 backdrop-blur-sm rounded-full p-2 sm:p-3">
+                        <Eye className="w-4 h-4 sm:w-6 sm:h-6 text-white" />
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Lock overlay - only shown when fully locked (not free preview) */}
                   {isLocked && (
                     <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                      <Lock className="w-6 h-6 text-white" />
+                      <Lock className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                     </div>
                   )}
                 </div>

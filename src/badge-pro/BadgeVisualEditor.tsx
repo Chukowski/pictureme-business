@@ -247,13 +247,21 @@ export function BadgeVisualEditor({
     return { width: `${widthPercent}%`, height: `${heightPercent}%` };
   };
 
-  // Mock data for preview
+  // Mock data for preview with real current date/time
+  const now = new Date();
   const previewData = {
     name: "John Doe",
-    date: "Nov 28, 2025",
+    date: now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+    time: now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }),
     eventName: eventName,
     albumCode: albumCode,
   };
+  // Show date and time on separate lines or combined based on layout
+  const dateTimeText = `${previewData.date}\n${previewData.time}`;
+
+  // #region agent log
+  fetch('http://127.0.0.1:7242/ingest/2c70787a-617e-4831-a3a3-a75ccfa621a2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'run1',hypothesisId:'H2',location:'BadgeVisualEditor.tsx:dateTime',message:'Rendering date/time element',data:{dateTimeText,showDateTime:config.fields.showDateTime,layout:config.layout,badgeWidth:dims.width},timestamp:Date.now()})}).catch(()=>{});
+  // #endregion
 
   const renderResizeHandle = (element: string) => (
     <div 
@@ -404,7 +412,11 @@ export function BadgeVisualEditor({
               style={{
                 left: `${elementPositions.name?.x || 50}%`,
                 top: `${elementPositions.name?.y || 55}%`,
-                transform: 'translate(-50%, -50%)',
+                transform: elementPositions.name?.textAlign === 'left' 
+                  ? 'translate(0, -50%)' 
+                  : elementPositions.name?.textAlign === 'right'
+                    ? 'translate(-100%, -50%)'
+                    : 'translate(-50%, -50%)',
                 color: config.textStyle?.nameColor || '#ffffff',
                 fontFamily: config.textStyle?.fontFamily,
                 fontSize: `${(elementPositions.name?.fontSize || config.textStyle?.nameFontSize || 6) * 3}px`, 
@@ -427,7 +439,11 @@ export function BadgeVisualEditor({
               style={{
                 left: `${elementPositions.eventName?.x || 50}%`,
                 top: `${elementPositions.eventName?.y || 62}%`,
-                transform: 'translate(-50%, -50%)',
+                transform: elementPositions.eventName?.textAlign === 'left' 
+                  ? 'translate(0, -50%)' 
+                  : elementPositions.eventName?.textAlign === 'right'
+                    ? 'translate(-100%, -50%)'
+                    : 'translate(-50%, -50%)',
                 color: config.textStyle?.eventNameColor || 'rgba(255,255,255,0.8)',
                 fontSize: `${(elementPositions.eventName?.fontSize || config.textStyle?.eventNameFontSize || 3.5) * 3}px`,
               }}
@@ -442,19 +458,25 @@ export function BadgeVisualEditor({
           {config.fields.showDateTime && (
             <div
               className={cn(
-                "absolute whitespace-nowrap cursor-move group border border-transparent hover:border-indigo-500/50 px-2 py-1 rounded z-20",
+                "absolute cursor-move group border border-transparent hover:border-indigo-500/50 px-2 py-1 rounded z-20",
                 draggingElement === 'dateTime' && "border-indigo-500 bg-indigo-500/10 z-50"
               )}
               style={{
                 left: `${elementPositions.dateTime?.x || 50}%`,
                 top: `${elementPositions.dateTime?.y || 68}%`,
-                transform: 'translate(-50%, -50%)',
+                transform: elementPositions.dateTime?.textAlign === 'left' 
+                  ? 'translate(0, -50%)' 
+                  : elementPositions.dateTime?.textAlign === 'right'
+                    ? 'translate(-100%, -50%)'
+                    : 'translate(-50%, -50%)',
                 color: config.textStyle?.dateTimeColor || 'rgba(255,255,255,0.6)',
                 fontSize: `${(elementPositions.dateTime?.fontSize || config.textStyle?.dateTimeFontSize || 2.8) * 3}px`,
+                textAlign: elementPositions.dateTime?.textAlign || 'center',
               }}
               onMouseDown={(e) => handleDragStart('dateTime', e)}
             >
-              {previewData.date}
+              <div>{previewData.date}</div>
+              <div>{previewData.time}</div>
               {renderResizeHandle('dateTime')}
             </div>
           )}
@@ -469,7 +491,11 @@ export function BadgeVisualEditor({
               style={{
                 left: `${elementPositions.albumCode?.x || 50}%`,
                 top: `${elementPositions.albumCode?.y || 75}%`,
-                transform: 'translate(-50%, -50%)',
+                transform: elementPositions.albumCode?.textAlign === 'left' 
+                  ? 'translate(0, -50%)' 
+                  : elementPositions.albumCode?.textAlign === 'right'
+                    ? 'translate(-100%, -50%)'
+                    : 'translate(-50%, -50%)',
                 color: config.textStyle?.dateTimeColor || 'rgba(255,255,255,0.6)',
                 fontSize: `${(elementPositions.albumCode?.fontSize || config.textStyle?.dateTimeFontSize || 2.8) * 3}px`,
                 fontFamily: config.textStyle?.fontFamily,

@@ -1,9 +1,12 @@
+import { useRef } from "react";
 import { EventFormData } from "./types";
-import { QrCode, User, Calendar, PartyPopper, Sparkles, LayoutTemplate } from "lucide-react";
+import { QrCode, User, Calendar, PartyPopper, Sparkles, LayoutTemplate, FileDown, FileUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { BadgeVisualEditor } from "@/badge-pro/BadgeVisualEditor";
-import { BadgeTemplateConfig } from "@/components/templates/BadgeTemplateEditor";
+import { BadgeTemplateConfig, CustomElementPositions } from "@/components/templates/BadgeTemplateEditor";
+import { toast } from "sonner";
 
 interface LivePreviewProps {
   formData: EventFormData;
@@ -15,11 +18,95 @@ interface LivePreviewProps {
 export function LivePreview({ formData, currentStep, previewMode, onBadgeChange }: LivePreviewProps) {
   const { theme, title, description, branding, badgeTemplate, templates } = formData;
   const albumCode = (formData as any).slug || 'CODE';
+  const layoutImportRef = useRef<HTMLInputElement>(null);
   
   // Determine what to preview based on explicit mode only
   // Badge preview only shows when explicitly set to 'badge' mode
   const showBadgePreview = previewMode === 'badge';
   const showBadgeProPreview = previewMode === 'badge-pro';
+
+  // Export current layout as JSON
+  const handleExportLayout = () => {
+    if (!badgeTemplate) return;
+    
+    const layoutExport = {
+      id: `custom-${Date.now()}`,
+      name: title ? `${title} Layout` : "Custom Layout",
+      description: "Custom badge layout exported from Badge Designer Pro",
+      layout: badgeTemplate.layout,
+      print: (badgeTemplate as any).print || { widthInches: 4, heightInches: 3, dpi: 300, bleedInches: 0.125 },
+      positions: badgeTemplate.customPositions,
+      backgroundColor: badgeTemplate.backgroundColor,
+      backgroundUrl: badgeTemplate.backgroundUrl,
+      qrSize: badgeTemplate.qrCode?.size,
+      photoSize: badgeTemplate.photoPlacement?.size,
+    };
+
+    const exportData = {
+      version: "1.0",
+      type: "badge-layout",
+      exportDate: new Date().toISOString(),
+      layout: layoutExport,
+    };
+
+    const jsonString = JSON.stringify(exportData, null, 2);
+    const blob = new Blob([jsonString], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.download = `badge-layout-${layoutExport.name.toLowerCase().replace(/\s+/g, "-")}-${Date.now()}.json`;
+    link.href = url;
+    link.click();
+    URL.revokeObjectURL(url);
+    toast.success("Layout exported");
+  };
+
+  // Import layout from JSON
+  const handleImportLayout = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !onBadgeChange || !badgeTemplate) return;
+
+    try {
+      const text = await file.text();
+      const data = JSON.parse(text);
+
+      if (data.type !== "badge-layout" || !data.layout) {
+        throw new Error("Invalid badge layout file");
+      }
+
+      const imported = data.layout;
+      
+      // Apply imported layout to current badge config
+      const updatedConfig: BadgeTemplateConfig = {
+        ...badgeTemplate,
+        layout: imported.layout || badgeTemplate.layout,
+        customPositions: imported.positions as CustomElementPositions,
+        useCustomPositions: true,
+        backgroundColor: imported.backgroundColor || badgeTemplate.backgroundColor,
+        backgroundUrl: imported.backgroundUrl || badgeTemplate.backgroundUrl,
+        qrCode: {
+          ...badgeTemplate.qrCode,
+          size: imported.qrSize || badgeTemplate.qrCode.size,
+        },
+        photoPlacement: {
+          ...badgeTemplate.photoPlacement,
+          size: imported.photoSize || badgeTemplate.photoPlacement.size,
+        },
+      };
+      
+      // Also copy print settings if available
+      if (imported.print) {
+        (updatedConfig as any).print = imported.print;
+      }
+      
+      onBadgeChange(updatedConfig);
+      toast.success(`Imported: ${imported.name}`);
+    } catch (err: any) {
+      console.error("Import failed:", err);
+      toast.error(err.message || "Failed to import layout");
+    }
+
+    e.target.value = "";
+  };
   
   // Calculate theme styles
   const bgStyle = theme.mode === 'dark' ? 'bg-zinc-900' : 'bg-white';
@@ -35,14 +122,46 @@ export function LivePreview({ formData, currentStep, previewMode, onBadgeChange 
   const BadgeProContent = () => {
     if (!badgeTemplate) return null;
     return (
-      <div className="w-full h-full flex items-center justify-center p-4">
-        <BadgeVisualEditor
-          config={badgeTemplate}
-          onChange={onBadgeChange || (() => {})}
-          eventName={title}
-          albumCode={albumCode}
-          className="border-zinc-800 shadow-2xl"
-        />
+      <div className="w-full h-full flex flex-col">
+        {/* Import/Export Toolbar */}
+        <div className="flex items-center justify-end gap-2 px-4 py-2 border-b border-white/5 bg-zinc-900/30">
+          <input
+            ref={layoutImportRef}
+            type="file"
+            accept=".json"
+            onChange={handleImportLayout}
+            className="hidden"
+          />
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => layoutImportRef.current?.click()}
+            className="h-7 text-xs text-zinc-400 hover:text-white hover:bg-white/10"
+          >
+            <FileUp className="w-3.5 h-3.5 mr-1.5" />
+            Import Layout
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleExportLayout}
+            className="h-7 text-xs text-zinc-400 hover:text-white hover:bg-white/10"
+          >
+            <FileDown className="w-3.5 h-3.5 mr-1.5" />
+            Export Layout
+          </Button>
+        </div>
+        
+        {/* Visual Editor */}
+        <div className="flex-1 flex items-center justify-center p-4">
+          <BadgeVisualEditor
+            config={badgeTemplate}
+            onChange={onBadgeChange || (() => {})}
+            eventName={title}
+            albumCode={albumCode}
+            className="border-zinc-800 shadow-2xl"
+          />
+        </div>
       </div>
     );
   };
@@ -75,6 +194,13 @@ export function LivePreview({ formData, currentStep, previewMode, onBadgeChange 
     const selectedTemplate = badgeTemplate.aiPipeline?.sourceTemplateId 
       ? templates?.find(t => t.id === badgeTemplate.aiPipeline.sourceTemplateId)
       : null;
+    const now = new Date();
+    const datePreviewText = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    const timePreviewText = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/2c70787a-617e-4831-a3a3-a75ccfa621a2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'run1',hypothesisId:'H1',location:'LivePreview.tsx:BadgePreviewContent',message:'Rendering badge preview date/time text',data:{datePreviewText,timePreviewText,showDateTime:badgeTemplate.fields?.showDateTime,previewMode},timestamp:Date.now()})}).catch(()=>{});
+    // #endregion
 
     return (
       <div className="flex flex-col items-center gap-4">
@@ -135,7 +261,10 @@ export function LivePreview({ formData, currentStep, previewMode, onBadgeChange 
               <p className="text-[10px] font-medium text-white/80 truncate drop-shadow-sm">{title || 'Event Name'}</p>
             )}
             {badgeTemplate.fields?.showDateTime && (
-              <p className="text-[8px] text-white/60 truncate drop-shadow-sm">Nov 28, 2025 • 2:30 PM</p>
+              <>
+                <p className="text-[8px] text-white/60 truncate drop-shadow-sm">{datePreviewText}</p>
+                <p className="text-[8px] text-white/60 truncate drop-shadow-sm">{timePreviewText}</p>
+              </>
             )}
             {badgeTemplate.fields?.customField1 && (
               <p className="text-[8px] text-white/60 truncate"><span className="opacity-70">{badgeTemplate.fields.customField1}:</span> Value</p>

@@ -77,4 +77,21 @@ export const BADGE_LAYOUT_PRESETS: BadgeLayoutTemplate[] = [
       qrCode: { x: 82, y: 82, width: 14, height: 14 },
     },
   },
+  {
+    id: "centered-4x3",
+    name: "4×3 Centered Photo",
+    description: "4×3\" horizontal badge with large centered photo, name/date on left, QR on right.",
+    layout: "landscape",
+    print: { widthInches: 4, heightInches: 3, dpi: 300, bleedInches: 0.125, units: "in" },
+    positions: {
+      ...DEFAULT_ELEMENT_POSITIONS,
+      photo: { x: 50, y: 40, width: 40, height: 55 },
+      name: { x: 4, y: 72, fontSize: 7, textAlign: 'left' as const },
+      dateTime: { x: 4, y: 82, fontSize: 4, textAlign: 'left' as const },
+      eventName: { x: 4, y: 92, fontSize: 3.5, textAlign: 'left' as const },
+      albumCode: { x: 96, y: 92, fontSize: 5, textAlign: 'right' as const },
+      qrCode: { x: 82, y: 72, width: 24, height: 24 },
+    },
+    photoSize: "large",
+  },
 ];

@@ -22,6 +22,13 @@ export function BadgePreview({ config, eventName = 'Event Name', className, show
   const dims = previewDimensions[config.layout];
   const photoSizeMap = { small: 60, medium: 90, large: 120 };
   const photoSize = photoSizeMap[config.photoPlacement.size || 'medium'];
+  const now = new Date();
+  const datePreviewText = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  const timePreviewText = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+
+  // #region agent log
+  fetch('http://127.0.0.1:7242/ingest/2c70787a-617e-4831-a3a3-a75ccfa621a2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'run1',hypothesisId:'H3',location:'BadgePreview.tsx:render',message:'Rendering simple badge preview date/time text',data:{datePreviewText,timePreviewText,showDateTime:config.fields.showDateTime,layout:config.layout},timestamp:Date.now()})}).catch(()=>{});
+  // #endregion
 
   if (!config.enabled && showPlaceholder) {
     return (
@@ -94,7 +101,10 @@ export function BadgePreview({ config, eventName = 'Event Name', className, show
           <p className="text-xs font-medium text-white/80 truncate drop-shadow-sm">{eventName}</p>
         )}
         {config.fields.showDateTime && (
-          <p className="text-[10px] text-white/60 truncate drop-shadow-sm">Nov 28, 2025 • 2:30 PM</p>
+          <>
+            <p className="text-[10px] text-white/60 truncate drop-shadow-sm">{datePreviewText}</p>
+            <p className="text-[10px] text-white/60 truncate drop-shadow-sm">{timePreviewText}</p>
+          </>
         )}
         {config.fields.customField1 && (
           <p className="text-[10px] text-white/60 truncate drop-shadow-sm mt-1"><span className="opacity-70">{config.fields.customField1}:</span> Value</p>

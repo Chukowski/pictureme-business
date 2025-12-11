@@ -47,6 +47,7 @@ export interface ElementPosition {
   width?: number; // percentage of badge width (optional)
   height?: number; // percentage of badge height (optional)
   fontSize?: number; // custom font size override
+  textAlign?: 'left' | 'center' | 'right'; // text alignment (default: center)
 }
 
 // Custom element positions for visual editor

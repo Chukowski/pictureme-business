@@ -906,11 +906,20 @@ export async function createAlbumCheckout(albumCode: string): Promise<{ checkout
 }
 
 export async function requestAlbumPayment(albumCode: string): Promise<{ status: string; message: string }> {
-  const response = await fetch(`${getApiUrl()}/api/albums/${albumCode}/request-payment/`, {
+  const response = await fetch(`${getApiUrl()}/api/albums/${albumCode}/request-payment`, {
     method: 'POST'
   });
   
   if (!response.ok) throw new Error('Failed to request payment');
+  return response.json();
+}
+
+export async function requestBigScreen(albumCode: string): Promise<{ status: string; message: string }> {
+  const response = await fetch(`${getApiUrl()}/api/albums/${albumCode}/request-bigscreen`, {
+    method: 'POST'
+  });
+  
+  if (!response.ok) throw new Error('Failed to request big screen');
   return response.json();
 }
 

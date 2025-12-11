@@ -301,30 +301,49 @@ async def update_album_status(album_code: str, status: str, request: Request):
 async def request_album_payment(album_code: str):
     """Visitor requests to pay for album - notifies staff"""
     from datetime import datetime
+    import traceback
     
-    async with db_pool.acquire() as conn:
-        # Find album
-        album = await conn.fetchrow(
-            "SELECT id, event_id, owner_name, owner_email, payment_status FROM albums WHERE code = $1", 
-            album_code
-        )
-        if not album:
-            raise HTTPException(status_code=404, detail="Album not found")
-        
-        if album["payment_status"] == "paid":
-            raise HTTPException(status_code=400, detail="Album already paid")
-        
-        # Update payment_status to 'requested'
-        await conn.execute(
-            "UPDATE albums SET payment_status = 'requested', updated_at = $1 WHERE id = $2",
-            datetime.utcnow(), album["id"]
-        )
-        
-        return {
-            "status": "success",
-            "message": "Payment request sent to staff",
-            "album_code": album_code
-        }
+    print(f"📝 Payment request received for album: {album_code}")
+    
+    if db_pool is None:
+        print("❌ Database pool is None!")
+        raise HTTPException(status_code=500, detail="Database not initialized")
+    
+    try:
+        async with db_pool.acquire() as conn:
+            # Find album
+            album = await conn.fetchrow(
+                "SELECT id, event_id, owner_name, owner_email, COALESCE(payment_status, 'pending') as payment_status FROM albums WHERE code = $1", 
+                album_code
+            )
+            if not album:
+                print(f"❌ Album not found: {album_code}")
+                raise HTTPException(status_code=404, detail="Album not found")
+            
+            print(f"✅ Album found: {album['id']}, payment_status: {album['payment_status']}")
+            
+            if album["payment_status"] == "paid":
+                raise HTTPException(status_code=400, detail="Album already paid")
+            
+            # Update payment_status to 'requested'
+            await conn.execute(
+                "UPDATE albums SET payment_status = 'requested', updated_at = $1 WHERE id = $2",
+                datetime.utcnow(), album["id"]
+            )
+            
+            print(f"✅ Payment status updated to 'requested' for album: {album_code}")
+            
+            return {
+                "status": "success",
+                "message": "Payment request sent to staff",
+                "album_code": album_code
+            }
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Error in request_album_payment: {e}")
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/event/{event_id}/payment-requests")
 async def get_payment_requests(event_id: int, request: Request):

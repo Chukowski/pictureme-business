@@ -42,6 +42,8 @@ export interface EventFormData extends Omit<EventConfig, 'id' | '_id' | 'user_id
     allowPrintStation: boolean;
     allowTimelineSplitView: boolean;
     enableBadgeCreator: boolean;
+    blurOnUnpaidGallery: boolean; // Apply blur to photos in gallery/big screen when unpaid
+    showPaymentCardOnSharedAlbum: boolean; // Show payment required card on shared album page
   };
   sharing: {
     emailEnabled: boolean;

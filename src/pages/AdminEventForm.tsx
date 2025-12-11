@@ -72,6 +72,8 @@ export default function AdminEventForm() {
       allowPrintStation: false,
       allowTimelineSplitView: false,
       enableBadgeCreator: false,
+      blurOnUnpaidGallery: true, // Default: blur unpaid photos in gallery
+      showPaymentCardOnSharedAlbum: true, // Default: show payment card on shared album
     },
     
     // Theme & Branding

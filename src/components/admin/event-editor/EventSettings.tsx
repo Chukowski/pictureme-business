@@ -93,6 +93,30 @@ export function EventSettings({ formData, setFormData }: EditorSectionProps) {
                 />
               </div>
 
+              <div className="flex items-center justify-between p-3 rounded-lg bg-black/30 border border-white/5">
+                <div>
+                  <Label className="text-zinc-300 font-medium">Blur on Unpaid Gallery</Label>
+                  <p className="text-xs text-zinc-500">Apply blur effect to photos in gallery/big screen when unpaid</p>
+                </div>
+                <Switch
+                  checked={formData.rules.blurOnUnpaidGallery !== false}
+                  onCheckedChange={(c) => updateRules({ blurOnUnpaidGallery: c })}
+                  className="data-[state=checked]:bg-emerald-600"
+                />
+              </div>
+
+              <div className="flex items-center justify-between p-3 rounded-lg bg-black/30 border border-white/5">
+                <div>
+                  <Label className="text-zinc-300 font-medium">Show Payment Card on Shared Album</Label>
+                  <p className="text-xs text-zinc-500">Display payment required message when user views unpaid album</p>
+                </div>
+                <Switch
+                  checked={formData.rules.showPaymentCardOnSharedAlbum !== false}
+                  onCheckedChange={(c) => updateRules({ showPaymentCardOnSharedAlbum: c })}
+                  className="data-[state=checked]:bg-emerald-600"
+                />
+              </div>
+
               <div className="space-y-2 p-3 rounded-lg bg-black/30 border border-white/5">
                 <Label className="text-zinc-300 font-medium">Max Photos Per Session</Label>
                 <p className="text-xs text-zinc-500 mb-2">Limit how many photos a guest can generate</p>
