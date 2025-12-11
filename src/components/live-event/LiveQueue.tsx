@@ -135,13 +135,13 @@ export function LiveQueue({ albums, onAction }: LiveQueueProps) {
                      </div>
                   </div>
 
-                  {/* Payment Status */}
+                  {/* Payment Status - Check both status and payment_status */}
                   <div className="hidden md:block">
                      <div className={`text-xs font-medium inline-flex items-center gap-1.5 px-2 py-1 rounded-md ${
-                        album.payment_status === 'paid' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-zinc-800 text-zinc-400'
+                        (album.payment_status === 'paid' || album.status === 'paid') ? 'bg-emerald-500/10 text-emerald-400' : 'bg-zinc-800 text-zinc-400'
                      }`}>
                         <CreditCard className="w-3 h-3" />
-                        {album.payment_status === 'paid' ? 'Paid' : 'Unpaid'}
+                        {(album.payment_status === 'paid' || album.status === 'paid') ? 'Paid' : 'Unpaid'}
                      </div>
                   </div>
                 </div>
@@ -201,12 +201,20 @@ export function LiveQueue({ albums, onAction }: LiveQueueProps) {
                              <DropdownMenuItem onClick={() => onAction('view', album)}>
                                <Eye className="w-4 h-4 mr-2" /> View Album
                              </DropdownMenuItem>
-                             <DropdownMenuItem onClick={() => onAction('approve', album)}>
-                               <Check className="w-4 h-4 mr-2" /> Mark Complete
-                             </DropdownMenuItem>
-                             <DropdownMenuItem onClick={() => onAction('pay', album)} className="text-emerald-400 focus:text-emerald-400">
-                               <DollarSign className="w-4 h-4 mr-2" /> Mark Paid
-                             </DropdownMenuItem>
+                            {album.status !== 'completed' && album.status !== 'paid' && (
+                              <DropdownMenuItem onClick={() => onAction('approve', album)}>
+                                <Check className="w-4 h-4 mr-2" /> Mark Complete
+                              </DropdownMenuItem>
+                            )}
+                            {album.status !== 'paid' && album.payment_status !== 'paid' ? (
+                              <DropdownMenuItem onClick={() => onAction('pay', album)} className="text-emerald-400 focus:text-emerald-400">
+                                <DollarSign className="w-4 h-4 mr-2" /> Mark Paid
+                              </DropdownMenuItem>
+                            ) : (
+                              <DropdownMenuItem disabled className="text-zinc-500">
+                                <Check className="w-4 h-4 mr-2" /> Already Paid
+                              </DropdownMenuItem>
+                            )}
                              
                              <DropdownMenuSeparator className="bg-white/10" />
                              

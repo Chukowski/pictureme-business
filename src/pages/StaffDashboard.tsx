@@ -33,8 +33,9 @@ import { toast } from 'sonner';
 import { EventNotFound } from '@/components/EventNotFound';
 import { ScanAlbumQR } from '@/components/album';
 import { StaffAlbumTools, StaffStationAnalytics } from '@/components/staff';
-import { getEventAlbums, getEventAlbumsWithPin, updateAlbumStatus, sendAlbumEmailByCode, getEmailStatus, getCurrentUser, deleteAlbum, getPaymentRequests, type PaymentRequest } from '@/services/eventsApi';
+import { getEventAlbums, getEventAlbumsWithPin, updateAlbumStatus, sendAlbumEmailByCode, getEmailStatus, getCurrentUser, deleteAlbum, getPaymentRequests, type PaymentRequest, EventConfig } from '@/services/eventsApi';
 import { MonitorUp } from 'lucide-react';
+import { MarkPaidModal } from '@/components/live-event/MarkPaidModal';
 
 // BigScreen request type (similar to PaymentRequest but for display requests)
 interface BigScreenRequest {
@@ -135,6 +136,12 @@ export default function StaffDashboard() {
     album: null
   });
   const [isDeleting, setIsDeleting] = useState(false);
+  
+  // Mark Paid modal state
+  const [markPaidModal, setMarkPaidModal] = useState<{ open: boolean; album: Album | null }>({
+    open: false,
+    album: null
+  });
   
   // Auth state - check sessionStorage first
   const [pin, setPin] = useState('');
@@ -293,14 +300,6 @@ export default function StaffDashboard() {
       }
     }
 
-    console.log('📊 Staff Dashboard - Config loaded:', {
-      eventId: config._id,
-      postgres_event_id: config.postgres_event_id,
-      title: config.title,
-      albumTracking: config.albumTracking?.enabled,
-      isEventOwner,
-      hasCurrentUser: !!currentUser
-    });
   }, [config, routeEventId, isEventOwner, currentUser]);
 
   // Load albums when authorized - only run once when conditions are met
@@ -562,17 +561,13 @@ export default function StaffDashboard() {
   }, [isAuthorized, config?.postgres_event_id, loadPaymentRequests, handleBigScreenRequestNotification]);
 
   // Handle marking album as paid from payment notification
-  const handleMarkPaidFromNotification = async (albumCode: string) => {
-    try {
-      await updateAlbumStatus(albumCode, 'paid');
-      toast.success('Album marked as paid!');
-      // Remove from notified codes so it won't show again
+  const handleMarkPaidFromNotification = (albumCode: string) => {
+    // Find the album and open the modal
+    const album = albums.find(a => a.id === albumCode);
+    if (album) {
+      // Remove from notified codes so it won't show again after action
       lastNotifiedPaymentCodesRef.current.delete(albumCode);
-      // Refresh without notification (we already acted on it)
-      loadPaymentRequests(false);
-      loadAlbums();
-    } catch (error) {
-      toast.error('Failed to mark as paid');
+      setMarkPaidModal({ open: true, album });
     }
   };
   
@@ -670,14 +665,17 @@ export default function StaffDashboard() {
     }
   };
 
-  const handleMarkPaid = async (albumId: string) => {
-    try {
-      await updateAlbumStatus(albumId, 'paid');
-      toast.success('Album marked as paid');
-      loadAlbums();
-    } catch (error) {
-      toast.error('Failed to update album');
+  const handleMarkPaid = (albumId: string) => {
+    // Find the album and open the modal
+    const album = albums.find(a => a.id === albumId);
+    if (album) {
+      setMarkPaidModal({ open: true, album });
     }
+  };
+  
+  const handleMarkPaidSuccess = () => {
+    setMarkPaidModal({ open: false, album: null });
+    loadAlbums();
   };
 
   const handleSendEmail = async (albumId: string) => {
@@ -1834,6 +1832,21 @@ export default function StaffDashboard() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      
+      {/* Mark Paid Modal */}
+      {markPaidModal.album && config?.postgres_event_id && (
+        <MarkPaidModal
+          open={markPaidModal.open}
+          onOpenChange={(open) => {
+            if (!open) setMarkPaidModal({ open: false, album: null });
+          }}
+          albumCode={markPaidModal.album.id}
+          albumOwnerName={markPaidModal.album.visitorName}
+          eventId={config.postgres_event_id}
+          eventConfig={config as unknown as EventConfig}
+          onSuccess={handleMarkPaidSuccess}
+        />
+      )}
     </div>
   );
 }

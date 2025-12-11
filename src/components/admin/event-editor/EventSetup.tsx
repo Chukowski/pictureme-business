@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Copy, Sparkles, Users, CreditCard, LayoutGrid, BadgeCheck } from "lucide-react";
 import { toast } from "sonner";
 import { EditorSectionProps } from "./types";
+import { EventPricing } from "./EventPricing";
 
 export function EventSetup({ formData, setFormData, currentUser, isEdit }: EditorSectionProps) {
   // Helper to update badge template
@@ -286,6 +287,9 @@ export function EventSetup({ formData, setFormData, currentUser, isEdit }: Edito
           </button>
         </div>
       </section>
+
+      {/* Pricing Configuration - Shows for paid modes */}
+      <EventPricing formData={formData} setFormData={setFormData} />
     </div>
   );
 }

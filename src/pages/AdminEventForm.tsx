@@ -208,15 +208,6 @@ export default function AdminEventForm() {
       // Map event data to form (ensuring all fields exist)
       // We perform a deep merge to ensure new schema fields (like albumTracking rules)
       // are properly initialized with defaults if missing in the DB object.
-      console.log('📋 Loading event from DB:', {
-        id: event._id,
-        title: event.title,
-        templates: event.templates?.length,
-        templateModels: event.templates?.map((t: any) => ({ name: t.name, model: t.pipelineConfig?.imageModel })),
-        settings: event.settings,
-        theme: event.theme,
-      });
-      
       setFormData((prev) => {
         const safeEvent = event as any;
         return {
@@ -228,6 +219,23 @@ export default function AdminEventForm() {
           
           // Explicitly handle eventMode (camelCase vs snake_case check)
           eventMode: safeEvent.eventMode || safeEvent.event_mode || prev.eventMode,
+          
+          // Deep merge Pricing configuration
+          pricing: safeEvent.pricing ? {
+            ...prev.pricing,
+            ...safeEvent.pricing,
+            albumPricing: safeEvent.pricing.albumPricing ? {
+              packages: safeEvent.pricing.albumPricing.packages || []
+            } : prev.pricing?.albumPricing,
+            photoPricing: safeEvent.pricing.photoPricing ? {
+              ...prev.pricing?.photoPricing,
+              ...safeEvent.pricing.photoPricing
+            } : prev.pricing?.photoPricing,
+            businessInfo: safeEvent.pricing.businessInfo ? {
+              ...prev.pricing?.businessInfo,
+              ...safeEvent.pricing.businessInfo
+            } : prev.pricing?.businessInfo,
+          } : prev.pricing,
 
           // Deep merge Settings first as it might contain rules/sharing
           settings: { 
@@ -313,6 +321,9 @@ export default function AdminEventForm() {
       // Persist rules and sharing inside settings as expected by backend
       const dataToSave = {
         ...formData,
+        // Ensure pricing is included at top level
+        pricing: formData.pricing,
+        eventMode: formData.eventMode,
         settings: {
           ...(formData.settings || {}),
           rules: formData.rules,

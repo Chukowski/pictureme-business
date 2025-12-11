@@ -11,6 +11,7 @@ import { LiveSales } from "@/components/live-event/LiveSales";
 import { LiveStaff } from "@/components/live-event/LiveStaff";
 import { EventHealthPanel } from "@/components/live-event/EventHealthPanel";
 import { LiveLogs, LogEntry } from "@/components/live-event/LiveLogs";
+import { MarkPaidModal } from "@/components/live-event/MarkPaidModal";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { RefreshCw } from "lucide-react";
 
@@ -28,6 +29,10 @@ export default function LiveEventPage() {
   const [isPaused, setIsPaused] = useState(false);
   const [isLoadingEvent, setIsLoadingEvent] = useState(true);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  
+  // Mark Paid Modal state
+  const [markPaidModalOpen, setMarkPaidModalOpen] = useState(false);
+  const [albumToMarkPaid, setAlbumToMarkPaid] = useState<Album | null>(null);
 
   // Logs state
   const [logs, setLogs] = useState<LogEntry[]>([
@@ -109,20 +114,17 @@ export default function LiveEventPage() {
           await updateAlbumStatus(album.code, 'completed');
           toast.success(`Album ${album.code} marked as completed!`);
           addLog('success', `Album ${album.code} completed`, 'Operator');
-          // Update local state immediately
+          // Update local state immediately then refresh from server
           setAlbums(prev => prev.map(a => 
             a.code === album.code ? { ...a, status: 'completed' } : a
           ));
+          setTimeout(() => refreshAlbums(), 500);
           break;
         case 'pay':
         case 'paid':
-          await updateAlbumStatus(album.code, 'paid');
-          toast.success(`Album ${album.code} marked as paid!`);
-          addLog('payment', `Payment marked for ${album.code}`, 'Operator');
-          // Update local state immediately
-          setAlbums(prev => prev.map(a => 
-            a.code === album.code ? { ...a, status: 'paid', payment_status: 'paid' } : a
-          ));
+          // Open the Mark Paid modal instead of directly updating
+          setAlbumToMarkPaid(album);
+          setMarkPaidModalOpen(true);
           break;
         case 'in_progress':
           await updateAlbumStatus(album.code, 'in_progress');
@@ -131,6 +133,7 @@ export default function LiveEventPage() {
           setAlbums(prev => prev.map(a => 
             a.code === album.code ? { ...a, status: 'in_progress' } : a
           ));
+          setTimeout(() => refreshAlbums(), 500);
           break;
         case 'view':
           if (event?.user_slug && event?.slug) {
@@ -146,8 +149,9 @@ export default function LiveEventPage() {
              const result = await deleteAlbum(album.code);
              toast.success(`Album ${album.code} deleted (${result.photosDeleted} photos removed)`);
              addLog('warning', `Album ${album.code} deleted`, 'Operator');
-             // Remove from local state immediately (WebSocket will also notify)
+             // Remove from local state immediately then refresh
              setAlbums(prev => prev.filter(a => a.code !== album.code));
+             setTimeout(() => refreshAlbums(), 500);
           }
           break;
         case 'force_complete':
@@ -258,7 +262,7 @@ export default function LiveEventPage() {
         )}
 
         {activeTab === 'sales' && (
-          <LiveSales />
+          <LiveSales eventId={event?.postgres_event_id} eventConfig={event} />
         )}
         
         {activeTab === 'staff' && (
@@ -284,6 +288,31 @@ export default function LiveEventPage() {
           </div>
         </SheetContent>
       </Sheet>
+
+      {/* Mark Paid Modal */}
+      {albumToMarkPaid && event?.postgres_event_id && (
+        <MarkPaidModal
+          open={markPaidModalOpen}
+          onOpenChange={(open) => {
+            setMarkPaidModalOpen(open);
+            if (!open) setAlbumToMarkPaid(null);
+          }}
+          albumCode={albumToMarkPaid.code}
+          albumOwnerName={albumToMarkPaid.owner_name}
+          eventId={event.postgres_event_id}
+          eventConfig={event}
+          onSuccess={() => {
+            addLog('payment', `Payment marked for ${albumToMarkPaid.code}`, 'Operator');
+            // Update local state immediately for UI responsiveness
+            setAlbums(prev => prev.map(a => 
+              a.code === albumToMarkPaid.code ? { ...a, status: 'paid', payment_status: 'paid' } : a
+            ));
+            // Also refresh from server to ensure sync
+            setTimeout(() => refreshAlbums(), 500);
+            setAlbumToMarkPaid(null);
+          }}
+        />
+      )}
     </LiveEventLayout>
   );
 }

@@ -150,6 +150,36 @@ export interface EventConfig {
   sharingOverrides?: SharingOverrides;
   // Badge Template (for Registration stations)
   badgeTemplate?: BadgeTemplateConfig;
+  // Event Mode
+  eventMode?: 'free' | 'lead_capture' | 'pay_per_photo' | 'pay_per_album';
+  // Pricing Configuration (for paid modes)
+  pricing?: {
+    albumPricing?: {
+      packages: Array<{
+        id: string;
+        name: string;
+        description?: string;
+        price: number;
+        includesDigital: boolean;
+        printQuantity?: number;
+        isDefault?: boolean;
+      }>;
+    };
+    photoPricing?: {
+      digitalPrice: number;
+      printPrice: number;
+    };
+    taxRate?: number;
+    taxName?: string;
+    currency: string;
+    businessInfo?: {
+      name: string;
+      address?: string;
+      taxId?: string;
+      phone?: string;
+      email?: string;
+    };
+  };
 }
 
 export type AspectRatio = 'auto' | '1:1' | '4:5' | '3:2' | '16:9' | '9:16';
@@ -1131,6 +1161,149 @@ export async function sendTestEmail(toEmail: string): Promise<{ success: boolean
   if (!response.ok) {
     const error = await response.json().catch(() => ({ detail: 'Email test failed' }));
     throw new Error(error.detail || 'Email test failed');
+  }
+  return response.json();
+}
+
+// ========== Album Transaction APIs (POS/Sales) ==========
+
+export interface AlbumTransaction {
+  id: string;
+  album_id?: string;
+  event_id: number;
+  package_id?: string;
+  package_name?: string;
+  item_count: number;
+  amount: number;
+  tax_amount: number;
+  total_amount: number;
+  currency: string;
+  payment_method?: string;
+  status: string;
+  customer_name?: string;
+  customer_email?: string;
+  customer_phone?: string;
+  invoice_number?: string;
+  invoice_generated: boolean;
+  notes?: string;
+  created_by?: string;
+  created_at: string;
+  updated_at: string;
+  album_code?: string;
+  visitor_name?: string;
+}
+
+export interface TransactionSummary {
+  total_revenue: number;
+  total_tax: number;
+  transaction_count: number;
+  paid_albums_count: number;
+  today_revenue: number;
+  today_transactions: number;
+}
+
+export interface CreateTransactionRequest {
+  album_code: string;
+  package_id?: string;
+  package_name: string;
+  item_count: number;
+  amount: number;
+  tax_amount: number;
+  total_amount: number;
+  currency: string;
+  payment_method: string;
+  customer_name?: string;
+  customer_email?: string;
+  customer_phone?: string;
+  generate_invoice: boolean;
+  notes?: string;
+}
+
+/**
+ * Create a POS transaction (Charge POS)
+ */
+export async function createTransaction(
+  eventId: number,
+  data: CreateTransactionRequest
+): Promise<{ success: boolean; transaction: AlbumTransaction }> {
+  const token = getAuthToken();
+  if (!token) throw new Error('Not authenticated');
+  
+  const response = await fetch(getApiPath(`/events/${eventId}/transactions`, true), {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+    body: JSON.stringify(data),
+  });
+  
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'Failed to create transaction' }));
+    throw new Error(error.error || 'Failed to create transaction');
+  }
+  return response.json();
+}
+
+/**
+ * Get all transactions for an event
+ */
+export async function getEventTransactions(
+  eventId: number,
+  filters?: { status?: string; from?: string; to?: string }
+): Promise<{ transactions: AlbumTransaction[] }> {
+  const token = getAuthToken();
+  if (!token) throw new Error('Not authenticated');
+  
+  let url = getApiPath(`/events/${eventId}/transactions`, true);
+  if (filters) {
+    const params = new URLSearchParams();
+    if (filters.status) params.set('status', filters.status);
+    if (filters.from) params.set('from', filters.from);
+    if (filters.to) params.set('to', filters.to);
+    if (params.toString()) url += `?${params}`;
+  }
+  
+  const response = await fetch(url, {
+    headers: { 'Authorization': `Bearer ${token}` },
+  });
+  
+  if (!response.ok) {
+    throw new Error('Failed to fetch transactions');
+  }
+  return response.json();
+}
+
+/**
+ * Get transaction summary for an event
+ */
+export async function getTransactionSummary(eventId: number): Promise<TransactionSummary> {
+  const token = getAuthToken();
+  if (!token) throw new Error('Not authenticated');
+  
+  const response = await fetch(getApiPath(`/events/${eventId}/transactions/summary`, true), {
+    headers: { 'Authorization': `Bearer ${token}` },
+  });
+  
+  if (!response.ok) {
+    throw new Error('Failed to fetch transaction summary');
+  }
+  return response.json();
+}
+
+/**
+ * Get a specific transaction (for invoice)
+ */
+export async function getTransaction(transactionId: string): Promise<AlbumTransaction> {
+  const token = getAuthToken();
+  if (!token) throw new Error('Not authenticated');
+  
+  const response = await fetch(getApiPath(`/transactions/${transactionId}`, true), {
+    headers: { 'Authorization': `Bearer ${token}` },
+  });
+  
+  if (!response.ok) {
+    throw new Error('Failed to fetch transaction');
   }
   return response.json();
 }

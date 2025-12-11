@@ -19,8 +19,6 @@ export function useEventConfigById(eventId: number | null, eventSlug: string | n
         
         const eventConfig = await getEventConfigById(eventId!, eventSlug!);
         setConfig(eventConfig);
-        
-        console.log('✅ Event config loaded by ID:', eventConfig);
       } catch (err: any) {
         console.error('❌ Failed to load event config by ID:', err);
         setError(err.message || 'Failed to load event');
