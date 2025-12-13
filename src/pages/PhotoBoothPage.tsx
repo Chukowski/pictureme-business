@@ -40,17 +40,17 @@ export const PhotoBoothPage = ({ configOverride, userSlugOverride, eventSlugOver
   const params = useParams<{ userSlug: string; eventSlug: string; eventId: string }>();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  
+
   // Use overrides if provided (for short URLs), otherwise use params
   const userSlug = userSlugOverride || params.userSlug || '';
   const eventSlug = eventSlugOverride || params.eventSlug || '';
-  
+
   // Only fetch config if not provided as override
   const { config: fetchedConfig, loading: fetchLoading, error: fetchError } = useEventConfig(
-    configOverride ? '' : userSlug, 
+    configOverride ? '' : userSlug,
     configOverride ? '' : eventSlug
   );
-  
+
   // Use override config if provided, otherwise use fetched config
   const config = configOverride || fetchedConfig;
   const loading = configOverride ? false : fetchLoading;
@@ -59,7 +59,7 @@ export const PhotoBoothPage = ({ configOverride, userSlugOverride, eventSlugOver
   // Album Tracking
   const albumId = searchParams.get('album');
   const stationId = searchParams.get('station');
-  
+
   // Detect station type from URL path
   const pathname = window.location.pathname;
   const stationType = useMemo(() => {
@@ -69,7 +69,7 @@ export const PhotoBoothPage = ({ configOverride, userSlugOverride, eventSlugOver
     if (pathname.endsWith('/viewer')) return 'viewer';
     return null;
   }, [pathname]);
-  
+
   // Mock album data - in production, this would come from an API
   const [albumData, setAlbumData] = useState<AlbumData | null>(null);
 
@@ -98,21 +98,21 @@ export const PhotoBoothPage = ({ configOverride, userSlugOverride, eventSlugOver
   // Filter templates based on station assignment
   const filteredTemplates = useMemo(() => {
     if (!config?.templates) return [];
-    
+
     // If no station ID, return all active templates
     if (!stationId) {
       return config.templates.filter(t => t.active);
     }
-    
+
     // Filter templates assigned to this station
     return config.templates.filter(template => {
       if (!template.active) return false;
-      
+
       // If no stationsAssigned or "all", include template
       if (!template.stationsAssigned || template.stationsAssigned === 'all') {
         return true;
       }
-      
+
       // Check if this station is in the assigned list
       return template.stationsAssigned.includes(stationId);
     });
@@ -255,7 +255,7 @@ export const PhotoBoothPage = ({ configOverride, userSlugOverride, eventSlugOver
 
   if (error || !config) {
     return (
-      <EventNotFound 
+      <EventNotFound
         message={error || "Este evento no existe o ya no está activo."}
         eventSlug={eventSlug}
       />
@@ -314,7 +314,7 @@ export const PhotoBoothPage = ({ configOverride, userSlugOverride, eventSlugOver
       //   - If OFF (false): ONLY explicitly enabled individual toggles work
       //   - If undefined: Default to individual toggles
       const masterToggle = selectedBackground.includeBranding;
-      
+
       // Individual toggles - check what's explicitly enabled
       // includeHeader: Show logo header (default false)
       // includeTagline: Show tagline (default true when master is on)
@@ -325,10 +325,10 @@ export const PhotoBoothPage = ({ configOverride, userSlugOverride, eventSlugOver
 
       // Use custom prompt and images if this is a custom prompt template
       // For group photos, use groupPrompt if available, otherwise fall back to regular prompt
-      const basePrompt = isGroupPhoto && selectedBackground.groupPrompt 
-        ? selectedBackground.groupPrompt 
+      const basePrompt = isGroupPhoto && selectedBackground.groupPrompt
+        ? selectedBackground.groupPrompt
         : selectedBackground.prompt;
-      
+
       const promptToUse = selectedBackground.isCustomPrompt && customPrompt
         ? customPrompt
         : basePrompt;
@@ -347,22 +347,22 @@ export const PhotoBoothPage = ({ configOverride, userSlugOverride, eventSlugOver
         : undefined;
 
       // Footer shows if master is ON, or if there's a footer configured and master isn't explicitly OFF
-      const footer = (masterToggle === true || (masterToggle !== false && config?.branding?.footerPath)) 
+      const footer = (masterToggle === true || (masterToggle !== false && config?.branding?.footerPath))
         && config?.branding?.footerPath && config.branding.footerPath.trim()
         ? config.branding.footerPath
         : undefined;
-      
-      const watermarkConfig = wantsWatermark && config?.branding?.watermark?.enabled 
-        ? config.branding.watermark 
+
+      const watermarkConfig = wantsWatermark && config?.branding?.watermark?.enabled
+        ? config.branding.watermark
         : undefined;
-      
+
       // Check if there are any branding elements to apply
       const hasBrandingElements = !!(logo || footer || tagline || selectedBackground.campaignText || watermarkConfig);
-      
+
       // Apply branding if there are elements to apply (regardless of master toggle)
       const shouldApplyBranding = hasBrandingElements;
-      
-      console.log('🎨 Branding check:', { 
+
+      console.log('🎨 Branding check:', {
         masterToggle,
         wantsHeader,
         includeHeader: selectedBackground.includeHeader,
@@ -371,7 +371,7 @@ export const PhotoBoothPage = ({ configOverride, userSlugOverride, eventSlugOver
         logo,
         footer,
         hasBrandingElements,
-        shouldApplyBranding 
+        shouldApplyBranding
       });
 
       const result = await processImageWithAI({
@@ -389,8 +389,8 @@ export const PhotoBoothPage = ({ configOverride, userSlugOverride, eventSlugOver
         watermark: watermarkConfig,
         aspectRatio: selectedBackground.aspectRatio || '9:16', // Use template aspect ratio
         // Use groupImageModel for group photos if configured, otherwise fall back to imageModel
-        aiModel: isGroupPhoto && selectedBackground.pipelineConfig?.groupImageModel 
-          ? selectedBackground.pipelineConfig.groupImageModel 
+        aiModel: isGroupPhoto && selectedBackground.pipelineConfig?.groupImageModel
+          ? selectedBackground.pipelineConfig.groupImageModel
           : selectedBackground.pipelineConfig?.imageModel,
         forceInstructions: selectedBackground.pipelineConfig?.forceInstructions, // Use template's force instructions setting
         seed: selectedBackground.pipelineConfig?.seed, // Use template's seed for reproducible results
@@ -498,16 +498,16 @@ export const PhotoBoothPage = ({ configOverride, userSlugOverride, eventSlugOver
     if (!albumData || !shareCode) {
       throw new Error('No photo to delete');
     }
-    
+
     try {
       await deleteAlbumPhoto(albumData.id, shareCode, staffPin);
-      
+
       // Update local album data
       setAlbumData(prev => prev ? ({
         ...prev,
         currentPhotos: Math.max(0, prev.currentPhotos - 1),
       }) : null);
-      
+
       // Reset to camera state
       handleReset();
     } catch (error) {
@@ -518,17 +518,33 @@ export const PhotoBoothPage = ({ configOverride, userSlugOverride, eventSlugOver
 
   return (
     <div className="min-h-screen bg-zinc-950 relative">
-      {/* QR Scanner Modal */}
+      {/* QR Scanner Modal - Restored */}
       {showQRScanner && (
         <ScanAlbumQR
           onScan={(code) => {
             setShowQRScanner(false);
-            navigate(`/${userSlug}/${eventSlug}?album=${code}`);
+            const currentPath = window.location.pathname;
+            navigate(`${currentPath}?album=${code}`);
           }}
           onCancel={() => setShowQRScanner(false)}
           title="Scan Your Badge"
           subtitle="Point your camera at the QR code on your badge"
           primaryColor={config.theme?.primaryColor}
+          allowManualEntry={false} // Manual entry handled in main prompt
+        />
+      )}
+
+      {/* Scan Badge Prompt - Restored with improved manual entry */}
+      {state === 'scan-badge' && !showQRScanner && (
+        <ScanBadgePrompt
+          eventName={config.title}
+          brandName={config.theme?.brandName || 'PictureMe.Now'}
+          primaryColor={config.theme?.primaryColor}
+          onScanQR={() => setShowQRScanner(true)}
+          onManualEntry={(code) => {
+            const currentPath = window.location.pathname;
+            navigate(`${currentPath}?album=${code}`);
+          }}
         />
       )}
 
@@ -557,7 +573,7 @@ export const PhotoBoothPage = ({ configOverride, userSlugOverride, eventSlugOver
               <p className="text-zinc-400">
                 This event is not properly configured for registration. Please contact the event organizer.
               </p>
-              <Button 
+              <Button
                 onClick={() => setState('select')}
                 variant="outline"
                 className="border-zinc-700"
@@ -569,21 +585,7 @@ export const PhotoBoothPage = ({ configOverride, userSlugOverride, eventSlugOver
         </div>
       ) : null}
 
-      {/* Scan Badge Prompt - Album Mode without album ID */}
-      {state === 'scan-badge' && !showQRScanner && (
-        <ScanBadgePrompt
-          eventName={config.title}
-          brandName={config.theme?.brandName || 'PictureMe.Now'}
-          primaryColor={config.theme?.primaryColor}
-          onScanQR={() => setShowQRScanner(true)}
-          onManualEntry={() => {
-            const code = prompt('Enter your album code:');
-            if (code) {
-              navigate(`/${userSlug}/${eventSlug}?album=${code}`);
-            }
-          }}
-        />
-      )}
+
 
       {/* Album Progress - Full version only in select state (bottom right corner) */}
       {isAlbumMode && albumData && state === 'select' && (
@@ -602,7 +604,7 @@ export const PhotoBoothPage = ({ configOverride, userSlugOverride, eventSlugOver
           />
         </div>
       )}
-      
+
       {/* Album Progress - Compact version in camera state (bottom right corner) */}
       {isAlbumMode && albumData && state === 'camera' && (
         <div className="fixed bottom-4 right-4 z-50">
@@ -660,9 +662,9 @@ export const PhotoBoothPage = ({ configOverride, userSlugOverride, eventSlugOver
         isAlbumMode && albumData ? (
           <div className="min-h-screen flex flex-col items-center justify-center p-6">
             <div className="max-w-md w-full">
-              <img 
-                src={processedPhoto} 
-                alt="Your photo" 
+              <img
+                src={processedPhoto}
+                alt="Your photo"
                 className="w-full rounded-2xl shadow-2xl mb-6"
               />
               <AlbumResultActions
