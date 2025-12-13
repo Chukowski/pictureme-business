@@ -250,21 +250,10 @@ async function loadConfig() {
     const response = await fetch(`${apiUrl}/api/config`);
     const config = await response.json();
 
-    // Backend returns snake_case (fal_key), check both formats for compatibility
-    const falKey = config.fal_key || config.falKey;
-    if (falKey) {
-      FAL_KEY = falKey;
-      // Don't override default model from backend - let event config control it
+    // We no longer need to load FAL_KEY in the frontend as all generation happens backend-side
+    // This prevents the "credentials exposed" warning
 
-      // Configure fal client
-      fal.config({
-        credentials: FAL_KEY,
-      });
-
-      console.log('✅ FAL configuration loaded from backend (secure)');
-    } else {
-      console.warn('⚠️ No FAL key in config response:', Object.keys(config));
-    }
+    console.log('✅ Backend configuration loaded');
   } catch (error) {
     console.warn('⚠️ Failed to load config from backend:', error);
   }
