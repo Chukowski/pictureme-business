@@ -15,6 +15,11 @@ export function CreatorOnly({ children }: CreatorOnlyProps) {
     return <Navigate to="/admin/home" replace />;
   }
 
+  // If user is superadmin, redirect to superadmin dashboard
+  if (user?.role === 'superadmin') {
+    return <Navigate to="/super-admin" replace />;
+  }
+
   return <>{children}</>;
 }
 

@@ -22,19 +22,34 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
+import { ENV } from "@/config/env";
+
+interface Tier {
+  id: string;
+  name: string;
+  code: string;
+  price: number;
+  currency: string;
+  token_limit: number;
+  features: string[];
+  category: string;
+  highlight: string;
+}
+
 export default function LandingPage() {
   const navigate = useNavigate();
   const [pricingTab, setPricingTab] = useState<'individual' | 'business'>('individual');
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [tiers, setTiers] = useState<Tier[]>([]);
+  const [isLoadingTiers, setIsLoadingTiers] = useState(true);
 
   // Check for logged-in user
   useEffect(() => {
+    // Check user
     const checkUser = () => {
       try {
         const userStr = localStorage.getItem('user');
         const authToken = localStorage.getItem('auth_token');
-        
-        // Only set user if both user data AND auth token exist
         if (userStr && authToken) {
           const user = JSON.parse(userStr);
           if (user && (user.id || user.email)) {
@@ -42,20 +57,32 @@ export default function LandingPage() {
             return;
           }
         }
-        // If either is missing, clear the user
         setCurrentUser(null);
       } catch {
         setCurrentUser(null);
       }
     };
     checkUser();
-    
-    // Also listen for storage changes (in case user logs in/out in another tab)
     window.addEventListener('storage', checkUser);
-    
-    // Check periodically as backup (every 500ms)
     const interval = setInterval(checkUser, 500);
-    
+
+    // Fetch Tiers
+    const fetchTiers = async () => {
+      try {
+        // Use ENV.API_URL which deals with production/dev
+        const res = await fetch(`${ENV.API_URL || 'http://localhost:3002'}/api/tiers`);
+        if (res.ok) {
+          const data = await res.json();
+          setTiers(data || []);
+        }
+      } catch (e) {
+        console.error("Failed to fetch tiers", e);
+      } finally {
+        setIsLoadingTiers(false);
+      }
+    };
+    fetchTiers();
+
     return () => {
       window.removeEventListener('storage', checkUser);
       clearInterval(interval);
@@ -116,14 +143,14 @@ export default function LandingPage() {
                     {currentUser.role && <span className="text-xs text-indigo-400 font-normal capitalize mt-1">{currentUser.role.replace(/_/g, ' ')}</span>}
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator className="bg-white/10" />
-                  <DropdownMenuItem 
+                  <DropdownMenuItem
                     className="text-zinc-300 hover:text-white hover:bg-white/5 cursor-pointer"
                     onClick={() => navigate("/admin")}
                   >
                     <User className="h-4 w-4 mr-2" />
                     Dashboard
                   </DropdownMenuItem>
-                  <DropdownMenuItem 
+                  <DropdownMenuItem
                     className="text-zinc-300 hover:text-white hover:bg-white/5 cursor-pointer"
                     onClick={() => navigate("/admin/settings")}
                   >
@@ -131,7 +158,7 @@ export default function LandingPage() {
                     Configuración
                   </DropdownMenuItem>
                   <DropdownMenuSeparator className="bg-white/10" />
-                  <DropdownMenuItem 
+                  <DropdownMenuItem
                     className="text-red-400 hover:text-red-300 hover:bg-red-500/10 cursor-pointer"
                     onClick={handleLogout}
                   >
@@ -301,301 +328,109 @@ export default function LandingPage() {
 
           {/* Pricing Cards */}
           <div className="max-w-7xl mx-auto">
-            {pricingTab === 'individual' ? (
+            {isLoadingTiers ? (
+              <div className="flex justify-center py-20">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500"></div>
+              </div>
+            ) : (
               <>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  {/* Spark */}
-                  <div className="rounded-3xl bg-zinc-950 border border-zinc-800 p-8 flex flex-col hover:border-zinc-700 transition-all">
-                    <div className="mb-6">
-                      <h3 className="text-2xl font-bold text-white mb-2">Spark</h3>
-                      <div className="flex items-baseline gap-1">
-                        <span className="text-4xl font-bold text-white">$9</span>
-                        <span className="text-zinc-500">/month</span>
-                      </div>
-                      <p className="text-zinc-400 text-sm mt-4">Perfect for personal use and experimentation.</p>
-                    </div>
+                  {tiers
+                    .filter(t => (t.category || 'individual') === pricingTab)
+                    .map((tier) => {
+                      const isPopular = tier.highlight?.includes("POPULAR");
+                      const isPremium = tier.highlight?.includes("PREMIUM");
+                      // Custom styling based on highlight or code
+                      let cardClasses = "rounded-3xl bg-zinc-950 border p-8 flex flex-col transition-all relative";
+                      if (isPopular) {
+                        cardClasses += " border-indigo-500/50 shadow-2xl shadow-indigo-500/10 hover:border-indigo-500 scale-[1.02] md:scale-105 z-10";
+                      } else if (isPremium) {
+                        cardClasses += " border-amber-500/30 hover:border-amber-500/50";
+                      } else {
+                        cardClasses += " border-zinc-800 hover:border-zinc-700";
+                      }
 
-                    <Button className="w-full bg-white text-black hover:bg-zinc-200 mb-8 rounded-xl font-semibold" onClick={() => navigate("/admin/register?plan=spark")}>
-                      Get Started
-                    </Button>
+                      return (
+                        <div key={tier.id} className={cardClasses}>
+                          {isPopular && (
+                            <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg">
+                              {tier.highlight}
+                            </div>
+                          )}
+                          {isPremium && (
+                            <div className="absolute top-8 right-8 px-3 py-1 rounded-full bg-amber-500/10 text-amber-400 text-xs font-bold border border-amber-500/20">
+                              {tier.highlight}
+                            </div>
+                          )}
 
-                    <div className="space-y-4 flex-1">
-                      <div className="text-sm font-medium text-white mb-4">Includes:</div>
-                      {[
-                        { text: "50 Tokens / month", tooltip: "~50 Images (1 Token = 1 Image)" },
-                        { text: "Base Models (Nano)" },
-                        { text: "Standard Speed" },
-                        { text: "Personal License" }
-                      ].map((item, i) => (
-                        <div key={i} className="flex items-center gap-3 text-sm text-zinc-300">
-                          <Check className="w-4 h-4 text-white shrink-0" />
-                          <span className="flex items-center gap-1">
-                            {item.text}
-                            {item.tooltip && (
-                              <TooltipProvider>
-                                <Tooltip>
-                                  <TooltipTrigger>
-                                    <Info className="w-3 h-3 text-zinc-500 hover:text-zinc-300 transition-colors" />
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    <p>{item.tooltip}</p>
-                                  </TooltipContent>
-                                </Tooltip>
-                              </TooltipProvider>
-                            )}
-                          </span>
+                          <div className="mb-6">
+                            <h3 className="text-2xl font-bold text-white mb-2">{tier.name}</h3>
+                            <div className="flex items-baseline gap-1">
+                              {tier.price > 0 ? (
+                                <>
+                                  <span className="text-4xl font-bold text-white">${tier.price}</span>
+                                  <span className="text-zinc-500">/month</span>
+                                </>
+                              ) : (
+                                <span className="text-4xl font-bold text-white">Free</span>
+                              )}
+                            </div>
+                            <p className="text-zinc-400 text-sm mt-4">
+                              {tier.token_limit > 0 ? `${tier.token_limit.toLocaleString()} tokens per month` : "Basic access"}
+                            </p>
+                          </div>
+
+                          <Button
+                            className={`w-full mb-8 rounded-xl font-semibold ${isPopular
+                              ? "bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white shadow-lg shadow-indigo-500/20"
+                              : isPremium
+                                ? "variant-outline border-amber-500/30 text-amber-400 hover:bg-amber-500/10"
+                                : "bg-white text-black hover:bg-zinc-200"
+                              }`}
+                            variant={isPremium ? "outline" : "default"}
+                            onClick={() => {
+                              if (pricingTab === 'business') {
+                                navigate(`/apply?tier=${tier.code}`);
+                              } else {
+                                navigate(`/admin/register?plan=${tier.code}`);
+                              }
+                            }}
+                          >
+                            {pricingTab === 'business' ? 'Apply Now' : 'Get Started'}
+                          </Button>
+
+                          <div className="space-y-4 flex-1">
+                            <div className="text-sm font-medium text-white mb-4">Includes:</div>
+                            {/* Always show token limit as first feature */}
+                            <div className="flex items-center gap-3 text-sm text-zinc-300">
+                              <Check className={`w-4 h-4 shrink-0 ${isPopular ? "text-indigo-400" : isPremium ? "text-amber-500" : "text-white"}`} />
+                              <span>{tier.token_limit.toLocaleString()} tokens / month</span>
+                            </div>
+
+                            {Array.isArray(tier.features) && tier.features.map((feature, i) => (
+                              <div key={i} className="flex items-center gap-3 text-sm text-zinc-300">
+                                <Check className={`w-4 h-4 shrink-0 ${isPopular ? "text-indigo-400" : isPremium ? "text-amber-500" : "text-white"}`} />
+                                <span>{feature}</span>
+                              </div>
+                            ))}
+                          </div>
                         </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Vibe - Most Popular */}
-                  <div className="rounded-3xl bg-zinc-950 border border-indigo-500/50 p-8 flex flex-col relative shadow-2xl shadow-indigo-500/10 hover:border-indigo-500 transition-all scale-[1.02] md:scale-105 z-10">
-                    <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg">
-                      MOST POPULAR
-                    </div>
-                    <div className="mb-6">
-                      <h3 className="text-2xl font-bold text-white mb-2">Vibe</h3>
-                      <div className="flex items-baseline gap-1">
-                        <span className="text-4xl font-bold text-white">$19</span>
-                        <span className="text-zinc-500">/month</span>
-                      </div>
-                      <p className="text-zinc-400 text-sm mt-4">For creators who need more power and flexibility.</p>
-                    </div>
-
-                    <Button className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white mb-8 rounded-xl font-semibold shadow-lg shadow-indigo-500/20" onClick={() => navigate("/admin/register?plan=vibe")}>
-                      Get Started
-                    </Button>
-
-                    <div className="space-y-4 flex-1">
-                      <div className="text-sm font-medium text-white mb-4">Everything in Spark, plus:</div>
-                      {[
-                        { text: "100 Tokens / month", tooltip: "~100 Images (1 Token = 1 Image)" },
-                        { text: "Custom Backgrounds" },
-                        { text: "Priority Generation" },
-                        { text: "No Watermark" },
-                        { text: "Commercial License" }
-                      ].map((item, i) => (
-                        <div key={i} className="flex items-center gap-3 text-sm text-zinc-300">
-                          <Check className="w-4 h-4 text-indigo-400 shrink-0" />
-                          <span className="flex items-center gap-1">
-                            {item.text}
-                            {item.tooltip && (
-                              <TooltipProvider>
-                                <Tooltip>
-                                  <TooltipTrigger>
-                                    <Info className="w-3 h-3 text-zinc-500 hover:text-zinc-300 transition-colors" />
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    <p>{item.tooltip}</p>
-                                  </TooltipContent>
-                                </Tooltip>
-                              </TooltipProvider>
-                            )}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Studio */}
-                  <div className="rounded-3xl bg-zinc-950 border border-zinc-800 p-8 flex flex-col hover:border-zinc-700 transition-all">
-                    <div className="mb-6">
-                      <h3 className="text-2xl font-bold text-white mb-2">Studio</h3>
-                      <div className="flex items-baseline gap-1">
-                        <span className="text-4xl font-bold text-white">$39</span>
-                        <span className="text-zinc-500">/month</span>
-                      </div>
-                      <p className="text-zinc-400 text-sm mt-4">Maximum power for professionals and agencies.</p>
-                    </div>
-
-                    <Button className="w-full bg-white text-black hover:bg-zinc-200 mb-8 rounded-xl font-semibold" onClick={() => navigate("/admin/register?plan=studio")}>
-                      Get Started
-                    </Button>
-
-                    <div className="space-y-4 flex-1">
-                      <div className="text-sm font-medium text-white mb-4">Everything in Vibe, plus:</div>
-                      {[
-                        { text: "200 Tokens / month", tooltip: "~200 Images (1 Token = 1 Image)" },
-                        { text: "Faceswap Models" },
-                        { text: "Template Selling" },
-                        { text: "API Access" },
-                        { text: "Priority Support" }
-                      ].map((item, i) => (
-                        <div key={i} className="flex items-center gap-3 text-sm text-zinc-300">
-                          <Check className="w-4 h-4 text-white shrink-0" />
-                          <span className="flex items-center gap-1">
-                            {item.text}
-                            {item.tooltip && (
-                              <TooltipProvider>
-                                <Tooltip>
-                                  <TooltipTrigger>
-                                    <Info className="w-3 h-3 text-zinc-500 hover:text-zinc-300 transition-colors" />
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    <p>{item.tooltip}</p>
-                                  </TooltipContent>
-                                </Tooltip>
-                              </TooltipProvider>
-                            )}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+                      );
+                    })}
                 </div>
 
-                {/* Business CTA */}
-                <div className="mt-12 rounded-2xl bg-zinc-950 border border-white/10 p-8 flex flex-col md:flex-row items-center justify-between gap-6 max-w-3xl mx-auto shadow-2xl">
-                  <span className="text-lg text-white font-medium">Ready to start your own business?</span>
-                  <Button
-                    onClick={() => setPricingTab('business')}
-                    className="bg-[#D9F99D] hover:bg-[#BEF264] text-black font-bold rounded-xl px-8 h-12 text-base shadow-[0_0_20px_-5px_rgba(217,249,157,0.5)] transition-all hover:scale-105"
-                  >
-                    See Business Plans
-                  </Button>
-                </div>
+                {pricingTab === 'individual' && (
+                  <div className="mt-12 rounded-2xl bg-zinc-950 border border-white/10 p-8 flex flex-col md:flex-row items-center justify-between gap-6 max-w-3xl mx-auto shadow-2xl animate-fade-in">
+                    <span className="text-lg text-white font-medium">Ready to start your own business?</span>
+                    <Button
+                      onClick={() => setPricingTab('business')}
+                      className="bg-[#D9F99D] hover:bg-[#BEF264] text-black font-bold rounded-xl px-8 h-12 text-base shadow-[0_0_20px_-5px_rgba(217,249,157,0.5)] transition-all hover:scale-105"
+                    >
+                      See Business Plans
+                    </Button>
+                  </div>
+                )}
               </>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto">
-                {/* Event Starter */}
-                <div className="rounded-3xl bg-zinc-950 border border-blue-500/30 p-8 flex flex-col hover:border-blue-500/50 transition-all">
-                  <div className="mb-6">
-                    <div className="flex items-center justify-between mb-2">
-                      <h3 className="text-2xl font-bold text-white">Event Starter</h3>
-                    </div>
-                    <div className="text-3xl font-bold text-white mb-1">$400<span className="text-lg font-normal text-zinc-400">/month</span></div>
-                    <p className="text-zinc-400 text-sm mt-4">Perfect for getting started with events.</p>
-                  </div>
-
-                  <Button variant="outline" className="w-full border-blue-500/30 text-blue-400 hover:bg-blue-500/10 mb-8 rounded-xl font-semibold" onClick={() => navigate("/admin/register?plan=event-starter")}>
-                    Select Plan
-                  </Button>
-
-                  <div className="space-y-4 flex-1">
-                    {[
-                      { text: "1,000 tokens/month", tooltip: "~1,000 Images" },
-                      { text: "1 active event" },
-                      { text: "Basic analytics" },
-                      { text: "BYOH (Bring Your Own Hardware)" },
-                      { text: "Email support" }
-                    ].map((item, i) => (
-                      <div key={i} className="flex items-center gap-3 text-sm text-zinc-300">
-                        <Check className="w-4 h-4 text-blue-500 shrink-0" />
-                        <span className="flex items-center gap-1">
-                          {item.text}
-                          {item.tooltip && (
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger>
-                                  <Info className="w-3 h-3 text-zinc-500 hover:text-zinc-300 transition-colors" />
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p>{item.tooltip}</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
-                          )}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Event Pro */}
-                <div className="rounded-3xl bg-zinc-950 border border-purple-500/30 p-8 flex flex-col hover:border-purple-500/50 transition-all relative">
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                    <span className="px-4 py-1 rounded-full bg-purple-500 text-white text-xs font-bold">POPULAR</span>
-                  </div>
-                  <div className="mb-6">
-                    <div className="flex items-center justify-between mb-2">
-                      <h3 className="text-2xl font-bold text-white">Event Pro</h3>
-                    </div>
-                    <div className="text-3xl font-bold text-white mb-1">$1,500<span className="text-lg font-normal text-zinc-400">/month</span></div>
-                    <p className="text-zinc-400 text-sm mt-4">For professional event operators.</p>
-                  </div>
-
-                  <Button className="w-full bg-purple-600 hover:bg-purple-700 text-white mb-8 rounded-xl font-semibold" onClick={() => navigate("/admin/register?plan=event-pro")}>
-                    Select Plan
-                  </Button>
-
-                  <div className="space-y-4 flex-1">
-                    {[
-                      { text: "5,000 tokens/month", tooltip: "~5,000 Images" },
-                      { text: "Up to 2 active events" },
-                      { text: "Advanced analytics" },
-                      { text: "BYOH (Bring Your Own Hardware)" },
-                      { text: "Lead capture & branded feeds" },
-                      { text: "Priority support" }
-                    ].map((item, i) => (
-                      <div key={i} className="flex items-center gap-3 text-sm text-zinc-300">
-                        <Check className="w-4 h-4 text-purple-500 shrink-0" />
-                        <span className="flex items-center gap-1">
-                          {item.text}
-                          {item.tooltip && (
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger>
-                                  <Info className="w-3 h-3 text-zinc-500 hover:text-zinc-300 transition-colors" />
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p>{item.tooltip}</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
-                          )}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Masters */}
-                <div className="rounded-3xl bg-zinc-950 border border-amber-500/30 p-8 flex flex-col hover:border-amber-500/50 transition-all">
-                  <div className="mb-6">
-                    <div className="flex items-center justify-between mb-2">
-                      <h3 className="text-2xl font-bold text-white">Masters</h3>
-                      <span className="px-3 py-1 rounded-full bg-amber-500/10 text-amber-400 text-xs font-bold border border-amber-500/20">PREMIUM</span>
-                    </div>
-                    <div className="text-3xl font-bold text-white mb-1">From $3,000<span className="text-lg font-normal text-zinc-400">/month</span></div>
-                    <p className="text-zinc-400 text-sm mt-4">Full-scale enterprise solution.</p>
-                  </div>
-
-                  <Button variant="outline" className="w-full border-amber-500/30 text-amber-400 hover:bg-amber-500/10 mb-8 rounded-xl font-semibold" onClick={() => navigate("/admin/register?plan=masters")}>
-                    Contact Sales
-                  </Button>
-
-                  <div className="space-y-4 flex-1">
-                    {[
-                      { text: "10,000 tokens/month", tooltip: "~10,000 Images" },
-                      { text: "Up to 3 active events" },
-                      { text: "Premium templates & LoRA models" },
-                      { text: "Revenue-share & hardware options" },
-                      { text: "Print module" },
-                      { text: "Dedicated account manager" }
-                    ].map((item, i) => (
-                      <div key={i} className="flex items-center gap-3 text-sm text-zinc-300">
-                        <Check className="w-4 h-4 text-amber-500 shrink-0" />
-                        <span className="flex items-center gap-1">
-                          {item.text}
-                          {item.tooltip && (
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger>
-                                  <Info className="w-3 h-3 text-zinc-500 hover:text-zinc-300 transition-colors" />
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p>{item.tooltip}</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
-                          )}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
             )}
           </div>
         </div>
@@ -610,39 +445,39 @@ export default function LandingPage() {
               <div className="relative z-10 w-full max-w-md mx-auto group h-[400px] md:h-[500px]">
                 <div className="absolute inset-0 bg-indigo-500/20 blur-[100px] rounded-full -z-10" />
                 <Suspense fallback={
-                   <div className="w-full h-full flex items-center justify-center">
-                     <div className="w-16 h-16 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
-                   </div>
+                  <div className="w-full h-full flex items-center justify-center">
+                    <div className="w-16 h-16 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+                  </div>
                 }>
                   <Akito3DScene />
                 </Suspense>
               </div>
             </div>
-            
+
             <div className="flex-1 space-y-8 order-1 md:order-2">
               <div>
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-sm font-medium mb-6">
                   <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
                   Powered by Akitá
                 </div>
-                
+
                 <h2 className="text-4xl md:text-5xl font-bold mb-6">
-                  Smart Spaces, <br/>
+                  Smart Spaces, <br />
                   <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400">Intelligently Connected.</span>
                 </h2>
-                
+
                 <p className="text-lg text-zinc-400 leading-relaxed">
-                  PictureMe is a flagship initiative of <a href="https://akitapr.com" target="_blank" rel="noopener noreferrer" className="text-white hover:text-indigo-400 transition-colors font-semibold underline decoration-indigo-500/30 underline-offset-4">Akitá</a>'s "Smart Spaces" program. 
+                  PictureMe is a flagship initiative of <a href="https://akitapr.com" target="_blank" rel="noopener noreferrer" className="text-white hover:text-indigo-400 transition-colors font-semibold underline decoration-indigo-500/30 underline-offset-4">Akitá</a>'s "Smart Spaces" program.
                 </p>
                 <p className="text-lg text-zinc-400 leading-relaxed mt-4">
                   We're moving beyond IoT to integrate true Artificial Intelligence into physical environments. Our mission is to create spaces that don't just function, but interact, adapt, and enhance the human experience.
                 </p>
               </div>
-              
+
               <div className="bg-white/5 p-6 rounded-2xl border border-white/10 backdrop-blur-sm hover:bg-white/10 transition-colors cursor-default">
                 <div className="flex items-start gap-5">
                   <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center shrink-0 shadow-lg shadow-indigo-500/20">
-                     <Sparkles className="w-7 h-7 text-white" />
+                    <Sparkles className="w-7 h-7 text-white" />
                   </div>
                   <div>
                     <h4 className="text-xl font-bold text-white mb-2">Meet Akito</h4>
@@ -654,14 +489,14 @@ export default function LandingPage() {
               </div>
 
               <div className="flex gap-4">
-                <Button 
+                <Button
                   className="bg-white text-black hover:bg-zinc-200 rounded-xl px-8 font-semibold"
                   onClick={() => window.open('https://akitapr.com', '_blank')}
                 >
                   Visit Akitá
                 </Button>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   className="bg-transparent border border-white/20 text-white hover:bg-white/10 hover:text-white hover:border-white/30 rounded-xl px-8"
                   onClick={() => scrollToSection('features')}
                 >
@@ -677,9 +512,9 @@ export default function LandingPage() {
       <footer className="py-12 border-t border-white/5 bg-black text-zinc-500 text-sm">
         <div className="container mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="flex items-center gap-2">
-            <img 
-              src="/assets/akita-logo.png" 
-              alt="Akitá" 
+            <img
+              src="/assets/akita-logo.png"
+              alt="Akitá"
               className="h-8 w-auto mr-2 opacity-80 hover:opacity-100 transition-opacity"
               onError={(e) => {
                 e.currentTarget.style.display = 'none';
@@ -700,7 +535,7 @@ export default function LandingPage() {
           </div>
           <p>© 2025 PictureMe.now. All rights reserved.</p>
         </div>
-      </footer >
-    </div >
+      </footer>
+    </div>
   );
 }

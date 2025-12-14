@@ -1,7 +1,28 @@
 import { useState, useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { FolderKanban, BarChart3, ShoppingBag, BookOpen, Gamepad2, Settings, Menu, LogOut, User, Building2, Users, Coins, Sparkles, Radio, ChevronDown } from "lucide-react";
+import {
+  FolderKanban, BarChart3, ShoppingBag, BookOpen, Gamepad2, Menu,
+  X,
+  ChevronDown,
+  LogOut,
+  User,
+  Settings,
+  CreditCard,
+  LayoutDashboard,
+  Sparkles,
+  Globe,
+  Shield,
+  Image,
+  Video,
+  Coins,
+  Users,
+  Building2,
+  Radio,
+  UserCog,
+  Zap
+} from "lucide-react";
+import { toast } from "sonner";
 import { getCurrentUser, logoutUser, getUserEvents, type EventConfig } from "@/services/eventsApi";
 import { hasFeature } from "@/lib/planFeatures";
 import { cn } from "@/lib/utils";
@@ -23,14 +44,14 @@ export function TopNavbar() {
   const [tokenStats, setTokenStats] = useState<{ current_tokens: number } | null>(null);
   const [userEvents, setUserEvents] = useState<EventConfig[]>([]);
   const [eventsDropdownOpen, setEventsDropdownOpen] = useState(false);
-  
+
   const currentUser = getCurrentUser();
   const userRole = currentUser?.role || 'individual';
   const hasAlbumTracking = hasFeature(userRole, 'albumTracking');
   const isBusinessUser = userRole.startsWith('business') && userRole !== 'business_pending';
 
   // Paths where navbar should be completely hidden
-  const isHiddenPath = 
+  const isHiddenPath =
     location.pathname === '/' ||
     location.pathname === '/terms' ||
     location.pathname === '/privacy' ||
@@ -38,18 +59,19 @@ export function TopNavbar() {
     location.pathname === '/admin/auth' ||
     location.pathname === '/admin/register' ||
     location.pathname.startsWith('/creator') || // Hide in creator dashboard
+    location.pathname.startsWith('/super-admin') || // Hide in super admin dashboard
     [
-    '/registration',
-    '/booth',
-    '/viewer',
-    '/display', // Big Screen
-    '/feed'
-  ].some(path => location.pathname.endsWith(path)) || 
-  // Check for dynamic event routes that are not admin routes
-  (location.pathname.split('/').length >= 3 && 
-   !location.pathname.startsWith('/admin') && 
-   !location.pathname.startsWith('/super-admin') &&
-   !location.pathname.startsWith('/profile'));
+      '/registration',
+      '/booth',
+      '/viewer',
+      '/display', // Big Screen
+      '/feed'
+    ].some(path => location.pathname.endsWith(path)) ||
+    // Check for dynamic event routes that are not admin routes
+    (location.pathname.split('/').length >= 3 &&
+      !location.pathname.startsWith('/admin') &&
+      !location.pathname.startsWith('/super-admin') &&
+      !location.pathname.startsWith('/profile'));
 
   // Define workspaces where auto-hide is active
   const isWorkspace = [
@@ -89,14 +111,14 @@ export function TopNavbar() {
 
     fetchTokenStats();
     const interval = setInterval(fetchTokenStats, 60000);
-    
+
     // Listen for token updates
     const handleTokensUpdated = (e: CustomEvent<{ newBalance: number }>) => {
       setTokenStats({ current_tokens: e.detail.newBalance });
     };
-    
+
     window.addEventListener("tokens-updated", handleTokensUpdated as EventListener);
-    
+
     return () => {
       clearInterval(interval);
       window.removeEventListener("tokens-updated", handleTokensUpdated as EventListener);
@@ -106,7 +128,7 @@ export function TopNavbar() {
   // Load user events for Live Mode shortcuts
   useEffect(() => {
     if (isHiddenPath) return;
-    
+
     const loadEvents = async () => {
       try {
         const events = await getUserEvents();
@@ -115,7 +137,7 @@ export function TopNavbar() {
         console.error("Failed to load events", error);
       }
     };
-    
+
     loadEvents();
   }, [isHiddenPath]);
 
@@ -135,7 +157,7 @@ export function TopNavbar() {
       const now = Date.now();
       // 1.5s inactivity to hide, but keep visible for 3s if recently interacted
       const timeSinceInteraction = now - lastInteraction.current;
-      
+
       if (!isHovered && timeSinceInteraction > 1500) {
         setIsVisible(false);
       }
@@ -151,7 +173,7 @@ export function TopNavbar() {
 
     const handleMouseMove = (e: MouseEvent) => {
       const isTop = e.clientY <= 40; // Simplified detection area
-      
+
       if (isTop) {
         setIsVisible(true);
         lastInteraction.current = Date.now();
@@ -172,15 +194,40 @@ export function TopNavbar() {
     navigate("/admin/auth");
   };
 
-  if (isHiddenPath) return null;
+  const handleExitImpersonation = () => {
+    const recoveryToken = localStorage.getItem('admin_recovery_token');
+    const recoveryUser = localStorage.getItem('admin_recovery_user');
 
-  const navItems = [
+    if (recoveryToken) {
+      localStorage.setItem('auth_token', recoveryToken);
+      if (recoveryUser) {
+        localStorage.setItem('user', recoveryUser);
+      }
+
+      // Clean up recovery keys
+      localStorage.removeItem('admin_recovery_token');
+      localStorage.removeItem('admin_recovery_user');
+
+      // Notify app of auth change
+      window.dispatchEvent(new Event("auth-change"));
+
+      // Redirect back to super admin users
+      window.location.href = '/super-admin/users';
+      toast.success("Restored super admin session");
+    }
+  };
+
+  const adminRecoveryToken = localStorage.getItem('admin_recovery_token');
+
+  if (isHiddenPath || !isBusinessUser && !adminRecoveryToken) return null;
+
+  const navItems = isBusinessUser ? [
     { id: 'events', label: 'Events', icon: FolderKanban, path: '/admin/events' },
     { id: 'analytics', label: 'Analytics', icon: BarChart3, path: '/admin/analytics' },
     { id: 'marketplace', label: 'Marketplace', icon: ShoppingBag, path: '/admin/marketplace' },
     { id: 'assist', label: 'Assist', icon: Sparkles, path: '/admin/chat' },
     { id: 'playground', label: 'Playground', icon: Gamepad2, path: '/admin/playground' },
-  ];
+  ] : [];
 
   const isActive = (path: string) => {
     if (path === '/admin/events' && (location.pathname === '/admin' || location.pathname === '/admin/events')) return true;
@@ -189,7 +236,7 @@ export function TopNavbar() {
 
   // Get display values
   const tokens = tokenStats?.current_tokens ?? currentUser?.tokens_remaining ?? 0;
-  
+
   // Get active/live events for quick access
   const activeEvents = userEvents.filter(e => e.is_active !== false).slice(0, 3);
 
@@ -209,11 +256,29 @@ export function TopNavbar() {
           }}
           onMouseLeave={() => setIsHovered(false)}
         >
+          {adminRecoveryToken && (
+            <div className="absolute -top-12 left-1/2 transform -translate-x-1/2 whitespace-nowrap">
+              <div className="flex items-center gap-2 px-4 py-1.5 bg-red-500/10 border border-red-500/20 rounded-full backdrop-blur-md shadow-xl animate-in slide-in-from-top-4">
+                <UserCog className="w-4 h-4 text-red-400" />
+                <span className="text-xs text-red-200 font-medium">
+                  Viewing as {currentUser?.email}
+                </span>
+                <div className="h-3 w-px bg-red-500/20 mx-1" />
+                <button
+                  onClick={handleExitImpersonation}
+                  className="text-xs text-red-400 hover:text-red-300 font-bold flex items-center gap-1 transition-colors"
+                >
+                  Exit View <LogOut className="w-3 h-3" />
+                </button>
+              </div>
+            </div>
+          )}
+
           <div className="flex items-center gap-2 p-1 bg-zinc-950/80 backdrop-blur-md border border-white/10 rounded-full shadow-2xl shadow-black/50">
-            
+
             {/* Home Shortcut */}
-            <button 
-              onClick={() => navigate('/admin/home')}
+            <button
+              onClick={() => navigate(isBusinessUser ? '/admin/home' : '/creator/dashboard')}
               className="w-8 h-8 flex items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 text-white shadow-lg ml-1 hover:scale-105 transition-transform"
             >
               <Menu className="w-4 h-4" />
@@ -225,7 +290,7 @@ export function TopNavbar() {
             <nav className="flex items-center gap-1">
               {navItems.map((item) => {
                 const active = isActive(item.path);
-                
+
                 // Special handling for Events - make it a dropdown
                 if (item.id === 'events') {
                   return (
@@ -234,14 +299,14 @@ export function TopNavbar() {
                         <button
                           className={cn(
                             "group flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all",
-                            active 
-                              ? "bg-white/10 text-white shadow-inner" 
+                            active
+                              ? "bg-white/10 text-white shadow-inner"
                               : "text-zinc-400 hover:text-zinc-200 hover:bg-white/5"
                           )}
                         >
                           <item.icon className={cn("w-3.5 h-3.5", active && "text-indigo-400")} />
                           <span className={cn(
-                            "hidden sm:inline-block whitespace-nowrap transition-all duration-300", 
+                            "hidden sm:inline-block whitespace-nowrap transition-all duration-300",
                             !active && "opacity-0 w-0 overflow-hidden group-hover:opacity-100 group-hover:w-auto"
                           )}>
                             {item.label}
@@ -250,7 +315,7 @@ export function TopNavbar() {
                         </button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="start" className="w-56 bg-zinc-900 border-white/10 text-white p-2 mt-2">
-                        <DropdownMenuItem 
+                        <DropdownMenuItem
                           onClick={() => {
                             navigate('/admin/events');
                             setEventsDropdownOpen(false);
@@ -261,7 +326,7 @@ export function TopNavbar() {
                           <FolderKanban className="w-4 h-4 text-zinc-400" />
                           <span>All Events</span>
                         </DropdownMenuItem>
-                        
+
                         {activeEvents.length > 0 && (
                           <>
                             <DropdownMenuSeparator className="bg-white/10 my-1" />
@@ -269,7 +334,7 @@ export function TopNavbar() {
                               Quick Access
                             </div>
                             {activeEvents.map((event) => (
-                              <DropdownMenuItem 
+                              <DropdownMenuItem
                                 key={event._id}
                                 onClick={() => {
                                   navigate(`/admin/events/${event._id}/live`);
@@ -291,7 +356,7 @@ export function TopNavbar() {
                     </DropdownMenu>
                   );
                 }
-                
+
                 // Regular nav items
                 return (
                   <button
@@ -302,14 +367,14 @@ export function TopNavbar() {
                     }}
                     className={cn(
                       "group flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium transition-all",
-                      active 
-                        ? "bg-white/10 text-white shadow-inner" 
+                      active
+                        ? "bg-white/10 text-white shadow-inner"
                         : "text-zinc-400 hover:text-zinc-200 hover:bg-white/5"
                     )}
                   >
                     <item.icon className={cn("w-3.5 h-3.5", active && "text-indigo-400")} />
                     <span className={cn(
-                      "hidden sm:inline-block whitespace-nowrap transition-all duration-300", 
+                      "hidden sm:inline-block whitespace-nowrap transition-all duration-300",
                       !active && "opacity-0 w-0 overflow-hidden group-hover:opacity-100 group-hover:w-auto group-hover:ml-1"
                     )}>
                       {item.label}
@@ -324,16 +389,16 @@ export function TopNavbar() {
             {/* User Dropdown - Minimized */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button 
+                <button
                   className="relative h-8 w-auto flex items-center gap-2 pl-1 pr-3 rounded-full bg-white/5 hover:bg-white/10 transition-colors border border-white/5 group outline-none focus:ring-2 focus:ring-indigo-500/50"
                 >
                   {/* Avatar */}
                   <div className="relative w-6 h-6 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center overflow-hidden shadow-sm">
                     {currentUser?.avatar_url ? (
-                      <img 
-                        src={currentUser.avatar_url} 
-                        alt="User" 
-                        className="w-full h-full object-cover opacity-100 group-hover:opacity-0 transition-opacity absolute inset-0" 
+                      <img
+                        src={currentUser.avatar_url}
+                        alt="User"
+                        className="w-full h-full object-cover opacity-100 group-hover:opacity-0 transition-opacity absolute inset-0"
                       />
                     ) : (
                       <span className="text-[9px] font-bold opacity-100 group-hover:opacity-0 transition-opacity absolute inset-0 flex items-center justify-center">
@@ -343,47 +408,88 @@ export function TopNavbar() {
                     <Settings className="w-3 h-3 absolute opacity-0 group-hover:opacity-100 transition-opacity" />
                   </div>
 
-                  {/* Minimized Token Count */}
-                  <div className="flex items-center gap-1 text-[10px] font-medium text-zinc-300">
-                     <span className="w-1 h-1 rounded-full bg-green-500" />
-                     <span className="text-yellow-500 flex items-center gap-0.5">
+                  {/* Minimized Token Count - Business Only (inside button) */}
+                  {isBusinessUser && (
+                    <div className="flex items-center gap-1 text-[10px] font-medium text-zinc-300">
+                      <span className="w-1 h-1 rounded-full bg-green-500" />
+                      <span className="text-yellow-500 flex items-center gap-0.5">
                         <Coins className="w-2.5 h-2.5" />
                         {tokens >= 1000 ? `${(tokens / 1000).toFixed(1)}k` : tokens}
-                     </span>
-                  </div>
+                      </span>
+                    </div>
+                  )}
                 </button>
               </DropdownMenuTrigger>
+
+              {/* Individual Token Display - Circular Percentage (outside button) */}
+              {!isBusinessUser && (
+                <div className="flex items-center justify-center p-1" title={`${tokens} tokens remaining`}>
+                  <div className="relative w-6 h-6 flex items-center justify-center">
+                    <svg className="w-full h-full transform -rotate-90">
+                      <circle
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        className="text-white/10"
+                        strokeWidth="2"
+                        fill="none"
+                        stroke="currentColor"
+                      />
+                      <circle
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        className={cn(
+                          "transition-all duration-500",
+                          tokens > 20 ? "text-indigo-500" : "text-amber-500"
+                        )}
+                        strokeWidth="2"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeDasharray={63} // Circumference of r=10 is ~62.8
+                        strokeDashoffset={63 - (63 * (Math.min(tokens, 100) / 100))}
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                    <Zap className="w-2.5 h-2.5 absolute text-white/50" />
+                  </div>
+                </div>
+              )}
               <DropdownMenuContent align="end" className="w-56 bg-zinc-900 border-white/10 text-white p-2 mt-2">
                 <div className="px-2 py-1.5">
                   <p className="text-sm font-medium text-white">{currentUser?.name || currentUser?.full_name || currentUser?.username || 'User'}</p>
                   <p className="text-xs text-zinc-500 truncate">{currentUser?.email}</p>
                   <div className="flex items-center gap-1.5 mt-1.5 text-[10px] text-zinc-400">
-                      <span className="capitalize bg-white/5 px-1.5 py-0.5 rounded">{userRole.replace(/_/g, ' ')}</span>
+                    <span className="capitalize bg-white/5 px-1.5 py-0.5 rounded">{userRole.replace(/_/g, ' ')}</span>
+                    {isBusinessUser && (
                       <span className="text-yellow-500 flex items-center gap-1">
                         <Coins className="w-3 h-3" /> {tokens.toLocaleString()} Tokens
                       </span>
+                    )}
                   </div>
                 </div>
                 <DropdownMenuSeparator className="bg-white/10" />
-                
-                <DropdownMenuItem 
-                  onClick={() => navigate('/admin/home')}
+
+                <DropdownMenuItem
+                  onClick={() => navigate(isBusinessUser ? '/admin/home' : '/creator/dashboard')}
                   className="flex items-center gap-2 px-2 py-1.5 cursor-pointer hover:bg-white/5 rounded-md focus:bg-white/5 focus:text-white"
                 >
                   <Menu className="w-4 h-4 text-zinc-400" />
                   <span>Home</span>
                 </DropdownMenuItem>
 
-                <DropdownMenuItem 
-                  onClick={() => navigate(`/profile/${currentUser?.username || currentUser?.slug}`)}
-                  className="flex items-center gap-2 px-2 py-1.5 cursor-pointer hover:bg-white/5 rounded-md focus:bg-white/5 focus:text-white"
-                >
-                  <User className="w-4 h-4 text-zinc-400" />
-                  <span>View Profile</span>
-                </DropdownMenuItem>
-                
+                {(currentUser?.slug || currentUser?.username) && (
+                  <DropdownMenuItem
+                    onClick={() => navigate(`/profile/${currentUser?.slug || currentUser?.username}`)}
+                    className="flex items-center gap-2 px-2 py-1.5 cursor-pointer hover:bg-white/5 rounded-md focus:bg-white/5 focus:text-white"
+                  >
+                    <User className="w-4 h-4 text-zinc-400" />
+                    <span>View Profile</span>
+                  </DropdownMenuItem>
+                )}
+
                 {isBusinessUser ? (
-                  <DropdownMenuItem 
+                  <DropdownMenuItem
                     onClick={() => navigate('/admin/settings/business')}
                     className="flex items-center gap-2 px-2 py-1.5 cursor-pointer hover:bg-white/5 rounded-md focus:bg-white/5 focus:text-white text-indigo-400"
                   >
@@ -391,26 +497,26 @@ export function TopNavbar() {
                     <span>Business Settings</span>
                   </DropdownMenuItem>
                 ) : (
-                  <DropdownMenuItem 
-                    onClick={() => navigate('/admin/settings/creator')}
+                  <DropdownMenuItem
+                    onClick={() => navigate('/creator/settings')}
                     className="flex items-center gap-2 px-2 py-1.5 cursor-pointer hover:bg-white/5 rounded-md focus:bg-white/5 focus:text-white"
                   >
                     <Settings className="w-4 h-4 text-zinc-400" />
                     <span>Account Settings</span>
                   </DropdownMenuItem>
                 )}
-                
-                <DropdownMenuItem 
+
+                <DropdownMenuItem
                   onClick={() => window.open('https://discord.gg/pictureme', '_blank')}
                   className="flex items-center gap-2 px-2 py-1.5 cursor-pointer hover:bg-white/5 rounded-md focus:bg-white/5 focus:text-white"
                 >
                   <Users className="w-4 h-4 text-zinc-400" />
                   <span>Community</span>
                 </DropdownMenuItem>
-                
+
                 <DropdownMenuSeparator className="bg-white/10" />
-                
-                <DropdownMenuItem 
+
+                <DropdownMenuItem
                   onClick={handleLogout}
                   className="flex items-center gap-2 px-2 py-1.5 cursor-pointer hover:bg-white/5 rounded-md focus:bg-white/5 focus:text-white text-red-400 hover:text-red-300"
                 >
@@ -426,3 +532,4 @@ export function TopNavbar() {
     </AnimatePresence>
   );
 }
+

@@ -54,7 +54,7 @@ export default function SuperAdminBilling() {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [editingPackage, setEditingPackage] = useState<TokenPackage | null>(null);
-    
+
     // Form state
     const [formData, setFormData] = useState({
         name: "",
@@ -74,11 +74,11 @@ export default function SuperAdminBilling() {
         try {
             setIsLoading(true);
             const token = localStorage.getItem("auth_token");
-            
+
             const response = await fetch(`${ENV.API_URL}/api/admin/token-packages`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
-            
+
             if (response.ok) {
                 const data = await response.json();
                 setPackages(data);
@@ -101,11 +101,11 @@ export default function SuperAdminBilling() {
     const fetchTransactions = async () => {
         try {
             const token = localStorage.getItem("auth_token");
-            
+
             const response = await fetch(`${ENV.API_URL}/api/admin/token-transactions?limit=20`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
-            
+
             if (response.ok) {
                 const data = await response.json();
                 setTransactions(data);
@@ -150,10 +150,10 @@ export default function SuperAdminBilling() {
         setIsSaving(true);
         try {
             const token = localStorage.getItem("auth_token");
-            const url = editingPackage 
+            const url = editingPackage
                 ? `${ENV.API_URL}/api/admin/token-packages/${editingPackage.id}`
                 : `${ENV.API_URL}/api/admin/token-packages`;
-            
+
             const response = await fetch(url, {
                 method: editingPackage ? 'PUT' : 'POST',
                 headers: {
@@ -184,7 +184,7 @@ export default function SuperAdminBilling() {
 
         try {
             const token = localStorage.getItem("auth_token");
-            
+
             const response = await fetch(`${ENV.API_URL}/api/admin/token-packages/${id}`, {
                 method: 'DELETE',
                 headers: { Authorization: `Bearer ${token}` }
@@ -205,7 +205,7 @@ export default function SuperAdminBilling() {
     const togglePackageStatus = async (pkg: TokenPackage) => {
         try {
             const token = localStorage.getItem("auth_token");
-            
+
             const response = await fetch(`${ENV.API_URL}/api/admin/token-packages/${pkg.id}`, {
                 method: 'PUT',
                 headers: {
@@ -233,7 +233,7 @@ export default function SuperAdminBilling() {
 
         try {
             const token = localStorage.getItem("auth_token");
-            
+
             const response = await fetch(`${ENV.API_URL}/api/admin/token-packages/cleanup`, {
                 method: 'DELETE',
                 headers: { Authorization: `Bearer ${token}` }
@@ -272,16 +272,16 @@ export default function SuperAdminBilling() {
                         <h2 className="text-xl font-semibold">Token Packages ({packages.length})</h2>
                         <div className="flex items-center gap-2">
                             {packages.length > 4 && (
-                                <Button 
-                                    variant="outline" 
+                                <Button
+                                    variant="outline"
                                     onClick={cleanupDuplicates}
                                     className="border-amber-500/20 text-amber-400 hover:bg-amber-500/10"
                                 >
                                     <Sparkles className="w-4 h-4 mr-2" /> Clean Duplicates
                                 </Button>
                             )}
-                            <Button 
-                                variant="outline" 
+                            <Button
+                                variant="outline"
                                 onClick={fetchPackages}
                                 className="border-white/10"
                             >
@@ -347,9 +347,9 @@ export default function SuperAdminBilling() {
                                                         checked={pkg.is_active}
                                                         onCheckedChange={() => togglePackageStatus(pkg)}
                                                     />
-                                                    <Badge 
-                                                        variant="outline" 
-                                                        className={pkg.is_active 
+                                                    <Badge
+                                                        variant="outline"
+                                                        className={pkg.is_active
                                                             ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
                                                             : "bg-zinc-500/10 text-zinc-400 border-zinc-500/20"
                                                         }
@@ -446,8 +446,8 @@ export default function SuperAdminBilling() {
                             <CardContent className="space-y-4">
                                 <div className="space-y-2">
                                     <Label>FAL.ai Cost per Image ($)</Label>
-                                    <Input 
-                                        type="number" 
+                                    <Input
+                                        type="number"
                                         step="0.001"
                                         defaultValue="0.02"
                                         className="bg-zinc-950 border-white/10"
@@ -455,16 +455,16 @@ export default function SuperAdminBilling() {
                                 </div>
                                 <div className="space-y-2">
                                     <Label>Tokens per Generation</Label>
-                                    <Input 
-                                        type="number" 
+                                    <Input
+                                        type="number"
                                         defaultValue="1"
                                         className="bg-zinc-950 border-white/10"
                                     />
                                 </div>
                                 <div className="space-y-2">
                                     <Label>Desired Margin (%)</Label>
-                                    <Input 
-                                        type="number" 
+                                    <Input
+                                        type="number"
                                         defaultValue="50"
                                         className="bg-zinc-950 border-white/10"
                                     />
@@ -510,7 +510,7 @@ export default function SuperAdminBilling() {
                             {editingPackage ? 'Edit Package' : 'Create Token Package'}
                         </DialogTitle>
                         <DialogDescription className="text-zinc-400">
-                            {editingPackage 
+                            {editingPackage
                                 ? 'Update the package details below.'
                                 : 'Create a new token package for users to purchase.'
                             }
@@ -527,7 +527,7 @@ export default function SuperAdminBilling() {
                                 placeholder="Pro Pack"
                             />
                         </div>
-                        
+
                         <div className="space-y-2">
                             <Label>Description</Label>
                             <Input
@@ -592,14 +592,14 @@ export default function SuperAdminBilling() {
                     </div>
 
                     <DialogFooter>
-                        <Button 
-                            variant="outline" 
+                        <Button
+                            variant="outline"
                             onClick={() => setIsDialogOpen(false)}
                             className="border-white/10"
                         >
                             Cancel
                         </Button>
-                        <Button 
+                        <Button
                             onClick={savePackage}
                             disabled={isSaving}
                             className="bg-indigo-600 hover:bg-indigo-700"

@@ -23,6 +23,7 @@ import SuperAdminContent from "./components/super-admin/SuperAdminContent";
 import SuperAdminLayout from "./components/super-admin/SuperAdminLayout";
 import SuperAdminOverview from "./components/super-admin/SuperAdminOverview";
 import SuperAdminUsers from "./components/super-admin/SuperAdminUsers";
+import SuperAdminTiers from "./components/super-admin/SuperAdminTiers";
 import SuperAdminApplications from "./components/super-admin/SuperAdminApplications";
 import SuperAdminBilling from "./components/super-admin/SuperAdminBilling";
 import SuperAdminEvents from "./components/super-admin/SuperAdminEvents";
@@ -48,7 +49,9 @@ import { CreatorLayout } from "./components/creator/CreatorLayout";
 import CreatorDashboard from "./pages/creator/CreatorDashboard";
 import CreatorPlaceholder from "./pages/creator/CreatorPlaceholder";
 import CreatorCreatePage from "./pages/creator/CreatorCreatePage";
+import BoothDashboard from "./pages/creator/BoothDashboard";
 import CreatorBoothPage from "./pages/creator/CreatorBoothPage";
+import CreatorBoothEditor from "./pages/creator/CreatorBoothEditor";
 import CreatorStudioPage from "./pages/creator/CreatorStudioPage";
 import CreatorTemplatesPage from "./pages/creator/CreatorTemplatesPage";
 import CreatorBillingPage from "./pages/creator/CreatorBillingPage";
@@ -77,7 +80,7 @@ const SettingsRedirect = () => {
   const user = getCurrentUser();
   const isBusiness = user?.role?.startsWith("business") && user.role !== "business_pending";
   return (
-    <Navigate 
+    <Navigate
       to={isBusiness ? "/admin/settings/business" : "/admin/settings/creator"}
       replace
     />
@@ -126,12 +129,12 @@ const getApiUrl = (): string => {
 const AppContent = () => {
   const location = useLocation();
   const apiUrl = getApiUrl();
-  
+
   // Only initialize CopilotKit on admin, super-admin, and creator pages
-  const shouldInitCopilot = location.pathname.startsWith('/admin') || 
-                            location.pathname.startsWith('/super-admin') ||
-                            location.pathname.startsWith('/creator');
-  
+  const shouldInitCopilot = location.pathname.startsWith('/admin') ||
+    location.pathname.startsWith('/super-admin') ||
+    location.pathname.startsWith('/creator');
+
   return (
     <>
       {shouldInitCopilot && apiUrl && (
@@ -144,145 +147,187 @@ const AppContent = () => {
       )}
       <TopNavbar />
       <Routes>
-            {/* Root shows Landing Page */}
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/terms" element={<TermsPage />} />
-            <Route path="/privacy" element={<PrivacyPage />} />
+        {/* Root shows Landing Page */}
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/terms" element={<TermsPage />} />
+        <Route path="/privacy" element={<PrivacyPage />} />
 
-            {/* Share page - no sidebar, clean display */}
-            <Route path="/share/:shareCode" element={<SharePage />} />
+        {/* Share page - no sidebar, clean display */}
+        <Route path="/share/:shareCode" element={<SharePage />} />
 
-            {/* Short URL event routes - /e/:eventId/:eventSlug */}
-            <Route path="/e/:eventId/:eventSlug" element={<ShortUrlEventPage />} />
-            <Route path="/e/:eventId/:eventSlug/*" element={<ShortUrlEventPage />} />
+        {/* Short URL event routes - /e/:eventId/:eventSlug */}
+        <Route path="/e/:eventId/:eventSlug" element={<ShortUrlEventPage />} />
+        <Route path="/e/:eventId/:eventSlug/*" element={<ShortUrlEventPage />} />
 
-            {/* Admin routes - no sidebar */}
-            <Route path="/apply" element={<ApplyPage />} />
+        {/* Admin routes - no sidebar */}
+        <Route path="/apply" element={<ApplyPage />} />
 
-            {/* Super Admin Routes */}
-            <Route path="/super-admin" element={<SuperAdminLayout />}>
-              <Route index element={<SuperAdminOverview />} />
-              <Route path="users" element={<SuperAdminUsers />} />
-              <Route path="applications" element={<SuperAdminApplications />} />
-              <Route path="billing" element={<SuperAdminBilling />} />
-              <Route path="events" element={<SuperAdminEvents />} />
-              <Route path="models" element={<SuperAdminAIModels />} />
-              <Route path="marketplace" element={<SuperAdminMarketplace />} />
-              <Route path="content" element={<SuperAdminContent />} />
-              <Route path="analytics" element={<SuperAdminAnalytics />} />
-              <Route path="settings" element={<SuperAdminSettings />} />
-              <Route path="devtools" element={<SuperAdminDevTools />} />
-              <Route path="*" element={<SuperAdminOverview />} />
-            </Route>
+        {/* Super Admin Routes */}
+        <Route path="/super-admin" element={<SuperAdminLayout />}>
+          <Route index element={<SuperAdminOverview />} />
+          <Route path="users" element={<SuperAdminUsers />} />
+          <Route path="tiers" element={<SuperAdminTiers />} />
+          <Route path="applications" element={<SuperAdminApplications />} />
+          <Route path="billing" element={<SuperAdminBilling />} />
+          <Route path="events" element={<SuperAdminEvents />} />
+          <Route path="models" element={<SuperAdminAIModels />} />
+          <Route path="marketplace" element={<SuperAdminMarketplace />} />
+          <Route path="content" element={<SuperAdminContent />} />
+          <Route path="analytics" element={<SuperAdminAnalytics />} />
+          <Route path="settings" element={<SuperAdminSettings />} />
+          <Route path="devtools" element={<SuperAdminDevTools />} />
+          <Route path="*" element={<SuperAdminOverview />} />
+        </Route>
 
-            {/* CREATOR ROUTES (INDIVIDUAL) */}
-            <Route path="/creator" element={
-              <CreatorOnly>
-                <CreatorLayout />
-              </CreatorOnly>
-            }>
-               <Route index element={<Navigate to="/creator/dashboard" replace />} />
-               <Route path="dashboard" element={<CreatorDashboard />} />
-               <Route path="chat" element={<ChatPage />} />
-               <Route path="create" element={<Navigate to="/creator/studio" replace />} />
-               <Route path="booth" element={<Navigate to="/creator/studio" replace />} />
-               <Route path="booth/:eventId" element={<Navigate to="/creator/studio" replace />} />
-               <Route path="studio" element={<CreatorStudioPage />} />
-               <Route path="templates" element={<CreatorTemplatesPage />} />
-               <Route path="billing" element={<CreatorBillingPage />} />
-               <Route path="support" element={<CreatorSupportPage />} />
-               <Route path="settings" element={<CreatorSettingsPage />} />
-               <Route path="*" element={<CreatorPlaceholder />} />
-            </Route>
+        {/* CREATOR ROUTES (INDIVIDUAL) */}
+        <Route path="/creator" element={
+          <CreatorOnly>
+            <CreatorLayout />
+          </CreatorOnly>
+        }>
+          <Route index element={<Navigate to="/creator/dashboard" replace />} />
+          <Route path="dashboard" element={<CreatorDashboard />} />
+          <Route path="chat" element={<ChatPage />} />
+          <Route path="create" element={<Navigate to="/creator/studio" replace />} />
+          <Route path="booth" element={<BoothDashboard />} />
+          <Route path="booth/:eventId" element={<CreatorBoothPage />} />
+          <Route path="booth/:eventId/edit" element={<CreatorBoothEditor />} />
+          <Route path="studio" element={<CreatorStudioPage />} />
+          <Route path="templates" element={<CreatorTemplatesPage />} />
+          <Route path="billing" element={<CreatorBillingPage />} />
+          <Route path="support" element={<CreatorSupportPage />} />
+          <Route path="settings" element={<CreatorSettingsPage />} />
+          <Route path="*" element={<CreatorPlaceholder />} />
+        </Route>
 
-            {/* ADMIN ROUTES (BUSINESS) */}
-            <Route path="/admin/auth" element={<AdminAuth />} />
-            <Route path="/admin/register" element={<AdminRegister />} />
-            
-            {/* Main Admin Redirect */}
-            <Route path="/admin" element={
-               // If business, go to home. If creator, go to creator dashboard.
-               // We can use a component to check this or just rely on guards.
-               // For now, redirect to home, and let HomeDashboard redirect creator if needed, 
-               // OR explicit check here.
-               <Navigate to="/admin/home" replace />
-            } />
+        {/* ADMIN ROUTES (BUSINESS) */}
+        <Route path="/admin/auth" element={<AdminAuth />} />
+        <Route path="/admin/register" element={<AdminRegister />} />
 
-            <Route path="/admin/home" element={
-              <BusinessOnly>
-                <HomeDashboard />
-              </BusinessOnly>
-            } />
-            
-            <Route path="/admin/events" element={
-              <BusinessOnly>
-                <AdminDashboard />
-              </BusinessOnly>
-            } />
-            <Route path="/admin/events/create" element={<AdminEventForm />} />
-            <Route path="/admin/events/edit/:eventId" element={<AdminEventForm />} />
-            <Route path="/admin/events/:eventId/photos" element={<AdminEventPhotos />} />
-            <Route path="/admin/events/:eventId/live" element={<LiveEventPage />} />
-            
-            <Route path="/admin/settings" element={<SettingsRedirect />} />
-            {/* Removed CreatorSettingsPage from here, moved to /creator/settings */}
-            {/* But keep it here temporarily for transition if needed, but safer to force separate paths */}
-            <Route path="/admin/settings/creator" element={<Navigate to="/creator/settings" replace />} />
+        {/* Main Admin Redirect */}
+        <Route path="/admin" element={
+          // If business, go to home. If creator, go to creator dashboard.
+          // We can use a component to check this or just rely on guards.
+          // For now, redirect to home, and let HomeDashboard redirect creator if needed, 
+          // OR explicit check here.
+          <Navigate to="/admin/home" replace />
+        } />
 
-            <Route
-              path="/admin/settings/business"
-              element={
-                <BusinessOnly>
-                  <BusinessSettingsPage />
-                </BusinessOnly>
-              }
-            />
-            {/* Billing and Tokens now redirect to Business Settings */}
-            <Route path="/admin/billing" element={<Navigate to="/admin/settings/business" replace />} />
-            <Route path="/admin/tokens" element={<Navigate to="/admin/settings/business" replace />} />
-            <Route path="/admin/marketplace" element={<AdminDashboard />} />
-            <Route path="/admin/chat" element={
-              <BusinessOnly>
-                <div className="min-h-screen bg-black pt-24 px-4 pb-4">
-                  <div className="max-w-7xl mx-auto">
-                    <ChatPage />
-                  </div>
-                </div>
-              </BusinessOnly>
-            } />
-            <Route path="/admin/playground" element={<PlaygroundPage />} />
-            <Route path="/admin/analytics" element={<AdminDashboard />} />
-            <Route path="/admin/studio" element={<AdminDashboard />} />
-            <Route path="/admin/albums" element={<AdminDashboard />} />
-            <Route path="/admin/organization" element={<OrganizationSettingsPage />} />
-            <Route path="/admin/business" element={<Navigate to="/admin/settings/business" replace />} />
-            <Route path="/admin/staff/:eventId" element={<StaffDashboard />} />
-            {/* Catch-all for unknown admin routes - show 404 */}
-            <Route path="/admin/*" element={<NotFound />} />
+        <Route path="/admin/home" element={
+          <BusinessOnly>
+            <HomeDashboard />
+          </BusinessOnly>
+        } />
 
-            {/* Public Profile */}
-            <Route path="/profile/:username" element={<PublicProfile />} />
+        <Route path="/admin/events" element={
+          <BusinessOnly>
+            <AdminDashboard />
+          </BusinessOnly>
+        } />
+        <Route path="/admin/events/create" element={
+          <BusinessOnly>
+            <AdminEventForm />
+          </BusinessOnly>
+        } />
+        <Route path="/admin/events/edit/:eventId" element={
+          <BusinessOnly>
+            <AdminEventForm />
+          </BusinessOnly>
+        } />
+        <Route path="/admin/events/:eventId/photos" element={
+          <BusinessOnly>
+            <AdminEventPhotos />
+          </BusinessOnly>
+        } />
+        <Route path="/admin/events/:eventId/live" element={
+          <BusinessOnly>
+            <LiveEventPage />
+          </BusinessOnly>
+        } />
 
-            {/* Dynamic event routes - no sidebar */}
-            <Route path="/:userSlug/:eventSlug" element={<PhotoBoothPage />} />
-            <Route path="/:userSlug/:eventSlug/feed" element={<EventFeedPage />} />
-            <Route path="/:userSlug/:eventSlug/album/:albumId" element={<AlbumFeedPage />} />
-            <Route path="/:userSlug/:eventSlug/staff" element={<StaffDashboard />} />
-            <Route path="/:userSlug/:eventSlug/display" element={<Navigate to="../bigscreen" replace />} />
-            
-            {/* Station-specific routes for multi-station flow */}
-            <Route path="/:userSlug/:eventSlug/registration" element={<PhotoBoothPage />} />
-            <Route path="/:userSlug/:eventSlug/booth" element={<PhotoBoothPage />} />
-            <Route path="/:userSlug/:eventSlug/playground" element={<PhotoBoothPage />} />
-            <Route path="/:userSlug/:eventSlug/viewer" element={<ViewerStationPage />} />
-            <Route path="/:userSlug/:eventSlug/bigscreen" element={<BigScreenPage />} />
+        <Route path="/admin/settings" element={<SettingsRedirect />} />
+        {/* Removed CreatorSettingsPage from here, moved to /creator/settings */}
+        {/* But keep it here temporarily for transition if needed, but safer to force separate paths */}
+        <Route path="/admin/settings/creator" element={<Navigate to="/creator/settings" replace />} />
 
-            {/* Legacy Index page (if needed) */}
-            <Route path="/legacy" element={<Index />} />
+        <Route
+          path="/admin/settings/business"
+          element={
+            <BusinessOnly>
+              <BusinessSettingsPage />
+            </BusinessOnly>
+          }
+        />
+        {/* Billing and Tokens now redirect to Business Settings */}
+        <Route path="/admin/billing" element={<Navigate to="/admin/settings/business" replace />} />
+        <Route path="/admin/tokens" element={<Navigate to="/admin/settings/business" replace />} />
+        <Route path="/admin/marketplace" element={
+          <BusinessOnly>
+            <AdminDashboard />
+          </BusinessOnly>
+        } />
+        <Route path="/admin/chat" element={
+          <BusinessOnly>
+            <div className="min-h-screen bg-black pt-24 px-4 pb-4">
+              <div className="max-w-7xl mx-auto">
+                <ChatPage />
+              </div>
+            </div>
+          </BusinessOnly>
+        } />
+        <Route path="/admin/playground" element={
+          <BusinessOnly>
+            <PlaygroundPage />
+          </BusinessOnly>
+        } />
+        <Route path="/admin/analytics" element={
+          <BusinessOnly>
+            <AdminDashboard />
+          </BusinessOnly>
+        } />
+        <Route path="/admin/studio" element={
+          <BusinessOnly>
+            <AdminDashboard />
+          </BusinessOnly>
+        } />
+        <Route path="/admin/albums" element={
+          <BusinessOnly>
+            <AdminDashboard />
+          </BusinessOnly>
+        } />
+        <Route path="/admin/organization" element={
+          <BusinessOnly>
+            <OrganizationSettingsPage />
+          </BusinessOnly>
+        } />
+        <Route path="/admin/business" element={<Navigate to="/admin/settings/business" replace />} />
+        <Route path="/admin/staff/:eventId" element={<StaffDashboard />} />
+        {/* Catch-all for unknown admin routes - show 404 */}
+        <Route path="/admin/*" element={<NotFound />} />
 
-            {/* 404 */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+        {/* Public Profile */}
+        <Route path="/profile/:username" element={<PublicProfile />} />
+
+        {/* Dynamic event routes - no sidebar */}
+        <Route path="/:userSlug/:eventSlug" element={<PhotoBoothPage />} />
+        <Route path="/:userSlug/:eventSlug/feed" element={<EventFeedPage />} />
+        <Route path="/:userSlug/:eventSlug/album/:albumId" element={<AlbumFeedPage />} />
+        <Route path="/:userSlug/:eventSlug/staff" element={<StaffDashboard />} />
+        <Route path="/:userSlug/:eventSlug/display" element={<Navigate to="../bigscreen" replace />} />
+
+        {/* Station-specific routes for multi-station flow */}
+        <Route path="/:userSlug/:eventSlug/registration" element={<PhotoBoothPage />} />
+        <Route path="/:userSlug/:eventSlug/booth" element={<PhotoBoothPage />} />
+        <Route path="/:userSlug/:eventSlug/playground" element={<PhotoBoothPage />} />
+        <Route path="/:userSlug/:eventSlug/viewer" element={<ViewerStationPage />} />
+        <Route path="/:userSlug/:eventSlug/bigscreen" element={<BigScreenPage />} />
+
+        {/* Legacy Index page (if needed) */}
+        <Route path="/legacy" element={<Index />} />
+
+        {/* 404 */}
+        <Route path="*" element={<NotFound />} />
+      </Routes >
     </>
   );
 };

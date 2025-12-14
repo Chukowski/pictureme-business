@@ -52,7 +52,9 @@ import {
     Shield,
     User,
     Crown,
-    AlertCircle
+    AlertCircle,
+    Trash2,
+    LogIn
 } from "lucide-react";
 import { toast } from "sonner";
 import { ENV } from "@/config/env";
@@ -117,6 +119,19 @@ const ROLE_OPTIONS = [
     { value: 'superadmin', label: 'Super Admin', color: 'border-red-500 text-red-400 bg-red-500/10' },
 ];
 
+const TIER_CONFIG: Record<string, { label: string, color: string }> = {
+    'free': { label: 'Free', color: 'border-zinc-500 text-zinc-400 bg-zinc-500/10' },
+    'spark': { label: 'Spark', color: 'border-pink-500 text-pink-400 bg-pink-500/10' },
+    'vibe': { label: 'Vibe', color: 'border-purple-500 text-purple-400 bg-purple-500/10' },
+    'studio': { label: 'Studio', color: 'border-indigo-500 text-indigo-400 bg-indigo-500/10' },
+    'event_starter': { label: 'Event Starter', color: 'border-blue-500 text-blue-400 bg-blue-500/10' },
+    'event-starter': { label: 'Event Starter', color: 'border-blue-500 text-blue-400 bg-blue-500/10' },
+    'event_pro': { label: 'Event Pro', color: 'border-cyan-500 text-cyan-400 bg-cyan-500/10' },
+    'event-pro': { label: 'Event Pro', color: 'border-cyan-500 text-cyan-400 bg-cyan-500/10' },
+    'masters': { label: 'Masters', color: 'border-amber-500 text-amber-400 bg-amber-500/10' },
+    'enterprise': { label: 'Enterprise', color: 'border-emerald-500 text-emerald-400 bg-emerald-500/10' },
+};
+
 export default function SuperAdminUsers() {
     const [searchTerm, setSearchTerm] = useState("");
     const [users, setUsers] = useState<User[]>([]);
@@ -126,6 +141,7 @@ export default function SuperAdminUsers() {
     const [isPricingDialogOpen, setIsPricingDialogOpen] = useState(false);
     const [isTokensDialogOpen, setIsTokensDialogOpen] = useState(false);
     const [isEditUserDialogOpen, setIsEditUserDialogOpen] = useState(false);
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [modelPricing, setModelPricing] = useState<ModelPricing[]>([]);
     const [enterpriseSettings, setEnterpriseSettings] = useState<EnterpriseSettings | null>(null);
     const [isSaving, setIsSaving] = useState(false);
@@ -137,6 +153,7 @@ export default function SuperAdminUsers() {
     // Edit user form
     const [editForm, setEditForm] = useState({
         role: "",
+        subscription_tier: "",
         is_active: true,
         tokens_remaining: 0
     });
@@ -150,12 +167,12 @@ export default function SuperAdminUsers() {
             setIsLoading(true);
             setError(null);
             const token = localStorage.getItem("auth_token");
-            
+
             // Fetch all users
             const allUsersRes = await fetch(`${ENV.API_URL}/api/admin/users?limit=200`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
-            
+
             if (allUsersRes.ok) {
                 const data = await allUsersRes.json();
                 console.log("Users data:", data);
@@ -171,10 +188,10 @@ export default function SuperAdminUsers() {
                 const enterpriseRes = await fetch(`${ENV.API_URL}/api/admin/enterprise/users`, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
-                
+
                 if (enterpriseRes.ok) {
                     const enterpriseData = await enterpriseRes.json();
-                    setEnterpriseUsers(enterpriseData);
+                    setEnterpriseUsers(Array.isArray(enterpriseData) ? enterpriseData : []);
                 }
             } catch (e) {
                 console.log("Enterprise users fetch failed (may not exist):", e);
@@ -192,13 +209,13 @@ export default function SuperAdminUsers() {
         const userId = user.user_id || user.id;
         setSelectedUser(user);
         setIsPricingDialogOpen(true);
-        
+
         try {
             const token = localStorage.getItem("auth_token");
             const response = await fetch(`${ENV.API_URL}/api/admin/enterprise/users/${userId}/pricing`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
-            
+
             if (response.ok) {
                 const data = await response.json();
                 setModelPricing(data.pricing || []);
@@ -232,6 +249,7 @@ export default function SuperAdminUsers() {
         setSelectedUser(user);
         setEditForm({
             role: user.role || 'user',
+            subscription_tier: user.subscription_tier || 'free',
             is_active: user.is_active !== false,
             tokens_remaining: user.tokens_remaining || 0
         });
@@ -254,11 +272,11 @@ export default function SuperAdminUsers() {
     const savePricing = async () => {
         if (!selectedUser) return;
         const userId = (selectedUser as any).user_id || selectedUser.id;
-        
+
         setIsSaving(true);
         try {
             const token = localStorage.getItem("auth_token");
-            
+
             const customPricing = modelPricing
                 .filter(p => p.has_custom_pricing && p.custom_cost !== null)
                 .map(p => ({
@@ -320,7 +338,7 @@ export default function SuperAdminUsers() {
     const addTokens = async () => {
         if (!selectedUser || tokensToAdd === 0) return;
         const userId = (selectedUser as any).user_id || selectedUser.id;
-        
+
         setIsSaving(true);
         try {
             const token = localStorage.getItem("auth_token");
@@ -352,7 +370,7 @@ export default function SuperAdminUsers() {
     const saveUserEdit = async () => {
         if (!selectedUser) return;
         const userId = (selectedUser as any).user_id || selectedUser.id;
-        
+
         setIsSaving(true);
         try {
             const token = localStorage.getItem("auth_token");
@@ -383,6 +401,98 @@ export default function SuperAdminUsers() {
         }
     };
 
+    const openDeleteDialog = (user: User) => {
+        setSelectedUser(user);
+        setIsDeleteDialogOpen(true);
+    };
+
+    const deleteUser = async () => {
+        if (!selectedUser) return;
+        const userId = (selectedUser as any).user_id || selectedUser.id;
+
+        setIsSaving(true);
+        try {
+            const token = localStorage.getItem("auth_token");
+            const response = await fetch(
+                `${ENV.API_URL}/api/admin/users/${userId}`,
+                {
+                    method: 'DELETE',
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
+                }
+            );
+
+            if (!response.ok) {
+                throw new Error('Failed to delete user');
+            }
+
+            toast.success("User deleted successfully");
+            setIsDeleteDialogOpen(false);
+            fetchUsers();
+        } catch (error) {
+            console.error("Error deleting user:", error);
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleImpersonate = async (user: User) => {
+        if (!confirm(`Are you sure you want to log in as ${user.email}? You will be logged out of your current admin session.`)) {
+            return;
+        }
+
+        try {
+            const token = localStorage.getItem("auth_token");
+            const response = await fetch(`${ENV.API_URL}/api/admin/impersonate`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify({ email: user.email })
+            });
+
+            if (!response.ok) {
+
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.error || 'Failed to impersonate user');
+            }
+
+            const data = await response.json();
+
+            // Save current session for recovery
+            localStorage.setItem("admin_recovery_token", token || "");
+            const currentUser = localStorage.getItem("user");
+            if (currentUser) {
+                localStorage.setItem("admin_recovery_user", currentUser);
+            }
+
+            // Clear current session
+            localStorage.removeItem("auth_token");
+            localStorage.removeItem("user");
+            // Set new session
+            localStorage.setItem("auth_token", data.token);
+            localStorage.setItem("user", JSON.stringify(data.user));
+
+            toast.success(`Logged in as ${data.user.email}`);
+
+            // Dispatch event to update auth state across app
+            window.dispatchEvent(new Event("auth-change"));
+
+            // Redirect based on role
+            if (data.user.role.startsWith('business')) {
+                window.location.href = "/admin/home";
+            } else {
+                window.location.href = "/creator/dashboard";
+            }
+
+        } catch (error: any) {
+            console.error("Impersonation error:", error);
+            toast.error(error.message || "Failed to impersonate user");
+        }
+    };
+
     const getRoleBadge = (role: string) => {
         const roleConfig = ROLE_OPTIONS.find(r => r.value === role) || ROLE_OPTIONS[0];
         return (
@@ -390,6 +500,24 @@ export default function SuperAdminUsers() {
                 {roleConfig.label}
             </Badge>
         );
+    };
+
+    const getUserBadge = (user: User) => {
+        // If user has a subscription tier, prioritize showing that (unless they are superadmin/admin)
+        if (user.role !== 'superadmin' && user.role !== 'admin' && user.subscription_tier) {
+            const tierKey = user.subscription_tier.toLowerCase().replace(/ /g, '_');
+            // Try to find exact match or normalized match
+            const tierConfig = TIER_CONFIG[user.subscription_tier] || TIER_CONFIG[tierKey];
+
+            if (tierConfig) {
+                return (
+                    <Badge variant="outline" className={tierConfig.color}>
+                        {tierConfig.label}
+                    </Badge>
+                );
+            }
+        }
+        return getRoleBadge(user.role || 'user');
     };
 
     const getRoleIcon = (role: string) => {
@@ -409,7 +537,7 @@ export default function SuperAdminUsers() {
         (user.username || '')?.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    const filteredEnterpriseUsers = enterpriseUsers.filter(user =>
+    const filteredEnterpriseUsers = (enterpriseUsers || []).filter(user =>
         (user.name || '')?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (user.username || '')?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -424,7 +552,7 @@ export default function SuperAdminUsers() {
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight mb-2">User Management</h1>
                     <p className="text-zinc-400">
-                        Manage all users, tokens, and enterprise pricing. 
+                        Manage all users, tokens, and enterprise pricing.
                         <span className="text-indigo-400 ml-2">{users.length} users loaded</span>
                     </p>
                 </div>
@@ -438,8 +566,8 @@ export default function SuperAdminUsers() {
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
                     </div>
-                    <Button 
-                        variant="outline" 
+                    <Button
+                        variant="outline"
                         className="border-white/10 bg-zinc-900/50"
                         onClick={fetchUsers}
                         disabled={isLoading}
@@ -512,7 +640,7 @@ export default function SuperAdminUsers() {
                                                     </div>
                                                 </div>
                                             </TableCell>
-                                            <TableCell>{getRoleBadge(user.role || 'user')}</TableCell>
+                                            <TableCell>{getUserBadge(user)}</TableCell>
                                             <TableCell>
                                                 <div className="flex items-center gap-1 font-mono">
                                                     <Coins className="w-3 h-3 text-yellow-400" />
@@ -522,9 +650,9 @@ export default function SuperAdminUsers() {
                                                 </div>
                                             </TableCell>
                                             <TableCell>
-                                                <Badge 
-                                                    variant="outline" 
-                                                    className={user.source === 'better_auth' 
+                                                <Badge
+                                                    variant="outline"
+                                                    className={user.source === 'better_auth'
                                                         ? "bg-blue-500/10 text-blue-400 border-blue-500/20 text-xs"
                                                         : "bg-zinc-500/10 text-zinc-400 border-zinc-500/20 text-xs"
                                                     }
@@ -546,27 +674,30 @@ export default function SuperAdminUsers() {
                                                     </DropdownMenuTrigger>
                                                     <DropdownMenuContent align="end" className="bg-zinc-900 border-white/10 text-white">
                                                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                                        <DropdownMenuItem 
-                                                            onClick={() => openTokensDialog(user)} 
+                                                        <DropdownMenuItem
+                                                            onClick={() => openTokensDialog(user)}
                                                             className="focus:bg-white/10 cursor-pointer"
                                                         >
                                                             <Coins className="mr-2 h-4 w-4 text-yellow-400" /> Add/Remove Tokens
                                                         </DropdownMenuItem>
-                                                        <DropdownMenuItem 
-                                                            onClick={() => openEditUserDialog(user)} 
+                                                        <DropdownMenuItem
+                                                            onClick={() => openEditUserDialog(user)}
                                                             className="focus:bg-white/10 cursor-pointer"
                                                         >
                                                             <UserCog className="mr-2 h-4 w-4" /> Edit User
                                                         </DropdownMenuItem>
-                                                        <DropdownMenuSeparator className="bg-white/10" />
-                                                        <DropdownMenuItem 
-                                                            onClick={() => openPricingDialog(user)} 
-                                                            className="focus:bg-white/10 cursor-pointer"
+                                                        <DropdownMenuItem
+                                                            onClick={() => handleImpersonate(user)}
+                                                            className="focus:bg-white/10 cursor-pointer text-indigo-400"
                                                         >
-                                                            <DollarSign className="mr-2 h-4 w-4 text-emerald-400" /> Custom Pricing
+                                                            <LogIn className="mr-2 h-4 w-4" /> Login as User
                                                         </DropdownMenuItem>
-                                                        <DropdownMenuItem className="focus:bg-white/10 cursor-pointer">
-                                                            <FileText className="mr-2 h-4 w-4" /> View Transactions
+                                                        <DropdownMenuSeparator className="bg-white/10" />
+                                                        <DropdownMenuItem
+                                                            onClick={() => openDeleteDialog(user)}
+                                                            className="focus:bg-red-500/10 text-red-400 cursor-pointer"
+                                                        >
+                                                            <Trash2 className="mr-2 h-4 w-4" /> Delete User
                                                         </DropdownMenuItem>
                                                     </DropdownMenuContent>
                                                 </DropdownMenu>
@@ -663,24 +794,30 @@ export default function SuperAdminUsers() {
                                                     </DropdownMenuTrigger>
                                                     <DropdownMenuContent align="end" className="bg-zinc-900 border-white/10 text-white">
                                                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                                        <DropdownMenuItem 
-                                                            onClick={() => openPricingDialog(user)} 
+                                                        <DropdownMenuItem
+                                                            onClick={() => openPricingDialog(user)}
                                                             className="focus:bg-white/10 cursor-pointer"
                                                         >
                                                             <DollarSign className="mr-2 h-4 w-4" /> Set Custom Pricing
                                                         </DropdownMenuItem>
-                                                        <DropdownMenuItem 
-                                                            onClick={() => openTokensDialog(user)} 
+                                                        <DropdownMenuItem
+                                                            onClick={() => openTokensDialog(user)}
                                                             className="focus:bg-white/10 cursor-pointer"
                                                         >
                                                             <Coins className="mr-2 h-4 w-4" /> Add Tokens
                                                         </DropdownMenuItem>
-                                                        <DropdownMenuSeparator className="bg-white/10" />
-                                                        <DropdownMenuItem className="focus:bg-white/10 cursor-pointer">
-                                                            <UserCog className="mr-2 h-4 w-4" /> View Details
+                                                        <DropdownMenuItem
+                                                            onClick={() => handleImpersonate(user)}
+                                                            className="focus:bg-white/10 cursor-pointer text-indigo-400"
+                                                        >
+                                                            <LogIn className="mr-2 h-4 w-4" /> Login as User
                                                         </DropdownMenuItem>
-                                                        <DropdownMenuItem className="focus:bg-white/10 cursor-pointer">
-                                                            <FileText className="mr-2 h-4 w-4" /> View Transactions
+                                                        <DropdownMenuSeparator className="bg-white/10" />
+                                                        <DropdownMenuItem
+                                                            onClick={() => openDeleteDialog(user)}
+                                                            className="focus:bg-red-500/10 text-red-400 cursor-pointer"
+                                                        >
+                                                            <Trash2 className="mr-2 h-4 w-4" /> Delete User
                                                         </DropdownMenuItem>
                                                     </DropdownMenuContent>
                                                 </DropdownMenu>
@@ -693,6 +830,39 @@ export default function SuperAdminUsers() {
                     </div>
                 </TabsContent>
             </Tabs>
+
+            {/* Delete Confirmation Dialog */}
+            <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+                <DialogContent className="bg-zinc-900 border-red-500/20 text-white">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2 text-red-400">
+                            <AlertCircle className="w-5 h-5" />
+                            Delete User
+                        </DialogTitle>
+                        <DialogDescription className="text-zinc-400">
+                            Are you sure you want to delete <span className="text-white font-medium">{selectedUser?.email}</span>?
+                            This action cannot be undone and will delete all their events, albums, and photos.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                        <Button
+                            variant="outline"
+                            onClick={() => setIsDeleteDialogOpen(false)}
+                            className="border-white/10"
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            onClick={deleteUser}
+                            disabled={isSaving}
+                            className="bg-red-600 hover:bg-red-700 text-white"
+                        >
+                            {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4 mr-2" />}
+                            Delete User
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
 
             {/* Edit User Dialog */}
             <Dialog open={isEditUserDialogOpen} onOpenChange={setIsEditUserDialogOpen}>
@@ -710,8 +880,8 @@ export default function SuperAdminUsers() {
                     <div className="space-y-4 py-4">
                         <div className="space-y-2">
                             <Label className="text-zinc-400">Role</Label>
-                            <Select 
-                                value={editForm.role} 
+                            <Select
+                                value={editForm.role}
                                 onValueChange={(value) => setEditForm({ ...editForm, role: value })}
                             >
                                 <SelectTrigger className="bg-zinc-950 border-white/10">
@@ -723,6 +893,28 @@ export default function SuperAdminUsers() {
                                             {role.label}
                                         </SelectItem>
                                     ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label className="text-zinc-400">Subscription Tier</Label>
+                            <Select
+                                value={editForm.subscription_tier}
+                                onValueChange={(value) => setEditForm({ ...editForm, subscription_tier: value })}
+                            >
+                                <SelectTrigger className="bg-zinc-950 border-white/10">
+                                    <SelectValue placeholder="Select tier" />
+                                </SelectTrigger>
+                                <SelectContent className="bg-zinc-900 border-white/10">
+                                    <SelectItem value="free">Free</SelectItem>
+                                    <SelectItem value="spark">Spark ($9/mo)</SelectItem>
+                                    <SelectItem value="vibe">Vibe ($19/mo)</SelectItem>
+                                    <SelectItem value="studio">Studio ($39/mo)</SelectItem>
+                                    <SelectItem value="event_starter">Event Starter ($400/mo)</SelectItem>
+                                    <SelectItem value="event_pro">Event Pro ($1,500/mo)</SelectItem>
+                                    <SelectItem value="masters">Masters ($3,000/mo)</SelectItem>
+                                    <SelectItem value="enterprise">Enterprise</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
@@ -749,8 +941,8 @@ export default function SuperAdminUsers() {
                                 variant={editForm.is_active ? "default" : "outline"}
                                 size="sm"
                                 onClick={() => setEditForm({ ...editForm, is_active: !editForm.is_active })}
-                                className={editForm.is_active 
-                                    ? "bg-emerald-600 hover:bg-emerald-700" 
+                                className={editForm.is_active
+                                    ? "bg-emerald-600 hover:bg-emerald-700"
                                     : "border-red-500/50 text-red-400"
                                 }
                             >
@@ -760,14 +952,14 @@ export default function SuperAdminUsers() {
                     </div>
 
                     <DialogFooter>
-                        <Button 
-                            variant="outline" 
+                        <Button
+                            variant="outline"
                             onClick={() => setIsEditUserDialogOpen(false)}
                             className="border-white/10"
                         >
                             Cancel
                         </Button>
-                        <Button 
+                        <Button
                             onClick={saveUserEdit}
                             disabled={isSaving}
                             className="bg-indigo-600 hover:bg-indigo-700"
@@ -814,8 +1006,8 @@ export default function SuperAdminUsers() {
                                         </h3>
                                         <div className="grid gap-3">
                                             {imageModels.map((model) => (
-                                                <div 
-                                                    key={model.model_id} 
+                                                <div
+                                                    key={model.model_id}
                                                     className="flex items-center justify-between p-3 rounded-lg bg-zinc-800/50 border border-white/5"
                                                 >
                                                     <div className="flex-1">
@@ -853,8 +1045,8 @@ export default function SuperAdminUsers() {
                                         </h3>
                                         <div className="grid gap-3">
                                             {videoModels.map((model) => (
-                                                <div 
-                                                    key={model.model_id} 
+                                                <div
+                                                    key={model.model_id}
                                                     className="flex items-center justify-between p-3 rounded-lg bg-zinc-800/50 border border-white/5"
                                                 >
                                                     <div className="flex-1">
@@ -988,14 +1180,14 @@ export default function SuperAdminUsers() {
                     </Tabs>
 
                     <DialogFooter className="mt-6">
-                        <Button 
-                            variant="outline" 
+                        <Button
+                            variant="outline"
                             onClick={() => setIsPricingDialogOpen(false)}
                             className="border-white/10"
                         >
                             Cancel
                         </Button>
-                        <Button 
+                        <Button
                             onClick={savePricing}
                             disabled={isSaving}
                             className="bg-indigo-600 hover:bg-indigo-700"
@@ -1037,7 +1229,7 @@ export default function SuperAdminUsers() {
                                 Use negative numbers to subtract tokens
                             </p>
                         </div>
-                        
+
                         <div className="space-y-2">
                             <Label className="text-zinc-400">Reason (for audit log)</Label>
                             <Input
@@ -1047,7 +1239,7 @@ export default function SuperAdminUsers() {
                                 placeholder="Business tier upgrade, manual adjustment, etc."
                             />
                         </div>
-                        
+
                         {/* Quick add buttons */}
                         <div className="space-y-2">
                             <Label className="text-zinc-400 text-xs">Quick Add</Label>
@@ -1067,7 +1259,7 @@ export default function SuperAdminUsers() {
                         </div>
 
                         {tokensToAdd !== 0 && (
-                            <div className={`p-4 rounded-lg ${tokensToAdd > 0 ? 'bg-emerald-500/10 border border-emerald-500/20' : 'bg-red-500/10 border border-red-500/20'}`}>
+                            <div className={`p - 4 rounded - lg ${tokensToAdd > 0 ? 'bg-emerald-500/10 border border-emerald-500/20' : 'bg-red-500/10 border border-red-500/20'} `}>
                                 <p className="text-sm text-zinc-300">
                                     {tokensToAdd > 0 ? 'Adding' : 'Removing'} <span className="font-mono font-bold">{Math.abs(tokensToAdd).toLocaleString()}</span> tokens
                                 </p>
@@ -1081,14 +1273,14 @@ export default function SuperAdminUsers() {
                     </div>
 
                     <DialogFooter>
-                        <Button 
-                            variant="outline" 
+                        <Button
+                            variant="outline"
                             onClick={() => setIsTokensDialogOpen(false)}
                             className="border-white/10"
                         >
                             Cancel
                         </Button>
-                        <Button 
+                        <Button
                             onClick={addTokens}
                             disabled={isSaving || tokensToAdd === 0}
                             className={tokensToAdd >= 0 ? "bg-emerald-600 hover:bg-emerald-700" : "bg-red-600 hover:bg-red-700"}

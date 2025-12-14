@@ -1,0 +1,485 @@
+import { useState, useEffect } from "react";
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow
+} from "@/components/ui/table";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from "@/components/ui/card";
+import {
+    MoreHorizontal,
+    Search,
+    Plus,
+    Loader2,
+    Layers,
+    Trash2,
+    Edit2,
+    CheckCircle2,
+    XCircle,
+    Save
+} from "lucide-react";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger
+} from "@/components/ui/dropdown-menu";
+import { toast } from "sonner";
+import { ENV } from "@/config/env";
+import { Textarea } from "@/components/ui/textarea"; // Assuming you have this
+import { Switch } from "@/components/ui/switch"; // Assuming you have this
+
+interface Tier {
+    id: string;
+    name: string;
+    code: string;
+    price: number;
+    currency: string;
+    token_limit: number;
+    features: string[];
+    category: string;
+    highlight: string;
+    is_active: boolean;
+    created_at: string;
+    updated_at: string;
+}
+
+export default function SuperAdminTiers() {
+    const [tiers, setTiers] = useState<Tier[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
+    const [editingTier, setEditingTier] = useState<Tier | null>(null);
+
+    const [form, setForm] = useState({
+        name: "",
+        code: "",
+        price: 0,
+        tokenLimit: 0,
+        tokenLimit: 0,
+        featuresText: "",
+        category: "individual",
+        highlight: "",
+        isActive: true
+    });
+
+    useEffect(() => {
+        fetchTiers();
+    }, []);
+
+    const fetchTiers = async () => {
+        setIsLoading(true);
+        try {
+            const token = localStorage.getItem("auth_token");
+            const response = await fetch(`${ENV.API_URL}/api/admin/tiers`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                setTiers(data || []);
+            } else {
+                toast.error("Failed to fetch tiers");
+            }
+        } catch (error) {
+            console.error(error);
+            toast.error("Error fetching tiers");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleEdit = (tier: Tier) => {
+        setEditingTier(tier);
+        setForm({
+            name: tier.name,
+            code: tier.code,
+            price: tier.price,
+            tokenLimit: tier.token_limit,
+            featuresText: Array.isArray(tier.features) ? tier.features.join("\n") : "",
+            category: tier.category || "individual",
+            highlight: tier.highlight || "",
+            isActive: tier.is_active
+        });
+        setIsDialogOpen(true);
+    };
+
+    const handleCreate = () => {
+        setEditingTier(null);
+        setForm({
+            name: "",
+            code: "",
+            price: 0,
+            tokenLimit: 0,
+            featuresText: "",
+            category: "individual",
+            highlight: "",
+            isActive: true
+        });
+        setIsDialogOpen(true);
+    };
+
+    const handleSave = async () => {
+        setIsSaving(true);
+        try {
+            const token = localStorage.getItem("auth_token");
+            const url = editingTier
+                ? `${ENV.API_URL}/api/admin/tiers/${editingTier.id}`
+                : `${ENV.API_URL}/api/admin/tiers`;
+
+            const method = editingTier ? 'PUT' : 'POST';
+
+            // Parse features
+            const features = form.featuresText.split('\n').map(f => f.trim()).filter(f => f !== "");
+
+            const body = {
+                name: form.name,
+                code: form.code,
+                price: Number(form.price),
+                tokenLimit: Number(form.tokenLimit),
+                features: features,
+                category: form.category,
+                highlight: form.highlight,
+                isActive: form.isActive
+            };
+
+            const response = await fetch(url, {
+                method,
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify(body)
+            });
+
+            if (!response.ok) throw new Error("Failed to save tier");
+
+            toast.success(editingTier ? "Tier updated" : "Tier created");
+            setIsDialogOpen(false);
+            fetchTiers();
+        } catch (error) {
+            console.error(error);
+            toast.error("Error saving tier");
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleDelete = async (id: string) => {
+        if (!confirm("Are you sure? This action cannot be undone.")) return;
+
+        try {
+            const token = localStorage.getItem("auth_token");
+            const response = await fetch(`${ENV.API_URL}/api/admin/tiers/${id}`, {
+                method: 'DELETE',
+                headers: { Authorization: `Bearer ${token}` }
+            });
+
+            if (response.ok) {
+                toast.success("Tier deleted");
+                fetchTiers();
+            } else {
+                toast.error("Failed to delete tier");
+            }
+        } catch (error) {
+            console.error(error);
+            toast.error("Error deleting tier");
+        }
+    };
+
+    return (
+        <div className="space-y-6 animate-fade-in">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                    <h1 className="text-3xl font-bold tracking-tight mb-2">Subscription Tiers</h1>
+                    <p className="text-zinc-400">Manage pricing plans and feature sets.</p>
+                </div>
+                <Button
+                    onClick={handleCreate}
+                    className="bg-indigo-600 hover:bg-indigo-700 text-white"
+                >
+                    <Plus className="w-4 h-4 mr-2" />
+                    New Tier
+                </Button>
+            </div>
+
+            <Card className="bg-zinc-900/50 border-white/10 backdrop-blur-sm">
+                <CardContent className="p-0">
+                    <Table>
+                        <TableHeader className="bg-white/5">
+                            <TableRow className="border-white/10 hover:bg-transparent">
+                                <TableHead className="text-zinc-400">Name / Code</TableHead>
+                                <TableHead className="text-zinc-400">Price</TableHead>
+                                <TableHead className="text-zinc-400">Category</TableHead>
+                                <TableHead className="text-zinc-400">Tokens</TableHead>
+                                <TableHead className="text-zinc-400">Features</TableHead>
+                                <TableHead className="text-zinc-400">Status</TableHead>
+                                <TableHead className="text-right text-zinc-400">Actions</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {isLoading ? (
+                                <TableRow>
+                                    <TableCell colSpan={6} className="text-center py-12">
+                                        <Loader2 className="w-8 h-8 animate-spin mx-auto text-indigo-500 mb-2" />
+                                        <p className="text-zinc-500">Loading tiers...</p>
+                                    </TableCell>
+                                </TableRow>
+                            ) : tiers.length === 0 ? (
+                                <TableRow>
+                                    <TableCell colSpan={6} className="text-center py-12">
+                                        <Layers className="w-12 h-12 mx-auto text-zinc-700 mb-3" />
+                                        <p className="text-zinc-400 font-medium">No tiers found</p>
+                                        <p className="text-zinc-500 text-sm">Create your first subscription tier to get started.</p>
+                                    </TableCell>
+                                </TableRow>
+                            ) : (
+                                tiers.map((tier) => (
+                                    <TableRow key={tier.id} className="border-white/10 hover:bg-white/5">
+                                        <TableCell>
+                                            <div className="flex flex-col">
+                                                <span className="font-semibold text-white">{tier.name}</span>
+                                                <span className="text-xs font-mono text-zinc-500">{tier.code}</span>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell>
+                                            <span className="font-medium text-white">
+                                                ${tier.price.toFixed(2)}
+                                            </span>
+                                            <span className="text-xs text-zinc-500 ml-1">/mo</span>
+                                        </TableCell>
+                                        <TableCell>
+                                            <Badge variant="outline" className="border-white/10 text-zinc-400 capitalize">
+                                                {tier.category}
+                                            </Badge>
+                                            {tier.highlight && (
+                                                <div className="text-[10px] text-indigo-400 mt-1">{tier.highlight}</div>
+                                            )}
+                                        </TableCell>
+                                        <TableCell>
+                                            <Badge variant="outline" className="border-indigo-500/30 bg-indigo-500/10 text-indigo-400">
+                                                {tier.token_limit.toLocaleString()}
+                                            </Badge>
+                                        </TableCell>
+                                        <TableCell>
+                                            <div className="flex flex-wrap gap-1 max-w-xs">
+                                                {Array.isArray(tier.features) && tier.features.slice(0, 3).map((f, i) => (
+                                                    <span key={i} className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400 border border-zinc-700">
+                                                        {f}
+                                                    </span>
+                                                ))}
+                                                {Array.isArray(tier.features) && tier.features.length > 3 && (
+                                                    <span className="text-[10px] px-1.5 py-0.5 text-zinc-500">
+                                                        +{tier.features.length - 3} more
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </TableCell>
+                                        <TableCell>
+                                            {tier.is_active ? (
+                                                <Badge className="bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border-emerald-500/20">
+                                                    Active
+                                                </Badge>
+                                            ) : (
+                                                <Badge variant="secondary" className="bg-zinc-800 text-zinc-500">
+                                                    Inactive
+                                                </Badge>
+                                            )}
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button variant="ghost" className="h-8 w-8 p-0 hover:bg-white/10">
+                                                        <MoreHorizontal className="h-4 w-4" />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end" className="bg-zinc-900 border-white/10 text-white">
+                                                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                                    <DropdownMenuItem
+                                                        onClick={() => handleEdit(tier)}
+                                                        className="cursor-pointer focus:bg-white/10"
+                                                    >
+                                                        <Edit2 className="w-4 h-4 mr-2" /> Edit
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuSeparator className="bg-white/10" />
+                                                    <DropdownMenuItem
+                                                        onClick={() => handleDelete(tier.id)}
+                                                        className="cursor-pointer text-red-400 focus:bg-red-500/10 focus:text-red-400"
+                                                    >
+                                                        <Trash2 className="w-4 h-4 mr-2" /> Delete
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </TableCell>
+                                    </TableRow>
+                                ))
+                            )}
+                        </TableBody>
+                    </Table>
+                </CardContent>
+            </Card>
+
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                <DialogContent className="bg-zinc-900 border-white/10 text-white sm:max-w-[500px]">
+                    <DialogHeader>
+                        <DialogTitle>{editingTier ? "Edit Tier" : "Create New Tier"}</DialogTitle>
+                        <DialogDescription className="text-zinc-400">
+                            Configure the pricing, limits, and features for this subscription tier.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="space-y-4 py-4">
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="name">Display Name</Label>
+                                <Input
+                                    id="name"
+                                    placeholder="e.g. Gold Plan"
+                                    value={form.name}
+                                    onChange={(e) => setForm({ ...form, name: e.target.value })}
+                                    className="bg-black/50 border-white/10"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="code">System Code</Label>
+                                <Input
+                                    id="code"
+                                    placeholder="e.g. gold_plan"
+                                    value={form.code}
+                                    onChange={(e) => setForm({ ...form, code: e.target.value })}
+                                    className="bg-black/50 border-white/10"
+                                    disabled={!!editingTier} // Codes should be immutable usually
+                                />
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="price">Monthly Price ($)</Label>
+                                <Input
+                                    id="price"
+                                    type="number"
+                                    min="0"
+                                    step="0.01"
+                                    value={form.price}
+                                    onChange={(e) => setForm({ ...form, price: parseFloat(e.target.value) })}
+                                    className="bg-black/50 border-white/10"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="tokens">Token Limit</Label>
+                                <Input
+                                    id="tokens"
+                                    type="number"
+                                    min="0"
+                                    value={form.tokenLimit}
+                                    onChange={(e) => setForm({ ...form, tokenLimit: parseInt(e.target.value) })}
+                                    className="bg-black/50 border-white/10"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label>Category</Label>
+                                <Select
+                                    value={form.category}
+                                    onValueChange={(val) => setForm({ ...form, category: val })}
+                                >
+                                    <SelectTrigger className="bg-black/50 border-white/10">
+                                        <SelectValue placeholder="Select category" />
+                                    </SelectTrigger>
+                                    <SelectContent className="bg-zinc-900 border-white/10 text-white">
+                                        <SelectItem value="individual">Individual</SelectItem>
+                                        <SelectItem value="business">Business</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="highlight">Highlight Tag (Optional)</Label>
+                                <Input
+                                    id="highlight"
+                                    placeholder="e.g. Most Popular"
+                                    value={form.highlight}
+                                    onChange={(e) => setForm({ ...form, highlight: e.target.value })}
+                                    className="bg-black/50 border-white/10"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="features">Features (One per line)</Label>
+                            <Textarea
+                                id="features"
+                                placeholder="Feature 1&#10;Feature 2&#10;Feature 3"
+                                value={form.featuresText}
+                                onChange={(e) => setForm({ ...form, featuresText: e.target.value })}
+                                className="bg-black/50 border-white/10 min-h-[100px]"
+                            />
+                        </div>
+
+                        <div className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/10">
+                            <div className="space-y-0.5">
+                                <Label className="text-base">Active Status</Label>
+                                <p className="text-xs text-zinc-400">
+                                    Inactive tiers cannot be selected by new users.
+                                </p>
+                            </div>
+                            <Switch
+                                checked={form.isActive}
+                                onCheckedChange={(c) => setForm({ ...form, isActive: c })}
+                            />
+                        </div>
+                    </div>
+
+                    <DialogFooter>
+                        <Button
+                            variant="ghost"
+                            onClick={() => setIsDialogOpen(false)}
+                            className="hover:bg-white/10"
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            onClick={handleSave}
+                            disabled={isSaving}
+                            className="bg-indigo-600 hover:bg-indigo-700"
+                        >
+                            {isSaving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
+                            Save Tier
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+        </div>
+    );
+}

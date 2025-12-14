@@ -49,7 +49,7 @@ export default function AdminRegister() {
           onSuccess: (ctx) => {
             const user = ctx.data.user;
             toast.success(`Account created! Welcome, ${user.name || user.email}!`);
-            
+
             // For now, all users go to admin/events
             // TODO: Create separate dashboards for different roles
             navigate("/admin/events");
@@ -79,7 +79,7 @@ export default function AdminRegister() {
             <Sparkles className="w-8 h-8 text-white" />
           </div>
           <h1 className="text-3xl font-bold tracking-tight mb-2">
-            {["event-pro", "masters"].includes(plan || "") ? "Application Required" : "Create Account"}
+            {["event-starter", "event-pro", "masters"].includes(plan || "") ? "Application Required" : "Create Account"}
           </h1>
           <p className="text-zinc-400">
             {plan ? (
@@ -94,7 +94,7 @@ export default function AdminRegister() {
 
         {/* Register Card */}
         <div className="rounded-3xl bg-zinc-900/50 backdrop-blur-xl border border-white/10 p-8 shadow-2xl">
-          {["event-pro", "masters"].includes(plan || "") ? (
+          {["event-starter", "event-pro", "masters"].includes(plan || "") ? (
             <div className="text-center space-y-6">
               <div className="p-4 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-200 text-sm">
                 <p>
@@ -243,6 +243,6 @@ export default function AdminRegister() {
           </p>
         </div>
       </div>
-    </div>
+    </div >
   );
 }

@@ -8,6 +8,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { Building2, ArrowRight, MapPin, Mail, Briefcase, CheckCircle2 } from "lucide-react";
+import { ENV } from "@/config/env";
+
+interface Tier {
+    id: string;
+    name: string;
+    code: string;
+    category: string;
+}
 
 export default function ApplyPage() {
     const navigate = useNavigate();
@@ -15,6 +23,22 @@ export default function ApplyPage() {
     const tier = searchParams.get("tier") || "event-pro";
     const [isLoading, setIsLoading] = useState(false);
     const [isSubmitted, setIsSubmitted] = useState(false);
+    const [tiers, setTiers] = useState<Tier[]>([]);
+
+    useEffect(() => {
+        const fetchTiers = async () => {
+            try {
+                const res = await fetch(`${ENV.API_URL || 'http://localhost:3002'}/api/tiers`);
+                if (res.ok) {
+                    const data = await res.json();
+                    setTiers(data || []);
+                }
+            } catch (error) {
+                console.error("Failed to fetch tiers", error);
+            }
+        };
+        fetchTiers();
+    }, []);
 
     const [formData, setFormData] = useState({
         fullName: "",
@@ -51,15 +75,28 @@ export default function ApplyPage() {
         e.preventDefault();
         setIsLoading(true);
 
-        // Simulate API call
-        setTimeout(() => {
+        try {
+            const response = await fetch(`${ENV.API_URL}/api/applications`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(formData),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.error || 'Failed to submit application');
+            }
+
             setIsLoading(false);
             setIsSubmitted(true);
             toast.success("Application received!");
-
-            // In a real app, we would redirect to dashboard with "pending" state
-            // navigate("/dashboard"); 
-        }, 1500);
+        } catch (error) {
+            console.error("Submission error:", error);
+            toast.error(error instanceof Error ? error.message : "Failed to submit application. Please try again.");
+            setIsLoading(false);
+        }
     };
 
     if (isSubmitted) {
@@ -229,8 +266,16 @@ export default function ApplyPage() {
                                             <SelectValue placeholder="Select tier" />
                                         </SelectTrigger>
                                         <SelectContent className="bg-zinc-900 border-white/10 text-white">
-                                            <SelectItem value="event-pro">Event Pro</SelectItem>
-                                            <SelectItem value="masters">Masters</SelectItem>
+                                            {tiers.filter(t => t.category === 'business').map((t) => (
+                                                <SelectItem key={t.id} value={t.code}>{t.name}</SelectItem>
+                                            ))}
+                                            {tiers.filter(t => t.category === 'business').length === 0 && (
+                                                <>
+                                                    <SelectItem value="event-starter">Event Starter</SelectItem>
+                                                    <SelectItem value="event-pro">Event Pro</SelectItem>
+                                                    <SelectItem value="masters">Masters</SelectItem>
+                                                </>
+                                            )}
                                         </SelectContent>
                                     </Select>
                                 </div>

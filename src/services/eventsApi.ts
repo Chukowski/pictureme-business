@@ -180,6 +180,70 @@ export interface EventConfig {
       email?: string;
     };
   };
+  is_booth?: boolean;
+}
+
+/**
+ * Get all booths for current user
+ */
+export async function getUserBooths(): Promise<EventConfig[]> {
+  const token = getAuthToken();
+  if (!token) {
+    return [];
+  }
+
+  try {
+    const response = await fetch(`${getApiUrl()}/api/booths/`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      console.error(`Failed to load booths: ${response.statusText}`);
+      return [];
+    }
+
+    const data = await response.json();
+    return Array.isArray(data) ? data : [];
+  } catch (error) {
+    console.error('Error loading booths:', error);
+    return [];
+  }
+}
+
+/**
+ * Create new booth
+ */
+export async function createBooth(boothData: {
+  slug: string;
+  title: string;
+  description?: string;
+  theme?: any;
+  templates?: Template[];
+  settings?: any;
+}): Promise<EventConfig> {
+  const token = getAuthToken();
+  if (!token) {
+    throw new Error('Not authenticated');
+  }
+
+  const response = await fetch(`${getApiUrl()}/api/booths/`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+    body: JSON.stringify(boothData),
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ detail: 'Failed to create booth' }));
+    throw new Error(error.detail || 'Failed to create booth');
+  }
+
+  return await response.json();
 }
 
 export type AspectRatio = 'auto' | '1:1' | '4:5' | '3:2' | '16:9' | '9:16';
@@ -201,10 +265,10 @@ export interface Template {
   includeTagline?: boolean; // Show tagline
   includeWatermark?: boolean; // Show watermark
   isCustomPrompt?: boolean; // Special template that allows user to write custom prompts
-  
+
   // Aspect Ratio for generated images
   aspectRatio?: AspectRatio;
-  
+
   // Pipeline Configuration
   pipelineConfig?: {
     imageModel?: string; // e.g., 'nano-banana', 'seedream-v4', 'flux-realism'
@@ -218,7 +282,7 @@ export interface Template {
     videoEnabled?: boolean;
     videoModel?: string; // e.g., 'wan-v2', 'kling-pro', 'veo-3.1'
   };
-  
+
   // Access & Monetization Overrides
   overrideEventSettings?: boolean;
   accessOverrides?: {
@@ -228,7 +292,7 @@ export interface Template {
     disableDownloads?: boolean;
     allowFreePreview?: boolean;
   };
-  
+
   // Station Assignment (Business: Event Pro+)
   // "all" = available at all stations, or array of specific station IDs
   stationsAssigned?: 'all' | string[];
@@ -384,7 +448,7 @@ export function getCurrentUser(): User | null {
   if (!authToken) {
     return null;
   }
-  
+
   // Try Better Auth user first
   const betterAuthUser = localStorage.getItem('user');
   if (betterAuthUser) {
@@ -414,11 +478,11 @@ export function getAuthToken(): string | null {
   // Try auth_token first (set during login)
   const token = localStorage.getItem('auth_token');
   if (token) return token;
-  
+
   // Try to get from Better Auth session cookie (fallback)
   // Note: This won't work for cross-origin requests due to cookie restrictions
   // The main auth mechanism should be the token stored in localStorage
-  
+
   return null;
 }
 
@@ -431,14 +495,14 @@ export function logoutUser(): void {
   localStorage.removeItem('current_user');
   localStorage.removeItem('user'); // Better Auth user data
   localStorage.removeItem('better-auth.session_token');
-  
+
   // Dispatch storage event for same-tab listeners (like AkitoWidget)
   window.dispatchEvent(new StorageEvent('storage', {
     key: 'user',
     oldValue: null,
     newValue: null,
   }));
-  
+
   console.log('🚪 User logged out - all auth data cleared');
 }
 
@@ -711,11 +775,11 @@ export interface AlbumPhoto {
 export async function getUserOrganizations(): Promise<Organization[]> {
   const token = getAuthToken();
   if (!token) return [];
-  
+
   const response = await fetch(`${getApiUrl()}/api/organizations/me`, {
     headers: { 'Authorization': `Bearer ${token}` }
   });
-  
+
   if (!response.ok) throw new Error('Failed to fetch organizations');
   return response.json();
 }
@@ -732,13 +796,13 @@ export async function inviteMember(orgId: string, email: string, role: string = 
   const token = getAuthToken();
   const response = await fetch(`${getApiUrl()}/api/organizations/${orgId}/invite`, {
     method: 'POST',
-    headers: { 
+    headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}` 
+      'Authorization': `Bearer ${token}`
     },
     body: JSON.stringify({ email, role })
   });
-  
+
   if (!response.ok) {
     const error = await response.json();
     throw new Error(error.detail || 'Failed to invite member');
@@ -751,24 +815,24 @@ export async function createAlbum(eventId: number, orgId?: string, ownerName?: s
   const token = getAuthToken();
   const headers: any = { 'Content-Type': 'application/json' };
   if (token) headers['Authorization'] = `Bearer ${token}`;
-  
+
   // Validate eventId
   if (!eventId || eventId <= 0) {
     throw new Error('Invalid event ID');
   }
-  
+
   // Use v2 endpoint
   const response = await fetch(getApiPath('/albums', true), {
     method: 'POST',
     headers,
-    body: JSON.stringify({ 
-      event_id: eventId, 
+    body: JSON.stringify({
+      event_id: eventId,
       organization_id: orgId,
       owner_name: ownerName,
       owner_email: ownerEmail
     })
   });
-  
+
   if (!response.ok) {
     const error = await response.json().catch(() => ({ detail: 'Failed to create album' }));
     console.error('Create album error:', error);
@@ -797,30 +861,30 @@ export async function addAlbumPhoto(code: string, photoId: string, stationType: 
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ photo_id: photoId, station_type: stationType })
   });
-  
+
   if (!response.ok) throw new Error('Failed to add photo to album');
   return response.json();
 }
 
 export async function deleteAlbumPhoto(albumCode: string, photoId: string, staffPin?: string): Promise<void> {
   const token = getAuthToken();
-  
+
   // Build URL with optional PIN parameter
   let url = getApiPath(`/albums/${albumCode}/photos/${photoId}`, true);
   if (staffPin) {
     url += `?pin=${encodeURIComponent(staffPin)}`;
   }
-  
+
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
   }
-  
+
   const response = await fetch(url, {
     method: 'DELETE',
     headers
   });
-  
+
   if (!response.ok) {
     const errorText = await response.text();
     console.error('Delete photo failed:', response.status, errorText);
@@ -836,28 +900,28 @@ export async function deleteAlbumPhoto(albumCode: string, photoId: string, staff
  */
 export async function deleteAlbum(albumCode: string, staffPin?: string): Promise<{ photosDeleted: number }> {
   const token = getAuthToken();
-  
+
   // Build URL with optional PIN parameter
   let url = getApiPath(`/albums/${albumCode}`, true);
   if (staffPin) {
     url += `?pin=${encodeURIComponent(staffPin)}`;
   }
-  
+
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
   }
-  
+
   const response = await fetch(url, {
     method: 'DELETE',
     headers
   });
-  
+
   if (!response.ok) {
     const error = await response.json().catch(() => ({ detail: 'Failed to delete album' }));
     throw new Error(error.detail || 'Failed to delete album');
   }
-  
+
   const result = await response.json();
   return { photosDeleted: result.photos_deleted || 0 };
 }
@@ -869,8 +933,8 @@ export async function deleteAlbum(albumCode: string, staffPin?: string): Promise
  * @param downloadType - 'zip' for all photos, 'single' for individual photo
  */
 export async function trackAlbumDownload(
-  albumCode: string, 
-  photoCount: number, 
+  albumCode: string,
+  photoCount: number,
   downloadType: 'zip' | 'single' | 'print'
 ): Promise<void> {
   try {
@@ -879,13 +943,13 @@ export async function trackAlbumDownload(
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
     }
-    
+
     await fetch(getApiPath(`/albums/${albumCode}/track-download`, true), {
       method: 'POST',
       headers,
-      body: JSON.stringify({ 
-        photo_count: photoCount, 
-        download_type: downloadType 
+      body: JSON.stringify({
+        photo_count: photoCount,
+        download_type: downloadType
       })
     });
     // Fire and forget - don't block on analytics
@@ -951,7 +1015,7 @@ export async function updateAlbumStatus(albumCode: string, status: 'in_progress'
   const token = getAuthToken();
   const response = await fetch(getApiPath(`/albums/${albumCode}/status?status=${status}`, true), {
     method: 'PUT',
-    headers: { 
+    headers: {
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json'
     }
@@ -963,7 +1027,7 @@ export async function createAlbumCheckout(albumCode: string): Promise<{ checkout
   const response = await fetch(`${getApiUrl()}/api/billing/albums/${albumCode}/checkout/`, {
     method: 'POST'
   });
-  
+
   if (!response.ok) throw new Error('Failed to create checkout');
   return response.json();
 }
@@ -972,7 +1036,7 @@ export async function requestAlbumPayment(albumCode: string): Promise<{ status: 
   const response = await fetch(`${getApiUrl()}/api/albums/${albumCode}/request-payment`, {
     method: 'POST'
   });
-  
+
   if (!response.ok) throw new Error('Failed to request payment');
   return response.json();
 }
@@ -981,7 +1045,7 @@ export async function requestBigScreen(albumCode: string): Promise<{ status: str
   const response = await fetch(`${getApiUrl()}/api/albums/${albumCode}/request-bigscreen`, {
     method: 'POST'
   });
-  
+
   if (!response.ok) throw new Error('Failed to request big screen');
   return response.json();
 }
@@ -1002,7 +1066,7 @@ export async function getPaymentRequests(eventId: number): Promise<PaymentReques
   const response = await fetch(`${getApiUrl()}/api/albums/event/${eventId}/payment-requests/`, {
     headers: { 'Authorization': `Bearer ${token}` }
   });
-  
+
   if (!response.ok) return [];
   return response.json();
 }
@@ -1048,7 +1112,7 @@ export async function sendPhotoEmail(
       primary_color: primaryColor,
     }),
   });
-  
+
   if (!response.ok) {
     const error = await response.json().catch(() => ({ detail: 'Failed to send email' }));
     throw new Error(error.detail || 'Failed to send email');
@@ -1083,7 +1147,7 @@ export async function sendAlbumEmail(
       event_logo_url: eventLogoUrl,
     }),
   });
-  
+
   if (!response.ok) {
     const error = await response.json().catch(() => ({ detail: 'Failed to send email' }));
     throw new Error(error.detail || 'Failed to send email');
@@ -1107,11 +1171,11 @@ export async function sendAlbumEmailByCode(
   });
   if (brandName) params.append('brand_name', brandName);
   if (primaryColor) params.append('primary_color', primaryColor);
-  
+
   const response = await fetch(`${getApiUrl()}/api/email/send/album/${albumCode}?${params}`, {
     method: 'POST',
   });
-  
+
   if (!response.ok) {
     const error = await response.json().catch(() => ({ detail: 'Failed to send email' }));
     throw new Error(error.detail || 'Failed to send email');
@@ -1131,7 +1195,7 @@ export async function sendBulkAlbumEmails(
   const token = getAuthToken();
   const response = await fetch(`${getApiUrl()}/api/email/send/bulk-albums`, {
     method: 'POST',
-    headers: { 
+    headers: {
       'Content-Type': 'application/json',
       ...(token && { 'Authorization': `Bearer ${token}` }),
     },
@@ -1142,7 +1206,7 @@ export async function sendBulkAlbumEmails(
       primary_color: primaryColor,
     }),
   });
-  
+
   if (!response.ok) {
     const error = await response.json().catch(() => ({ detail: 'Failed to send emails' }));
     throw new Error(error.detail || 'Failed to send emails');
@@ -1157,7 +1221,7 @@ export async function sendTestEmail(toEmail: string): Promise<{ success: boolean
   const response = await fetch(`${getApiUrl()}/api/email/test?to_email=${encodeURIComponent(toEmail)}`, {
     method: 'POST',
   });
-  
+
   if (!response.ok) {
     const error = await response.json().catch(() => ({ detail: 'Email test failed' }));
     throw new Error(error.detail || 'Email test failed');
@@ -1228,7 +1292,7 @@ export async function createTransaction(
 ): Promise<{ success: boolean; transaction: AlbumTransaction }> {
   const token = getAuthToken();
   if (!token) throw new Error('Not authenticated');
-  
+
   const response = await fetch(getApiPath(`/events/${eventId}/transactions`, true), {
     method: 'POST',
     headers: {
@@ -1237,7 +1301,7 @@ export async function createTransaction(
     },
     body: JSON.stringify(data),
   });
-  
+
   if (!response.ok) {
     const error = await response.json().catch(() => ({ error: 'Failed to create transaction' }));
     throw new Error(error.error || 'Failed to create transaction');
@@ -1254,7 +1318,7 @@ export async function getEventTransactions(
 ): Promise<{ transactions: AlbumTransaction[] }> {
   const token = getAuthToken();
   if (!token) throw new Error('Not authenticated');
-  
+
   let url = getApiPath(`/events/${eventId}/transactions`, true);
   if (filters) {
     const params = new URLSearchParams();
@@ -1263,11 +1327,11 @@ export async function getEventTransactions(
     if (filters.to) params.set('to', filters.to);
     if (params.toString()) url += `?${params}`;
   }
-  
+
   const response = await fetch(url, {
     headers: { 'Authorization': `Bearer ${token}` },
   });
-  
+
   if (!response.ok) {
     throw new Error('Failed to fetch transactions');
   }
@@ -1280,11 +1344,11 @@ export async function getEventTransactions(
 export async function getTransactionSummary(eventId: number): Promise<TransactionSummary> {
   const token = getAuthToken();
   if (!token) throw new Error('Not authenticated');
-  
+
   const response = await fetch(getApiPath(`/events/${eventId}/transactions/summary`, true), {
     headers: { 'Authorization': `Bearer ${token}` },
   });
-  
+
   if (!response.ok) {
     throw new Error('Failed to fetch transaction summary');
   }
@@ -1297,11 +1361,11 @@ export async function getTransactionSummary(eventId: number): Promise<Transactio
 export async function getTransaction(transactionId: string): Promise<AlbumTransaction> {
   const token = getAuthToken();
   if (!token) throw new Error('Not authenticated');
-  
+
   const response = await fetch(getApiPath(`/transactions/${transactionId}`, true), {
     headers: { 'Authorization': `Bearer ${token}` },
   });
-  
+
   if (!response.ok) {
     throw new Error('Failed to fetch transaction');
   }

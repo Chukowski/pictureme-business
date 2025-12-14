@@ -387,11 +387,7 @@ export async function processImageWithAI(
   // Load config from backend if not available
   await loadConfig();
 
-  if (!FAL_KEY) {
-    throw new Error(
-      "FAL_KEY not configured. Please add VITE_FAL_KEY to your environment variables."
-    );
-  }
+
 
   // Validate required parameters
   if (!userPhotoBase64) {
