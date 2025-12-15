@@ -69,6 +69,7 @@ interface User {
     role: string;
     tokens_remaining?: number;
     subscription_tier?: string;
+    subscription_status?: string;
     is_active?: boolean;
     created_at?: string;
     source?: string;
@@ -127,8 +128,10 @@ const TIER_CONFIG: Record<string, { label: string, color: string }> = {
     'event_starter': { label: 'Event Starter', color: 'border-blue-500 text-blue-400 bg-blue-500/10' },
     'event-starter': { label: 'Event Starter', color: 'border-blue-500 text-blue-400 bg-blue-500/10' },
     'event_pro': { label: 'Event Pro', color: 'border-cyan-500 text-cyan-400 bg-cyan-500/10' },
+    'business_eventpro': { label: 'Event Pro', color: 'border-cyan-500 text-cyan-400 bg-cyan-500/10' },
     'event-pro': { label: 'Event Pro', color: 'border-cyan-500 text-cyan-400 bg-cyan-500/10' },
     'masters': { label: 'Masters', color: 'border-amber-500 text-amber-400 bg-amber-500/10' },
+    'business_masters': { label: 'Masters', color: 'border-amber-500 text-amber-400 bg-amber-500/10' },
     'enterprise': { label: 'Enterprise', color: 'border-emerald-500 text-emerald-400 bg-emerald-500/10' },
 };
 
@@ -154,6 +157,7 @@ export default function SuperAdminUsers() {
     const [editForm, setEditForm] = useState({
         role: "",
         subscription_tier: "",
+        subscription_status: "",
         is_active: true,
         tokens_remaining: 0
     });
@@ -247,9 +251,20 @@ export default function SuperAdminUsers() {
 
     const openEditUserDialog = (user: User) => {
         setSelectedUser(user);
+
+        let initialTier = user.subscription_tier || 'free';
+        // Map premium roles to tiers if tier is missing or free
+        if ((!user.subscription_tier || initialTier === 'free' || initialTier === 'Free') && user.role === 'business_masters') {
+            initialTier = 'masters';
+        }
+        if ((!user.subscription_tier || initialTier === 'free' || initialTier === 'Free') && (user.role === 'business_eventpro' || user.role === 'event_pro')) {
+            initialTier = 'event_pro';
+        }
+
         setEditForm({
             role: user.role || 'user',
-            subscription_tier: user.subscription_tier || 'free',
+            subscription_tier: initialTier,
+            subscription_status: user.subscription_status || 'inactive',
             is_active: user.is_active !== false,
             tokens_remaining: user.tokens_remaining || 0
         });
@@ -504,10 +519,20 @@ export default function SuperAdminUsers() {
 
     const getUserBadge = (user: User) => {
         // If user has a subscription tier, prioritize showing that (unless they are superadmin/admin)
-        if (user.role !== 'superadmin' && user.role !== 'admin' && user.subscription_tier) {
-            const tierKey = user.subscription_tier.toLowerCase().replace(/ /g, '_');
+        let displayTier = user.subscription_tier;
+
+        // Map premium roles to tiers if tier is missing or free
+        if ((!displayTier || displayTier === 'free' || displayTier === 'Free') && user.role === 'business_masters') {
+            displayTier = 'masters';
+        }
+        if ((!displayTier || displayTier === 'free' || displayTier === 'Free') && (user.role === 'business_eventpro' || user.role === 'event_pro')) {
+            displayTier = 'event_pro';
+        }
+
+        if (user.role !== 'superadmin' && user.role !== 'admin' && displayTier) {
+            const tierKey = displayTier.toLowerCase().replace(/ /g, '_');
             // Try to find exact match or normalized match
-            const tierConfig = TIER_CONFIG[user.subscription_tier] || TIER_CONFIG[tierKey];
+            const tierConfig = TIER_CONFIG[displayTier] || TIER_CONFIG[tierKey];
 
             if (tierConfig) {
                 return (
@@ -550,53 +575,63 @@ export default function SuperAdminUsers() {
         <div className="space-y-6">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight mb-2">User Management</h1>
-                    <p className="text-zinc-400">
+                    <h1 className="text-2xl font-bold tracking-tight text-white mb-1">User Management</h1>
+                    <p className="text-sm text-zinc-400">
                         Manage all users, tokens, and enterprise pricing.
-                        <span className="text-indigo-400 ml-2">{users.length} users loaded</span>
+                        <span className="text-indigo-400 ml-2 font-mono text-xs bg-indigo-500/10 px-1.5 py-0.5 rounded border border-indigo-500/20">{users.length} users</span>
                     </p>
                 </div>
                 <div className="flex items-center gap-2">
                     <div className="relative w-full md:w-64">
-                        <Search className="absolute left-2 top-2.5 h-4 w-4 text-zinc-500" />
+                        <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-zinc-500" />
                         <Input
                             placeholder="Search users..."
-                            className="pl-8 bg-zinc-900/50 border-white/10"
+                            className="pl-8 bg-zinc-950 border-zinc-800 h-9 text-sm focus-visible:ring-indigo-500/50"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
                     </div>
                     <Button
                         variant="outline"
-                        className="border-white/10 bg-zinc-900/50"
+                        className="border-zinc-800 bg-zinc-950 hover:bg-zinc-900 h-9 w-9 p-0"
                         onClick={fetchUsers}
                         disabled={isLoading}
                     >
                         {isLoading ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
                         ) : (
-                            <RefreshCw className="w-4 h-4" />
+                            <RefreshCw className="w-3.5 h-3.5 text-zinc-400" />
                         )}
                     </Button>
                 </div>
             </div>
 
             {error && (
-                <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center gap-3">
-                    <AlertCircle className="w-5 h-5 text-red-400" />
+                <div className="p-3 rounded-md bg-red-950/30 border border-red-500/20 flex items-center gap-3 text-sm">
+                    <AlertCircle className="w-4 h-4 text-red-400" />
                     <p className="text-red-400">{error}</p>
                 </div>
             )}
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-                <TabsList className="bg-zinc-900 border border-white/10">
-                    <TabsTrigger value="all">All Users ({filteredUsers.length})</TabsTrigger>
-                    <TabsTrigger value="enterprise">Enterprise ({filteredEnterpriseUsers.length})</TabsTrigger>
+                <TabsList className="bg-zinc-950 border border-white/5 h-9 p-0.5">
+                    <TabsTrigger
+                        value="all"
+                        className="data-[state=active]:bg-zinc-800 data-[state=active]:text-white text-zinc-500 text-xs h-7 px-4"
+                    >
+                        All Users ({filteredUsers.length})
+                    </TabsTrigger>
+                    <TabsTrigger
+                        value="enterprise"
+                        className="data-[state=active]:bg-zinc-800 data-[state=active]:text-white text-zinc-500 text-xs h-7 px-4"
+                    >
+                        Enterprise ({filteredEnterpriseUsers.length})
+                    </TabsTrigger>
                 </TabsList>
 
                 {/* All Users Tab */}
                 <TabsContent value="all" className="space-y-4">
-                    <div className="rounded-xl border border-white/10 bg-zinc-900/50 backdrop-blur-sm overflow-hidden">
+                    <div className="rounded-lg border border-white/5 bg-zinc-950 overflow-hidden shadow-sm">
                         <Table>
                             <TableHeader className="bg-white/5">
                                 <TableRow className="border-white/10 hover:bg-transparent">
@@ -915,6 +950,29 @@ export default function SuperAdminUsers() {
                                     <SelectItem value="event_pro">Event Pro ($1,500/mo)</SelectItem>
                                     <SelectItem value="masters">Masters ($3,000/mo)</SelectItem>
                                     <SelectItem value="enterprise">Enterprise</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label className="text-zinc-400">Subscription Status</Label>
+                            <Select
+                                value={editForm.subscription_status}
+                                onValueChange={(value) => setEditForm({ ...editForm, subscription_status: value })}
+                            >
+                                <SelectTrigger className="bg-zinc-950 border-white/10">
+                                    <SelectValue placeholder="Select status" />
+                                </SelectTrigger>
+                                <SelectContent className="bg-zinc-900 border-white/10">
+                                    <SelectItem value="active">Active</SelectItem>
+                                    <SelectItem value="trialing">Trialing</SelectItem>
+                                    <SelectItem value="past_due">Past Due</SelectItem>
+                                    <SelectItem value="canceled">Canceled</SelectItem>
+                                    <SelectItem value="incomplete">Incomplete</SelectItem>
+                                    <SelectItem value="incomplete_expired">Incomplete Expired</SelectItem>
+                                    <SelectItem value="unpaid">Unpaid</SelectItem>
+                                    <SelectItem value="paused">Paused</SelectItem>
+                                    <SelectItem value="inactive">Inactive</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>

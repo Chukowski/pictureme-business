@@ -28,12 +28,12 @@ declare global {
  */
 function enforceHttps(url: string): string {
   if (!url) return url;
-  
+
   // Skip localhost and local IPs - these don't need HTTPS
   if (url.includes('localhost') || url.includes('127.0.0.1') || url.includes('192.168.')) {
     return url;
   }
-  
+
   // Always upgrade http:// to https:// for non-local URLs
   // This prevents Mixed Content errors when the site is served over HTTPS
   if (url.startsWith('http://')) {
@@ -41,7 +41,7 @@ function enforceHttps(url: string): string {
     console.warn('🔒 [ENV] Upgraded URL to HTTPS:', url, '->', httpsUrl);
     return httpsUrl;
   }
-  
+
   return url;
 }
 
@@ -63,10 +63,10 @@ function isProduction(): boolean {
  */
 function deriveProductionUrl(type: 'api' | 'auth' | 'base'): string {
   if (typeof window === 'undefined') return '';
-  
+
   const hostname = window.location.hostname;
   const protocol = window.location.protocol; // Should be https: in production
-  
+
   // For pictureme.now domain
   // Auth is now handled by the Go backend (go.pictureme.now), not a separate auth server
   if (hostname.includes('pictureme.now')) {
@@ -76,7 +76,7 @@ function deriveProductionUrl(type: 'api' | 'auth' | 'base'): string {
       case 'base': return `${protocol}//${hostname}`;
     }
   }
-  
+
   // For akitapr.com domain
   if (hostname.includes('akitapr.com')) {
     switch (type) {
@@ -85,7 +85,7 @@ function deriveProductionUrl(type: 'api' | 'auth' | 'base'): string {
       case 'base': return `${protocol}//${hostname}`;
     }
   }
-  
+
   // Default: derive from current hostname pattern
   // e.g., if on app.example.com, derive api.example.com
   const parts = hostname.split('.');
@@ -97,7 +97,7 @@ function deriveProductionUrl(type: 'api' | 'auth' | 'base'): string {
       case 'base': return `${protocol}//${hostname}`;
     }
   }
-  
+
   return '';
 }
 
@@ -110,14 +110,14 @@ function deriveProductionUrl(type: 'api' | 'auth' | 'base'): string {
  */
 function getEnv(key: keyof EnvConfig): string {
   let value = '';
-  
+
   // In production, ONLY use window.ENV - never use build-time env vars
   // This prevents localhost:3001 from being used in production
   if (isProduction()) {
     if (typeof window !== 'undefined' && window.ENV && window.ENV[key]) {
       value = window.ENV[key] as string;
     }
-    
+
     // If window.ENV doesn't have the value, try to derive it from current origin
     // This ensures production always has valid URLs even if config.js isn't updated
     if (!value) {
@@ -142,12 +142,20 @@ function getEnv(key: keyof EnvConfig): string {
     }
   }
 
+  // FORCE OVERRIDE: If we are on pictureme.now, ALWAYS use go.pictureme.now (https)
+  // This fixes cases where old config.js might be cached or pointing to old api.pictureme.now
+  if (typeof window !== 'undefined' && window.location.hostname.includes('pictureme.now')) {
+    if (key === 'VITE_API_URL' || key === 'VITE_AUTH_URL') {
+      return 'https://go.pictureme.now';
+    }
+  }
+
   // Auto-upgrade http to https for URL-type configs to prevent Mixed Content errors
   const urlKeys: (keyof EnvConfig)[] = ['VITE_API_URL', 'VITE_AUTH_URL', 'VITE_BASE_URL', 'VITE_MINIO_SERVER_URL'];
   if (urlKeys.includes(key)) {
     return enforceHttps(value);
   }
-  
+
   return value;
 }
 

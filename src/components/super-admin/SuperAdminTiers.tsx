@@ -85,7 +85,6 @@ export default function SuperAdminTiers() {
         code: "",
         price: 0,
         tokenLimit: 0,
-        tokenLimit: 0,
         featuresText: "",
         category: "individual",
         highlight: "",
@@ -217,68 +216,68 @@ export default function SuperAdminTiers() {
     };
 
     return (
-        <div className="space-y-6 animate-fade-in">
+        <div className="space-y-6">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight mb-2">Subscription Tiers</h1>
-                    <p className="text-zinc-400">Manage pricing plans and feature sets.</p>
+                    <h1 className="text-2xl font-bold tracking-tight text-white mb-1">Subscription Tiers</h1>
+                    <p className="text-sm text-zinc-400">Manage pricing plans and feature sets.</p>
                 </div>
                 <Button
                     onClick={handleCreate}
-                    className="bg-indigo-600 hover:bg-indigo-700 text-white"
+                    className="bg-white text-black hover:bg-zinc-200 font-medium"
                 >
                     <Plus className="w-4 h-4 mr-2" />
                     New Tier
                 </Button>
             </div>
 
-            <Card className="bg-zinc-900/50 border-white/10 backdrop-blur-sm">
+            <Card className="bg-zinc-950 border-white/5 shadow-sm">
                 <CardContent className="p-0">
                     <Table>
-                        <TableHeader className="bg-white/5">
-                            <TableRow className="border-white/10 hover:bg-transparent">
-                                <TableHead className="text-zinc-400">Name / Code</TableHead>
-                                <TableHead className="text-zinc-400">Price</TableHead>
-                                <TableHead className="text-zinc-400">Category</TableHead>
-                                <TableHead className="text-zinc-400">Tokens</TableHead>
-                                <TableHead className="text-zinc-400">Features</TableHead>
-                                <TableHead className="text-zinc-400">Status</TableHead>
-                                <TableHead className="text-right text-zinc-400">Actions</TableHead>
+                        <TableHeader>
+                            <TableRow className="border-white/5 hover:bg-transparent">
+                                <TableHead className="text-[10px] uppercase tracking-wider font-bold text-zinc-500 h-10">Name / Code</TableHead>
+                                <TableHead className="text-[10px] uppercase tracking-wider font-bold text-zinc-500 h-10">Price</TableHead>
+                                <TableHead className="text-[10px] uppercase tracking-wider font-bold text-zinc-500 h-10">Category</TableHead>
+                                <TableHead className="text-[10px] uppercase tracking-wider font-bold text-zinc-500 h-10">Tokens</TableHead>
+                                <TableHead className="text-[10px] uppercase tracking-wider font-bold text-zinc-500 h-10">Features</TableHead>
+                                <TableHead className="text-[10px] uppercase tracking-wider font-bold text-zinc-500 h-10">Status</TableHead>
+                                <TableHead className="text-[10px] uppercase tracking-wider font-bold text-zinc-500 h-10 text-right">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {isLoading ? (
                                 <TableRow>
                                     <TableCell colSpan={6} className="text-center py-12">
-                                        <Loader2 className="w-8 h-8 animate-spin mx-auto text-indigo-500 mb-2" />
-                                        <p className="text-zinc-500">Loading tiers...</p>
+                                        <Loader2 className="w-6 h-6 animate-spin mx-auto text-zinc-500 mb-2" />
+                                        <p className="text-zinc-500 text-xs">Loading tiers...</p>
                                     </TableCell>
                                 </TableRow>
                             ) : tiers.length === 0 ? (
                                 <TableRow>
                                     <TableCell colSpan={6} className="text-center py-12">
-                                        <Layers className="w-12 h-12 mx-auto text-zinc-700 mb-3" />
-                                        <p className="text-zinc-400 font-medium">No tiers found</p>
-                                        <p className="text-zinc-500 text-sm">Create your first subscription tier to get started.</p>
+                                        <Layers className="w-10 h-10 mx-auto text-zinc-800 mb-3" />
+                                        <p className="text-zinc-400 font-medium text-sm">No tiers found</p>
+                                        <p className="text-zinc-600 text-xs mt-1">Create your first subscription tier to get started.</p>
                                     </TableCell>
                                 </TableRow>
                             ) : (
                                 tiers.map((tier) => (
-                                    <TableRow key={tier.id} className="border-white/10 hover:bg-white/5">
-                                        <TableCell>
+                                    <TableRow key={tier.id} className="border-white/5 hover:bg-white/[0.02] transition-colors">
+                                        <TableCell className="py-3">
                                             <div className="flex flex-col">
-                                                <span className="font-semibold text-white">{tier.name}</span>
-                                                <span className="text-xs font-mono text-zinc-500">{tier.code}</span>
+                                                <span className="font-medium text-sm text-zinc-200">{tier.name}</span>
+                                                <span className="text-[10px] font-mono text-zinc-500">{tier.code}</span>
                                             </div>
                                         </TableCell>
                                         <TableCell>
-                                            <span className="font-medium text-white">
+                                            <span className="font-medium text-sm text-zinc-300">
                                                 ${tier.price.toFixed(2)}
                                             </span>
-                                            <span className="text-xs text-zinc-500 ml-1">/mo</span>
+                                            <span className="text-[10px] text-zinc-600 ml-1">/mo</span>
                                         </TableCell>
                                         <TableCell>
-                                            <Badge variant="outline" className="border-white/10 text-zinc-400 capitalize">
+                                            <Badge variant="outline" className="border-zinc-800 text-zinc-400 capitalize text-[10px] font-normal px-2 py-0 h-5">
                                                 {tier.category}
                                             </Badge>
                                             {tier.highlight && (
@@ -286,56 +285,57 @@ export default function SuperAdminTiers() {
                                             )}
                                         </TableCell>
                                         <TableCell>
-                                            <Badge variant="outline" className="border-indigo-500/30 bg-indigo-500/10 text-indigo-400">
+                                            <Badge variant="outline" className="border-zinc-800 bg-zinc-900/50 text-zinc-400 text-[10px] font-mono px-2 py-0 h-5">
                                                 {tier.token_limit.toLocaleString()}
                                             </Badge>
                                         </TableCell>
                                         <TableCell>
                                             <div className="flex flex-wrap gap-1 max-w-xs">
                                                 {Array.isArray(tier.features) && tier.features.slice(0, 3).map((f, i) => (
-                                                    <span key={i} className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400 border border-zinc-700">
+                                                    <span key={i} className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-900 text-zinc-500 border border-zinc-800">
                                                         {f}
                                                     </span>
                                                 ))}
                                                 {Array.isArray(tier.features) && tier.features.length > 3 && (
-                                                    <span className="text-[10px] px-1.5 py-0.5 text-zinc-500">
-                                                        +{tier.features.length - 3} more
+                                                    <span className="text-[10px] px-1.5 py-0.5 text-zinc-600">
+                                                        +{tier.features.length - 3}
                                                     </span>
                                                 )}
                                             </div>
                                         </TableCell>
                                         <TableCell>
                                             {tier.is_active ? (
-                                                <Badge className="bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border-emerald-500/20">
-                                                    Active
-                                                </Badge>
+                                                <div className="flex items-center gap-1.5">
+                                                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]" />
+                                                    <span className="text-xs text-zinc-400">Active</span>
+                                                </div>
                                             ) : (
-                                                <Badge variant="secondary" className="bg-zinc-800 text-zinc-500">
-                                                    Inactive
-                                                </Badge>
+                                                <div className="flex items-center gap-1.5">
+                                                    <div className="w-1.5 h-1.5 rounded-full bg-zinc-700" />
+                                                    <span className="text-xs text-zinc-600">Inactive</span>
+                                                </div>
                                             )}
                                         </TableCell>
                                         <TableCell className="text-right">
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
-                                                    <Button variant="ghost" className="h-8 w-8 p-0 hover:bg-white/10">
+                                                    <Button variant="ghost" className="h-7 w-7 p-0 hover:bg-white/5 text-zinc-400 hover:text-white">
                                                         <MoreHorizontal className="h-4 w-4" />
                                                     </Button>
                                                 </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end" className="bg-zinc-900 border-white/10 text-white">
-                                                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                                <DropdownMenuContent align="end" className="bg-zinc-950 border-white/10 text-zinc-300 w-32">
                                                     <DropdownMenuItem
                                                         onClick={() => handleEdit(tier)}
-                                                        className="cursor-pointer focus:bg-white/10"
+                                                        className="cursor-pointer text-xs focus:bg-white/5 focus:text-white my-0.5"
                                                     >
-                                                        <Edit2 className="w-4 h-4 mr-2" /> Edit
+                                                        <Edit2 className="w-3 h-3 mr-2" /> Edit
                                                     </DropdownMenuItem>
-                                                    <DropdownMenuSeparator className="bg-white/10" />
+                                                    <DropdownMenuSeparator className="bg-white/5" />
                                                     <DropdownMenuItem
                                                         onClick={() => handleDelete(tier.id)}
-                                                        className="cursor-pointer text-red-400 focus:bg-red-500/10 focus:text-red-400"
+                                                        className="cursor-pointer text-red-400 text-xs focus:bg-red-500/10 focus:text-red-300 my-0.5"
                                                     >
-                                                        <Trash2 className="w-4 h-4 mr-2" /> Delete
+                                                        <Trash2 className="w-3 h-3 mr-2" /> Delete
                                                     </DropdownMenuItem>
                                                 </DropdownMenuContent>
                                             </DropdownMenu>
@@ -349,42 +349,42 @@ export default function SuperAdminTiers() {
             </Card>
 
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogContent className="bg-zinc-900 border-white/10 text-white sm:max-w-[500px]">
-                    <DialogHeader>
-                        <DialogTitle>{editingTier ? "Edit Tier" : "Create New Tier"}</DialogTitle>
-                        <DialogDescription className="text-zinc-400">
+                <DialogContent className="bg-zinc-950 border-zinc-800 text-white sm:max-w-[450px] p-0 overflow-hidden gap-0">
+                    <DialogHeader className="px-6 py-4 border-b border-white/5 bg-zinc-900/50">
+                        <DialogTitle className="text-base font-semibold">{editingTier ? "Edit Tier" : "Create New Tier"}</DialogTitle>
+                        <DialogDescription className="text-xs text-zinc-500 mt-1">
                             Configure the pricing, limits, and features for this subscription tier.
                         </DialogDescription>
                     </DialogHeader>
 
-                    <div className="space-y-4 py-4">
+                    <div className="p-6 space-y-5">
                         <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="name">Display Name</Label>
+                            <div className="space-y-1.5">
+                                <Label htmlFor="name" className="text-xs text-zinc-400">Display Name</Label>
                                 <Input
                                     id="name"
                                     placeholder="e.g. Gold Plan"
                                     value={form.name}
                                     onChange={(e) => setForm({ ...form, name: e.target.value })}
-                                    className="bg-black/50 border-white/10"
+                                    className="bg-black border-zinc-800 h-9 text-sm focus-visible:ring-indigo-500/50"
                                 />
                             </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="code">System Code</Label>
+                            <div className="space-y-1.5">
+                                <Label htmlFor="code" className="text-xs text-zinc-400">System Code</Label>
                                 <Input
                                     id="code"
                                     placeholder="e.g. gold_plan"
                                     value={form.code}
                                     onChange={(e) => setForm({ ...form, code: e.target.value })}
-                                    className="bg-black/50 border-white/10"
+                                    className="bg-black border-zinc-800 h-9 text-sm focus-visible:ring-indigo-500/50"
                                     disabled={!!editingTier} // Codes should be immutable usually
                                 />
                             </div>
                         </div>
 
                         <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="price">Monthly Price ($)</Label>
+                            <div className="space-y-1.5">
+                                <Label htmlFor="price" className="text-xs text-zinc-400">Monthly Price ($)</Label>
                                 <Input
                                     id="price"
                                     type="number"
@@ -392,65 +392,65 @@ export default function SuperAdminTiers() {
                                     step="0.01"
                                     value={form.price}
                                     onChange={(e) => setForm({ ...form, price: parseFloat(e.target.value) })}
-                                    className="bg-black/50 border-white/10"
+                                    className="bg-black border-zinc-800 h-9 text-sm focus-visible:ring-indigo-500/50"
                                 />
                             </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="tokens">Token Limit</Label>
+                            <div className="space-y-1.5">
+                                <Label htmlFor="tokens" className="text-xs text-zinc-400">Token Limit</Label>
                                 <Input
                                     id="tokens"
                                     type="number"
                                     min="0"
                                     value={form.tokenLimit}
                                     onChange={(e) => setForm({ ...form, tokenLimit: parseInt(e.target.value) })}
-                                    className="bg-black/50 border-white/10"
+                                    className="bg-black border-zinc-800 h-9 text-sm focus-visible:ring-indigo-500/50"
                                 />
                             </div>
                         </div>
 
                         <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label>Category</Label>
+                            <div className="space-y-1.5">
+                                <Label className="text-xs text-zinc-400">Category</Label>
                                 <Select
                                     value={form.category}
                                     onValueChange={(val) => setForm({ ...form, category: val })}
                                 >
-                                    <SelectTrigger className="bg-black/50 border-white/10">
+                                    <SelectTrigger className="bg-black border-zinc-800 h-9 text-sm focus:ring-indigo-500/50">
                                         <SelectValue placeholder="Select category" />
                                     </SelectTrigger>
-                                    <SelectContent className="bg-zinc-900 border-white/10 text-white">
+                                    <SelectContent className="bg-zinc-900 border-zinc-800 text-zinc-300">
                                         <SelectItem value="individual">Individual</SelectItem>
                                         <SelectItem value="business">Business</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="highlight">Highlight Tag (Optional)</Label>
+                            <div className="space-y-1.5">
+                                <Label htmlFor="highlight" className="text-xs text-zinc-400">Highlight Tag (Optional)</Label>
                                 <Input
                                     id="highlight"
                                     placeholder="e.g. Most Popular"
                                     value={form.highlight}
                                     onChange={(e) => setForm({ ...form, highlight: e.target.value })}
-                                    className="bg-black/50 border-white/10"
+                                    className="bg-black border-zinc-800 h-9 text-sm focus-visible:ring-indigo-500/50"
                                 />
                             </div>
                         </div>
 
-                        <div className="space-y-2">
-                            <Label htmlFor="features">Features (One per line)</Label>
+                        <div className="space-y-1.5">
+                            <Label htmlFor="features" className="text-xs text-zinc-400">Features (One per line)</Label>
                             <Textarea
                                 id="features"
                                 placeholder="Feature 1&#10;Feature 2&#10;Feature 3"
                                 value={form.featuresText}
                                 onChange={(e) => setForm({ ...form, featuresText: e.target.value })}
-                                className="bg-black/50 border-white/10 min-h-[100px]"
+                                className="bg-black border-zinc-800 min-h-[100px] text-sm focus-visible:ring-indigo-500/50 resize-none p-3"
                             />
                         </div>
 
-                        <div className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/10">
+                        <div className="flex items-center justify-between p-3 rounded-lg bg-zinc-900/50 border border-white/5">
                             <div className="space-y-0.5">
-                                <Label className="text-base">Active Status</Label>
-                                <p className="text-xs text-zinc-400">
+                                <Label className="text-sm font-medium text-zinc-300">Active Status</Label>
+                                <p className="text-[10px] text-zinc-500">
                                     Inactive tiers cannot be selected by new users.
                                 </p>
                             </div>
@@ -461,21 +461,21 @@ export default function SuperAdminTiers() {
                         </div>
                     </div>
 
-                    <DialogFooter>
+                    <DialogFooter className="px-6 py-4 border-t border-white/5 bg-zinc-900/50 sm:justify-between items-center">
                         <Button
                             variant="ghost"
                             onClick={() => setIsDialogOpen(false)}
-                            className="hover:bg-white/10"
+                            className="text-zinc-500 hover:text-white hover:bg-transparent px-0 h-auto text-xs"
                         >
                             Cancel
                         </Button>
                         <Button
                             onClick={handleSave}
                             disabled={isSaving}
-                            className="bg-indigo-600 hover:bg-indigo-700"
+                            className="bg-white text-black hover:bg-zinc-200 h-8 rounded-md px-4 text-xs font-semibold"
                         >
-                            {isSaving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
-                            Save Tier
+                            {isSaving ? <Loader2 className="w-3 h-3 animate-spin mr-2" /> : <Save className="w-3 h-3 mr-2" />}
+                            {editingTier ? "Save Changes" : "Create Tier"}
                         </Button>
                     </DialogFooter>
                 </DialogContent>

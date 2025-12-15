@@ -57,11 +57,11 @@ export default function SuperAdminApplications() {
         try {
             setIsLoading(true);
             const token = localStorage.getItem("auth_token");
-            
+
             const response = await fetch(`${ENV.API_URL}/api/admin/applications`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
-            
+
             if (response.ok) {
                 const data = await response.json();
                 setApplications(data.applications || []);
@@ -80,7 +80,7 @@ export default function SuperAdminApplications() {
         setIsUpdating(true);
         try {
             const token = localStorage.getItem("auth_token");
-            
+
             const response = await fetch(`${ENV.API_URL}/api/admin/applications/${id}`, {
                 method: 'PUT',
                 headers: {
@@ -111,7 +111,7 @@ export default function SuperAdminApplications() {
         setIsUpdating(true);
         try {
             const token = localStorage.getItem("auth_token");
-            
+
             const response = await fetch(`${ENV.API_URL}/api/admin/applications/${id}`, {
                 method: 'PUT',
                 headers: {
@@ -158,8 +158,8 @@ export default function SuperAdminApplications() {
                         )}
                     </p>
                 </div>
-                <Button 
-                    variant="outline" 
+                <Button
+                    variant="outline"
                     size="sm"
                     onClick={fetchApplications}
                     disabled={isLoading}
@@ -214,8 +214,8 @@ export default function SuperAdminApplications() {
                                     </TableCell>
                                     <TableCell>
                                         <Badge variant="outline" className={`
-                                            ${app.tier === 'Masters' || app.tier === 'business_masters' 
-                                                ? 'border-purple-500 text-purple-400 bg-purple-500/10' 
+                                            ${app.tier === 'Masters' || app.tier === 'business_masters'
+                                                ? 'border-purple-500 text-purple-400 bg-purple-500/10'
                                                 : 'border-indigo-500 text-indigo-400 bg-indigo-500/10'}
                                         `}>
                                             {app.tier || 'EventPro'}
@@ -248,8 +248,8 @@ export default function SuperAdminApplications() {
                                     </TableCell>
                                     <TableCell>
                                         <span className="text-xs text-zinc-500">
-                                            {app.created_at 
-                                                ? new Date(app.created_at).toLocaleDateString() 
+                                            {app.created_at
+                                                ? new Date(app.created_at).toLocaleDateString()
                                                 : 'N/A'}
                                         </span>
                                     </TableCell>
@@ -258,28 +258,32 @@ export default function SuperAdminApplications() {
                                             <Button size="sm" variant="ghost" onClick={() => openDetails(app)}>
                                                 <Eye className="w-4 h-4" />
                                             </Button>
-                                            {app.status === 'pending' && (
-                                                <>
-                                                    <Button 
-                                                        size="sm" 
-                                                        variant="ghost" 
-                                                        className="text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10" 
+                                            <div className="flex gap-1">
+                                                {app.status !== 'approved' && (
+                                                    <Button
+                                                        size="sm"
+                                                        variant="ghost"
+                                                        className="text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10"
                                                         onClick={() => handleApprove(app.id)}
                                                         disabled={isUpdating}
+                                                        title="Approve"
                                                     >
                                                         <Check className="w-4 h-4" />
                                                     </Button>
-                                                    <Button 
-                                                        size="sm" 
-                                                        variant="ghost" 
-                                                        className="text-red-400 hover:text-red-300 hover:bg-red-500/10" 
+                                                )}
+                                                {app.status !== 'rejected' && (
+                                                    <Button
+                                                        size="sm"
+                                                        variant="ghost"
+                                                        className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
                                                         onClick={() => handleReject(app.id)}
                                                         disabled={isUpdating}
+                                                        title="Reject"
                                                     >
                                                         <X className="w-4 h-4" />
                                                     </Button>
-                                                </>
-                                            )}
+                                                )}
+                                            </div>
                                         </div>
                                     </TableCell>
                                 </TableRow>
@@ -321,9 +325,9 @@ export default function SuperAdminApplications() {
                                         </div>
                                     )}
                                     {selectedApp.website && (
-                                        <a 
-                                            href={selectedApp.website} 
-                                            target="_blank" 
+                                        <a
+                                            href={selectedApp.website}
+                                            target="_blank"
                                             rel="noopener noreferrer"
                                             className="text-sm text-indigo-400 hover:underline mt-1 block"
                                         >
@@ -351,8 +355,8 @@ export default function SuperAdminApplications() {
                                         <div className="flex items-center gap-3 mb-2">
                                             <span className="text-2xl font-bold text-white">{selectedApp.ai_score}/100</span>
                                             <Badge variant="outline" className="border-indigo-500/50 text-indigo-300">
-                                                {selectedApp.ai_score > 80 ? "High Potential" : 
-                                                 selectedApp.ai_score > 50 ? "Medium Risk" : "Low Score"}
+                                                {selectedApp.ai_score > 80 ? "High Potential" :
+                                                    selectedApp.ai_score > 50 ? "Medium Risk" : "Low Score"}
                                             </Badge>
                                         </div>
                                         {selectedApp.ai_reasoning && (
@@ -386,8 +390,8 @@ export default function SuperAdminApplications() {
 
                                 <div className="flex items-center gap-2 text-xs text-zinc-500">
                                     <Calendar className="w-3 h-3" />
-                                    Applied: {selectedApp.created_at 
-                                        ? new Date(selectedApp.created_at).toLocaleDateString() 
+                                    Applied: {selectedApp.created_at
+                                        ? new Date(selectedApp.created_at).toLocaleDateString()
                                         : 'Unknown'}
                                 </div>
                             </div>
@@ -395,33 +399,30 @@ export default function SuperAdminApplications() {
                     )}
 
                     <DialogFooter className="gap-2">
-                        <Button 
-                            variant="outline" 
-                            onClick={() => setIsDetailsOpen(false)} 
+                        <Button
+                            variant="outline"
+                            onClick={() => setIsDetailsOpen(false)}
                             className="border-white/10 hover:bg-white/5"
                         >
                             Close
                         </Button>
-                        {selectedApp?.status === 'pending' && (
-                            <>
-                                <Button 
-                                    variant="destructive" 
-                                    onClick={() => handleReject(selectedApp.id)}
-                                    disabled={isUpdating}
-                                >
-                                    {isUpdating ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                                    Reject
-                                </Button>
-                                <Button 
-                                    className="bg-emerald-600 hover:bg-emerald-700 text-white" 
-                                    onClick={() => handleApprove(selectedApp.id)}
-                                    disabled={isUpdating}
-                                >
-                                    {isUpdating ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                                    Approve & Activate
-                                </Button>
-                            </>
-                        )}
+                        <Button
+                            variant="destructive"
+                            onClick={() => handleReject(selectedApp!.id)}
+                            disabled={isUpdating || selectedApp?.status === 'rejected'}
+                            className={selectedApp?.status === 'rejected' ? 'opacity-50' : ''}
+                        >
+                            {isUpdating ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                            Reject
+                        </Button>
+                        <Button
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                            onClick={() => handleApprove(selectedApp!.id)}
+                            disabled={isUpdating || selectedApp?.status === 'approved'}
+                        >
+                            {isUpdating ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                            Approve & Activate
+                        </Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>

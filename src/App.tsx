@@ -122,6 +122,10 @@ const getApiUrl = (): string => {
   if (!url && import.meta.env.DEV) {
     url = "http://localhost:3002";
   }
+  // Enforce HTTPS if not localhost
+  if (url && !url.includes("localhost") && url.startsWith("http:")) {
+    url = url.replace("http:", "https:");
+  }
   return url;
 };
 

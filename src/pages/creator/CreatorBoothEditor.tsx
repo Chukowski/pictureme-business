@@ -8,7 +8,7 @@ import {
     getCurrentUser,
     type Template,
 } from "@/services/eventsApi";
-import { EventEditorLayout } from "@/components/admin/event-editor/EventEditorLayout";
+import { BoothEditorLayout } from "@/components/creator/BoothEditorLayout";
 import { LivePreview } from "@/components/admin/event-editor/LivePreview";
 import { EventFormData, EventTheme } from "@/components/admin/event-editor/types";
 import {
@@ -22,11 +22,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Button } from "@/components/ui/button";
-import { Sparkles, Image, Settings, Globe, Lock } from "lucide-react";
-import { EventTemplates } from "@/components/admin/event-editor/EventTemplates";
-import { CreatorNavbar } from "@/components/creator/CreatorNavbar";
 import { Separator } from "@/components/ui/separator";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { EventTemplates } from "@/components/admin/event-editor/EventTemplates";
+import { DollarSign, Palette, Lock } from "lucide-react";
 
 // Simplified theme preset for creators
 const CREATOR_THEME_PRESET: EventTheme = {
@@ -49,7 +48,7 @@ export default function CreatorBoothEditor() {
     const currentUser = useMemo(() => getCurrentUser(), []);
     const [isLoading, setIsLoading] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
-    const [currentStep, setCurrentStep] = useState('overview');
+    const [currentStep, setCurrentStep] = useState('setup');
 
     const [formData, setFormData] = useState<EventFormData>({
         slug: "",
@@ -59,9 +58,9 @@ export default function CreatorBoothEditor() {
         start_date: "",
         end_date: "",
 
-        // Default to 'free' mode for simplicity for now, essentially standard booth
-        eventMode: "free",
-        is_booth: true, // IMPORTANT: Flag as booth
+        eventMode: "free", // Can be "free", "tokens", or "paid"
+        is_booth: true,
+        password: "", // For password protection
 
         rules: {
             leadCaptureEnabled: false,
@@ -122,16 +121,14 @@ export default function CreatorBoothEditor() {
 
             if (!booth) {
                 toast.error("Booth not found");
-                navigate("/creator");
+                navigate("/creator/booth");
                 return;
             }
 
             setFormData((prev) => ({
                 ...prev,
                 ...booth,
-                // Ensure theme is merged
                 theme: { ...prev.theme, ...(booth.theme || {}) },
-                // Ensure templates are preserved
                 templates: booth.templates || prev.templates,
                 is_booth: true,
             } as EventFormData));
@@ -155,7 +152,6 @@ export default function CreatorBoothEditor() {
             const dataToSave = {
                 ...formData,
                 is_booth: true,
-                // Ensure defaults are set if missing
                 settings: {
                     ...formData.settings,
                     aiModel: formData.settings?.aiModel || "nano-banana",
@@ -178,14 +174,6 @@ export default function CreatorBoothEditor() {
         }
     };
 
-    // Custom Step Navigation for Creator
-    // We reuse EventEditorLayout but might need to customize steps or just use the layout part
-    const editorSteps = [
-        { id: 'overview', label: 'Overview', icon: Globe },
-        { id: 'experience', label: 'Experience', icon: Sparkles },
-        { id: 'settings', label: 'Settings', icon: Settings },
-    ];
-
     if (isLoading) {
         return (
             <div className="flex items-center justify-center h-screen bg-black">
@@ -194,191 +182,288 @@ export default function CreatorBoothEditor() {
         );
     }
 
+    const renderStepContent = () => {
+        switch (currentStep) {
+            case 'setup':
+                return (
+                    <div className="h-full p-6 space-y-6 overflow-hidden">
+                        <Card className="bg-zinc-900 border-white/10">
+                            <CardHeader>
+                                <CardTitle className="text-white">Booth Details</CardTitle>
+                                <CardDescription className="text-zinc-400">
+                                    Basic information about your photo booth
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div className="space-y-2">
+                                    <Label className="text-zinc-300">Booth Title</Label>
+                                    <Input
+                                        value={formData.title}
+                                        onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                                        className="bg-zinc-950 border-white/10 text-white"
+                                        placeholder="e.g. My Awesome Party"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label className="text-zinc-300">URL Slug</Label>
+                                    <div className="flex items-center gap-2 text-sm text-zinc-500">
+                                        <span>pictureme.ai/booth/</span>
+                                        <Input
+                                            value={formData.slug}
+                                            onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
+                                            className="bg-zinc-950 border-white/10 text-white flex-1 font-mono"
+                                            placeholder="my-party"
+                                        />
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label className="text-zinc-300">Description (Optional)</Label>
+                                    <Textarea
+                                        value={formData.description}
+                                        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                                        className="bg-zinc-950 border-white/10 text-white min-h-[100px]"
+                                        placeholder="Describe what this booth is for..."
+                                    />
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* Monetization */}
+                        <Card className="bg-zinc-900 border-white/10">
+                            <CardHeader>
+                                <div className="flex items-center gap-2">
+                                    <DollarSign className="w-5 h-5 text-green-400" />
+                                    <CardTitle className="text-white">Monetization</CardTitle>
+                                </div>
+                                <CardDescription className="text-zinc-400">
+                                    Choose how users can access your booth
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div className="space-y-2">
+                                    <Label className="text-zinc-300">Access Type</Label>
+                                    <Select
+                                        value={formData.eventMode || "free"}
+                                        onValueChange={(value) => setFormData({ ...formData, eventMode: value as any })}
+                                    >
+                                        <SelectTrigger className="bg-zinc-950 border-white/10 text-white">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent className="bg-zinc-900 border-white/10">
+                                            <SelectItem value="free">Free - No restrictions</SelectItem>
+                                            <SelectItem value="pay_per_photo">Pay Per Photo - Charge via Stripe</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                {formData.eventMode === 'pay_per_photo' && (
+                                    <div className="space-y-2 p-4 rounded-lg bg-green-500/5 border border-green-500/20">
+                                        <Label className="text-zinc-300">Price Per Photo (USD)</Label>
+                                        <Input
+                                            type="number"
+                                            min="0"
+                                            step="0.01"
+                                            placeholder="e.g. 2.99"
+                                            className="bg-zinc-950 border-white/10 text-white"
+                                        />
+                                        <p className="text-xs text-zinc-500">
+                                            Users will pay via Stripe before generating photos
+                                        </p>
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+
+                        {/* Privacy */}
+                        <Card className="bg-zinc-900 border-white/10">
+                            <CardHeader>
+                                <div className="flex items-center gap-2">
+                                    <Lock className="w-5 h-5 text-amber-400" />
+                                    <CardTitle className="text-white">Privacy & Access</CardTitle>
+                                </div>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <Label className="text-zinc-300">Public Access</Label>
+                                        <p className="text-xs text-zinc-500">Anyone with the link can access your booth</p>
+                                    </div>
+                                    <Switch
+                                        checked={formData.is_active}
+                                        onCheckedChange={(c) => setFormData({ ...formData, is_active: c })}
+                                    />
+                                </div>
+
+                                <Separator className="bg-white/10" />
+
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <Label className="text-zinc-300">Enable Photo Feed</Label>
+                                        <p className="text-xs text-zinc-500">Allow users to see photos from others</p>
+                                    </div>
+                                    <Switch
+                                        checked={formData.settings?.feedEnabled}
+                                        onCheckedChange={(c) => setFormData({
+                                            ...formData,
+                                            settings: { ...formData.settings, feedEnabled: c }
+                                        })}
+                                    />
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
+                );
+
+            case 'design':
+                return (
+                    <div className="h-full p-6 space-y-6 overflow-hidden">
+                        <Card className="bg-zinc-900 border-white/10">
+                            <CardHeader>
+                                <div className="flex items-center gap-2">
+                                    <Palette className="w-5 h-5 text-purple-400" />
+                                    <CardTitle className="text-white">Branding</CardTitle>
+                                </div>
+                                <CardDescription className="text-zinc-400">
+                                    Customize your booth's appearance
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div className="space-y-2">
+                                    <Label className="text-zinc-300">Logo URL</Label>
+                                    <Input
+                                        value={formData.branding?.logoPath || ""}
+                                        onChange={(e) => setFormData({
+                                            ...formData,
+                                            branding: { ...formData.branding, logoPath: e.target.value }
+                                        })}
+                                        className="bg-zinc-950 border-white/10 text-white"
+                                        placeholder="https://..."
+                                    />
+                                </div>
+                                <Separator className="bg-white/10" />
+                                <div className="flex items-center justify-between">
+                                    <Label className="text-zinc-300">Show Logo in Booth</Label>
+                                    <Switch
+                                        checked={formData.branding?.showLogoInBooth}
+                                        onCheckedChange={(c) => setFormData({
+                                            ...formData,
+                                            branding: { ...formData.branding, showLogoInBooth: c }
+                                        })}
+                                    />
+                                </div>
+                                <div className="flex items-center justify-between">
+                                    <Label className="text-zinc-300">Show Logo in Feed</Label>
+                                    <Switch
+                                        checked={formData.branding?.showLogoInFeed}
+                                        onCheckedChange={(c) => setFormData({
+                                            ...formData,
+                                            branding: { ...formData.branding, showLogoInFeed: c }
+                                        })}
+                                    />
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
+                );
+
+            case 'experience':
+                return (
+                    <div className="h-full overflow-y-auto p-6">
+                        <div className="max-w-5xl mx-auto">
+                            <EventTemplates
+                                formData={formData}
+                                setFormData={setFormData}
+                                currentUser={currentUser}
+                                onPreviewModeChange={() => { }}
+                            />
+                        </div>
+                    </div>
+                );
+
+            case 'workflow':
+                return (
+                    <div className="h-full p-6 space-y-6 overflow-hidden">
+                        <Card className="bg-zinc-900 border-white/10">
+                            <CardHeader>
+                                <CardTitle className="text-white">Sharing Options</CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <Label className="text-zinc-300">Enable Email Sharing</Label>
+                                    <Switch
+                                        checked={formData.sharing?.emailEnabled}
+                                        onCheckedChange={(c) => setFormData({
+                                            ...formData,
+                                            sharing: { ...formData.sharing, emailEnabled: c }
+                                        })}
+                                    />
+                                </div>
+                                <Separator className="bg-white/10" />
+                                <div className="flex items-center justify-between">
+                                    <Label className="text-zinc-300">Group Photos into Albums</Label>
+                                    <Switch
+                                        checked={formData.sharing?.groupPhotosIntoAlbums}
+                                        onCheckedChange={(c) => setFormData({
+                                            ...formData,
+                                            sharing: { ...formData.sharing, groupPhotosIntoAlbums: c }
+                                        })}
+                                    />
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
+                );
+
+            case 'settings':
+                return (
+                    <div className="h-full p-6 space-y-6 overflow-hidden">
+                        <Card className="bg-zinc-900 border-white/10">
+                            <CardHeader>
+                                <CardTitle className="text-white">AI Settings</CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div className="space-y-2">
+                                    <Label className="text-zinc-300">Default AI Model</Label>
+                                    <select
+                                        value={formData.settings?.aiModel || "nano-banana"}
+                                        onChange={(e) => setFormData({
+                                            ...formData,
+                                            settings: { ...formData.settings, aiModel: e.target.value }
+                                        })}
+                                        className="w-full bg-zinc-950 border border-white/10 rounded-md p-2 text-white"
+                                    >
+                                        <option value="nano-banana">Nano Banana [Standard - 1 token]</option>
+                                        <option value="nano-banana-pro">Nano Banana Pro [Premium - 15 tokens]</option>
+                                        <option value="flux-realism">Flux Realism [Pro - 2 tokens]</option>
+                                        <option value="seedream-v4">Seedream v4 [Standard - 1 token]</option>
+                                    </select>
+                                    <p className="text-xs text-zinc-500">
+                                        Choose the AI model used for generating photos
+                                    </p>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
+                );
+
+            default:
+                return null;
+        }
+    };
+
     return (
-        <div className="min-h-screen bg-black flex flex-col">
-            <CreatorNavbar user={currentUser || null} />
-
-            <div className="flex-1 flex overflow-hidden">
-                {/* Left Panel - Editor */}
-                <div className="w-1/2 border-r border-white/10 flex flex-col bg-zinc-950/50">
-                    {/* Steps Header */}
-                    <div className="flex items-center gap-1 p-4 border-b border-white/10 overflow-x-auto">
-                        {editorSteps.map((step) => (
-                            <button
-                                key={step.id}
-                                onClick={() => setCurrentStep(step.id)}
-                                className={`
-                                flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap
-                                ${currentStep === step.id
-                                        ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20'
-                                        : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5'}
-                            `}
-                            >
-                                <step.icon className="w-4 h-4" />
-                                {step.label}
-                            </button>
-                        ))}
-                        <div className="flex-1" />
-                        <Button
-                            onClick={handleSubmit}
-                            disabled={isSaving}
-                            size="sm"
-                            className="bg-indigo-600 hover:bg-indigo-500 text-white"
-                        >
-                            {isSaving ? "Saving..." : "Save Changes"}
-                        </Button>
-                    </div>
-
-                    {/* Content Area */}
-                    <div className="flex-1 overflow-y-auto p-6 space-y-6">
-                        {currentStep === 'overview' && (
-                            <div className="space-y-6 max-w-2xl mx-auto">
-                                <Card className="bg-zinc-900 border-white/10">
-                                    <CardHeader>
-                                        <CardTitle className="text-white">Booth Details</CardTitle>
-                                        <CardDescription className="text-zinc-400">
-                                            Basic information about your photo booth
-                                        </CardDescription>
-                                    </CardHeader>
-                                    <CardContent className="space-y-4">
-                                        <div className="space-y-2">
-                                            <Label className="text-zinc-300">Booth Title</Label>
-                                            <Input
-                                                value={formData.title}
-                                                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                                                className="bg-zinc-950 border-white/10 text-white"
-                                                placeholder="e.g. My Awesome Party"
-                                            />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label className="text-zinc-300">URL Slug</Label>
-                                            <div className="flex items-center gap-2 text-sm text-zinc-500">
-                                                <span>pictureme.ai/booth/</span>
-                                                <Input
-                                                    value={formData.slug}
-                                                    onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
-                                                    className="bg-zinc-950 border-white/10 text-white flex-1 font-mono"
-                                                    placeholder="my-party"
-                                                />
-                                            </div>
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label className="text-zinc-300">Description (Optional)</Label>
-                                            <Textarea
-                                                value={formData.description}
-                                                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                                className="bg-zinc-950 border-white/10 text-white min-h-[100px]"
-                                                placeholder="Describe what this booth is for..."
-                                            />
-                                        </div>
-                                    </CardContent>
-                                </Card>
-
-                                <Card className="bg-zinc-900 border-white/10">
-                                    <CardHeader>
-                                        <CardTitle className="text-white">Visibility</CardTitle>
-                                    </CardHeader>
-                                    <CardContent className="space-y-4">
-                                        <div className="flex items-center justify-between p-3 rounded-lg border border-white/5 bg-zinc-950/50">
-                                            <div className="space-y-0.5">
-                                                <Label className="text-white">Active Status</Label>
-                                                <p className="text-xs text-zinc-500">
-                                                    When inactive, the booth URL will not be accessible
-                                                </p>
-                                            </div>
-                                            <Switch
-                                                checked={formData.is_active}
-                                                onCheckedChange={(c) => setFormData({ ...formData, is_active: c })}
-                                            />
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            </div>
-                        )}
-
-                        {currentStep === 'experience' && (
-                            <div className="space-y-6">
-                                {/* Reuse EventTemplates component but maybe simplify it? 
-                                 For now, standard one is fine as it handles template selection well.
-                             */}
-                                <EventTemplates
-                                    formData={formData}
-                                    setFormData={setFormData}
-                                    currentUser={currentUser}
-                                    onPreviewModeChange={() => { }} // No external preview mode change needed for now
-                                />
-                            </div>
-                        )}
-
-                        {currentStep === 'settings' && (
-                            <div className="space-y-6 max-w-2xl mx-auto">
-                                <Card className="bg-zinc-900 border-white/10">
-                                    <CardHeader>
-                                        <CardTitle className="text-white">AI Settings</CardTitle>
-                                    </CardHeader>
-                                    <CardContent className="space-y-4">
-                                        <div className="space-y-2">
-                                            <Label className="text-zinc-300">Default AI Model</Label>
-                                            <select
-                                                value={formData.settings?.aiModel || "nano-banana"}
-                                                onChange={(e) => setFormData({
-                                                    ...formData,
-                                                    settings: { ...formData.settings, aiModel: e.target.value }
-                                                })}
-                                                className="w-full bg-zinc-950 border border-white/10 rounded-md p-2 text-white"
-                                            >
-                                                <option value="nano-banana">Flux [Standard]</option>
-                                                <option value="flux-realism">Flux Realism [Pro]</option>
-                                                <option value="sdxl">SDXL Lightning [Fast]</option>
-                                            </select>
-                                            <p className="text-xs text-zinc-500">
-                                                Choose the AI model used for generating photos.
-                                            </p>
-                                        </div>
-                                    </CardContent>
-                                </Card>
-
-                                <Card className="bg-zinc-900 border-white/10">
-                                    <CardHeader>
-                                        <CardTitle className="text-white">Sharing Options</CardTitle>
-                                    </CardHeader>
-                                    <CardContent className="space-y-4">
-                                        <div className="flex items-center justify-between">
-                                            <Label className="text-zinc-300">Enable Email Sharing</Label>
-                                            <Switch
-                                                checked={formData.sharing?.emailEnabled}
-                                                onCheckedChange={(c) => setFormData({
-                                                    ...formData,
-                                                    sharing: { ...formData.sharing, emailEnabled: c }
-                                                })}
-                                            />
-                                        </div>
-                                        <Separator className="bg-white/10" />
-                                        <div className="flex items-center justify-between">
-                                            <Label className="text-zinc-300">Group Photos into Albums</Label>
-                                            <Switch
-                                                checked={formData.sharing?.groupPhotosIntoAlbums}
-                                                onCheckedChange={(c) => setFormData({
-                                                    ...formData,
-                                                    sharing: { ...formData.sharing, groupPhotosIntoAlbums: c }
-                                                })}
-                                            />
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            </div>
-                        )}
-                    </div>
-                </div>
-
-                {/* Right Panel - Preview */}
-                <div className="w-1/2 bg-zinc-950 border-l border-white/10 relative">
-                    <LivePreview
-                        formData={formData}
-                        currentStep={currentStep === 'experience' ? 'experience' : 'setup'}
-                    />
-                </div>
-            </div>
-        </div>
+        <BoothEditorLayout
+            title={formData.title || "My Booth"}
+            onTitleChange={(newTitle) => setFormData({ ...formData, title: newTitle })}
+            status={formData.is_active ? 'active' : 'draft'}
+            onStatusChange={(newStatus) => setFormData({ ...formData, is_active: newStatus === 'active' })}
+            onSave={handleSubmit}
+            isSaving={isSaving}
+            currentStep={currentStep}
+            onStepChange={setCurrentStep}
+            preview={<LivePreview formData={formData} currentStep={currentStep} />}
+        >
+            {renderStepContent()}
+        </BoothEditorLayout>
     );
 }

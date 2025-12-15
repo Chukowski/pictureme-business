@@ -209,24 +209,24 @@ const ROLE_TO_PLAN_MAP: Record<string, string> = {
   'business starter': 'event_starter',
   'event_starter': 'event_starter',
   'eventstarter': 'event_starter',
-  
+
   'business_eventpro': 'event_pro',
   'businesseventpro': 'event_pro',
   'business eventpro': 'event_pro',
   'event_pro': 'event_pro',
   'eventpro': 'event_pro',
-  
+
   'business_masters': 'masters',
   'businessmasters': 'masters',
   'business masters': 'masters',
   'masters': 'masters',
-  
+
   // Individual plans
   'spark': 'spark',
   'vibe': 'vibe',
   'studio': 'studio',
   'individual': 'spark', // Default individual
-  
+
   // Free/default
   'free': 'event_starter',
 };
@@ -241,10 +241,10 @@ export default function BillingTab({ currentUser, openPlansModal = false }: Bill
   const getPlanFromUserRole = (): Plan | null => {
     const userRole = currentUser?.role || currentUser?.subscription_tier || '';
     const normalizedRole = normalizeRole(userRole);
-    
+
     // Try exact match first, then normalized
     let planId = ROLE_TO_PLAN_MAP[userRole] || ROLE_TO_PLAN_MAP[normalizedRole];
-    
+
     // If still no match, try partial matching for common patterns
     if (!planId) {
       if (normalizedRole.includes('masters')) {
@@ -263,9 +263,9 @@ export default function BillingTab({ currentUser, openPlansModal = false }: Bill
         planId = 'event_starter'; // Default fallback
       }
     }
-    
+
     console.log('🔍 getPlanFromUserRole:', { userRole, normalizedRole, planId });
-    
+
     const allPlans = [...BUSINESS_PLANS, ...INDIVIDUAL_PLANS];
     const matchedPlan = allPlans.find(p => p.id === planId);
     return matchedPlan ? { ...matchedPlan, current: true } : null;
@@ -285,18 +285,18 @@ export default function BillingTab({ currentUser, openPlansModal = false }: Bill
   const [connectStatus, setConnectStatus] = useState<StripeConnectStatus | null>(null);
   const [isConnecting, setIsConnecting] = useState(false);
   const [planType, setPlanType] = useState<'individual' | 'business'>('business');
-  
+
   // Determine if user is on a business plan (has events, etc.)
-  const isBusinessUser = currentUser?.role?.includes('business') || 
-                         currentUser?.subscription_tier?.includes('event') ||
-                         currentUser?.subscription_tier?.includes('masters');
-  
+  const isBusinessUser = currentUser?.role?.includes('business') ||
+    currentUser?.subscription_tier?.includes('event') ||
+    currentUser?.subscription_tier?.includes('masters');
+
   // Determine if user is on an individual plan
-  const isIndividualUser = !isBusinessUser || 
-                           currentPlan?.id === 'spark' || 
-                           currentPlan?.id === 'vibe' || 
-                           currentPlan?.id === 'studio';
-  
+  const isIndividualUser = !isBusinessUser ||
+    currentPlan?.id === 'spark' ||
+    currentPlan?.id === 'vibe' ||
+    currentPlan?.id === 'studio';
+
   // Get the appropriate plans to show for upgrade
   const getUpgradePlans = () => {
     if (isIndividualUser && !isBusinessUser) {
@@ -334,14 +334,14 @@ export default function BillingTab({ currentUser, openPlansModal = false }: Bill
       if (planRes.ok) {
         const planData = await planRes.json();
         console.log('📋 Plan data from API:', planData);
-        
+
         // Try to match from all plans (business + individual)
         const allPlans = [...BUSINESS_PLANS, ...INDIVIDUAL_PLANS];
-        
+
         // Try multiple fields to find a match
         const planIdToMatch = planData.plan_id || planData.id || planData.name?.toLowerCase().replace(/\s+/g, '_');
         let matchedPlan = allPlans.find(p => p.id === planIdToMatch);
-        
+
         // If no exact match, try normalized name matching
         if (!matchedPlan && planData.name) {
           const normalizedName = normalizeRole(planData.name);
@@ -353,7 +353,7 @@ export default function BillingTab({ currentUser, openPlansModal = false }: Bill
             matchedPlan = allPlans.find(p => p.id === 'event_starter');
           }
         }
-        
+
         // Determine role-based desired plan (fallback / override)
         const rolePlan = getPlanFromUserRole();
 
@@ -379,7 +379,7 @@ export default function BillingTab({ currentUser, openPlansModal = false }: Bill
         console.log('⚠️ Plan API failed, falling back to user role');
         setCurrentPlan(getPlanFromUserRole());
       }
-      
+
       // Fetch Stripe Connect status
       if (connectRes.ok) {
         const connectData = await connectRes.json();
@@ -417,9 +417,12 @@ export default function BillingTab({ currentUser, openPlansModal = false }: Bill
           setShowPlansDialog(false);
         }
       } else {
-        toast.error("Failed to upgrade plan");
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        console.error("Upgrade error:", response.status, errorData);
+        toast.error(`Failed to upgrade plan: ${errorData.error || 'Unknown error'}`);
       }
     } catch (error) {
+      console.error("Upgrade exception:", error);
       toast.error("Upgrade failed. Please try again.");
     } finally {
       setIsUpgrading(false);
@@ -463,13 +466,16 @@ export default function BillingTab({ currentUser, openPlansModal = false }: Bill
           toast.error("Failed to start payment method setup");
         }
       } else {
+        const errorText = await response.text();
+        console.error("Payment method error:", response.status, errorText);
         toast.error("Failed to set up payment method");
       }
     } catch (error) {
+      console.error("Add payment method error:", error);
       toast.error("Setup failed. Please try again.");
     }
   };
-  
+
   // Handle Stripe Connect onboarding
   const handleConnectStripe = async () => {
     setIsConnecting(true);
@@ -499,7 +505,7 @@ export default function BillingTab({ currentUser, openPlansModal = false }: Bill
       setIsConnecting(false);
     }
   };
-  
+
   // Handle Stripe Connect dashboard
   const handleOpenStripeDashboard = async () => {
     try {
@@ -558,206 +564,343 @@ export default function BillingTab({ currentUser, openPlansModal = false }: Bill
     );
   }
 
+  const needsActivation = isBusinessUser && currentUser?.subscription_status !== 'active' && currentUser?.subscription_status !== 'trialing';
+
   return (
     <div className="space-y-6">
-      {/* Current Plan */}
-      <Card className="bg-zinc-900/50 border-white/10">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-indigo-500/10 border border-indigo-500/20">
-                {currentPlan && getPlanIcon(currentPlan.id)}
+      {/* Needs Activation Banner / Current Plan */}
+      {needsActivation ? (
+        <Card className="bg-gradient-to-r from-indigo-900/50 to-purple-900/50 border-indigo-500/50 relative overflow-hidden">
+          {/* Background decoration */}
+          <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
+
+          <CardHeader>
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-full bg-indigo-500/20 flex items-center justify-center border border-indigo-500/30">
+                <Crown className="w-6 h-6 text-indigo-400" />
               </div>
               <div>
-                <CardTitle className="text-white">
-                  {currentPlan?.name || 'Free'} Plan
-                </CardTitle>
-                <CardDescription className="text-zinc-400">
-                  Your current subscription status
+                <CardTitle className="text-2xl text-white">Business Tier Unlocked! 🎉</CardTitle>
+                <CardDescription className="text-indigo-200">
+                  Your application has been approved. Activate your subscription to start using business features.
                 </CardDescription>
               </div>
             </div>
-            <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20">Active</Badge>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div>
-              <p className="text-sm text-zinc-400">Monthly Price</p>
-              {currentPlan?.isCustom ? (
-                <p className="text-xl font-bold text-amber-400">Custom Agreement</p>
-              ) : (
-                <p className="text-2xl font-bold text-white">
-                  ${(currentPlan?.price || 0).toLocaleString()}<span className="text-sm text-zinc-400">/mo</span>
-                </p>
-              )}
-            </div>
-            <div>
-              <p className="text-sm text-zinc-400">Tokens Included</p>
-              <p className="text-2xl font-bold text-white">
-                {(currentPlan?.tokens_monthly || 0).toLocaleString()}
-              </p>
-            </div>
-            <div>
-              <p className="text-sm text-zinc-400">Active Events Limit</p>
-              <p className="text-2xl font-bold text-white">
-                {currentPlan?.max_events || 0}
-              </p>
-            </div>
-          </div>
-          
-          {/* Token sharing info */}
-          <p className="text-xs text-zinc-500 mt-4">
-            {PLAN_NOTE}
-          </p>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col md:flex-row items-center justify-between gap-6 p-4 bg-zinc-900/40 rounded-lg border border-indigo-500/20 backdrop-blur-sm">
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-sm text-zinc-300">
+                  <div className="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                    <Check className="w-3 h-3 text-emerald-400" />
+                  </div>
+                  Unlimited Events & Photos
+                </div>
+                <div className="flex items-center gap-2 text-sm text-zinc-300">
+                  <div className="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                    <Check className="w-3 h-3 text-emerald-400" />
+                  </div>
+                  Remove "Powered by PictureMe" Branding
+                </div>
+                <div className="flex items-center gap-2 text-sm text-zinc-300">
+                  <div className="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                    <Check className="w-3 h-3 text-emerald-400" />
+                  </div>
+                  Access to Business Analytics
+                </div>
+              </div>
 
-          <div className="flex gap-3 mt-6">
-            <Dialog open={showPlansDialog} onOpenChange={setShowPlansDialog}>
-              <DialogTrigger asChild>
-                <Button className="bg-indigo-600 hover:bg-indigo-700">
-                  <ArrowUpRight className="w-4 h-4 mr-2" />
-                  Upgrade Plan
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="bg-zinc-900 border-white/10 text-white max-w-4xl">
-                <DialogHeader>
-                  <DialogTitle>Choose Your Plan</DialogTitle>
-                  <DialogDescription className="text-zinc-400">
-                    {isIndividualUser && !isBusinessUser 
-                      ? "Select the plan that best fits your creative needs"
-                      : "Select the plan that best fits your business needs"
-                    }
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-                  {getUpgradePlans().map((plan) => (
-                    <div
-                      key={plan.id}
-                      className={`relative p-6 rounded-xl border ${
-                        plan.isCustom
+              <Dialog open={showPlansDialog} onOpenChange={setShowPlansDialog}>
+                <DialogTrigger asChild>
+                  <Button size="lg" className="w-full md:w-auto bg-white text-indigo-900 hover:bg-zinc-100 font-bold shadow-lg shadow-indigo-900/20">
+                    <Zap className="w-4 h-4 mr-2 fill-indigo-900" />
+                    Unlock & Start Using Business Tier
+                  </Button>
+                </DialogTrigger>
+                {/* Dialog Content reused from below - we need to make sure the DialogContent is rendered. 
+                    Actually, React DialogTrigger needs the Content to be a sibling or child properly. 
+                    Let's just use the Button here to set state, and keep the Dialog wrapped around the button below or render it separately.
+                    Better approach: Just use Button with onClick to open the dialog, and place the Shared Dialog somewhere else?
+                    The current implementation has Dialog wrapping the "Upgrade Plan" button. 
+                    I will copy the DialogContent here to ensure it works for this button too.
+                */}
+                <DialogContent className="bg-zinc-900 border-white/10 text-white max-w-4xl">
+                  <DialogHeader>
+                    <DialogTitle>Choose Your Business Plan</DialogTitle>
+                    <DialogDescription className="text-zinc-400">
+                      Select the plan that best fits your business needs to activate your account.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                    {getUpgradePlans().map((plan) => (
+                      <div
+                        key={plan.id}
+                        className={`relative p-6 rounded-xl border ${plan.isCustom
                           ? 'border-amber-500/50 bg-gradient-to-br from-amber-900/20 to-orange-900/20'
                           : currentPlan?.id === plan.id
-                          ? 'border-indigo-500 bg-indigo-500/10'
-                          : 'border-white/10 bg-zinc-800/50 hover:border-white/20'
-                      }`}
-                    >
-                      {currentPlan?.id === plan.id && (
-                        <Badge className="absolute -top-2 right-4 bg-indigo-600">
-                          Current Plan
-                        </Badge>
-                      )}
-                      {plan.isCustom && currentPlan?.id !== plan.id && (
-                        <Badge className="absolute -top-2 right-4 bg-amber-500 text-black">
-                          <Crown className="w-3 h-3 mr-1" />
-                          Premium
-                        </Badge>
-                      )}
-                      <div className="flex items-center gap-2 mb-4">
-                        {getPlanIcon(plan.id)}
-                        <h3 className="text-lg font-semibold text-white">{plan.name}</h3>
-                      </div>
-                      <div className="mb-4">
+                            ? 'border-indigo-500 bg-indigo-500/10'
+                            : 'border-white/10 bg-zinc-800/50 hover:border-white/20'
+                          }`}
+                      >
+                        {/* Plan details (copied from below for consistency) */}
+                        {plan.isCustom && (
+                          <Badge className="absolute -top-2 right-4 bg-amber-500 text-black">
+                            <Crown className="w-3 h-3 mr-1" />
+                            Premium
+                          </Badge>
+                        )}
+                        <div className="flex items-center gap-2 mb-4">
+                          {getPlanIcon(plan.id)}
+                          <h3 className="text-lg font-semibold text-white">{plan.name}</h3>
+                        </div>
+                        <div className="mb-4">
+                          {plan.isCustom ? (
+                            <>
+                              <span className="text-2xl font-bold text-amber-400">Custom</span>
+                              <p className="text-xs text-zinc-400 mt-1">From ${plan.price.toLocaleString()}/month</p>
+                            </>
+                          ) : (
+                            <>
+                              <span className="text-3xl font-bold text-white">${plan.price.toLocaleString()}</span>
+                              <span className="text-zinc-400">/month</span>
+                            </>
+                          )}
+                        </div>
+                        <ul className="space-y-2 mb-6">
+                          {plan.features.map((feature, i) => (
+                            <li key={i} className="flex items-center gap-2 text-sm text-zinc-300">
+                              <Check className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                              {feature}
+                            </li>
+                          ))}
+                        </ul>
                         {plan.isCustom ? (
-                          <>
-                            <span className="text-2xl font-bold text-amber-400">Custom</span>
-                            <p className="text-xs text-zinc-400 mt-1">From ${plan.price.toLocaleString()}/month</p>
-                          </>
+                          <Button
+                            className="w-full bg-amber-500 hover:bg-amber-600 text-black"
+                            onClick={() => window.open('/apply', '_blank')}
+                          >
+                            Contact Sales
+                          </Button>
                         ) : (
-                          <>
-                            <span className="text-3xl font-bold text-white">${plan.price.toLocaleString()}</span>
-                            <span className="text-zinc-400">/month</span>
-                          </>
+                          <Button
+                            className="w-full" // Always enabled if activating
+                            onClick={() => handleUpgrade(plan.id)}
+                            disabled={isUpgrading}
+                          >
+                            {isUpgrading ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              'Activate Plan'
+                            )}
+                          </Button>
                         )}
                       </div>
-                      <ul className="space-y-2 mb-6">
-                        {plan.features.map((feature, i) => (
-                          <li key={i} className="flex items-center gap-2 text-sm text-zinc-300">
-                            <Check className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-                            {feature}
-                          </li>
-                        ))}
-                      </ul>
-                      {plan.isCustom ? (
-                        <Button
-                          className="w-full bg-amber-500 hover:bg-amber-600 text-black"
-                          onClick={() => window.open('/apply', '_blank')}
-                        >
-                          Contact Sales
-                        </Button>
-                      ) : (
-                        <Button
-                          className="w-full"
-                          variant={currentPlan?.id === plan.id ? "outline" : "default"}
-                          disabled={currentPlan?.id === plan.id || isUpgrading}
-                          onClick={() => handleUpgrade(plan.id)}
-                        >
-                          {isUpgrading ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                          ) : currentPlan?.id === plan.id ? (
-                            'Current Plan'
-                          ) : (
-                            'Select Plan'
-                          )}
-                        </Button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-                
-                {/* Token sharing note */}
-                <p className="text-xs text-zinc-500 text-center mt-4 px-4">
-                  {PLAN_NOTE}
-                </p>
-                
-                {/* Option to switch to business plans for individual users */}
-                {isIndividualUser && !isBusinessUser && (
-                  <div className="text-center mt-4 pt-4 border-t border-white/10">
-                    <p className="text-sm text-zinc-400">
-                      Running events for clients?{' '}
-                      <a 
-                        href="/apply"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-indigo-400 hover:text-indigo-300 underline"
-                      >
-                        Explore Business Plans
-                      </a>
-                    </p>
+                    ))}
                   </div>
+                </DialogContent>
+              </Dialog>
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
+        /* Normal Current Plan Card */
+        <Card className="bg-zinc-900/50 border-white/10">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-indigo-500/10 border border-indigo-500/20">
+                  {currentPlan && getPlanIcon(currentPlan.id)}
+                </div>
+                <div>
+                  <CardTitle className="text-white">
+                    {currentPlan?.name || 'Free'} Plan
+                  </CardTitle>
+                  <CardDescription className="text-zinc-400">
+                    Your current subscription status
+                  </CardDescription>
+                </div>
+              </div>
+              <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20">Active</Badge>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div>
+                <p className="text-sm text-zinc-400">Monthly Price</p>
+                {currentPlan?.isCustom ? (
+                  <p className="text-xl font-bold text-amber-400">Custom Agreement</p>
+                ) : (
+                  <p className="text-2xl font-bold text-white">
+                    ${(currentPlan?.price || 0).toLocaleString()}<span className="text-sm text-zinc-400">/mo</span>
+                  </p>
                 )}
-              </DialogContent>
-            </Dialog>
+              </div>
+              <div>
+                <p className="text-sm text-zinc-400">Tokens Included</p>
+                <p className="text-2xl font-bold text-white">
+                  {(currentPlan?.tokens_monthly || 0).toLocaleString()}
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-zinc-400">Active Events Limit</p>
+                <p className="text-2xl font-bold text-white">
+                  {currentPlan?.max_events || 0}
+                </p>
+              </div>
+            </div>
 
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="outline" className="border-red-500/20 text-red-400 hover:bg-red-500/10">
-                  Cancel Subscription
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent className="bg-zinc-900 border-white/10">
-                <AlertDialogHeader>
-                  <AlertDialogTitle className="text-white">Cancel Subscription?</AlertDialogTitle>
-                  <AlertDialogDescription className="text-zinc-400">
-                    You'll lose access to premium features at the end of your current billing period.
-                    Your tokens and data will be preserved.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel className="bg-zinc-800 border-white/10 text-white">
-                    Keep Subscription
-                  </AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={handleCancelSubscription}
-                    className="bg-red-600 hover:bg-red-700"
-                  >
+            {/* Token sharing info */}
+            <p className="text-xs text-zinc-500 mt-4">
+              {PLAN_NOTE}
+            </p>
+
+            <div className="flex gap-3 mt-6">
+              <Dialog open={showPlansDialog} onOpenChange={setShowPlansDialog}>
+                <DialogTrigger asChild>
+                  <Button className="bg-indigo-600 hover:bg-indigo-700">
+                    <ArrowUpRight className="w-4 h-4 mr-2" />
+                    Upgrade Plan
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="bg-zinc-900 border-white/10 text-white max-w-4xl">
+                  <DialogHeader>
+                    <DialogTitle>Choose Your Plan</DialogTitle>
+                    <DialogDescription className="text-zinc-400">
+                      {isIndividualUser && !isBusinessUser
+                        ? "Select the plan that best fits your creative needs"
+                        : "Select the plan that best fits your business needs"
+                      }
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                    {getUpgradePlans().map((plan) => (
+                      <div
+                        key={plan.id}
+                        className={`relative p-6 rounded-xl border ${plan.isCustom
+                          ? 'border-amber-500/50 bg-gradient-to-br from-amber-900/20 to-orange-900/20'
+                          : currentPlan?.id === plan.id
+                            ? 'border-indigo-500 bg-indigo-500/10'
+                            : 'border-white/10 bg-zinc-800/50 hover:border-white/20'
+                          }`}
+                      >
+                        {currentPlan?.id === plan.id && (
+                          <Badge className="absolute -top-2 right-4 bg-indigo-600">
+                            Current Plan
+                          </Badge>
+                        )}
+                        {plan.isCustom && currentPlan?.id !== plan.id && (
+                          <Badge className="absolute -top-2 right-4 bg-amber-500 text-black">
+                            <Crown className="w-3 h-3 mr-1" />
+                            Premium
+                          </Badge>
+                        )}
+                        <div className="flex items-center gap-2 mb-4">
+                          {getPlanIcon(plan.id)}
+                          <h3 className="text-lg font-semibold text-white">{plan.name}</h3>
+                        </div>
+                        <div className="mb-4">
+                          {plan.isCustom ? (
+                            <>
+                              <span className="text-2xl font-bold text-amber-400">Custom</span>
+                              <p className="text-xs text-zinc-400 mt-1">From ${plan.price.toLocaleString()}/month</p>
+                            </>
+                          ) : (
+                            <>
+                              <span className="text-3xl font-bold text-white">${plan.price.toLocaleString()}</span>
+                              <span className="text-zinc-400">/month</span>
+                            </>
+                          )}
+                        </div>
+                        <ul className="space-y-2 mb-6">
+                          {plan.features.map((feature, i) => (
+                            <li key={i} className="flex items-center gap-2 text-sm text-zinc-300">
+                              <Check className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                              {feature}
+                            </li>
+                          ))}
+                        </ul>
+                        {plan.isCustom ? (
+                          <Button
+                            className="w-full bg-amber-500 hover:bg-amber-600 text-black"
+                            onClick={() => window.open('/apply', '_blank')}
+                          >
+                            Contact Sales
+                          </Button>
+                        ) : (
+                          <Button
+                            className="w-full"
+                            variant={currentPlan?.id === plan.id ? "outline" : "default"}
+                            disabled={currentPlan?.id === plan.id || isUpgrading}
+                            onClick={() => handleUpgrade(plan.id)}
+                          >
+                            {isUpgrading ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : currentPlan?.id === plan.id ? (
+                              'Current Plan'
+                            ) : (
+                              'Select Plan'
+                            )}
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Token sharing note */}
+                  <p className="text-xs text-zinc-500 text-center mt-4 px-4">
+                    {PLAN_NOTE}
+                  </p>
+
+                  {/* Option to switch to business plans for individual users */}
+                  {isIndividualUser && !isBusinessUser && (
+                    <div className="text-center mt-4 pt-4 border-t border-white/10">
+                      <p className="text-sm text-zinc-400">
+                        Running events for clients?{' '}
+                        <a
+                          href="/apply"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-indigo-400 hover:text-indigo-300 underline"
+                        >
+                          Explore Business Plans
+                        </a>
+                      </p>
+                    </div>
+                  )}
+                </DialogContent>
+              </Dialog>
+
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="outline" className="border-red-500/20 text-red-400 hover:bg-red-500/10">
                     Cancel Subscription
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          </div>
-        </CardContent>
-      </Card>
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent className="bg-zinc-900 border-white/10">
+                  <AlertDialogHeader>
+                    <AlertDialogTitle className="text-white">Cancel Subscription?</AlertDialogTitle>
+                    <AlertDialogDescription className="text-zinc-400">
+                      You'll lose access to premium features at the end of your current billing period.
+                      Your tokens and data will be preserved.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel className="bg-zinc-800 border-white/10 text-white">
+                      Keep Subscription
+                    </AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={handleCancelSubscription}
+                      className="bg-red-600 hover:bg-red-700"
+                    >
+                      Cancel Subscription
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Payment Methods */}
@@ -873,8 +1016,8 @@ export default function BillingTab({ currentUser, openPlansModal = false }: Bill
                             invoice.status === 'paid'
                               ? 'border-emerald-500/20 text-emerald-400'
                               : invoice.status === 'pending'
-                              ? 'border-yellow-500/20 text-yellow-400'
-                              : 'border-red-500/20 text-red-400'
+                                ? 'border-yellow-500/20 text-yellow-400'
+                                : 'border-red-500/20 text-red-400'
                           }
                         >
                           {invoice.status}
@@ -952,8 +1095,8 @@ export default function BillingTab({ currentUser, openPlansModal = false }: Bill
                     </p>
                   </div>
                 </div>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   className="border-purple-500/30 text-purple-400 hover:bg-purple-500/10"
                   onClick={handleOpenStripeDashboard}
                 >
@@ -980,7 +1123,7 @@ export default function BillingTab({ currentUser, openPlansModal = false }: Bill
                   Connect your Stripe account to accept payments from album sales and enable automatic revenue sharing.
                 </p>
                 {currentPlan?.id === 'masters' || currentPlan?.id === 'business_masters' ? (
-                  <Button 
+                  <Button
                     className="bg-purple-600 hover:bg-purple-700"
                     onClick={handleConnectStripe}
                     disabled={isConnecting}

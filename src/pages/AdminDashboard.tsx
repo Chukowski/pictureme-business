@@ -35,7 +35,7 @@ export default function AdminDashboard() {
   // Default to individual if no role specified (backward compatibility)
   const userRole = currentUser?.role || 'individual';
   const isSuperAdmin = userRole === 'superadmin';
-  
+
   // Dashboard view mode for superadmin (can switch between studio and business)
   const [dashboardMode, setDashboardMode] = useState<'studio' | 'business'>('studio');
   const [tokenStats, setTokenStats] = useState<{ current_tokens: number; tokens_total?: number; plan_tokens?: number } | null>(null);
@@ -44,10 +44,10 @@ export default function AdminDashboard() {
   // Merge token stats into current user for display
   const displayedUser = useMemo(() => {
     if (!currentUser) return null;
-    
+
     // Default total to 8000 if not present (Business Standard)
     const defaultTotal = 8000;
-    
+
     return {
       ...currentUser,
       tokens_remaining: tokenStats?.current_tokens ?? currentUser.tokens_remaining,
@@ -91,15 +91,15 @@ export default function AdminDashboard() {
   useEffect(() => {
     fetchTokenStats();
     const interval = setInterval(fetchTokenStats, 60000);
-    
+
     // Listen for token updates from AI processing
     const handleTokensUpdated = (e: CustomEvent<{ newBalance: number; tokensCharged: number }>) => {
       console.log("🪙 Tokens updated event received:", e.detail);
       setTokenStats(prev => prev ? { ...prev, current_tokens: e.detail.newBalance } : { current_tokens: e.detail.newBalance });
     };
-    
+
     window.addEventListener("tokens-updated", handleTokensUpdated as EventListener);
-    
+
     return () => {
       clearInterval(interval);
       window.removeEventListener("tokens-updated", handleTokensUpdated as EventListener);
@@ -160,31 +160,29 @@ export default function AdminDashboard() {
                 <Sparkles className="w-5 h-5 text-indigo-400" />
               </div>
               <h1 className="text-2xl font-bold tracking-tight">
-                {(isSuperAdmin ? dashboardMode === 'business' : userRole.startsWith('business')) 
-                  ? 'Business Dashboard' 
+                {(isSuperAdmin ? dashboardMode === 'business' : userRole.startsWith('business'))
+                  ? 'Business Dashboard'
                   : 'My Studio'}
               </h1>
-              
+
               {/* SuperAdmin Dashboard Switcher */}
               {isSuperAdmin && (
                 <div className="flex items-center gap-2 ml-4 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20">
                   <button
                     onClick={() => setDashboardMode('studio')}
-                    className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
-                      dashboardMode === 'studio' 
-                        ? 'bg-white text-black' 
+                    className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${dashboardMode === 'studio'
+                        ? 'bg-white text-black'
                         : 'text-amber-400 hover:text-amber-300'
-                    }`}
+                      }`}
                   >
                     Studio
                   </button>
                   <button
                     onClick={() => setDashboardMode('business')}
-                    className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
-                      dashboardMode === 'business' 
-                        ? 'bg-white text-black' 
+                    className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${dashboardMode === 'business'
+                        ? 'bg-white text-black'
                         : 'text-amber-400 hover:text-amber-300'
-                    }`}
+                      }`}
                   >
                     Business
                   </button>
@@ -213,9 +211,9 @@ export default function AdminDashboard() {
         {/* Dashboard Content */}
         <div className="flex-1 min-h-0 overflow-y-auto scrollbar-hide">
           {(isSuperAdmin ? dashboardMode === 'business' : userRole.startsWith('business')) ? (
-            <BusinessDashboard currentUser={currentUser} />
+            <BusinessDashboard currentUser={displayedUser || currentUser} />
           ) : (
-            <IndividualDashboard currentUser={currentUser} />
+            <IndividualDashboard currentUser={displayedUser || currentUser} />
           )}
         </div>
       </div>

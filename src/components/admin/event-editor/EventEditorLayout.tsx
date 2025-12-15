@@ -2,9 +2,9 @@ import { ReactNode, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { 
-  ArrowLeft, Smartphone, Monitor, Tablet, Save, ChevronRight, 
-  Settings2, Palette, Sparkles, Share2, Settings, 
+import {
+  ArrowLeft, Smartphone, Monitor, Tablet, Save, ChevronRight,
+  Settings2, Palette, Sparkles, Share2, Settings,
   Grid3X3, ZoomIn, ZoomOut, Rocket
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -57,17 +57,17 @@ export function EventEditorLayout({
       {/* Sticky Header */}
       <header className="h-14 border-b border-white/10 bg-zinc-950 flex items-center justify-between px-4 shrink-0 z-50">
         <div className="flex items-center gap-4">
-          <Button 
-            variant="ghost" 
-            size="icon" 
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={() => navigate('/admin/events')}
             className="text-zinc-400 hover:text-white h-8 w-8"
           >
             <ArrowLeft className="w-4 h-4" />
           </Button>
-          
+
           <Separator orientation="vertical" className="h-5 bg-white/10" />
-          
+
           <div className="flex items-center gap-2 text-xs">
             <span className="text-zinc-400 cursor-pointer hover:text-white transition-colors" onClick={() => navigate('/admin/events')}>
               Events
@@ -84,8 +84,8 @@ export function EventEditorLayout({
               onClick={() => onStatusChange?.('draft')}
               className={cn(
                 "px-3 py-1 text-[10px] font-medium rounded-md transition-all",
-                status === 'draft' 
-                  ? "bg-zinc-700 text-zinc-200" 
+                status === 'draft'
+                  ? "bg-zinc-700 text-zinc-200"
                   : "text-zinc-500 hover:text-zinc-400"
               )}
             >
@@ -95,8 +95,8 @@ export function EventEditorLayout({
               onClick={() => onStatusChange?.('active')}
               className={cn(
                 "px-3 py-1 text-[10px] font-medium rounded-md transition-all flex items-center gap-1.5",
-                status === 'active' 
-                  ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/20" 
+                status === 'active'
+                  ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/20"
                   : "text-zinc-500 hover:text-zinc-400"
               )}
             >
@@ -105,8 +105,8 @@ export function EventEditorLayout({
             </button>
           </div>
 
-          <Button 
-            onClick={onSave} 
+          <Button
+            onClick={onSave}
             disabled={isSaving}
             className="bg-white text-black hover:bg-zinc-200 h-8 text-xs font-medium px-4 rounded-lg"
           >
@@ -127,7 +127,7 @@ export function EventEditorLayout({
 
       {/* Main Layout */}
       <div className="flex-1 flex overflow-hidden">
-        
+
         {/* LEFT SIDEBAR - WORKFLOW */}
         <aside className="w-64 bg-zinc-950 border-r border-white/10 flex flex-col shrink-0">
           <div className="p-4">
@@ -148,7 +148,7 @@ export function EventEditorLayout({
                   {currentStep === step.id && (
                     <div className="absolute left-0 top-0 bottom-0 w-1 bg-indigo-500" />
                   )}
-                  
+
                   <div className={cn(
                     "p-2 rounded-lg transition-colors",
                     currentStep === step.id ? "bg-indigo-500/20 text-indigo-300" : "bg-zinc-900 text-zinc-500 group-hover:text-zinc-300"
@@ -166,24 +166,24 @@ export function EventEditorLayout({
 
           {/* Quick Launch Box */}
           <div className="mt-auto p-4 border-t border-white/5">
-             <div className="bg-gradient-to-br from-indigo-900/20 to-purple-900/20 border border-indigo-500/20 rounded-xl p-4">
-                <h3 className="text-xs font-medium text-indigo-200 mb-1 flex items-center gap-2">
-                   <Rocket className="w-3 h-3" />
-                   Ready to launch?
-                </h3>
-                <p className="text-[10px] text-indigo-300/70 mb-3 leading-relaxed">
-                   Preview your event flow thoroughly before going live.
-                </p>
-                <Button size="sm" variant="secondary" className="w-full h-7 text-[10px] bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 border border-indigo-500/20">
-                   Open Launch Checklist
-                </Button>
-             </div>
+            <div className="bg-gradient-to-br from-indigo-900/20 to-purple-900/20 border border-indigo-500/20 rounded-xl p-4">
+              <h3 className="text-xs font-medium text-indigo-200 mb-1 flex items-center gap-2">
+                <Rocket className="w-3 h-3" />
+                Ready to launch?
+              </h3>
+              <p className="text-[10px] text-indigo-300/70 mb-3 leading-relaxed">
+                Preview your event flow thoroughly before going live.
+              </p>
+              <Button size="sm" variant="secondary" className="w-full h-7 text-[10px] bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 border border-indigo-500/20">
+                Open Launch Checklist
+              </Button>
+            </div>
           </div>
         </aside>
 
         {/* MAIN CONTENT - SPLIT VIEW */}
         <div className="flex-1 flex overflow-hidden bg-zinc-900">
-          
+
           {/* Center Panel - Form */}
           <div className="flex-1 flex flex-col min-w-[500px] bg-zinc-950 relative z-10 shadow-2xl border-r border-white/5">
             <ScrollArea className="flex-1">
@@ -195,20 +195,20 @@ export function EventEditorLayout({
 
           {/* Right Panel - Device Canvas */}
           <div className="w-[45%] min-w-[450px] max-w-[800px] flex flex-col bg-[#09090b] relative shrink-0">
-            
+
             {/* Canvas Toolbar */}
             <div className="h-14 border-b border-white/5 flex items-center justify-between px-4 bg-zinc-900/50 backdrop-blur-sm z-20">
               <div className="flex items-center gap-4">
                 <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Live Preview</span>
-                
+
                 <div className="h-4 w-px bg-white/10" />
-                
+
                 {/* Device Selector */}
                 <div className="flex items-center bg-zinc-900 rounded-lg p-0.5 border border-white/5">
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <button 
+                        <button
                           onClick={() => setPreviewDevice('mobile')}
                           className={cn("p-1.5 rounded-md transition-all", previewDevice === 'mobile' ? "bg-zinc-800 text-white shadow-sm" : "text-zinc-500 hover:text-zinc-300")}
                         >
@@ -218,11 +218,11 @@ export function EventEditorLayout({
                       <TooltipContent side="bottom" className="text-xs bg-zinc-800 border-zinc-700 text-white">Mobile</TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
-                  
+
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <button 
+                        <button
                           onClick={() => setPreviewDevice('tablet')}
                           className={cn("p-1.5 rounded-md transition-all", previewDevice === 'tablet' ? "bg-zinc-800 text-white shadow-sm" : "text-zinc-500 hover:text-zinc-300")}
                         >
@@ -236,7 +236,7 @@ export function EventEditorLayout({
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <button 
+                        <button
                           onClick={() => setPreviewDevice('desktop')}
                           className={cn("p-1.5 rounded-md transition-all", previewDevice === 'desktop' ? "bg-zinc-800 text-white shadow-sm" : "text-zinc-500 hover:text-zinc-300")}
                         >
@@ -250,34 +250,34 @@ export function EventEditorLayout({
               </div>
 
               <div className="flex items-center gap-2">
-                 {/* Zoom Controls */}
-                 <div className="flex items-center bg-zinc-900 rounded-lg p-0.5 border border-white/5">
-                    <Button variant="ghost" size="icon" className="h-7 w-7 text-zinc-400 hover:text-white" onClick={handleZoomOut}>
-                      <ZoomOut className="w-3.5 h-3.5" />
-                    </Button>
-                    <span className="text-[10px] font-mono w-8 text-center text-zinc-500">{zoom}%</span>
-                    <Button variant="ghost" size="icon" className="h-7 w-7 text-zinc-400 hover:text-white" onClick={handleZoomIn}>
-                      <ZoomIn className="w-3.5 h-3.5" />
-                    </Button>
-                 </div>
+                {/* Zoom Controls */}
+                <div className="flex items-center bg-zinc-900 rounded-lg p-0.5 border border-white/5">
+                  <Button variant="ghost" size="icon" className="h-7 w-7 text-zinc-400 hover:text-white" onClick={handleZoomOut}>
+                    <ZoomOut className="w-3.5 h-3.5" />
+                  </Button>
+                  <span className="text-[10px] font-mono w-8 text-center text-zinc-500">{zoom}%</span>
+                  <Button variant="ghost" size="icon" className="h-7 w-7 text-zinc-400 hover:text-white" onClick={handleZoomIn}>
+                    <ZoomIn className="w-3.5 h-3.5" />
+                  </Button>
+                </div>
 
-                 <div className="h-4 w-px bg-white/10" />
+                <div className="h-4 w-px bg-white/10" />
 
-                 <TooltipProvider>
-                   <Tooltip>
-                     <TooltipTrigger asChild>
-                       <Button 
-                        variant="ghost" 
-                        size="icon" 
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
                         className={cn("h-8 w-8 text-zinc-400 hover:text-white", showGrid && "bg-zinc-800 text-white")}
                         onClick={() => setShowGrid(!showGrid)}
-                       >
-                         <Grid3X3 className="w-4 h-4" />
-                       </Button>
-                     </TooltipTrigger>
-                     <TooltipContent side="bottom" className="text-xs bg-zinc-800 border-zinc-700 text-white">Toggle Grid</TooltipContent>
-                   </Tooltip>
-                 </TooltipProvider>
+                      >
+                        <Grid3X3 className="w-4 h-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" className="text-xs bg-zinc-800 border-zinc-700 text-white">Toggle Grid</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </div>
             </div>
 
@@ -286,24 +286,24 @@ export function EventEditorLayout({
               "flex-1 flex items-center justify-center overflow-hidden relative bg-[#050505]",
               showGrid && "bg-[radial-gradient(#333_1px,transparent_1px)] [background-size:20px_20px]"
             )}>
-              
-              <div 
+
+              <div
                 className="transition-transform duration-300 ease-out origin-center"
                 style={{ transform: `scale(${zoom / 100})` }}
               >
                 <div className={cn(
                   "relative bg-black border-[8px] border-zinc-800 shadow-2xl overflow-hidden transition-all duration-500",
-                  previewDevice === 'mobile' ? "w-[375px] h-[812px] rounded-[3rem]" : 
-                  previewDevice === 'tablet' ? "w-[768px] h-[1024px] rounded-[2rem]" : 
-                  "w-[1280px] h-[800px] rounded-xl border-[12px]" // Desktop
+                  previewDevice === 'mobile' ? "w-[375px] h-[812px] rounded-[3rem]" :
+                    previewDevice === 'tablet' ? "w-[768px] h-[1024px] rounded-[2rem]" :
+                      "w-[1280px] h-[800px] rounded-xl border-[12px]" // Desktop
                 )}>
                   {/* Notch / Header for Mobile */}
                   {previewDevice === 'mobile' && (
                     <div className="absolute top-0 left-1/2 -translate-x-1/2 w-36 h-7 bg-zinc-800 rounded-b-2xl z-50 flex items-center justify-center">
-                       <div className="w-16 h-1 rounded-full bg-black/40" />
+                      <div className="w-16 h-1 rounded-full bg-black/40" />
                     </div>
                   )}
-                  
+
                   {/* Content */}
                   <div className="w-full h-full bg-zinc-900 overflow-y-auto scrollbar-hide">
                     {preview}

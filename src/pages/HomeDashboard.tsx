@@ -14,6 +14,8 @@ import { WhatsNewBlock } from "@/components/home/WhatsNewBlock";
 import { RecommendedTemplates } from "@/components/home/RecommendedTemplates";
 import { DeveloperToolsCard } from "@/components/home/DeveloperToolsCard";
 import { CommunityHighlightsCard } from "@/components/home/CommunityHighlightsCard";
+import { Button } from "@/components/ui/button";
+import { Crown, Check, ArrowRight } from "lucide-react";
 
 export default function HomeDashboard() {
   const navigate = useNavigate();
@@ -33,7 +35,7 @@ export default function HomeDashboard() {
         navigate('/admin/auth');
         return;
       }
-      
+
       // Parallel fetch: user events, home content, and FRESH token stats
       const [userEvents, homeContent, tokenStats] = await Promise.all([
         getUserEvents(),
@@ -44,7 +46,7 @@ export default function HomeDashboard() {
         const events = await getUserEvents().catch(() => []);
         return [events, null, null] as const;
       });
-      
+
       // Merge fresh token stats into user object
       if (tokenStats) {
         setUser({
@@ -55,7 +57,7 @@ export default function HomeDashboard() {
       } else {
         setUser(currentUser);
       }
-      
+
       setEvents(userEvents);
       if (homeContent) {
         setContent(homeContent);
@@ -87,7 +89,7 @@ export default function HomeDashboard() {
       <div className="absolute bottom-0 left-0 w-full h-[320px] bg-gradient-to-t from-black via-black/70 to-transparent pointer-events-none -z-10" />
 
       <div className="max-w-7xl mx-auto space-y-8 relative z-10">
-        
+
         {/* HEADER SECTION */}
         <div className="space-y-4">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
@@ -110,10 +112,10 @@ export default function HomeDashboard() {
 
         {/* MAIN GRID LAYOUT */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          
+
           {/* LEFT COLUMN (Primary: Stats, Tools, Activity) - Spans 8/12 */}
           <div className="lg:col-span-8 space-y-8">
-            
+
             {/* Tools Grid */}
             <ToolsGrid activeEvent={activeEvent} isBusinessUser={isBusinessUser} />
 
@@ -127,13 +129,13 @@ export default function HomeDashboard() {
 
           {/* RIGHT COLUMN (Secondary: Insights, Updates) - Spans 4/12 */}
           <div className="lg:col-span-4 space-y-6">
-            
+
             {/* Plan & Tokens Insight */}
             <PlanInsightsCard user={user} />
 
             {/* What's New Feed (Tabbed) */}
             <div className="h-[400px]">
-               <WhatsNewBlock content={content} />
+              <WhatsNewBlock content={content} />
             </div>
 
             {/* Developer Tools (Business Only) */}
@@ -145,6 +147,63 @@ export default function HomeDashboard() {
           </div>
         </div>
       </div>
+
+      {/* Payment Activation Modal (Force for new business users) */}
+      {isBusinessUser && user?.subscription_status !== 'active' && user?.subscription_status !== 'trialing' && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="bg-zinc-900 border border-indigo-500/30 rounded-2xl max-w-md w-full p-6 shadow-2xl relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/20 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none" />
+
+            <div className="text-center space-y-4 relative z-10">
+              <div className="w-16 h-16 bg-indigo-500/10 rounded-full flex items-center justify-center mx-auto border border-indigo-500/20">
+                <Crown className="w-8 h-8 text-indigo-400" />
+              </div>
+
+              <div>
+                <h2 className="text-2xl font-bold text-white mb-2">Welcome to Business Tier! 🎉</h2>
+                <p className="text-zinc-400">
+                  Your application has been approved. To unlock your new features, unlimited events, and business tools, please activate your subscription.
+                </p>
+              </div>
+
+              <div className="bg-zinc-800/50 rounded-lg p-4 text-left space-y-3">
+                <div className="flex items-center gap-3 text-sm text-zinc-300">
+                  <div className="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                    <Check className="w-3 h-3 text-emerald-400" />
+                  </div>
+                  Unlimited Events
+                </div>
+                <div className="flex items-center gap-3 text-sm text-zinc-300">
+                  <div className="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                    <Check className="w-3 h-3 text-emerald-400" />
+                  </div>
+                  Custom Branding Removal
+                </div>
+                <div className="flex items-center gap-3 text-sm text-zinc-300">
+                  <div className="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                    <Check className="w-3 h-3 text-emerald-400" />
+                  </div>
+                  Business Analytics & Models
+                </div>
+              </div>
+
+              <Button
+                onClick={() => navigate('/admin/settings/business?tab=billing&activate=true')}
+                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-6 text-lg"
+              >
+                Activate Subscription <ArrowRight className="w-5 h-5 ml-2" />
+              </Button>
+
+              <button
+                onClick={() => navigate('/admin/playground')}
+                className="text-xs text-zinc-500 hover:text-white underline decoration-zinc-700"
+              >
+                Continue to playground with existing tokens
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

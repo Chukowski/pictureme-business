@@ -52,6 +52,7 @@ export interface User {
   plan_started_at?: string;
   plan_renewal_date?: string;
   max_concurrent_events?: number;
+  subscription_status?: 'active' | 'past_due' | 'canceled' | 'trialing' | 'incomplete' | 'incomplete_expired';
 }
 
 export interface WatermarkConfig {

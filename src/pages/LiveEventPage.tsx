@@ -77,7 +77,7 @@ export default function LiveEventPage() {
     setAlbums,
   } = useLiveAlbums({
     eventId: event?.postgres_event_id || 0,
-    enabled: !!event?.postgres_event_id && !isPaused,
+    enabled: !!event?.postgres_event_id && event.postgres_event_id > 0 && !isPaused,
     pollInterval: 5000, // 5 seconds
   });
 

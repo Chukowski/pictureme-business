@@ -88,7 +88,7 @@ export function CreatorNavbar({ user }: CreatorNavbarProps) {
                     {/* Token Progress Bar */}
                     <div
                         className="hidden sm:flex items-center gap-3 bg-zinc-900/50 hover:bg-zinc-800/50 backdrop-blur-sm border border-white/10 rounded-full px-3 py-1.5 transition-all group cursor-help min-w-[140px]"
-                        title={`${tokens.toLocaleString()} / ${(user?.tokens_total || 1000).toLocaleString()} tokens remaining`}
+                        title={`${tokens.toLocaleString()} tokens remaining`}
                     >
                         <div className="flex flex-col gap-0.5 flex-1">
                             <div className="flex items-center justify-between text-[10px] font-medium leading-none">
@@ -97,22 +97,24 @@ export function CreatorNavbar({ user }: CreatorNavbarProps) {
                                     "transition-colors",
                                     (user?.tokens_remaining || 0) <= 20 ? "text-amber-500" : "text-indigo-400"
                                 )}>
-                                    {Math.round(((user?.tokens_remaining || 0) / (user?.tokens_total || 1000)) * 100)}%
+                                    {user?.tokens_remaining?.toLocaleString() || 0}
                                 </span>
                             </div>
-                            {/* Progress Bar Track */}
-                            <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
-                                {/* Progress Fill */}
-                                <div
-                                    className={cn(
-                                        "h-full rounded-full transition-all duration-500",
-                                        (user?.tokens_remaining || 0) <= 20 ? "bg-amber-500" : "bg-indigo-500"
-                                    )}
-                                    style={{
-                                        width: `${Math.min(100, Math.max(0, ((user?.tokens_remaining || 0) / (user?.tokens_total || 1000)) * 100))}%`
-                                    }}
-                                />
-                            </div>
+                            {/* Progress Bar Track - Only show for users with monthly plans */}
+                            {user?.role?.includes('business') && (
+                                <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
+                                    {/* Progress Fill */}
+                                    <div
+                                        className={cn(
+                                            "h-full rounded-full transition-all duration-500",
+                                            (user?.tokens_remaining || 0) <= 20 ? "bg-amber-500" : "bg-indigo-500"
+                                        )}
+                                        style={{
+                                            width: `${Math.min(100, Math.max(0, ((user?.tokens_remaining || 0) / (user?.tokens_total || 1000)) * 100))}%`
+                                        }}
+                                    />
+                                </div>
+                            )}
                         </div>
                     </div>
 
