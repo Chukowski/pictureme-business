@@ -41,44 +41,43 @@ export function CreatorSmartOnboarding({ events }: CreatorSmartOnboardingProps) 
 
   return (
     <Card className="bg-zinc-900 bg-gradient-to-r from-indigo-900/20 to-purple-900/20 border-indigo-500/30">
-      <CardContent className="p-5">
-        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
-          <div className="space-y-1 max-w-md">
-            <h3 className="text-lg font-bold text-white">Get started with PictureMe</h3>
-            <p className="text-sm text-indigo-200/70">Complete these steps to start your creative journey.</p>
+      <CardContent className="p-4 sm:p-5">
+        <div className="flex flex-col gap-4">
+          <div className="space-y-1">
+            <h3 className="text-base sm:text-lg font-bold text-white">Get started with PictureMe</h3>
+            <p className="text-xs sm:text-sm text-indigo-200/70">Complete these steps to creative journey.</p>
           </div>
 
-          <div className="w-full lg:w-auto flex flex-col sm:flex-row gap-4">
+          <div className="w-full flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 sm:pb-0 scrollbar-hide snap-x">
             {steps.map((step) => (
-              <div 
-                key={step.id} 
-                className={`flex-1 flex flex-col justify-between p-4 rounded-xl border transition-all h-28 min-w-0 sm:min-w-[200px] relative overflow-hidden ${
-                  step.done 
-                    ? "bg-emerald-500/10 border-emerald-500/20" 
-                    : "bg-zinc-900/40 border-white/5 hover:bg-zinc-900/60 cursor-pointer group"
-                }`}
+              <div
+                key={step.id}
+                className={`snap-center flex-none w-48 sm:w-auto sm:flex-1 flex flex-col justify-between p-3 sm:p-4 rounded-xl border transition-all h-24 sm:h-28 relative overflow-hidden ${step.done
+                    ? "bg-emerald-500/10 border-emerald-500/20"
+                    : "bg-zinc-900/60 border-white/5 hover:bg-zinc-900/80 cursor-pointer group"
+                  }`}
                 onClick={!step.done ? step.action : undefined}
               >
                 <div className="absolute top-0 right-0 p-2 opacity-10 group-hover:opacity-20 transition-opacity pointer-events-none">
-                   <Circle className="w-12 h-12 fill-current" />
+                  <Circle className="w-10 h-10 sm:w-12 sm:h-12 fill-current" />
                 </div>
 
                 <div className="flex items-start justify-between mb-2 relative z-10">
                   {step.done ? (
-                    <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+                    <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-400 shrink-0" />
                   ) : (
-                    <Circle className="w-5 h-5 text-zinc-600 shrink-0 group-hover:text-indigo-400 transition-colors" />
+                    <Circle className="w-4 h-4 sm:w-5 sm:h-5 text-zinc-600 shrink-0 group-hover:text-indigo-400 transition-colors" />
                   )}
-                  
-                   {!step.done && (
-                    <span className="text-[10px] uppercase font-bold tracking-wider text-zinc-500 group-hover:text-white transition-colors">
+
+                  {!step.done && (
+                    <span className="text-[9px] sm:text-[10px] uppercase font-bold tracking-wider text-zinc-500 group-hover:text-white transition-colors">
                       {step.cta}
                     </span>
                   )}
                 </div>
-                
+
                 <div className="relative z-10">
-                  <p className={`text-sm font-medium leading-tight ${step.done ? "text-emerald-100 line-through opacity-70" : "text-zinc-200 group-hover:text-white"}`}>
+                  <p className={`text-xs sm:text-sm font-medium leading-tight ${step.done ? "text-emerald-100 line-through opacity-70" : "text-zinc-200 group-hover:text-white"}`}>
                     {step.label}
                   </p>
                 </div>

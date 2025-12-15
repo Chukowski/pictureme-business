@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { CreatorNavbar } from "@/components/creator/CreatorNavbar";
+import { CreatorMobileNav } from "@/components/creator/CreatorMobileNav";
 import { getCurrentUser, getTokenStats, User } from "@/services/eventsApi";
 import { cn } from "@/lib/utils";
 
@@ -41,12 +42,21 @@ export function CreatorLayout() {
 
   return (
     <div className="min-h-screen bg-black text-white flex flex-col">
-      {/* Top Header / Navigation Tabs */}
-      <CreatorNavbar user={user} />
+      {/* Desktop Navigation Bar - Hidden on mobile */}
+      <div className="hidden md:block">
+        <CreatorNavbar user={user} />
+      </div>
+
+      {/* Mobile Floating Navigation - Hidden on desktop */}
+      <div className="md:hidden">
+        <CreatorMobileNav />
+      </div>
 
       {/* Main Content */}
       <main className={cn(
         "flex-1 w-full mx-auto",
+        // Add bottom padding on mobile for the fixed bottom nav
+        "pb-20 md:pb-8",
         location.pathname.includes('/settings') ||
           location.pathname.includes('/studio') ||
           (location.pathname.includes('/booth/') && location.pathname.includes('/edit'))

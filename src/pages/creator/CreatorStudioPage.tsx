@@ -130,6 +130,9 @@ interface HistoryItem {
     ratio?: string;
     duration?: string;
     shareCode?: string;
+    isPublic?: boolean;
+    status?: 'completed' | 'processing' | 'failed'; // For showing pending generations
+    jobId?: number; // Pending generation job ID
 }
 
 // --- Local Models Definition to avoid import circular dependency issues ---
@@ -307,6 +310,40 @@ function CreatorStudioPageContent() {
         }
     };
 
+    const handleTogglePublic = async (item: HistoryItem) => {
+        const newVisibility = !item.isPublic;
+        // Optimistic update
+        setHistory(prev => prev.map(h => h.id === item.id ? { ...h, isPublic: newVisibility } : h));
+        if (previewItem?.id === item.id) {
+            setPreviewItem(prev => prev ? { ...prev, isPublic: newVisibility } : null);
+        }
+
+        try {
+            const token = localStorage.getItem("auth_token");
+            if (!token) return;
+
+            const res = await fetch(`${ENV.API_URL}/api/creations/${item.id}/visibility`, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                },
+                body: JSON.stringify({ visibility: newVisibility ? 'public' : 'private' })
+            });
+
+            if (res.ok) {
+                toast.success(newVisibility ? "Published to Community Feed" : "Removed from feed");
+            } else {
+                throw new Error("Failed");
+            }
+        } catch (e) {
+            console.error(e);
+            toast.error("Failed to update visibility");
+            // Revert optimistic update
+            setHistory(prev => prev.map(h => h.id === item.id ? { ...h, isPublic: !newVisibility } : h));
+        }
+    };
+
     const handlePublishToMarketplace = (item: HistoryItem) => {
         // Open Save Template modal but pre-fill data and maybe set a flag for 'public'
         // For now, reuse SaveTemplateModal which likely has 'public' toggle or we can add logic
@@ -359,48 +396,137 @@ function CreatorStudioPageContent() {
         }
     }, [viewState]);
 
-    // Load history from localStorage on mount
+    // Load history from API on mount
     useEffect(() => {
         if (!user) {
             navigate("/admin/auth");
             return;
         }
 
-        // Reset history loaded state when user changes
-        setHistoryLoaded(false);
+        const fetchHistory = async () => {
+            const token = localStorage.getItem("auth_token");
+            if (!token) return;
 
-        const storageKey = `studio_history_${user.id}`;
-        try {
-            const saved = localStorage.getItem(storageKey);
-            console.log(`Loading history from ${storageKey}:`, saved ? 'found' : 'empty');
-            if (saved) {
-                const parsed = JSON.parse(saved);
-                if (Array.isArray(parsed)) {
-                    setHistory(parsed);
-                    console.log(`Loaded ${parsed.length} items from history`);
-                }
-            } else {
-                setHistory([]); // Reset history if nothing saved
-            }
-        } catch (e) {
-            console.error('Failed to load history:', e);
-            setHistory([]);
-        }
-        setHistoryLoaded(true);
-    }, [navigate, user?.id]); // Use user.id specifically
-
-    // Save history to localStorage whenever it changes (only after initial load)
-    useEffect(() => {
-        if (user && historyLoaded) {
-            const storageKey = `studio_history_${user.id}`;
             try {
-                localStorage.setItem(storageKey, JSON.stringify(history));
-                console.log(`Saved ${history.length} items to ${storageKey}`);
+                // Fetch completed creations
+                const res = await fetch(`${ENV.API_URL}/api/creations`, {
+                    headers: { "Authorization": `Bearer ${token}` }
+                });
+
+                let completedItems: HistoryItem[] = [];
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.creations && Array.isArray(data.creations)) {
+                        completedItems = data.creations.map((c: any) => ({
+                            id: c.id.toString(),
+                            url: c.url,  // Backend returns 'url' not 'image_url'
+                            previewUrl: c.thumbnail_url || c.url,
+                            type: c.type || 'image',
+                            timestamp: new Date(c.created_at).getTime(),
+                            prompt: c.prompt,
+                            model: c.model_id || c.model,
+                            ratio: c.aspect_ratio,
+                            isPublic: c.is_published || c.visibility === 'public',
+                            status: 'completed' as const
+                        }));
+                    }
+                }
+
+                // Fetch pending generations (in progress)
+                const pendingRes = await fetch(`${ENV.API_URL}/api/generate/pending`, {
+                    headers: { "Authorization": `Bearer ${token}` }
+                });
+
+                let pendingItems: HistoryItem[] = [];
+                if (pendingRes.ok) {
+                    const pendingData = await pendingRes.json();
+                    if (pendingData.pending && Array.isArray(pendingData.pending)) {
+                        pendingItems = pendingData.pending.map((p: any) => ({
+                            id: `pending-${p.id}`,
+                            url: '', // No URL yet
+                            previewUrl: '', // Show placeholder
+                            type: p.type || 'image',
+                            timestamp: new Date(p.created_at).getTime(),
+                            prompt: p.prompt,
+                            model: p.model_id,
+                            ratio: p.aspect_ratio,
+                            status: p.status as 'processing' | 'failed',
+                            jobId: p.id
+                        }));
+                        console.log(`Found ${pendingItems.length} pending generations`);
+                    }
+                }
+
+                // Combine: pending items first, then completed
+                const allItems = [...pendingItems, ...completedItems];
+                setHistory(allItems);
+                console.log(`Loaded ${completedItems.length} completed + ${pendingItems.length} pending items`);
+
+                // Poll for pending items to complete
+                if (pendingItems.length > 0) {
+                    pollPendingGenerations(pendingItems);
+                }
             } catch (e) {
-                console.error("Failed to persist history to localStorage", e);
+                console.error('Failed to load history from cloud:', e);
+            } finally {
+                setHistoryLoaded(true);
             }
-        }
-    }, [history, user?.id, historyLoaded]);
+        };
+
+        // Poll pending generations for updates
+        const pollPendingGenerations = async (pendingItems: HistoryItem[]) => {
+            const token = localStorage.getItem("auth_token");
+            if (!token) return;
+
+            for (const item of pendingItems) {
+                if (!item.jobId) continue;
+
+                // Poll this job until completion
+                const pollJob = async () => {
+                    const maxAttempts = 120;
+                    for (let i = 0; i < maxAttempts; i++) {
+                        await new Promise(r => setTimeout(r, 2000)); // Wait 2 seconds
+
+                        try {
+                            const statusRes = await fetch(`${ENV.API_URL}/api/generate/status/${item.jobId}`, {
+                                headers: { "Authorization": `Bearer ${token}` }
+                            });
+
+                            if (!statusRes.ok) continue;
+
+                            const statusData = await statusRes.json();
+
+                            if (statusData.status === 'completed' && statusData.url) {
+                                // Update history with completed item
+                                setHistory(prev => prev.map(h =>
+                                    h.id === item.id
+                                        ? { ...h, url: statusData.url, previewUrl: statusData.url, status: 'completed' as const }
+                                        : h
+                                ));
+                                console.log(`✅ Pending job ${item.jobId} completed!`);
+                                return;
+                            } else if (statusData.status === 'failed') {
+                                setHistory(prev => prev.map(h =>
+                                    h.id === item.id
+                                        ? { ...h, status: 'failed' as const }
+                                        : h
+                                ));
+                                console.log(`❌ Pending job ${item.jobId} failed`);
+                                return;
+                            }
+                        } catch (e) {
+                            console.warn(`Poll error for job ${item.jobId}:`, e);
+                        }
+                    }
+                };
+
+                // Start polling in background (don't await, run in parallel)
+                pollJob();
+            }
+        };
+
+        fetchHistory();
+    }, [navigate, user?.id]);
 
     // Get preview image from template
     const getTemplateImage = (tpl: MarketplaceTemplate): string | undefined => {
@@ -441,8 +567,33 @@ function CreatorStudioPageContent() {
         toast.success(`Style "${tpl.name}" applied`);
     };
 
-    const addToHistory = (item: HistoryItem) => {
+    const addToHistory = async (item: HistoryItem) => {
+        // Optimistic update
         setHistory(prev => [item, ...prev]);
+
+        // Save to backend
+        try {
+            const token = localStorage.getItem("auth_token");
+            if (!token) return;
+
+            await fetch(`${ENV.API_URL}/api/creations`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    image_url: item.url,
+                    thumbnail_url: item.previewUrl || item.url,
+                    prompt: item.prompt || "",
+                    model_id: item.model || "",
+                    aspect_ratio: item.ratio || "1:1",
+                    type: item.type
+                })
+            });
+        } catch (e) {
+            console.error("Failed to save creation to cloud:", e);
+        }
     };
 
     const handleGenerate = async () => {
@@ -906,59 +1057,77 @@ function CreatorStudioPageContent() {
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                                     {isProcessing && <ProcessingCard status={statusMessage} />}
                                     {history.map((item) => (
-                                        <div key={item.id} onClick={() => setPreviewItem(item)} className="group relative break-inside-avoid rounded-xl overflow-hidden bg-zinc-900 transition-all shadow-xl hover:shadow-2xl hover:-translate-y-1 cursor-pointer">
+                                        <div key={item.id} onClick={() => item.status !== 'processing' && setPreviewItem(item)} className={`group relative break-inside-avoid rounded-xl overflow-hidden bg-zinc-900 transition-all shadow-xl hover:shadow-2xl hover:-translate-y-1 ${item.status === 'processing' ? 'cursor-wait' : 'cursor-pointer'}`}>
                                             {/* Media */}
                                             <div className="aspect-[3/4] bg-zinc-800 relative">
-                                                {item.type === 'image' ? (
+                                                {item.status === 'processing' ? (
+                                                    /* Processing state - show animated loader */
+                                                    <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-indigo-900/50 to-purple-900/50">
+                                                        <div className="relative">
+                                                            <div className="w-16 h-16 rounded-full border-4 border-white/20 border-t-indigo-400 animate-spin"></div>
+                                                            <Sparkles className="absolute inset-0 m-auto w-6 h-6 text-indigo-400 animate-pulse" />
+                                                        </div>
+                                                        <p className="mt-4 text-sm text-white/80 font-medium">Generating...</p>
+                                                        <p className="text-xs text-white/50 mt-1 px-4 text-center line-clamp-2">{item.prompt}</p>
+                                                    </div>
+                                                ) : item.status === 'failed' ? (
+                                                    /* Failed state */
+                                                    <div className="w-full h-full flex flex-col items-center justify-center bg-red-900/30">
+                                                        <X className="w-10 h-10 text-red-400" />
+                                                        <p className="mt-2 text-sm text-red-300">Generation failed</p>
+                                                    </div>
+                                                ) : item.type === 'image' ? (
                                                     <img src={item.url} className="w-full h-full object-cover" loading="lazy" />
                                                 ) : (
                                                     <video src={item.url} className="w-full h-full object-cover" loop muted onMouseOver={e => e.currentTarget.play()} onMouseOut={e => e.currentTarget.pause()} />
                                                 )}
 
-                                                {/* Overlay Info (Hover) */}
-                                                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity p-4 flex flex-col justify-end">
-                                                    <div className="space-y-2">
-                                                        <div className="flex items-center gap-2">
-                                                            <Badge className="bg-white/20 hover:bg-white/30 backdrop-blur-md border-0 text-[10px] h-5">
-                                                                {item.model}
-                                                            </Badge>
-                                                            <Badge className="bg-white/20 hover:bg-white/30 backdrop-blur-md border-0 text-[10px] h-5">
-                                                                {item.ratio}
-                                                            </Badge>
-                                                        </div>
-                                                        <p className="text-xs text-zinc-300 line-clamp-2 leading-relaxed">
-                                                            {item.prompt}
-                                                        </p>
-                                                        <div className="pt-2 flex justify-end gap-2">
-                                                            <Button
-                                                                size="sm"
-                                                                className="h-8 bg-white text-black hover:bg-zinc-200 text-xs font-bold px-3"
-                                                                onClick={() => handleDownload(item)}
-                                                            >
-                                                                Download
-                                                            </Button>
-                                                            <DropdownMenu>
-                                                                <DropdownMenuTrigger asChild>
-                                                                    <Button size="icon" className="h-8 w-8 bg-white/10 hover:bg-white/20">
-                                                                        <MoreHorizontal className="w-4 h-4" />
-                                                                    </Button>
-                                                                </DropdownMenuTrigger>
-                                                                <DropdownMenuContent align="end" className="bg-zinc-900 border-white/10 text-white w-52">
-                                                                    <DropdownMenuItem onClick={() => handleReusePrompt(item)} className="cursor-pointer">
-                                                                        Reusar prompt
-                                                                    </DropdownMenuItem>
-                                                                    <DropdownMenuItem disabled={item.type === "video"} onClick={() => handleUseAsTemplate(item)} className="cursor-pointer">
-                                                                        Usar imagen como template
-                                                                    </DropdownMenuItem>
-                                                                    <DropdownMenuSeparator className="bg-white/10" />
-                                                                    <DropdownMenuItem onClick={() => handleDeleteHistory(item.id)} className="cursor-pointer text-red-400 focus:text-red-400">
-                                                                        Eliminar
-                                                                    </DropdownMenuItem>
-                                                                </DropdownMenuContent>
-                                                            </DropdownMenu>
+                                                {/* Overlay Info (Hover) - only for completed items */}
+                                                {item.status !== 'processing' && item.status !== 'failed' && (
+                                                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity p-4 flex flex-col justify-end">
+                                                        <div className="space-y-2">
+                                                            <div className="flex items-center gap-2">
+                                                                <Badge className="bg-white/20 hover:bg-white/30 backdrop-blur-md border-0 text-[10px] h-5">
+                                                                    {item.model}
+                                                                </Badge>
+                                                                <Badge className="bg-white/20 hover:bg-white/30 backdrop-blur-md border-0 text-[10px] h-5">
+                                                                    {item.ratio}
+                                                                </Badge>
+                                                            </div>
+                                                            <p className="text-xs text-zinc-300 line-clamp-2 leading-relaxed">
+                                                                {item.prompt}
+                                                            </p>
+                                                            <div className="pt-2 flex justify-end gap-2">
+                                                                <Button
+                                                                    size="sm"
+                                                                    className="h-8 bg-white text-black hover:bg-zinc-200 text-xs font-bold px-3"
+                                                                    onClick={() => handleDownload(item)}
+                                                                >
+                                                                    Download
+                                                                </Button>
+                                                                <DropdownMenu>
+                                                                    <DropdownMenuTrigger asChild>
+                                                                        <Button size="icon" className="h-8 w-8 bg-white/10 hover:bg-white/20">
+                                                                            <MoreHorizontal className="w-4 h-4" />
+                                                                        </Button>
+                                                                    </DropdownMenuTrigger>
+                                                                    <DropdownMenuContent align="end" className="bg-zinc-900 border-white/10 text-white w-52">
+                                                                        <DropdownMenuItem onClick={() => handleReusePrompt(item)} className="cursor-pointer">
+                                                                            Reusar prompt
+                                                                        </DropdownMenuItem>
+                                                                        <DropdownMenuItem disabled={item.type === "video"} onClick={() => handleUseAsTemplate(item)} className="cursor-pointer">
+                                                                            Usar imagen como template
+                                                                        </DropdownMenuItem>
+                                                                        <DropdownMenuSeparator className="bg-white/10" />
+                                                                        <DropdownMenuItem onClick={() => handleDeleteHistory(item.id)} className="cursor-pointer text-red-400 focus:text-red-400">
+                                                                            Eliminar
+                                                                        </DropdownMenuItem>
+                                                                    </DropdownMenuContent>
+                                                                </DropdownMenu>
+                                                            </div>
                                                         </div>
                                                     </div>
-                                                </div>
+                                                )}
                                             </div>
                                         </div>
                                     ))}
@@ -1136,6 +1305,13 @@ function CreatorStudioPageContent() {
                                     <div className="flex justify-between">
                                         <span>Created</span>
                                         <span className="text-white">{new Date(previewItem?.timestamp || Date.now()).toLocaleDateString()}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center py-2 border-t border-white/5">
+                                        <span>Public Feed</span>
+                                        <Switch
+                                            checked={previewItem?.isPublic || false}
+                                            onCheckedChange={() => previewItem && handleTogglePublic(previewItem)}
+                                        />
                                     </div>
                                 </div>
 

@@ -641,9 +641,56 @@ Output a single cohesive image.`;
     }
 
     const genResult = await genResponse.json();
-    console.log("✅ Backend generation complete:", genResult);
+    console.log("📝 Backend response:", genResult);
 
-    const processedUrl = genResult.image_url;
+    // Handle async generation (new flow with background jobs)
+    let processedUrl = genResult.image_url;
+
+    if (!processedUrl && genResult.job_id) {
+      // Backend returned a job ID - poll for completion
+      console.log("⏳ Background generation started, polling for completion...", genResult);
+      if (onProgress) onProgress("processing");
+
+      const authToken = localStorage.getItem('auth_token');
+      const maxAttempts = 120; // 2 minutes with 1 second intervals
+      let attempts = 0;
+
+      while (attempts < maxAttempts) {
+        await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second
+        attempts++;
+
+        try {
+          const statusResponse = await fetch(`${apiUrl}/api/generate/status/${genResult.job_id}`, {
+            headers: authToken ? { 'Authorization': `Bearer ${authToken}` } : {}
+          });
+
+          if (!statusResponse.ok) {
+            console.log(`⏳ Status check ${attempts}/${maxAttempts} - error`);
+            continue;
+          }
+
+          const statusData = await statusResponse.json();
+          console.log(`⏳ Status check ${attempts}/${maxAttempts}:`, statusData.status);
+
+          if (statusData.status === 'completed' && statusData.url) {
+            processedUrl = statusData.url;
+            console.log("✅ Generation completed:", processedUrl);
+            break;
+          } else if (statusData.status === 'failed') {
+            throw new Error(statusData.error || 'Generation failed');
+          }
+          // Continue polling if still processing
+        } catch (pollError) {
+          console.warn("⚠️ Poll error:", pollError);
+          // Continue polling unless it's a fatal error
+        }
+      }
+
+      if (!processedUrl) {
+        throw new Error("Generation timed out - check pending jobs later");
+      }
+    }
+
     if (!processedUrl) {
       throw new Error("No image URL returned from backend");
     }

@@ -67,19 +67,19 @@ export default function CreatorDashboard() {
   const personalBooth = events.length > 0 ? events[0] : null;
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500 p-6 md:p-8">
+    <div className="space-y-6 md:space-y-8 animate-in fade-in duration-500 p-4 md:p-8 pb-20 md:pb-8">
 
       {/* Welcome Section */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-6">
         <div>
-          <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-zinc-400">
+          <h1 className="text-2xl md:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-zinc-400">
             Welcome, {user?.full_name?.split(' ')[0] || user?.username}
           </h1>
-          <p className="text-zinc-400 mt-1">Ready to create something amazing today?</p>
+          <p className="text-zinc-400 mt-1 text-sm md:text-base">Ready to create something amazing today?</p>
         </div>
 
-        <div className="flex items-center gap-4">
-
+        {/* Hidden on mobile because we have the floating FAB in the bottom nav */}
+        <div className="hidden md:flex items-center gap-4">
           <Button
             onClick={() => navigate('/creator/studio')}
             className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-full px-6 shadow-lg shadow-indigo-900/20"
@@ -129,7 +129,7 @@ export default function CreatorDashboard() {
         />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
 
         {/* Left Column: Personal Booth & Recent Activity */}
         <div className="lg:col-span-2 space-y-8">
@@ -140,12 +140,12 @@ export default function CreatorDashboard() {
               <div className="absolute top-0 right-0 p-4">
                 <Badge className="bg-green-500/10 text-green-400 border-green-500/20 hover:bg-green-500/20">Active</Badge>
               </div>
-              <CardContent className="p-6 flex flex-col sm:flex-row gap-6 items-start sm:items-center relative z-10">
-                <div className="w-16 h-16 rounded-2xl bg-indigo-500/10 flex items-center justify-center text-indigo-400 group-hover:scale-110 transition-transform">
-                  <Camera className="w-8 h-8" />
+              <CardContent className="p-5 sm:p-6 flex flex-col sm:flex-row gap-4 sm:gap-6 items-start sm:items-center relative z-10">
+                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-indigo-500/10 flex items-center justify-center text-indigo-400 group-hover:scale-110 transition-transform">
+                  <Camera className="w-6 h-6 sm:w-8 sm:h-8" />
                 </div>
-                <div className="flex-1">
-                  <h3 className="text-xl font-bold text-white mb-1">Your Personal Booth</h3>
+                <div className="flex-1 w-full">
+                  <h3 className="text-lg sm:text-xl font-bold text-white mb-1">Your Personal Booth</h3>
                   <p className="text-zinc-400 text-sm mb-3">
                     {personalBooth.title} • {new Date(personalBooth.start_date || Date.now()).toLocaleDateString()}
                   </p>
