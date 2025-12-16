@@ -368,6 +368,7 @@ function getFluxImageSize(aspectRatio: AspectRatio = '9:16'): string | { width: 
 
 export interface ProcessImageResult {
   url: string;
+  rawUrl?: string;
   seed?: number;
   contentType?: string;
 }
@@ -610,7 +611,7 @@ Output a single cohesive image.`;
     const payload = {
       prompt: finalPrompt,
       model_id: modelToUse,
-      image_size: typeof imageSize === 'string' ? imageSize : undefined,
+      image_size: imageSize,
       // If imageSize is object, we might need to handle it. Go backend expects string for ImageSize?
       // The Go struct has `ImageSize string`.
       // If it's an object {width, height}, we might need to serialize it or pass it differently.
@@ -721,6 +722,7 @@ Output a single cohesive image.`;
 
       return {
         url: brandedImageUrl,
+        rawUrl: processedUrl, // Return original FAL URL for metadata matching
         seed: genResult.seed,
         contentType: "image/jpeg",
       };
@@ -728,6 +730,7 @@ Output a single cohesive image.`;
 
     return {
       url: processedUrl,
+      rawUrl: processedUrl,
       seed: genResult.seed,
       contentType: "image/jpeg",
     };

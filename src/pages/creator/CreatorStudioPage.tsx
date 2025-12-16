@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import BoothDashboard from "./BoothDashboard";
 import {
     LayoutTemplate,
@@ -27,7 +27,12 @@ import {
     ChevronRight,
     Settings,
     Wand2,
-    Coins
+    Coins,
+    Copy,
+    RefreshCw,
+    Save,
+    Download,
+    ChevronDown
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -43,6 +48,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import { getCurrentUser } from "@/services/eventsApi";
+import { getMarketplaceTemplates } from "@/services/marketplaceApi";
 
 import { processImageWithAI, AspectRatio, AI_MODELS, resolveModelId } from "@/services/aiProcessor";
 import { ENV } from "@/config/env";
@@ -72,6 +78,11 @@ interface HistoryItem {
     isPublic?: boolean;
     status?: 'completed' | 'processing' | 'failed'; // For showing pending generations
     jobId?: number; // Pending generation job ID
+    template?: {
+        id: string;
+        name: string;
+        image: string;
+    };
 }
 
 // --- Local Models Definition to avoid import circular dependency issues ---
@@ -115,6 +126,23 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { has
         return this.props.children;
     }
 }
+
+// Helper for persisting template metadata (supports saving by ID or URL)
+const saveTemplateMeta = (key: string, template: any) => {
+    try {
+        if (!template) return;
+        localStorage.setItem(`template_meta_${key}`, JSON.stringify(template));
+    } catch (e) { console.error(e); }
+};
+
+const getTemplateMeta = (keys: string[]) => {
+    try {
+        for (const key of keys) {
+            const data = localStorage.getItem(`template_meta_${key}`);
+            if (data) return JSON.parse(data);
+        }
+    } catch (e) { return undefined; }
+};
 
 const AppRail = ({ activeView, onViewChange }: { activeView: MainView, onViewChange: (v: MainView) => void }) => {
     const navigate = useNavigate();
@@ -230,6 +258,7 @@ const TemplatesView = () => (
 
 function CreatorStudioPageContent() {
     const navigate = useNavigate();
+    const location = useLocation();
     const user = getCurrentUser();
     const { templates: myTemplates, saveTemplate } = useMyTemplates();
 
@@ -246,12 +275,36 @@ function CreatorStudioPageContent() {
     const [duration, setDuration] = useState("5s");
     const [audioOn, setAudioOn] = useState(false);
 
+    // Handle remix state from feed navigation
+    useEffect(() => {
+        const remixState = location.state as {
+            prompt?: string;
+            templateId?: string;
+            templateUrl?: string;
+            sourceImageUrl?: string;
+            remixFrom?: string;
+        } | null;
+
+        if (remixState) {
+            // Pre-fill prompt if provided
+            if (remixState.prompt) {
+                setPrompt(remixState.prompt);
+            }
+            // Set source image if provided (for style reference)
+            if (remixState.sourceImageUrl) {
+                setInputImage(remixState.sourceImageUrl);
+            }
+            // Clear the state after consuming it to prevent re-triggering
+            window.history.replaceState({}, document.title);
+        }
+    }, [location.state]);
+
     // Templates
     const [selectedTemplate, setSelectedTemplate] = useState<MarketplaceTemplate | null>(null);
     const [templateTab, setTemplateTab] = useState<"library" | "marketplace">("marketplace");
     const [showTemplateLibrary, setShowTemplateLibrary] = useState(false);
 
-    // Templates Data State (Moved logic back here or ensure it's loaded if we pass it down)
+    // Templates Data State
     const [marketplaceTemplates, setMarketplaceTemplates] = useState<MarketplaceTemplate[]>([]);
     const [myLibraryTemplates, setMyLibraryTemplates] = useState<MarketplaceTemplate[]>([]);
     const [loadingTemplates, setLoadingTemplates] = useState(false);
@@ -270,24 +323,51 @@ function CreatorStudioPageContent() {
     const [history, setHistory] = useState<HistoryItem[]>([]);
     const [previewItem, setPreviewItem] = useState<HistoryItem | null>(null);
     const [showSaveTemplate, setShowSaveTemplate] = useState(false);
+    const [isPromptExpanded, setIsPromptExpanded] = useState(false); // State for prompt expansion
 
-    // Load templates logic (Moved back as we need data for the Library component which is now in page)
+    const formatModelName = (modelId: string) => {
+        const allModels = [...LOCAL_IMAGE_MODELS, ...LOCAL_VIDEO_MODELS];
+        const found = allModels.find(m => m.id === modelId);
+        if (found) return found.name;
+        // Fallback cleanup
+        if (modelId.includes('/')) {
+            const parts = modelId.split('/');
+            return parts[parts.length - 1].replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        }
+        return modelId;
+    };
+
+    // Load templates logic
     useEffect(() => {
         if (showTemplateLibrary && marketplaceTemplates.length === 0) {
             const fetchT = async () => {
                 setLoadingTemplates(true);
                 try {
-                    const token = localStorage.getItem("auth_token");
-                    const headers: HeadersInit = { "Content-Type": "application/json" };
-                    if (token) headers.Authorization = `Bearer ${token}`;
+                    // Use the service to get templates
+                    const templates = await getMarketplaceTemplates({ limit: 50 });
+                    // Ensure robust handling if the API returns something nested or different, though TS says it returns MediaTemplate[]
+                    console.log("[CreatorStudioPage] Fetched templates:", templates);
 
-                    const [mRes, lRes] = await Promise.all([
-                        fetch(`${ENV.API_URL}/api/marketplace/templates?is_public=true`, { headers }),
-                        token ? fetch(`${ENV.API_URL}/api/marketplace/my-library`, { headers }) : Promise.resolve(null)
-                    ]);
-                    if (mRes.ok) setMarketplaceTemplates(await mRes.json());
-                    if (lRes?.ok) setMyLibraryTemplates(await lRes.json());
-                } catch (e) { console.error(e); } finally { setLoadingTemplates(false); }
+                    // Transform if necessary (e.g. if images are in preview_images)
+                    // The service response type should match MarketplaceTemplate, but let's be safe
+                    const safeTemplates = templates.map((t: any) => ({
+                        ...t,
+                        // Ensure images array is populated from available sources in order of preference
+                        images: t.images || t.preview_images || t.backgrounds || [],
+                        // If preview_url is set, make sure it is the first image
+                        preview_images: t.preview_url ? [t.preview_url, ...(t.preview_images || [])] : (t.preview_images || []),
+                        type: t.type || t.template_type || 'image'
+                    }));
+
+                    setMarketplaceTemplates(safeTemplates);
+
+                    // Also fetch my library if user is logged in
+                    const token = localStorage.getItem("auth_token");
+                    if (token) {
+                        const lRes = await fetch(`${ENV.API_URL}/api/marketplace/my-library`, { headers: { Authorization: `Bearer ${token}` } });
+                        if (lRes.ok) setMyLibraryTemplates(await lRes.json());
+                    }
+                } catch (e) { console.error("Error fetching templates:", e); } finally { setLoadingTemplates(false); }
             };
             fetchT();
         }
@@ -297,7 +377,10 @@ function CreatorStudioPageContent() {
 
     // Load history logic
     useEffect(() => {
-        if (!user) { navigate("/admin/auth"); return; }
+        if (!user?.id) {
+            navigate("/admin/auth");
+            return;
+        }
         const loadHistory = async () => {
             const token = localStorage.getItem("auth_token");
             if (!token) return;
@@ -308,11 +391,22 @@ function CreatorStudioPageContent() {
                 if (completedRes.ok) {
                     const data = await completedRes.json();
                     if (data.creations && Array.isArray(data.creations)) {
-                        allItems = data.creations.map((c: any) => ({
-                            id: c.id.toString(), url: c.url, previewUrl: c.thumbnail_url || c.url, type: c.type || 'image',
-                            timestamp: new Date(c.created_at).getTime(), prompt: c.prompt, model: c.model_id || c.model,
-                            ratio: c.aspect_ratio, isPublic: c.is_published || c.visibility === 'public', status: 'completed'
-                        }));
+                        allItems = data.creations.map((c: any) => {
+                            const realId = c.id.toString();
+                            return {
+                                id: realId,
+                                url: c.url,
+                                previewUrl: c.thumbnail_url || c.url,
+                                type: c.type || 'image',
+                                timestamp: new Date(c.created_at).getTime(),
+                                prompt: c.prompt,
+                                model: c.model_id || c.model,
+                                ratio: c.aspect_ratio,
+                                isPublic: c.is_published || c.visibility === 'public',
+                                status: 'completed',
+                                template: getTemplateMeta([realId, c.url]) // Hydrate from ID or URL lookup
+                            };
+                        });
                     }
                 }
 
@@ -326,14 +420,41 @@ function CreatorStudioPageContent() {
                             ratio: p.aspect_ratio, status: p.status, jobId: p.id
                         }));
                         allItems = [...pendingItems, ...allItems];
-                        // Implement polling logic if needed, skipping for brevity in this refactor
                     }
                 }
-                setHistory(allItems);
+
+                // Deduplicate by ID to prevent ghost items
+                const uniqueMap = new Map();
+
+                // First add all items, normalizing IDs
+                allItems.forEach(item => {
+                    const realId = item.id.toString().replace('pending-', '');
+
+                    // If we already have a completed version (id without pending-), keep it
+                    // If the current item is pending and we have a completed one, skip
+                    if (item.id.toString().startsWith('pending-') && uniqueMap.has(realId)) {
+                        return;
+                    }
+
+                    // If we have a pending version and now find a completed version, replace it
+                    if (uniqueMap.has(realId)) {
+                        const existing = uniqueMap.get(realId);
+                        if (existing.id.toString().startsWith('pending-')) {
+                            // Replace pending with real
+                            uniqueMap.set(realId, item);
+                        }
+                        // If both are real (shouldn't happen with Map), overwrite is fine
+                    } else {
+                        // New item
+                        uniqueMap.set(realId, item);
+                    }
+                });
+
+                setHistory(Array.from(uniqueMap.values()));
             } catch (e) { console.error(e); }
         };
         loadHistory();
-    }, [user, navigate]);
+    }, [user?.id, navigate]);
 
     // Handlers
     const handleDeleteHistory = async (id: string) => {
@@ -360,7 +481,34 @@ function CreatorStudioPageContent() {
         if (item.model) setModel(item.model);
         if (item.ratio) setAspectRatio(item.ratio);
         setMode(item.type);
+
+        // Restore template if available
+        if (item.template) {
+            // Check if we can find the full template in our current list
+            const found = marketplaceTemplates.find(t => t.id === item.template?.id) ||
+                myLibraryTemplates.find(t => t.id === item.template?.id);
+
+            if (found) {
+                setSelectedTemplate(found);
+            } else {
+                // If not found (e.g. from older session), construct a minimal shell
+                // This isn't perfect but allows the UI to show the selected template pill
+                setSelectedTemplate({
+                    id: item.template.id,
+                    name: item.template.name,
+                    // We don't have the original template images/backgrounds here unfortunately
+                    // unless we persist them. For now, we restore the identity.
+                    images: [item.template.image],
+                    preview_images: [item.template.image],
+                    type: 'image'
+                } as MarketplaceTemplate);
+            }
+        } else {
+            setSelectedTemplate(null);
+        }
+
         setActiveView("create");
+        toast.success("Prompt and settings restored");
     };
 
     const handleUseAsTemplate = (item: HistoryItem) => {
@@ -383,7 +531,13 @@ function CreatorStudioPageContent() {
 
     const handleTogglePublic = async (item: HistoryItem) => {
         const newVisibility = !item.isPublic;
+
+        // Optimistic update for both list and preview
         setHistory(prev => prev.map(h => h.id === item.id ? { ...h, isPublic: newVisibility } : h));
+        if (previewItem?.id === item.id) {
+            setPreviewItem(prev => prev ? { ...prev, isPublic: newVisibility } : null);
+        }
+
         try {
             const token = localStorage.getItem("auth_token");
             if (!token) return;
@@ -393,12 +547,27 @@ function CreatorStudioPageContent() {
             });
             toast.success(newVisibility ? "Published" : "Private");
         } catch (e) {
+            // Revert on failure
             setHistory(prev => prev.map(h => h.id === item.id ? { ...h, isPublic: !newVisibility } : h));
+            if (previewItem?.id === item.id) {
+                setPreviewItem(prev => prev ? { ...prev, isPublic: !newVisibility } : null);
+            }
+            toast.error("Failed to update visibility");
         }
     };
 
-    const addToHistory = async (item: HistoryItem) => {
+    const addToHistory = async (item: HistoryItem, skipBackendSave = false) => {
         setHistory(prev => [item, ...prev]); // optimistic
+
+        // Always persist template meta by URL if available, as a fallback
+        if (item.template && item.url) {
+            saveTemplateMeta(item.url, item.template);
+        }
+
+        if (skipBackendSave) {
+            return;
+        }
+
         try {
             const token = localStorage.getItem("auth_token");
             if (!token) return;
@@ -412,6 +581,10 @@ function CreatorStudioPageContent() {
             if (res.ok) {
                 const saved = await res.json();
                 const realId = saved.id.toString();
+                // Persist template metadata locally by ID
+                if (item.template) {
+                    saveTemplateMeta(realId, item.template);
+                }
                 setHistory(prev => prev.map(h => h.id === item.id ? { ...h, id: realId } : h));
             }
         } catch (e) { console.error(e); }
@@ -435,7 +608,30 @@ function CreatorStudioPageContent() {
                     backgroundImageUrls: [...referenceImages, ...templateBgs], aspectRatio: aspectRatio as AspectRatio,
                     aiModel: model, onProgress: setStatusMessage
                 });
-                addToHistory({ id: crypto.randomUUID(), url: result.url, type: 'image', timestamp: Date.now(), prompt, model, ratio: aspectRatio, status: 'completed' });
+
+                const templateInfo = selectedTemplate ? {
+                    id: selectedTemplate.id,
+                    name: selectedTemplate.name,
+                    image: selectedTemplate.preview_images?.[0] || selectedTemplate.images?.[0] || ""
+                } : undefined;
+
+                // CRITICAL: Save template metadata using the RAW FAL URL (if available) 
+                // because that is what the backend auto-saves. This ensures hydration works on refresh.
+                if (result.rawUrl && templateInfo) {
+                    saveTemplateMeta(result.rawUrl, templateInfo);
+                }
+
+                addToHistory({
+                    id: crypto.randomUUID(),
+                    url: result.url,
+                    type: 'image',
+                    timestamp: Date.now(),
+                    prompt,
+                    model,
+                    ratio: aspectRatio,
+                    status: 'completed',
+                    template: templateInfo
+                }, true); // Skip backend save because the backend generation endpoint auto-saves
             } else if (mode === "video") {
                 const endpoint = `${ENV.API_URL || "http://localhost:3002"}/api/generate/video`;
                 const resp = await fetch(endpoint, {
@@ -539,8 +735,15 @@ function CreatorStudioPageContent() {
                         />
 
                         {/* COLUMN 3: CANVAS / TIMELINE or TEMPLATE LIBRARY */}
-                        <div className="flex-1 bg-black flex flex-col relative w-full">
-                            {showTemplateLibrary ? (
+                        <div className="flex-1 bg-black flex flex-col relative w-full overflow-hidden">
+
+                            {/* TEMPLATE LIBRARY OVERLAY (Sliding Card) */}
+                            <div
+                                className={cn(
+                                    "absolute inset-4 z-20 bg-[#121212] rounded-2xl border border-white/10 shadow-2xl transition-all duration-500 ease-in-out flex flex-col overflow-hidden",
+                                    showTemplateLibrary ? "translate-y-0 opacity-100" : "translate-y-[105%] opacity-0 pointer-events-none"
+                                )}
+                            >
                                 <TemplateLibrary
                                     onSelect={applyTemplate}
                                     onClose={() => setShowTemplateLibrary(false)}
@@ -548,58 +751,56 @@ function CreatorStudioPageContent() {
                                     myLibraryTemplates={myLibraryTemplates}
                                     selectedTemplateId={selectedTemplate?.id}
                                 />
-                            ) : (
-                                <>
-                                    {/* Canvas Header */}
-                                    <div className="h-14 border-b border-white/5 flex items-center justify-between px-6 bg-black z-10 sticky top-0">
-                                        <h3 className="font-bold text-white">Timeline</h3>
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-xs text-zinc-500">{history.length} items</span>
+                            </div>
+
+                            {/* Canvas Header */}
+                            <div className="h-14 border-b border-white/5 flex items-center justify-between px-6 bg-black z-10 sticky top-0">
+                                <h3 className="font-bold text-white">Timeline</h3>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-xs text-zinc-500">{history.length} items</span>
+                                </div>
+                            </div>
+
+                            {/* Canvas Content */}
+                            <ScrollArea className="flex-1 bg-black">
+                                <div className="p-6">
+                                    {history.length === 0 && !isProcessing ? (
+                                        <div className="h-[60vh] flex flex-col items-center justify-center text-zinc-600">
+                                            <Sparkles className="w-12 h-12 mb-4 opacity-20" />
+                                            <p>Create your first masterpiece</p>
                                         </div>
-                                    </div>
-
-                                    {/* Canvas Content */}
-                                    <ScrollArea className="flex-1 bg-black">
-                                        <div className="p-6">
-                                            {history.length === 0 && !isProcessing ? (
-                                                <div className="h-[60vh] flex flex-col items-center justify-center text-zinc-600">
-                                                    <Sparkles className="w-12 h-12 mb-4 opacity-20" />
-                                                    <p>Create your first masterpiece</p>
-                                                </div>
-                                            ) : (
-                                                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 pb-20">
-                                                    {/* Processing Card */}
-                                                    {isProcessing && (
-                                                        <div className="aspect-[3/4] bg-zinc-900 rounded-xl border border-indigo-500/30 flex flex-col items-center justify-center animate-pulse shadow-lg shadow-indigo-500/10">
-                                                            <Loader2 className="w-8 h-8 text-indigo-400 animate-spin mb-2" />
-                                                            <span className="text-xs text-indigo-300 font-medium">{statusMessage}</span>
-                                                        </div>
-                                                    )}
-
-                                                    {history.map(item => (
-                                                        <div key={item.id} onClick={() => item.status === 'completed' && setPreviewItem(item)} className="group relative aspect-[3/4] bg-zinc-900 rounded-xl overflow-hidden cursor-pointer hover:ring-2 ring-[#D1F349]/50 transition-all shadow-lg">
-
-                                                            {item.status === 'completed' ? (
-                                                                item.type === 'image' ? <img src={item.url} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" /> : <video src={item.url} className="w-full h-full object-cover" />
-                                                            ) : (
-                                                                <div className="w-full h-full flex flex-col items-center justify-center bg-zinc-800 text-zinc-500 gap-2">
-                                                                    <Loader2 className="animate-spin w-6 h-6" />
-                                                                    <span className="text-[10px]">{item.status}</span>
-                                                                </div>
-                                                            )}
-                                                            {item.status === 'completed' && (
-                                                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-3">
-                                                                    <p className="text-[10px] text-white line-clamp-2 font-medium">{item.prompt}</p>
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    ))}
+                                    ) : (
+                                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 pb-20">
+                                            {/* Processing Card */}
+                                            {isProcessing && (
+                                                <div className="aspect-[3/4] bg-zinc-900 rounded-xl border border-indigo-500/30 flex flex-col items-center justify-center animate-pulse shadow-lg shadow-indigo-500/10">
+                                                    <Loader2 className="w-8 h-8 text-indigo-400 animate-spin mb-2" />
+                                                    <span className="text-xs text-indigo-300 font-medium">{statusMessage}</span>
                                                 </div>
                                             )}
+
+                                            {history.map(item => (
+                                                <div key={item.id} onClick={() => item.status === 'completed' && setPreviewItem(item)} className="group relative aspect-[3/4] bg-zinc-900 rounded-xl overflow-hidden cursor-pointer hover:ring-2 ring-[#D1F349]/50 transition-all shadow-lg">
+
+                                                    {item.status === 'completed' ? (
+                                                        item.type === 'image' ? <img src={item.url} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" /> : <video src={item.url} className="w-full h-full object-cover" />
+                                                    ) : (
+                                                        <div className="w-full h-full flex flex-col items-center justify-center bg-zinc-800 text-zinc-500 gap-2">
+                                                            <Loader2 className="animate-spin w-6 h-6" />
+                                                            <span className="text-[10px]">{item.status}</span>
+                                                        </div>
+                                                    )}
+                                                    {item.status === 'completed' && (
+                                                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-3">
+                                                            <p className="text-[10px] text-white line-clamp-2 font-medium">{item.prompt}</p>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ))}
                                         </div>
-                                    </ScrollArea>
-                                </>
-                            )}
+                                    )}
+                                </div>
+                            </ScrollArea>
                         </div>
                     </>
                 )
@@ -618,25 +819,138 @@ function CreatorStudioPageContent() {
                             <video src={previewItem?.url} controls className="max-h-full max-w-full rounded-lg shadow-2xl" autoPlay loop />
                         }
                     </div>
-                    <div className="w-80 bg-zinc-900 border-l border-white/10 p-6 flex flex-col gap-4 z-50 shadow-2xl">
-                        <h3 className="font-bold text-white text-lg">Details</h3>
-                        <div className="bg-black/40 p-3 rounded-lg border border-white/5">
-                            <p className="text-xs text-zinc-300 italic leading-relaxed">"{previewItem?.prompt}"</p>
-                        </div>
-                        <div className="space-y-2 text-sm text-zinc-400">
-                            <div className="flex justify-between"><span>Model</span> <span className="text-white">{previewItem?.model || 'Unknown'}</span></div>
-                            <div className="flex justify-between"><span>Ratio</span> <span className="text-white">{previewItem?.ratio || 'Custom'}</span></div>
+                    <div className="w-96 bg-[#09090b] border-l border-white/10 flex flex-col z-50 shadow-2xl">
+                        <div className="p-6 flex-1 overflow-y-auto space-y-6">
+                            <div className="flex items-center justify-between">
+                                <h3 className="font-bold text-white text-xl">Details</h3>
+                                {previewItem?.status === 'completed' && (
+                                    <Badge className="bg-[#D1F349] text-black hover:bg-[#b0cc3d]">Completed</Badge>
+                                )}
+                            </div>
+
+                            {/* Prompt Section */}
+                            <div className="space-y-2">
+                                <div className="flex items-center justify-between text-sm text-zinc-400">
+                                    <span className="font-medium">Prompt</span>
+                                    <button
+                                        onClick={() => {
+                                            navigator.clipboard.writeText(previewItem?.prompt || "");
+                                            toast.success("Prompt copied!");
+                                        }}
+                                        className="text-white hover:text-[#D1F349] transition-colors p-1"
+                                        title="Copy prompt"
+                                    >
+                                        <Copy className="w-4 h-4" />
+                                    </button>
+                                </div>
+                                <div
+                                    className={cn(
+                                        "bg-zinc-900/50 p-4 rounded-xl border border-white/5 text-sm text-zinc-300 italic leading-relaxed relative cursor-pointer hover:bg-zinc-900/80 transition-colors group",
+                                        !isPromptExpanded && "line-clamp-3"
+                                    )}
+                                    onClick={() => setIsPromptExpanded(!isPromptExpanded)}
+                                >
+                                    "{previewItem?.prompt}"
+                                    {!isPromptExpanded && (
+                                        <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-zinc-900/90 to-transparent flex items-end justify-center pb-2">
+                                            <ChevronDown className="w-4 h-4 text-zinc-500 group-hover:text-white" />
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Metadata */}
+                            <div className="space-y-4 bg-zinc-900/30 p-4 rounded-xl border border-white/5">
+                                <div className="flex justify-between items-center text-sm">
+                                    <span className="text-zinc-500">Model</span>
+                                    <span className="text-white font-medium bg-zinc-800 px-2 py-1 rounded text-xs">
+                                        {formatModelName(previewItem?.model || "")}
+                                    </span>
+                                </div>
+                                <div className="flex justify-between items-center text-sm">
+                                    <span className="text-zinc-500">Ratio</span>
+                                    <span className="text-white font-medium bg-zinc-800 px-2 py-1 rounded text-xs">
+                                        {previewItem?.ratio || 'Custom'}
+                                    </span>
+                                </div>
+                                <div className="flex justify-between items-center text-sm">
+                                    <span className="text-zinc-500">Privacy</span>
+                                    <div className="flex items-center gap-2">
+                                        <span className={cn("text-xs font-medium", previewItem?.isPublic ? "text-[#D1F349]" : "text-zinc-500")}>
+                                            {previewItem?.isPublic ? "Public" : "Private"}
+                                        </span>
+                                        <Switch
+                                            checked={previewItem?.isPublic || false}
+                                            onCheckedChange={() => previewItem && handleTogglePublic(previewItem)}
+                                            className="data-[state=checked]:bg-[#D1F349] data-[state=unchecked]:bg-zinc-700"
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Template Info Card */}
+                                {previewItem?.template && (
+                                    <div className="mt-4">
+                                        <div className="group relative aspect-video w-full overflow-hidden rounded-xl border border-white/10 bg-zinc-900/50 hover:border-[#D1F349]/50 transition-colors cursor-pointer"
+                                            onClick={() => { if (previewItem) { handleReusePrompt(previewItem); setPreviewItem(null); } }}
+                                        >
+                                            {previewItem.template.image && (
+                                                <img
+                                                    src={previewItem.template.image}
+                                                    alt={previewItem.template.name}
+                                                    className="h-full w-full object-cover opacity-60 group-hover:opacity-40 transition-opacity"
+                                                />
+                                            )}
+                                            <div className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center">
+                                                <span className="text-lg font-bold text-white drop-shadow-md uppercase tracking-wide">
+                                                    {previewItem.template.name}
+                                                </span>
+                                            </div>
+                                            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <Badge className="bg-[#D1F349] text-black">Template</Badge>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
                         </div>
 
-                        <div className="flex items-center justify-between text-sm py-4 border-t border-white/5 mt-auto">
-                            <span>Public Feed</span>
-                            <Switch checked={previewItem?.isPublic || false} onCheckedChange={() => previewItem && handleTogglePublic(previewItem)} />
+                        {/* Action Buttons */}
+                        <div className="p-6 bg-zinc-900/50 border-t border-white/5 space-y-3">
+                            < Button
+                                className="w-full bg-[#D1F349] hover:bg-[#b0cc3d] text-black font-bold h-11"
+                                onClick={() => { if (previewItem) { handleReusePrompt(previewItem); setPreviewItem(null); } }}
+                            >
+                                <RefreshCw className="w-4 h-4 mr-2" />
+                                Reuse Prompt
+                            </Button>
+
+                            <div className="grid grid-cols-2 gap-3">
+                                <Button
+                                    variant="outline"
+                                    className="border-white/10 bg-zinc-800/50 hover:bg-zinc-800 text-white hover:text-white"
+                                    onClick={() => { if (previewItem) { handleUseAsTemplate(previewItem); setPreviewItem(null); } }}
+                                >
+                                    <Save className="w-4 h-4 mr-2" />
+                                    Save as Template
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    className="border-white/10 bg-zinc-800/50 hover:bg-zinc-800 text-white hover:text-white"
+                                    onClick={() => previewItem && handleDownload(previewItem)}
+                                >
+                                    <Download className="w-4 h-4 mr-2" />
+                                    Download
+                                </Button>
+                            </div>
+
+                            <Button
+                                onClick={() => previewItem && handleDeleteHistory(previewItem.id)}
+                                variant="ghost"
+                                className="w-full text-red-500 hover:text-red-400 hover:bg-red-500/10 h-8 text-xs"
+                            >
+                                Delete Asset
+                            </Button>
                         </div>
-                        <div className="grid grid-cols-2 gap-2">
-                            <Button variant="outline" className="text-xs bg-white text-black hover:bg-zinc-200 border-none" onClick={() => previewItem && handleDownload(previewItem)}>Download</Button>
-                            <Button onClick={() => previewItem && handleDeleteHistory(previewItem.id)} variant="destructive" className="text-xs bg-red-500/10 text-red-400 hover:bg-red-500/20 border-red-500/20 border">Delete</Button>
-                        </div>
-                        <Button variant="secondary" className="w-full text-xs" onClick={() => { if (previewItem) { handleUseAsTemplate(previewItem); setPreviewItem(null); } }}>Save as Style</Button>
                     </div>
                 </DialogContent>
             </Dialog >

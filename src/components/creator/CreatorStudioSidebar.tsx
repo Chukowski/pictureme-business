@@ -74,7 +74,7 @@ export function CreatorStudioSidebar({
 
     const [videoTab, setVideoTab] = useState<"frames" | "ingredients">("frames");
 
-    const currentModelObj = [...IMAGE_MODELS, ...VIDEO_MODELS].find(m => m.shortId === model);
+    const currentModelObj = [...IMAGE_MODELS, ...VIDEO_MODELS].find(m => m.shortId === model || m.id === model);
     const currentModelName = currentModelObj?.name || model;
 
     return (
@@ -142,7 +142,12 @@ export function CreatorStudioSidebar({
                             <div className="absolute inset-0 px-4 flex items-center justify-between">
                                 <div>
                                     <div className="flex items-center gap-2">
-                                        <span className="text-[#D1F349] font-bold text-sm tracking-wide uppercase">GENERAL</span>
+                                        <span className={cn(
+                                            "font-bold text-sm tracking-wide uppercase truncate max-w-[200px]",
+                                            selectedTemplate ? "text-white" : "text-[#D1F349]"
+                                        )}>
+                                            {selectedTemplate?.name || "GENERAL"}
+                                        </span>
                                     </div>
                                     <p className="text-zinc-400 text-[10px] mt-0.5">{currentModelName}</p>
                                 </div>

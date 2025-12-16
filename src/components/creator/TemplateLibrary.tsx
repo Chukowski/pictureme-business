@@ -37,15 +37,11 @@ interface TemplateLibraryProps {
 }
 
 // Group models for the top filter bar
+// Group models for the top filter bar
 const MODEL_FILTERS = [
     { id: 'all', name: 'All', icon: Sparkles },
     { id: 'video', name: 'Video Gen', icon: Video },
     { id: 'image', name: 'Image Gen', icon: ImageIcon },
-    { id: 'veo-3.1', name: 'Veo 3.1', icon: Zap },
-    { id: 'kling', name: 'Kling', icon: Zap },
-    { id: 'wan-v2', name: 'Wan 2.5', icon: Zap },
-    { id: 'nano-banana', name: 'Nano Banana', icon: Zap },
-    { id: 'flux', name: 'Flux', icon: Zap },
 ];
 
 const CATEGORIES = [
@@ -195,8 +191,11 @@ export function TemplateLibrary({
                         >
                             {/* Image */}
                             <img
-                                src={t.images?.[0] || t.preview_images?.[0] || "/placeholder.jpg"}
+                                src={t.images?.[0] || t.preview_images?.[0] || "/placeholder.svg"}
                                 alt={t.name}
+                                onError={(e) => {
+                                    e.currentTarget.src = "/placeholder.svg";
+                                }}
                                 className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                             />
 

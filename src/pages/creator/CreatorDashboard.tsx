@@ -16,6 +16,7 @@ import { RecommendedTemplates } from "@/components/home/RecommendedTemplates";
 import { PublicFeedBlock } from "@/components/creator/PublicFeedBlock";
 import { Badge } from "@/components/ui/badge";
 import { ENV } from "@/config/env";
+import { toast } from "sonner";
 
 // =======================
 // TYPES
@@ -438,7 +439,7 @@ function PendingGenerationsSection({ pendingJobs }: { pendingJobs: any[] }) {
 // =======================
 // MARKETPLACE FEED (Remix Engine)
 // =======================
-function CreatorsGallerySection({ creations, navigate }: { creations: any[]; navigate: (path: string) => void }) {
+function CreatorsGallerySection({ creations, navigate }: { creations: any[]; navigate: (path: string, options?: any) => void }) {
   if (!creations || creations.length === 0) {
     return (
       <div className="text-center py-12 bg-zinc-900/30 rounded-xl border border-white/5 border-dashed">
@@ -446,6 +447,32 @@ function CreatorsGallerySection({ creations, navigate }: { creations: any[]; nav
       </div>
     );
   }
+
+  const handleImageClick = (creation: any, e: React.MouseEvent) => {
+    e.stopPropagation();
+    // Navigate to the creator's public profile
+    // Use slug > username > user_id as fallback chain
+    const creatorIdentifier = creation.creator_slug || creation.creator_username || creation.creator_user_id;
+    if (creatorIdentifier) {
+      navigate(`/profile/${creatorIdentifier}`);
+    } else {
+      // No identifier available, show toast
+      toast.error("Creator profile not available");
+    }
+  };
+
+  const handleRemixClick = (creation: any, e: React.MouseEvent) => {
+    e.stopPropagation();
+    // Navigate to creator studio with prompt and template pre-filled
+    const remixState = {
+      prompt: creation.prompt || '',
+      templateId: creation.template_id || null,
+      templateUrl: creation.template_url || null,
+      sourceImageUrl: creation.image_url || creation.url || null,
+      remixFrom: creation.id,
+    };
+    navigate('/creator/create', { state: remixState });
+  };
 
   return (
     <div className="space-y-4">
@@ -455,7 +482,7 @@ function CreatorsGallerySection({ creations, navigate }: { creations: any[]; nav
           <div
             key={creation.id || index}
             className="break-inside-avoid group relative rounded-2xl overflow-hidden bg-zinc-900 border border-white/5 hover:border-white/20 transition-all cursor-pointer shadow-lg"
-            onClick={() => navigate('/creator/create')} // Simulate "Remix" action opening wizard
+            onClick={(e) => handleImageClick(creation, e)}
           >
             <img
               src={creation.image_url || creation.url}
@@ -470,7 +497,10 @@ function CreatorsGallerySection({ creations, navigate }: { creations: any[]; nav
             {/* Content Overlay */}
             <div className="absolute bottom-0 left-0 right-0 p-4 flex items-end justify-between z-20">
               {/* Creator Info */}
-              <div className="flex items-center gap-2">
+              <div
+                className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
+                onClick={(e) => handleImageClick(creation, e)}
+              >
                 <div className="w-6 h-6 rounded-full bg-zinc-700 flex items-center justify-center overflow-hidden border border-white/20">
                   {creation.creator_avatar ? (
                     <img src={creation.creator_avatar} className="w-full h-full object-cover" />
@@ -486,13 +516,16 @@ function CreatorsGallerySection({ creations, navigate }: { creations: any[]; nav
               </div>
 
               {/* Remix Button */}
-              <button className="
+              <button
+                className="
                   flex items-center gap-1.5 px-3 py-1.5 
                   bg-white/10 hover:bg-white/20 backdrop-blur-md 
                   border border-white/20 rounded-full 
                   text-white text-[10px] font-bold uppercase tracking-wider
                   transition-all duration-300 hover:scale-105 group-hover:bg-white/25
-               ">
+               "
+                onClick={(e) => handleRemixClick(creation, e)}
+              >
                 Remix <Zap className="w-3 h-3 fill-yellow-400 text-yellow-400" />
               </button>
             </div>

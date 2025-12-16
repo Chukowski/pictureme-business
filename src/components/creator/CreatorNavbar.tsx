@@ -21,7 +21,13 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@/components/ui/popover";
 import { TopUpModal } from "@/components/billing/TopUpModal";
+import { UpgradePlanModal } from "@/components/billing/UpgradePlanModal";
 
 interface CreatorNavbarProps {
     user: User | null;
@@ -31,6 +37,7 @@ export function CreatorNavbar({ user }: CreatorNavbarProps) {
     const navigate = useNavigate();
     const location = useLocation();
     const [showTopUp, setShowTopUp] = useState(false);
+    const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
     const handleLogout = () => {
         logoutUser();
@@ -92,20 +99,88 @@ export function CreatorNavbar({ user }: CreatorNavbarProps) {
                 {/* User Profile & Credits */}
                 <div className="flex items-center gap-4 z-50">
 
-                    {/* Credits Pill (Simple) */}
-                    <div
-                        className="hidden sm:flex items-center gap-2 bg-zinc-900/60 hover:bg-zinc-800/80 backdrop-blur-md border border-white/10 rounded-full px-4 py-2 transition-all cursor-pointer hover:border-amber-500/50"
-                        title={`${tokens.toLocaleString()} tokens remaining`}
-                        onClick={() => setShowTopUp(true)}
-                    >
-                        <Zap className={cn(
-                            "w-4 h-4 fill-current",
-                            (user?.tokens_remaining || 0) <= 20 ? "text-amber-500" : "text-amber-400"
-                        )} />
-                        <span className="text-sm font-bold text-white">
-                            {user?.tokens_remaining?.toLocaleString() || 0}
-                        </span>
-                    </div>
+                    {/* Credits Pill (Simple Popover) */}
+                    <Popover>
+                        <PopoverTrigger asChild>
+                            <div
+                                className="hidden sm:flex items-center gap-2 bg-zinc-900/60 hover:bg-zinc-800/80 backdrop-blur-md border border-white/10 rounded-full px-4 py-2 transition-all cursor-pointer hover:border-amber-500/50"
+                                title={`${tokens.toLocaleString()} tokens remaining`}
+                            >
+                                <Zap className={cn(
+                                    "w-4 h-4 fill-current",
+                                    (user?.tokens_remaining || 0) <= 20 ? "text-amber-500" : "text-amber-400"
+                                )} />
+                                <span className="text-sm font-bold text-white">
+                                    {user?.tokens_remaining?.toLocaleString() || 0}
+                                </span>
+                            </div>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-80 bg-[#09090b] border border-white/10 shadow-2xl p-0 rounded-2xl overflow-hidden mr-4" align="end" sideOffset={8}>
+                            <div className="p-5 space-y-4">
+                                <div>
+                                    <h4 className="text-sm font-medium text-zinc-400 mb-1">Available Tokens</h4>
+                                    <div className="flex items-baseline gap-2">
+                                        <span className="text-3xl font-bold text-white">{tokens.toLocaleString()}</span>
+                                        <span className="text-zinc-500 text-sm">tokens</span>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <div className="flex justify-between text-xs text-zinc-500">
+                                        <span>Monthly Usage</span>
+                                        <span>{Math.min(100, Math.round((tokens / 1000) * 100))}%</span>
+                                    </div>
+                                    <div className="h-2 w-full bg-zinc-800 rounded-full overflow-hidden">
+                                        <div
+                                            className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full"
+                                            style={{ width: `${Math.min(100, Math.round((tokens / 1000) * 100))}%` }}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="pt-2 grid grid-cols-2 gap-3">
+                                    <button
+                                        onClick={() => setShowTopUp(true)}
+                                        className="bg-[#D1F349] hover:bg-[#b0cc3d] text-black font-bold py-2 px-4 rounded-xl text-sm transition-colors"
+                                    >
+                                        Top Up
+                                    </button>
+                                    <button
+                                        onClick={() => setShowUpgradeModal(true)}
+                                        className="bg-zinc-800 hover:bg-zinc-700 text-white font-medium py-2 px-4 rounded-xl text-sm transition-colors"
+                                    >
+                                        Upgrade
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="bg-zinc-900/50 p-4 border-t border-white/5 space-y-3">
+                                <h5 className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Recent Activity</h5>
+                                <div className="space-y-3">
+                                    <div className="flex items-center justify-between text-sm">
+                                        <div className="flex items-center gap-2 text-zinc-300">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
+                                            Image Generation
+                                        </div>
+                                        <span className="text-zinc-500 font-mono">-1</span>
+                                    </div>
+                                    <div className="flex items-center justify-between text-sm">
+                                        <div className="flex items-center gap-2 text-zinc-300">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
+                                            Video Render
+                                        </div>
+                                        <span className="text-zinc-500 font-mono">-4</span>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => navigate('/creator/billing')}
+                                    className="w-full text-center text-xs text-zinc-500 hover:text-white mt-2 transition-colors"
+                                >
+                                    View Full History
+                                </button>
+                            </div>
+                        </PopoverContent>
+                    </Popover>
 
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -151,6 +226,7 @@ export function CreatorNavbar({ user }: CreatorNavbarProps) {
             </div>
 
             <TopUpModal open={showTopUp} onClose={() => setShowTopUp(false)} />
+            <UpgradePlanModal open={showUpgradeModal} onClose={() => setShowUpgradeModal(false)} />
 
             {/* Mobile Navigation (Horizontal Scroll) - UPDATED FOR TOGGLE */}
             <div className="md:hidden border-t border-white/5 p-2 flex justify-center">

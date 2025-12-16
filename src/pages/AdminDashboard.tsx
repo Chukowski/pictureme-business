@@ -2,26 +2,11 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { getCurrentUser, logoutUser, updateUser } from "@/services/eventsApi";
-import { LogOut, User, Sparkles, Clock, ShieldAlert, Edit2, Loader2, Upload, X, Camera, Settings, Users, ChevronDown, ExternalLink, Building2, Coins } from "lucide-react";
+import { getCurrentUser, logoutUser } from "@/services/eventsApi";
+import { LogOut, Sparkles, Clock, ShieldAlert } from "lucide-react";
 import { ENV } from "@/config/env";
 import IndividualDashboard from "@/components/dashboard/IndividualDashboard";
 import BusinessDashboard from "@/components/dashboard/BusinessDashboard";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Progress } from "@/components/ui/progress";
-import { Switch } from "@/components/ui/switch";
-import { Globe, Lock } from "lucide-react";
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
@@ -171,8 +156,8 @@ export default function AdminDashboard() {
                   <button
                     onClick={() => setDashboardMode('studio')}
                     className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${dashboardMode === 'studio'
-                        ? 'bg-white text-black'
-                        : 'text-amber-400 hover:text-amber-300'
+                      ? 'bg-white text-black'
+                      : 'text-amber-400 hover:text-amber-300'
                       }`}
                   >
                     Studio
@@ -180,8 +165,8 @@ export default function AdminDashboard() {
                   <button
                     onClick={() => setDashboardMode('business')}
                     className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${dashboardMode === 'business'
-                        ? 'bg-white text-black'
-                        : 'text-amber-400 hover:text-amber-300'
+                      ? 'bg-white text-black'
+                      : 'text-amber-400 hover:text-amber-300'
                       }`}
                   >
                     Business
@@ -203,8 +188,6 @@ export default function AdminDashboard() {
                 Super Admin
               </Button>
             )}
-
-            {/* Old User Dropdown Removed - Now in TopNavbar */}
           </div>
         </div>
 

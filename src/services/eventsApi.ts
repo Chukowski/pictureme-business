@@ -33,7 +33,9 @@ export interface User {
   role?: 'individual' | 'business_pending' | 'business_starter' | 'business_eventpro' | 'business_masters' | 'superadmin';
   birth_date?: string;
   avatar_url?: string;
+  image?: string; // Better Auth field name
   cover_image_url?: string;
+  cover_image?: string; // Better Auth field name
   bio?: string;
   social_links?: {
     x?: string;
