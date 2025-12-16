@@ -48,6 +48,7 @@ export default function AdminRegister() {
           email: registerData.email,
           password: registerData.password,
           name: registerData.fullName || registerData.username,
+          username: registerData.username, // Send username separately
         },
         {
           onSuccess: (ctx) => {
