@@ -81,14 +81,22 @@ export function EventWorkflow({ formData, setFormData }: EditorSectionProps) {
             <h2 className="text-2xl font-semibold text-white">Album Tracking</h2>
             <p className="text-zinc-400">Track visitors, assign personal QR codes, and manage multi-station events.</p>
           </div>
-          <div className="flex items-center gap-2">
-            <Label htmlFor="tracking-enabled" className="text-white font-medium cursor-pointer">Enable Tracking</Label>
-            <Switch
-              id="tracking-enabled"
-              checked={formData.albumTracking.enabled}
-              onCheckedChange={(checked) => updateTracking({ enabled: checked })}
-              className="data-[state=checked]:bg-emerald-600"
-            />
+          <div className="flex flex-col items-end gap-1">
+            <div className="flex items-center gap-2">
+              <Label htmlFor="tracking-enabled" className="text-white font-medium cursor-pointer">Enable Tracking</Label>
+              <Switch
+                id="tracking-enabled"
+                checked={formData.albumTracking.enabled}
+                onCheckedChange={(checked) => updateTracking({ enabled: checked })}
+                disabled={formData.eventMode === 'pay_per_album'}
+                className="data-[state=checked]:bg-emerald-600"
+              />
+            </div>
+            {formData.eventMode === 'pay_per_album' && (
+              <p className="text-xs text-amber-400">
+                ⚠️ Required for Pay Per Album mode
+              </p>
+            )}
           </div>
         </div>
 
@@ -106,8 +114,8 @@ export function EventWorkflow({ formData, setFormData }: EditorSectionProps) {
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
                     <Label className="text-zinc-300">Album Type</Label>
-                    <Select 
-                      value={formData.albumTracking.albumType} 
+                    <Select
+                      value={formData.albumTracking.albumType}
                       onValueChange={(v: any) => updateTracking({ albumType: v })}
                     >
                       <SelectTrigger className="bg-black/40 border-white/10 text-white">
@@ -167,7 +175,7 @@ export function EventWorkflow({ formData, setFormData }: EditorSectionProps) {
                     />
                   </div>
 
-                   <div className="flex items-center justify-between p-3 rounded-lg bg-black/30 border border-white/5">
+                  <div className="flex items-center justify-between p-3 rounded-lg bg-black/30 border border-white/5">
                     <div>
                       <Label className="text-zinc-300 font-medium">Print Ready Mode</Label>
                       <p className="text-xs text-zinc-500">Optimize workflow for onsite printing</p>
@@ -262,13 +270,13 @@ export function EventWorkflow({ formData, setFormData }: EditorSectionProps) {
                     {formData.albumTracking.stations.map((station, index) => (
                       <div key={station.id} className="flex flex-col gap-4 p-4 rounded-xl bg-black/30 border border-white/5">
                         <div className="flex items-center gap-4">
-                           <div className="flex items-center justify-center w-8 h-8 rounded-full bg-zinc-800 text-zinc-400 font-mono text-sm shrink-0">
+                          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-zinc-800 text-zinc-400 font-mono text-sm shrink-0">
                             {index + 1}
                           </div>
-                          
+
                           <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
                             <div className="space-y-1">
-                              <Input 
+                              <Input
                                 value={station.name}
                                 onChange={(e) => updateStation(index, { name: e.target.value })}
                                 placeholder="Station Name"
@@ -276,37 +284,37 @@ export function EventWorkflow({ formData, setFormData }: EditorSectionProps) {
                               />
                             </div>
                             <div className="flex items-center gap-2">
-                               <Select 
-                                  value={station.type} 
-                                  onValueChange={(v: any) => updateStation(index, { type: v })}
-                                >
-                                  <SelectTrigger className="bg-zinc-900 border-white/10 text-white h-9">
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent className="bg-zinc-900 border-zinc-800 text-white">
-                                    <SelectItem value="registration">Registration</SelectItem>
-                                    <SelectItem value="booth">Photo Booth</SelectItem>
-                                    <SelectItem value="playground">Playground</SelectItem>
-                                    <SelectItem value="viewer">Viewer / Kiosk</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                                
-                                {station.type !== 'registration' && (
-                                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-zinc-900 border border-white/5 ml-auto md:ml-0">
-                                    <QrCode className={`w-4 h-4 ${station.requiresScanner ? 'text-emerald-400' : 'text-zinc-600'}`} />
-                                    <Switch
-                                      checked={station.requiresScanner}
-                                      onCheckedChange={(c) => updateStation(index, { requiresScanner: c })}
-                                      className="scale-75 data-[state=checked]:bg-emerald-600"
-                                    />
-                                  </div>
-                                )}
+                              <Select
+                                value={station.type}
+                                onValueChange={(v: any) => updateStation(index, { type: v })}
+                              >
+                                <SelectTrigger className="bg-zinc-900 border-white/10 text-white h-9">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent className="bg-zinc-900 border-zinc-800 text-white">
+                                  <SelectItem value="registration">Registration</SelectItem>
+                                  <SelectItem value="booth">Photo Booth</SelectItem>
+                                  <SelectItem value="playground">Playground</SelectItem>
+                                  <SelectItem value="viewer">Viewer / Kiosk</SelectItem>
+                                </SelectContent>
+                              </Select>
+
+                              {station.type !== 'registration' && (
+                                <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-zinc-900 border border-white/5 ml-auto md:ml-0">
+                                  <QrCode className={`w-4 h-4 ${station.requiresScanner ? 'text-emerald-400' : 'text-zinc-600'}`} />
+                                  <Switch
+                                    checked={station.requiresScanner}
+                                    onCheckedChange={(c) => updateStation(index, { requiresScanner: c })}
+                                    className="scale-75 data-[state=checked]:bg-emerald-600"
+                                  />
+                                </div>
+                              )}
                             </div>
                           </div>
-                          
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
+
+                          <Button
+                            variant="ghost"
+                            size="icon"
                             onClick={() => removeStation(index)}
                             className="text-zinc-600 hover:text-red-400"
                           >
@@ -316,18 +324,18 @@ export function EventWorkflow({ formData, setFormData }: EditorSectionProps) {
 
                         {/* Station Actions */}
                         <div className="flex items-center justify-end gap-2 pl-12 border-t border-white/5 pt-3">
-                           <Button 
-                            variant="ghost" 
-                            size="sm" 
+                          <Button
+                            variant="ghost"
+                            size="sm"
                             className="h-7 text-xs text-zinc-400 hover:text-white hover:bg-white/10"
                             onClick={() => copyStationUrl(station.id)}
                           >
                             <Copy className="w-3 h-3 mr-2" />
                             Copy URL
                           </Button>
-                           <Button 
-                            variant="ghost" 
-                            size="sm" 
+                          <Button
+                            variant="ghost"
+                            size="sm"
                             className="h-7 text-xs text-zinc-400 hover:text-white hover:bg-white/10"
                             onClick={() => window.open(`${window.location.origin}/station/${station.id}`, '_blank')}
                           >
@@ -343,7 +351,7 @@ export function EventWorkflow({ formData, setFormData }: EditorSectionProps) {
             </Card>
           </div>
         ) : (
-           <div className="mt-8 p-8 border border-white/10 rounded-2xl bg-zinc-900/30 flex flex-col items-center text-center">
+          <div className="mt-8 p-8 border border-white/10 rounded-2xl bg-zinc-900/30 flex flex-col items-center text-center">
             <div className="w-16 h-16 rounded-full bg-zinc-800 flex items-center justify-center mb-4">
               <QrCode className="w-8 h-8 text-zinc-600" />
             </div>

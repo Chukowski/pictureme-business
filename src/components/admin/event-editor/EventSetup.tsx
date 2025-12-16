@@ -57,7 +57,7 @@ export function EventSetup({ formData, setFormData, currentUser, isEdit }: Edito
                   disabled={isEdit}
                   className="bg-black/40 border-white/10 text-white placeholder:text-zinc-600 focus:border-indigo-500"
                 />
-                
+
                 {/* URL Copy Helpers */}
                 <div className="space-y-1 mt-2">
                   <div className="flex items-center justify-between text-xs p-2 rounded-lg bg-black/40 border border-white/5">
@@ -146,27 +146,27 @@ export function EventSetup({ formData, setFormData, currentUser, isEdit }: Edito
       {/* Features Section */}
       <section className="space-y-4">
         <div>
-           <h3 className="text-lg font-medium text-white">Key Features</h3>
-           <p className="text-sm text-zinc-400">Enable additional capabilities for this event.</p>
+          <h3 className="text-lg font-medium text-white">Key Features</h3>
+          <p className="text-sm text-zinc-400">Enable additional capabilities for this event.</p>
         </div>
         <Card className="bg-zinc-900/50 border-white/10 backdrop-blur-sm">
           <CardContent className="p-4 space-y-4">
-             <div className="flex items-center justify-between p-3 rounded-lg bg-black/30 border border-white/5">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center text-purple-400">
-                    <BadgeCheck className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <Label className="text-zinc-200 font-medium block cursor-pointer">Include Visitor Badge</Label>
-                    <p className="text-xs text-zinc-500">Generate ID badges with QR codes for guests</p>
-                  </div>
+            <div className="flex items-center justify-between p-3 rounded-lg bg-black/30 border border-white/5">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center text-purple-400">
+                  <BadgeCheck className="w-5 h-5" />
                 </div>
-                <Switch
-                  checked={formData.badgeTemplate?.enabled || false}
-                  onCheckedChange={(c) => updateBadgeConfig(c)}
-                  className="data-[state=checked]:bg-purple-600"
-                />
+                <div>
+                  <Label className="text-zinc-200 font-medium block cursor-pointer">Include Visitor Badge</Label>
+                  <p className="text-xs text-zinc-500">Generate ID badges with QR codes for guests</p>
+                </div>
               </div>
+              <Switch
+                checked={formData.badgeTemplate?.enabled || false}
+                onCheckedChange={(c) => updateBadgeConfig(c)}
+                className="data-[state=checked]:bg-purple-600"
+              />
+            </div>
           </CardContent>
         </Card>
       </section>
@@ -187,21 +187,19 @@ export function EventSetup({ formData, setFormData, currentUser, isEdit }: Edito
               eventMode: 'free',
               rules: { ...formData.rules, leadCaptureEnabled: false, requirePaymentBeforeDownload: false, allowFreePreview: true }
             })}
-            className={`p-5 rounded-2xl border text-left transition-all relative overflow-hidden group ${
-              formData.eventMode === 'free'
+            className={`p-5 rounded-2xl border text-left transition-all relative overflow-hidden group ${formData.eventMode === 'free'
                 ? 'border-emerald-500 bg-emerald-500/10 ring-1 ring-emerald-500'
                 : 'border-white/10 bg-zinc-900/50 hover:border-white/20 hover:bg-zinc-900'
-            }`}
+              }`}
           >
             <div className="relative z-10 flex flex-col h-full">
-              <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-4 ${
-                formData.eventMode === 'free' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-zinc-800 text-zinc-400'
-              }`}>
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-4 ${formData.eventMode === 'free' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-zinc-800 text-zinc-400'
+                }`}>
                 <Sparkles className="w-5 h-5" />
               </div>
               <h4 className="text-base font-semibold text-white mb-1">Free Experience</h4>
               <p className="text-sm text-zinc-400">No payment or data capture. Pure fun for guests.</p>
-              
+
               {formData.eventMode === 'free' && (
                 <div className="mt-auto pt-4 flex items-center gap-2 text-xs font-medium text-emerald-400">
                   <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
@@ -219,16 +217,14 @@ export function EventSetup({ formData, setFormData, currentUser, isEdit }: Edito
               eventMode: 'lead_capture',
               rules: { ...formData.rules, leadCaptureEnabled: true, requirePaymentBeforeDownload: false, allowFreePreview: true }
             })}
-            className={`p-5 rounded-2xl border text-left transition-all relative overflow-hidden group ${
-              formData.eventMode === 'lead_capture'
+            className={`p-5 rounded-2xl border text-left transition-all relative overflow-hidden group ${formData.eventMode === 'lead_capture'
                 ? 'border-blue-500 bg-blue-500/10 ring-1 ring-blue-500'
                 : 'border-white/10 bg-zinc-900/50 hover:border-white/20 hover:bg-zinc-900'
-            }`}
+              }`}
           >
             <div className="relative z-10 flex flex-col h-full">
-              <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-4 ${
-                formData.eventMode === 'lead_capture' ? 'bg-blue-500/20 text-blue-400' : 'bg-zinc-800 text-zinc-400'
-              }`}>
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-4 ${formData.eventMode === 'lead_capture' ? 'bg-blue-500/20 text-blue-400' : 'bg-zinc-800 text-zinc-400'
+                }`}>
                 <Users className="w-5 h-5" />
               </div>
               <h4 className="text-base font-semibold text-white mb-1">Lead Capture</h4>
@@ -244,16 +240,14 @@ export function EventSetup({ formData, setFormData, currentUser, isEdit }: Edito
               eventMode: 'pay_per_photo',
               rules: { ...formData.rules, leadCaptureEnabled: true, requirePaymentBeforeDownload: true, allowFreePreview: true, hardWatermarkOnPreviews: true }
             })}
-            className={`p-5 rounded-2xl border text-left transition-all relative overflow-hidden group ${
-              formData.eventMode === 'pay_per_photo'
+            className={`p-5 rounded-2xl border text-left transition-all relative overflow-hidden group ${formData.eventMode === 'pay_per_photo'
                 ? 'border-amber-500 bg-amber-500/10 ring-1 ring-amber-500'
                 : 'border-white/10 bg-zinc-900/50 hover:border-white/20 hover:bg-zinc-900'
-            }`}
+              }`}
           >
             <div className="relative z-10 flex flex-col h-full">
-              <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-4 ${
-                formData.eventMode === 'pay_per_photo' ? 'bg-amber-500/20 text-amber-400' : 'bg-zinc-800 text-zinc-400'
-              }`}>
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-4 ${formData.eventMode === 'pay_per_photo' ? 'bg-amber-500/20 text-amber-400' : 'bg-zinc-800 text-zinc-400'
+                }`}>
                 <CreditCard className="w-5 h-5" />
               </div>
               <h4 className="text-base font-semibold text-white mb-1">Pay Per Photo</h4>
@@ -267,18 +261,20 @@ export function EventSetup({ formData, setFormData, currentUser, isEdit }: Edito
             onClick={() => setFormData({
               ...formData,
               eventMode: 'pay_per_album',
+              albumTracking: {
+                ...formData.albumTracking,
+                enabled: true  // Auto-enable tracking (required for this mode)
+              },
               rules: { ...formData.rules, leadCaptureEnabled: true, requirePaymentBeforeDownload: true, allowFreePreview: true, hardWatermarkOnPreviews: true }
             })}
-            className={`p-5 rounded-2xl border text-left transition-all relative overflow-hidden group ${
-              formData.eventMode === 'pay_per_album'
+            className={`p-5 rounded-2xl border text-left transition-all relative overflow-hidden group ${formData.eventMode === 'pay_per_album'
                 ? 'border-purple-500 bg-purple-500/10 ring-1 ring-purple-500'
                 : 'border-white/10 bg-zinc-900/50 hover:border-white/20 hover:bg-zinc-900'
-            }`}
+              }`}
           >
             <div className="relative z-10 flex flex-col h-full">
-              <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-4 ${
-                formData.eventMode === 'pay_per_album' ? 'bg-purple-500/20 text-purple-400' : 'bg-zinc-800 text-zinc-400'
-              }`}>
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-4 ${formData.eventMode === 'pay_per_album' ? 'bg-purple-500/20 text-purple-400' : 'bg-zinc-800 text-zinc-400'
+                }`}>
                 <LayoutGrid className="w-5 h-5" />
               </div>
               <h4 className="text-base font-semibold text-white mb-1">Pay Per Album</h4>
