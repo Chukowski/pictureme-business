@@ -50,7 +50,7 @@ export default function CreatorSettings() {
   const [activeTab, setActiveTab] = useState('profile');
 
   const [formData, setFormData] = useState({
-    username: currentUser?.username || '',
+    username: currentUser?.username || currentUser?.slug || '',
     email: currentUser?.email || '',
     full_name: currentUser?.full_name || currentUser?.name || '',
     bio: currentUser?.bio || '',
