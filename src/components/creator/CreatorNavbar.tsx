@@ -59,27 +59,33 @@ export function CreatorNavbar({ user }: CreatorNavbarProps) {
                         <span className="font-bold text-lg tracking-tight hidden sm:block">PictureMe</span>
                     </div>
 
-                    {/* Navigation Tabs */}
-                    <nav className="hidden md:flex items-center gap-1">
-                        {navItems.map((item) => {
-                            const isActive = location.pathname.startsWith(item.path);
-                            return (
-                                <button
-                                    key={item.id}
-                                    onClick={() => navigate(item.path)}
-                                    className={cn(
-                                        "flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors",
-                                        isActive
-                                            ? "text-white bg-white/10"
-                                            : "text-zinc-400 hover:text-white hover:bg-white/5"
-                                    )}
-                                >
-                                    <item.icon className={cn("w-4 h-4", isActive && "text-indigo-400")} />
-                                    {item.label}
-                                </button>
-                            );
-                        })}
-                    </nav>
+                    {/* Navigation Toggle (Central) */}
+                    <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 hidden md:block">
+                        <div className="bg-zinc-900/50 p-1 rounded-full border border-white/10 flex items-center backdrop-blur-md">
+                            <button
+                                onClick={() => navigate('/creator/dashboard')}
+                                className={cn(
+                                    "px-6 py-1.5 rounded-full text-sm font-medium transition-all",
+                                    location.pathname === '/creator/dashboard'
+                                        ? "bg-zinc-800 text-white shadow-sm border border-white/5"
+                                        : "text-zinc-500 hover:text-zinc-300"
+                                )}
+                            >
+                                Explore
+                            </button>
+                            <button
+                                onClick={() => navigate('/creator/studio')}
+                                className={cn(
+                                    "px-6 py-1.5 rounded-full text-sm font-medium transition-all",
+                                    location.pathname !== '/creator/dashboard'
+                                        ? "bg-zinc-800 text-white shadow-sm border border-white/5"
+                                        : "text-zinc-500 hover:text-zinc-300"
+                                )}
+                            >
+                                My Studio
+                            </button>
+                        </div>
+                    </div>
                 </div>
 
                 {/* User Profile */}
@@ -161,27 +167,31 @@ export function CreatorNavbar({ user }: CreatorNavbarProps) {
                 </div>
             </div>
 
-            {/* Mobile Navigation (Horizontal Scroll) */}
-            <div className="md:hidden border-t border-white/5 overflow-x-auto">
-                <div className="flex p-2 gap-2 min-w-max">
-                    {navItems.map((item) => {
-                        const isActive = location.pathname.startsWith(item.path);
-                        return (
-                            <button
-                                key={item.id}
-                                onClick={() => navigate(item.path)}
-                                className={cn(
-                                    "flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap",
-                                    isActive
-                                        ? "text-white bg-white/10"
-                                        : "text-zinc-400 hover:text-white hover:bg-white/5"
-                                )}
-                            >
-                                <item.icon className={cn("w-4 h-4", isActive && "text-indigo-400")} />
-                                {item.label}
-                            </button>
-                        );
-                    })}
+            {/* Mobile Navigation (Horizontal Scroll) - UPDATED FOR TOGGLE */}
+            <div className="md:hidden border-t border-white/5 p-2 flex justify-center">
+                <div className="bg-zinc-900/50 p-1 rounded-full border border-white/10 flex items-center">
+                    <button
+                        onClick={() => navigate('/creator/dashboard')}
+                        className={cn(
+                            "px-6 py-1.5 rounded-full text-sm font-medium transition-all",
+                            location.pathname === '/creator/dashboard'
+                                ? "bg-zinc-800 text-white shadow-sm border border-white/5"
+                                : "text-zinc-500 hover:text-zinc-300"
+                        )}
+                    >
+                        Explore
+                    </button>
+                    <button
+                        onClick={() => navigate('/creator/studio')}
+                        className={cn(
+                            "px-6 py-1.5 rounded-full text-sm font-medium transition-all",
+                            location.pathname !== '/creator/dashboard'
+                                ? "bg-zinc-800 text-white shadow-sm border border-white/5"
+                                : "text-zinc-500 hover:text-zinc-300"
+                        )}
+                    >
+                        My Studio
+                    </button>
                 </div>
             </div>
         </header>

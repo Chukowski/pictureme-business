@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import {
   Plus, Image, ShoppingBag, Zap, Sparkles, ArrowRight, Camera,
   Play, RotateCcw, RefreshCw, Wand2, Store, Layout, Clock,
-  TrendingUp, Heart, Eye, ChevronRight, Loader2, X
+  TrendingUp, Heart, Eye, ChevronRight, Loader2, X, UserRound
 } from "lucide-react";
 import { getHomeContent, HomeContentResponse } from "@/services/contentApi";
 import { PlanInsightsCard } from "@/components/home/PlanInsightsCard";
@@ -155,195 +155,175 @@ export default function CreatorDashboard() {
     );
   }
 
-  const recentCreations = creations.slice(0, 6);
+  const recentCreations = creations.slice(0, 3);
   const hasCreations = creations.length > 0;
-  const lastCreation = creations[0] || null;
 
   return (
-    <div className="space-y-6 md:space-y-8 animate-in fade-in duration-500 p-4 md:p-8 pb-24 md:pb-8">
+    <div className="space-y-8 animate-in fade-in duration-500 p-4 md:p-8 pb-32">
 
       {/* ========================= */}
-      {/* HERO SECTION - STATE AWARE */}
+      {/* HERO SECTION (Spotlight Carousel) */}
       {/* ========================= */}
       <HeroSection
         user={user}
         homeState={homeState}
-        lastCreation={lastCreation}
-        userMetadata={userMetadata}
+        creations={creations.slice(0, 4)}
         navigate={navigate}
       />
 
       {/* ========================= */}
-      {/* QUICK ACTIONS - CONTEXT AWARE */}
+      {/* BENTO GRID DISCOVERY */}
       {/* ========================= */}
-      <QuickActionsSection
-        homeState={homeState}
-        lastCreation={lastCreation}
-        userMetadata={userMetadata}
-        navigate={navigate}
-      />
+      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6 h-auto lg:h-[400px]">
 
-      {/* ========================= */}
-      {/* TWO COLUMN LAYOUT */}
-      {/* Left: Community Gallery (Main) | Right: My Creations & Info */}
-      {/* ========================= */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
+        {/* 1. Featured Style (Large Vertical) - Span 1 Col */}
+        <FeaturedStyleCard navigate={navigate} />
 
-        {/* ========================= */}
-        {/* LEFT/CENTER COLUMN: COMMUNITY GALLERY (Instagram-style) */}
-        {/* ========================= */}
-        <div className="lg:col-span-2 space-y-6">
-
-          {/* Pending Generations (Processing) */}
-          {pendingJobs.length > 0 && (
-            <PendingGenerationsSection pendingJobs={pendingJobs} />
-          )}
-
-          {/* Creators Gallery - Instagram-style Masonry */}
-          <CreatorsGallerySection
-            creations={content?.public_creations || []}
-            navigate={navigate}
-          />
-
-        </div>
-
-        {/* ========================= */}
-        {/* RIGHT COLUMN: MY CREATIONS & INFO */}
-        {/* ========================= */}
-        <div className="space-y-6">
-
-          {/* Current Plan & Tokens */}
-          <PlanInsightsCard user={user} />
-
-          {/* My Recent Creations (Compact Card) */}
-          <MyCreationsCard
+        {/* Center Column - Span 2 Cols */}
+        {/* Recent Creations + Suggestions */}
+        <div className="md:col-span-2 flex flex-col gap-6 h-full">
+          {/* 2. Recent Creations (Horizontal) */}
+          <RecentCreationsBento
             creations={recentCreations}
             hasCreations={hasCreations}
             navigate={navigate}
           />
 
-          {/* What's New */}
-          <div className="h-[300px]">
-            <WhatsNewBlock content={content} />
-          </div>
-
-        </div>
-      </div>
-
-      {/* ========================= */}
-      {/* BOTTOM: MARKETPLACE HIGHLIGHTS */}
-      {/* ========================= */}
-      <RecommendedTemplates content={content} />
-
-    </div>
-  );
-}
-
-// =======================
-// HERO SECTION COMPONENT
-// =======================
-
-function HeroSection({ user, homeState, lastCreation, userMetadata, navigate }: {
-  user: User | null;
-  homeState: CreatorHomeState;
-  lastCreation: UserCreation | null;
-  userMetadata: UserMetadata;
-  navigate: (path: string) => void;
-}) {
-  const tokens = user?.tokens_remaining ?? 0;
-
-  // Dynamic content based on state
-  const heroContent = {
-    idle: {
-      title: `Ready to create, ${user?.full_name?.split(' ')[0] || user?.username}?`,
-      subtitle: "Transform your photos into stunning AI art",
-      cta: "Start Creating",
-      ctaIcon: Sparkles,
-      ctaAction: () => navigate('/creator/studio'),
-      ctaVariant: "primary" as const,
-      showTokens: true
-    },
-    active: {
-      title: `Welcome back, ${user?.full_name?.split(' ')[0]}!`,
-      subtitle: "Continue where you left off or try something new",
-      cta: "Continue Creating",
-      ctaIcon: Play,
-      ctaAction: () => navigate('/creator/studio'),
-      ctaVariant: "primary" as const,
-      showTokens: true
-    },
-    exploring: {
-      title: `Good to see you, ${user?.full_name?.split(' ')[0]}!`,
-      subtitle: "Discover new styles or remix your favorites",
-      cta: "Explore Templates",
-      ctaIcon: Store,
-      ctaAction: () => navigate('/creator/templates'),
-      ctaVariant: "secondary" as const,
-      showTokens: true
-    },
-    out_of_tokens: {
-      title: "You're out of tokens",
-      subtitle: "Get more tokens to continue creating amazing content",
-      cta: "Get More Tokens",
-      ctaIcon: Zap,
-      ctaAction: () => navigate('/creator/settings?tab=billing'),
-      ctaVariant: "upgrade" as const,
-      showTokens: false
-    }
-  };
-
-  const h = heroContent[homeState];
-  const Icon = h.ctaIcon;
-
-  return (
-    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-900/40 via-purple-900/30 to-zinc-900 border border-white/10 p-6 md:p-8">
-      {/* Background Decoration */}
-      <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute bottom-0 left-0 w-48 h-48 bg-purple-500/10 rounded-full blur-3xl pointer-events-none" />
-
-      <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div className="flex-1">
-          <h1 className="text-2xl md:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-zinc-400">
-            {h.title}
-          </h1>
-          <p className="text-zinc-400 mt-2 text-sm md:text-base max-w-lg">
-            {h.subtitle}
-          </p>
-
-          {h.showTokens && tokens > 0 && (
-            <div className="mt-4 flex items-center gap-2 text-sm">
-              <Zap className="w-4 h-4 text-amber-400" />
-              <span className="text-zinc-300">
-                <span className="font-semibold text-white">{tokens.toLocaleString()}</span> tokens available
-              </span>
+          {/* Placeholder for Top Creators or New Block */}
+          <div className="flex-1 bg-zinc-900/30 rounded-2xl border border-white/5 p-4 flex items-center justify-between group cursor-pointer hover:bg-zinc-900/50 transition-colors" onClick={() => navigate('/creator/feed')}>
+            <div className="flex items-center gap-4">
+              <div className="flex -space-x-2">
+                {[1, 2, 3].map(i => (
+                  <div key={i} className="w-8 h-8 rounded-full bg-zinc-800 border-2 border-zinc-900"></div>
+                ))}
+              </div>
+              <div>
+                <h4 className="text-sm font-semibold text-white">Top Creators</h4>
+                <p className="text-xs text-zinc-500">See who's trending this week</p>
+              </div>
             </div>
-          )}
+            <ChevronRight className="w-4 h-4 text-zinc-600 group-hover:text-white transition-colors" />
+          </div>
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-3">
-          <Button
-            onClick={h.ctaAction}
-            className={`
-                            rounded-full px-6 py-3 text-base font-semibold shadow-lg transition-all
-                            ${h.ctaVariant === 'primary' ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-900/30' : ''}
-                            ${h.ctaVariant === 'secondary' ? 'bg-white/10 hover:bg-white/20 text-white backdrop-blur-sm' : ''}
-                            ${h.ctaVariant === 'upgrade' ? 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-black shadow-amber-900/30' : ''}
-                        `}
-          >
-            <Icon className="w-5 h-5 mr-2" />
-            {h.cta}
-          </Button>
+        {/* Right Column - Trending Tags & Community Challenge */}
+        <div className="space-y-6 flex flex-col">
+          {/* Trending Tags (Moved here) */}
+          <TrendingTagsCard navigate={navigate} />
 
-          {homeState === 'active' && (
-            <Button
-              onClick={() => navigate('/creator/templates')}
-              variant="outline"
-              className="rounded-full border-white/20 hover:bg-white/10"
-            >
-              <Store className="w-4 h-4 mr-2" />
-              Browse Styles
-            </Button>
-          )}
+          {/* Community Challenge */}
+          <div className="flex-1 bg-gradient-to-br from-indigo-900/20 to-purple-900/20 rounded-2xl border border-white/5 p-5 relative overflow-hidden group cursor-pointer hover:border-indigo-500/30 transition-all">
+            <div className="absolute top-0 right-0 p-3">
+              <span className="text-[10px] font-bold text-indigo-400 bg-indigo-400/10 px-2 py-1 rounded-full uppercase tracking-wider">Weekly</span>
+            </div>
+            <div className="mt-6">
+              <h3 className="text-lg font-bold text-white mb-1">Neon Portrait</h3>
+              <p className="text-xs text-zinc-400 mb-4">Create a portrait with neon lighting.</p>
+              <Button size="sm" variant="secondary" className="w-full text-xs h-8 bg-white/10 hover:bg-white/20 text-white border-0">
+                Join Challenge
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ========================= */}
+      {/* PENDING GENERATIONS */}
+      {/* ========================= */}
+      {pendingJobs.length > 0 && (
+        <PendingGenerationsSection pendingJobs={pendingJobs} />
+      )}
+
+      {/* ========================= */}
+      {/* THE MARKETPLACE FEED */}
+      {/* ========================= */}
+      <div className="mt-8">
+        <h2 className="text-xl font-semibold text-white mb-4">The Marketplace Feed</h2>
+        <CreatorsGallerySection
+          creations={content?.public_creations || []}
+          navigate={navigate}
+        />
+      </div>
+
+    </div>
+  );
+}
+
+// =======================
+// HERO SECTION
+// =======================
+function HeroSection({ user, homeState, creations, navigate }: { user: User | null; homeState: CreatorHomeState; creations: UserCreation[]; navigate: (path: string) => void }) {
+  return (
+    <div className="relative w-full aspect-[21/9] md:aspect-[3/1] lg:aspect-[4/1] rounded-2xl overflow-hidden group bg-black">
+      {/* Visual Proof Background (Collage/Video) */}
+      <div className="absolute inset-0 opacity-40 z-0 select-none pointer-events-none">
+        {creations.length > 0 ? (
+          <div className="grid grid-cols-4 gap-0 w-full h-full">
+            {creations.slice(0, 4).map((c, i) => (
+              <div key={i} className="h-full relative overflow-hidden">
+                <img src={c.url} className="w-full h-full object-cover grayscale mix-blend-luminosity hover:grayscale-0 transition-all duration-700 opacity-60" />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="w-full h-full bg-[url('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2564&auto=format&fit=crop')] bg-cover bg-center grayscale opacity-30"></div>
+        )}
+      </div>
+
+      {/* Gradient Overlay */}
+      <div className="absolute inset-0 bg-gradient-to-r from-black via-black/80 to-transparent z-0"></div>
+      <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent z-0"></div>
+
+      <div className="absolute inset-0 z-10 flex flex-col items-center justify-center text-center p-6">
+        <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white tracking-tight mb-4 drop-shadow-2xl">
+          Create iconic AI photos in seconds.
+        </h1>
+        <p className="text-zinc-400 text-sm md:text-base max-w-lg mb-8">
+          The world's most advanced AI photobooth marketplace.
+          {homeState === 'out_of_tokens' && <span className="block text-amber-400 mt-2">You are out of tokens. Upgrade to continue.</span>}
+        </p>
+
+        <Button
+          size="lg"
+          onClick={() => navigate(homeState === 'out_of_tokens' ? '/creator/settings?tab=billing' : '/creator/studio')}
+          className="
+                        rounded-full px-8 py-6 text-lg font-semibold 
+                        bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500
+                        shadow-lg shadow-indigo-900/50 hover:scale-105 transition-all
+                        border border-white/10
+                    "
+        >
+          <Sparkles className="w-5 h-5 mr-2 fill-white" />
+          {homeState === 'active' ? 'Continue Creating' : 'Start Creating'}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+// =======================
+// FEATURED STYLE CARD
+// =======================
+function FeaturedStyleCard({ navigate }: { navigate: (p: string) => void }) {
+  return (
+    <div
+      onClick={() => navigate('/creator/templates')}
+      className="group relative h-full min-h-[300px] rounded-2xl overflow-hidden cursor-pointer border border-white/5 hover:border-indigo-500/50 transition-all bg-zinc-900"
+    >
+      <img
+        src="https://images.unsplash.com/photo-1620641788421-7f6c368615b8?q=80&w=2670&auto=format&fit=crop"
+        className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+        alt="Featured Style"
+      />
+      {/* Gradient Overlay for Text Readability */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent opacity-90"></div>
+
+      <div className="absolute bottom-0 left-0 w-full p-6">
+        <p className="text-xs font-bold text-indigo-400 mb-2 tracking-wider uppercase bg-black/50 backdrop-blur-md inline-block px-2 py-1 rounded">Featured Style</p>
+        <h3 className="text-3xl font-bold text-white mb-2 leading-tight">Cyberpunk<br />Noir</h3>
+        <p className="text-xs text-zinc-300 mb-4 line-clamp-2 max-w-[80%]">Neon lights, dark alleys, and futuristic vibes.</p>
+        <div className="inline-flex items-center text-xs font-semibold text-white bg-white/10 px-4 py-2 rounded-full backdrop-blur-md group-hover:bg-white/20 transition-colors border border-white/10">
+          Use Style <ArrowRight className="w-3 h-3 ml-1" />
         </div>
       </div>
     </div>
@@ -351,97 +331,80 @@ function HeroSection({ user, homeState, lastCreation, userMetadata, navigate }: 
 }
 
 // =======================
-// QUICK ACTIONS SECTION
+// RECENT CREATIONS BENTO
 // =======================
+function RecentCreationsBento({ creations, hasCreations, navigate }: { creations: UserCreation[], hasCreations: boolean, navigate: (p: string) => void }) {
+  return (
+    <div className="flex-[2] bg-zinc-900/50 rounded-2xl border border-white/5 p-6 relative overflow-hidden flex flex-col">
+      <div className="flex items-center justify-between mb-4 z-10">
+        <div>
+          <h3 className="text-lg font-semibold text-white">Your Recent Creations</h3>
+          <p className="text-xs text-zinc-500">Ready to download</p>
+        </div>
+        {hasCreations && (
+          <Button variant="ghost" size="sm" onClick={() => navigate('/creator/studio')} className="text-zinc-400 hover:text-white text-xs h-8">
+            My Studio <ChevronRight className="w-3 h-3 ml-1" />
+          </Button>
+        )}
+      </div>
 
-function QuickActionsSection({ homeState, lastCreation, userMetadata, navigate }: {
-  homeState: CreatorHomeState;
-  lastCreation: UserCreation | null;
-  userMetadata: UserMetadata;
-  navigate: (path: string) => void;
-}) {
-  const actions = [
-    {
-      icon: Wand2,
-      label: "Create New",
-      desc: "Start fresh",
-      color: "text-indigo-400",
-      bg: "bg-indigo-500/10",
-      action: () => navigate('/creator/studio'),
-      show: true
-    },
-    {
-      icon: RotateCcw,
-      label: "Reuse Prompt",
-      desc: userMetadata.last_prompt ? "Continue last" : "No recent",
-      color: "text-amber-400",
-      bg: "bg-amber-500/10",
-      action: () => navigate('/creator/studio?reuse=true'),
-      show: !!userMetadata.last_prompt,
-      disabled: !userMetadata.last_prompt
-    },
-    {
-      icon: RefreshCw,
-      label: "Remix Creation",
-      desc: "New variation",
-      color: "text-purple-400",
-      bg: "bg-purple-500/10",
-      action: () => lastCreation ? navigate(`/creator/studio?remix=${lastCreation.id}`) : navigate('/creator/studio'),
-      show: !!lastCreation
-    },
-    {
-      icon: Camera,
-      label: "Launch Booth",
-      desc: "Share mode",
-      color: "text-green-400",
-      bg: "bg-green-500/10",
-      action: () => navigate('/creator/booth'),
-      show: true
-    },
-    {
-      icon: ShoppingBag,
-      label: "Marketplace",
-      desc: "Get styles",
-      color: "text-pink-400",
-      bg: "bg-pink-500/10",
-      action: () => navigate('/creator/templates'),
-      show: true
-    },
-    {
-      icon: Layout,
-      label: "My Gallery",
-      desc: "All creations",
-      color: "text-cyan-400",
-      bg: "bg-cyan-500/10",
-      action: () => navigate('/creator/studio'),
-      show: true
-    }
+      {hasCreations ? (
+        <div className="flex gap-4 h-full overflow-x-auto pb-1 scrollbar-hide z-10 items-stretch">
+          {creations.map(c => (
+            <div key={c.id} onClick={() => navigate('/creator/studio')} className="aspect-[3/4] h-full min-h-[140px] flex-shrink-0 rounded-xl overflow-hidden border border-white/5 cursor-pointer relative group hover:scale-[1.02] transition-transform bg-zinc-800">
+              <img src={c.url} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" loading="lazy" />
+              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                <RefreshCw className="w-6 h-6 text-white drop-shadow-lg" />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="flex-1 flex items-center justify-center z-10 bg-zinc-900/50 rounded-xl border border-white/5 border-dashed min-h-[140px]">
+          <div className="text-center">
+            <Image className="w-8 h-8 text-zinc-600 mx-auto mb-2" />
+            <p className="text-sm text-zinc-500 mb-3">No creations yet</p>
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => navigate('/creator/studio')}
+              className="text-xs bg-white/5 hover:bg-white/10 text-indigo-300 border border-white/5"
+            >
+              Start creating
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Glow effect */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80%] h-[80%] bg-indigo-500/5 rounded-full blur-3xl pointer-events-none"></div>
+    </div>
+  );
+}
+
+// =======================
+// TRENDING TAGS CARD
+// =======================
+function TrendingTagsCard({ navigate }: { navigate: (p: string) => void }) {
+  const tags = [
+    { label: "Polaroid", icon: Camera },
+    { label: "Lego", icon: Layout },
+    { label: "Anime", icon: Sparkles },
+    { label: "Headshot", icon: UserRound },
+    { label: "Cyberpunk", icon: Zap },
   ];
 
-  const visibleActions = actions.filter(a => a.show !== false);
-
   return (
-    <div className="space-y-3">
-      <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider">Quick Actions</h2>
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
-        {visibleActions.map((action, i) => (
-          <button
-            key={i}
-            onClick={action.disabled ? undefined : action.action}
-            disabled={action.disabled}
-            className={`
-                            flex flex-col items-center p-4 bg-zinc-900 border border-white/5 rounded-xl 
-                            transition-all text-center group
-                            ${action.disabled
-                ? 'opacity-50 cursor-not-allowed'
-                : 'hover:border-white/10 hover:bg-zinc-800/80 cursor-pointer'}
-                        `}
-          >
-            <div className={`p-2.5 rounded-lg ${action.bg} ${action.color} mb-2 group-hover:scale-110 transition-transform`}>
-              <action.icon className="w-5 h-5" />
-            </div>
-            <h3 className="font-semibold text-white text-xs">{action.label}</h3>
-            <p className="text-[10px] text-zinc-500 mt-0.5">{action.desc}</p>
+    <div className="flex-1 bg-zinc-900/50 rounded-2xl border border-white/5 p-5 flex flex-col justify-center min-h-[140px]">
+      <div className="flex items-center gap-2 mb-4">
+        <TrendingUp className="w-4 h-4 text-pink-400" />
+        <h3 className="text-sm font-semibold text-white">Trending Tags</h3>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        {tags.map((t, i) => (
+          <button key={i} onClick={() => navigate('/creator/templates')} className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 hover:bg-white/10 rounded-full border border-white/5 text-xs text-zinc-300 hover:text-white transition-colors">
+            <t.icon className="w-3 h-3 opacity-60" />
+            {t.label}
           </button>
         ))}
       </div>
@@ -449,10 +412,10 @@ function QuickActionsSection({ homeState, lastCreation, userMetadata, navigate }
   );
 }
 
+
 // =======================
 // PENDING GENERATIONS
 // =======================
-
 function PendingGenerationsSection({ pendingJobs }: { pendingJobs: any[] }) {
   return (
     <div className="space-y-4">
@@ -476,93 +439,8 @@ function PendingGenerationsSection({ pendingJobs }: { pendingJobs: any[] }) {
 }
 
 // =======================
-// RECENT CREATIONS SECTION
-// =======================
-
-function RecentCreationsSection({ creations, hasCreations, navigate }: {
-  creations: UserCreation[];
-  hasCreations: boolean;
-  navigate: (path: string) => void;
-}) {
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold text-white">Your Recent Creations</h2>
-        {hasCreations && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate('/creator/studio')}
-            className="text-zinc-400 hover:text-white"
-          >
-            View All <ChevronRight className="w-4 h-4 ml-1" />
-          </Button>
-        )}
-      </div>
-
-      {hasCreations ? (
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-          {creations.map((creation) => (
-            <div
-              key={creation.id}
-              onClick={() => navigate('/creator/studio')}
-              className="group relative aspect-square rounded-xl overflow-hidden bg-zinc-900 border border-white/5 hover:border-indigo-500/30 transition-all cursor-pointer"
-            >
-              {creation.url ? (
-                <img
-                  src={creation.url}
-                  alt={creation.prompt || 'Creation'}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center bg-zinc-800">
-                  <Image className="w-8 h-8 text-zinc-600" />
-                </div>
-              )}
-
-              {/* Hover Overlay */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-3">
-                <p className="text-xs text-white/80 line-clamp-2">{creation.prompt}</p>
-                <div className="flex items-center gap-2 mt-2">
-                  <span className="text-[10px] text-zinc-400">{creation.model_id || creation.model}</span>
-                  {creation.is_published && (
-                    <span className="text-[10px] text-green-400 flex items-center gap-1">
-                      <Eye className="w-3 h-3" /> Public
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div className="text-center py-16 bg-zinc-900/30 rounded-2xl border border-white/5 border-dashed">
-          <div className="max-w-sm mx-auto space-y-4">
-            <div className="w-16 h-16 mx-auto rounded-2xl bg-indigo-500/10 flex items-center justify-center">
-              <Sparkles className="w-8 h-8 text-indigo-400" />
-            </div>
-            <h3 className="text-lg font-semibold text-white">No creations yet</h3>
-            <p className="text-sm text-zinc-400">
-              Your AI-generated masterpieces will appear here. Ready to create your first?
-            </p>
-            <Button
-              onClick={() => navigate('/creator/studio')}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-full px-6"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Create Your First
-            </Button>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// =======================
 // CREATORS GALLERY (Instagram-style Masonry)
 // =======================
-
 function CreatorsGallerySection({ creations, navigate }: { creations: any[]; navigate: (path: string) => void }) {
   if (!creations || creations.length === 0) {
     return (
@@ -574,21 +452,6 @@ function CreatorsGallerySection({ creations, navigate }: { creations: any[]; nav
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-semibold text-white">Creators Gallery</h2>
-          <p className="text-sm text-zinc-400 mt-0.5">Explore creations from the community</p>
-        </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => navigate('/creator/feed')}
-          className="text-zinc-400 hover:text-white"
-        >
-          See All <ChevronRight className="w-4 h-4 ml-1" />
-        </Button>
-      </div>
-
       {/* Masonry Grid - Instagram Style */}
       <div className="columns-2 md:columns-3 lg:columns-4 gap-3 space-y-3">
         {creations.map((creation: any, index: number) => (
@@ -635,78 +498,6 @@ function CreatorsGallerySection({ creations, navigate }: { creations: any[]; nav
         ))}
       </div>
     </div>
-  );
-}
-
-// =======================
-// MY CREATIONS CARD (Sidebar)
-// =======================
-
-function MyCreationsCard({ creations, hasCreations, navigate }: {
-  creations: UserCreation[];
-  hasCreations: boolean;
-  navigate: (path: string) => void;
-}) {
-  return (
-    <Card className="bg-zinc-900 border-white/10">
-      <CardContent className="p-4 space-y-3">
-        <div className="flex items-center justify-between">
-          <h3 className="font-semibold text-white flex items-center gap-2">
-            <Image className="w-4 h-4 text-indigo-400" />
-            My Creations
-          </h3>
-          {hasCreations && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate('/creator/studio')}
-              className="text-zinc-400 hover:text-white text-xs"
-            >
-              View All
-            </Button>
-          )}
-        </div>
-
-        {hasCreations ? (
-          <div className="grid grid-cols-2 gap-2">
-            {creations.slice(0, 4).map((creation) => (
-              <div
-                key={creation.id}
-                onClick={() => navigate('/creator/studio')}
-                className="relative aspect-square rounded-lg overflow-hidden group cursor-pointer bg-zinc-800"
-              >
-                {creation.url ? (
-                  <img
-                    src={creation.url}
-                    alt={creation.prompt || 'Creation'}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <Image className="w-6 h-6 text-zinc-600" />
-                  </div>
-                )}
-                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                  <Eye className="w-4 h-4 text-white" />
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-6">
-            <p className="text-sm text-zinc-500 mb-3">No creations yet</p>
-            <Button
-              size="sm"
-              onClick={() => navigate('/creator/studio')}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-full text-xs"
-            >
-              <Plus className="w-3 h-3 mr-1" />
-              Create First
-            </Button>
-          </div>
-        )}
-      </CardContent>
-    </Card>
   );
 }
 

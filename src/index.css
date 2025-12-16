@@ -9,19 +9,25 @@ All colors MUST be HSL.
 @layer base {
   :root {
     /* Modern light mode with smooth colors */
-    --background: 0 0% 98%;              /* #FAFAFA - soft white */
-    --foreground: 220 15% 20%;           /* #2D3139 - dark charcoal */
+    --background: 0 0% 98%;
+    /* #FAFAFA - soft white */
+    --foreground: 220 15% 20%;
+    /* #2D3139 - dark charcoal */
 
-    --card: 0 0% 100%;                   /* Pure white cards */
+    --card: 0 0% 100%;
+    /* Pure white cards */
     --card-foreground: 220 15% 20%;
 
     --popover: 0 0% 100%;
     --popover-foreground: 220 15% 20%;
 
     /* Modern smooth brand colors */
-    --brand-primary: 250 84% 64%;        /* #6366F1 - smooth indigo */
-    --brand-secondary: 340 82% 62%;      /* #F472B6 - soft pink */
-    --brand-accent: 210 100% 56%;        /* #3B82F6 - vibrant blue */
+    --brand-primary: 250 84% 64%;
+    /* #6366F1 - smooth indigo */
+    --brand-secondary: 340 82% 62%;
+    /* #F472B6 - soft pink */
+    --brand-accent: 210 100% 56%;
+    /* #3B82F6 - vibrant blue */
 
     /* Map to standard tokens */
     --primary: var(--brand-primary);
@@ -30,8 +36,10 @@ All colors MUST be HSL.
     --secondary: var(--brand-secondary);
     --secondary-foreground: 0 0% 100%;
 
-    --muted: 220 13% 95%;                /* #F1F2F4 - very light gray */
-    --muted-foreground: 220 9% 46%;      /* #6B7280 - medium gray */
+    --muted: 220 13% 95%;
+    /* #F1F2F4 - very light gray */
+    --muted-foreground: 220 9% 46%;
+    /* #6B7280 - medium gray */
 
     --accent: var(--brand-accent);
     --accent-foreground: 0 0% 100%;
@@ -39,14 +47,16 @@ All colors MUST be HSL.
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 13% 91%;               /* #E5E7EB - light border */
+    --border: 220 13% 91%;
+    /* #E5E7EB - light border */
     --input: 220 13% 95%;
     --ring: var(--brand-primary);
 
     --radius: 1rem;
 
     /* Sidebar colors */
-    --sidebar: 0 0% 100%; /* legacy var kept for back-compat */
+    --sidebar: 0 0% 100%;
+    /* legacy var kept for back-compat */
     --sidebar-background: 0 0% 100%;
     --sidebar-foreground: 220 15% 20%;
     --sidebar-primary: var(--brand-primary);
@@ -84,13 +94,17 @@ All colors MUST be HSL.
 
   /* Event theme overrides */
   [data-theme="legacy"] {
-    --brand-primary: 180 100% 30%;       /* Teal */
-    --brand-secondary: 24 96% 48%;       /* Orange */
+    --brand-primary: 180 100% 30%;
+    /* Teal */
+    --brand-secondary: 24 96% 48%;
+    /* Orange */
   }
 
   [data-theme="akita"] {
-    --brand-primary: 174 100% 37%;       /* Soft teal */
-    --brand-secondary: 340 82% 62%;      /* Soft pink */
+    --brand-primary: 174 100% 37%;
+    /* Soft teal */
+    --brand-secondary: 340 82% 62%;
+    /* Soft pink */
   }
 
   .dark {
@@ -135,6 +149,7 @@ All colors MUST be HSL.
     --shadow-elegant: 0 35px 80px -20px hsl(226 45% 4% / 0.85);
     --shadow-card: 0 20px 45px -20px hsl(226 45% 4% / 0.65);
   }
+
   .theme {
     --animate-border-beam: border-beam calc(var(--duration)*1s) infinite linear;
   }
@@ -152,7 +167,12 @@ All colors MUST be HSL.
     -moz-osx-font-smoothing: grayscale;
   }
 
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     @apply font-bold;
   }
 
@@ -161,19 +181,23 @@ All colors MUST be HSL.
     width: 6px;
     height: 6px;
   }
+
   ::-webkit-scrollbar-track {
     background: transparent;
   }
+
   ::-webkit-scrollbar-thumb {
     background: hsl(220 13% 25%);
     border-radius: 9999px;
   }
+
   ::-webkit-scrollbar-thumb:hover {
     background: hsl(220 13% 35%);
   }
 }
 
 @layer utilities {
+
   /* Back-compat alias: many pages use `bg-gradient-dark`, keep supporting it */
   .bg-gradient-dark {
     background: var(--gradient-dark);
@@ -286,8 +310,10 @@ All colors MUST be HSL.
 
   /* Hide scrollbar for IE, Edge and Firefox */
   .scrollbar-hide {
-    -ms-overflow-style: none;  /* IE and Edge */
-    scrollbar-width: none;  /* Firefox */
+    -ms-overflow-style: none;
+    /* IE and Edge */
+    scrollbar-width: none;
+    /* Firefox */
   }
 
   .animate-border-beam {
@@ -299,6 +325,7 @@ All colors MUST be HSL.
   from {
     offset-distance: 0%;
   }
+
   to {
     offset-distance: 100%;
   }
@@ -309,10 +336,12 @@ All colors MUST be HSL.
     transform: translate(-10%, -12%) scale(1);
     opacity: 0.65;
   }
+
   50% {
     transform: translate(12%, 10%) scale(1.25);
     opacity: 1;
   }
+
   100% {
     transform: translate(-8%, -10%) scale(1);
     opacity: 0.7;
@@ -320,9 +349,12 @@ All colors MUST be HSL.
 }
 
 @keyframes float-slow {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: translateY(0);
   }
+
   50% {
     transform: translateY(-10px);
   }
@@ -333,10 +365,12 @@ All colors MUST be HSL.
     transform: scale(0.9);
     opacity: 0.45;
   }
+
   50% {
     transform: scale(1.05);
     opacity: 0.15;
   }
+
   100% {
     transform: scale(0.9);
     opacity: 0.45;
@@ -347,6 +381,7 @@ All colors MUST be HSL.
   0% {
     background-position: 0% 50%;
   }
+
   100% {
     background-position: 200% 50%;
   }
@@ -356,6 +391,7 @@ All colors MUST be HSL.
   0% {
     transform: rotate(0deg) translateY(-68px) rotate(0deg);
   }
+
   100% {
     transform: rotate(360deg) translateY(-68px) rotate(-360deg);
   }
@@ -366,18 +402,22 @@ All colors MUST be HSL.
     transform: translate(-120%, -120%) scale(1);
     opacity: 0.95;
   }
+
   25% {
     transform: translate(120%, -120%) scale(0.85);
     opacity: 0.65;
   }
+
   50% {
     transform: translate(120%, 120%) scale(1.05);
     opacity: 1;
   }
+
   75% {
     transform: translate(-120%, 120%) scale(0.9);
     opacity: 0.75;
   }
+
   100% {
     transform: translate(-120%, -120%) scale(1);
     opacity: 0.95;
@@ -389,18 +429,22 @@ All colors MUST be HSL.
     transform: translate(120%, -120%) scale(0.9);
     opacity: 0.9;
   }
+
   25% {
     transform: translate(120%, 120%) scale(1.05);
     opacity: 1;
   }
+
   50% {
     transform: translate(-120%, 120%) scale(0.85);
     opacity: 0.65;
   }
+
   75% {
     transform: translate(-120%, -120%) scale(1);
     opacity: 0.95;
   }
+
   100% {
     transform: translate(120%, -120%) scale(0.9);
     opacity: 0.9;
@@ -412,18 +456,22 @@ All colors MUST be HSL.
     transform: translate(120%, 120%) scale(1.05);
     opacity: 1;
   }
+
   25% {
     transform: translate(-120%, 120%) scale(0.9);
     opacity: 0.75;
   }
+
   50% {
     transform: translate(-120%, -120%) scale(0.95);
     opacity: 0.95;
   }
+
   75% {
     transform: translate(120%, -120%) scale(0.85);
     opacity: 0.65;
   }
+
   100% {
     transform: translate(120%, 120%) scale(1.05);
     opacity: 1;
@@ -435,18 +483,22 @@ All colors MUST be HSL.
     transform: translate(-120%, 120%) scale(0.85);
     opacity: 0.7;
   }
+
   25% {
     transform: translate(-120%, -120%) scale(1);
     opacity: 0.95;
   }
+
   50% {
     transform: translate(120%, -120%) scale(0.9);
     opacity: 0.85;
   }
+
   75% {
     transform: translate(120%, 120%) scale(1.05);
     opacity: 1;
   }
+
   100% {
     transform: translate(-120%, 120%) scale(0.85);
     opacity: 0.7;
