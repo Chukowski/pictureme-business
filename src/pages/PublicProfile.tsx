@@ -89,6 +89,11 @@ export default function PublicProfile() {
       }
 
       const data = await response.json();
+      console.log('📊 Profile API Response:', data);
+      console.log('👤 Profile:', data.profile);
+      console.log('🖼️ Creations:', data.creations);
+      console.log('📏 Creations length:', data.creations?.length || 0);
+
       setProfile(data.profile);
       setCreations(data.creations || []);
     } catch (error) {
