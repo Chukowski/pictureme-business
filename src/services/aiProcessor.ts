@@ -112,7 +112,6 @@ const MODEL_ID_MAP: Record<string, string> = {
   'nano-banana-pro': 'fal-ai/nano-banana-pro/edit',
   'seedream-v4': 'fal-ai/bytedance/seedream/v4/edit',
   'seedream-v4.5': 'fal-ai/bytedance/seedream/v4.5/edit',
-  'seedream-t2i': 'fal-ai/bytedance/seedream/v4/edit', // Legacy alias
   'flux-realism': 'fal-ai/flux-realism',
   'flux-2-pro': 'fal-ai/flux-2-pro/edit',
   // Video models
@@ -226,6 +225,15 @@ export const AI_MODELS = {
     speed: "slow",
     type: "video",
     cost: 100,
+  },
+  veo31: {
+    id: "fal-ai/google/veo-3-1/image-to-video",
+    shortId: "veo-3.1",
+    name: "Google Veo 3.1",
+    description: "Generate high-quality video from image with Google's latest model",
+    speed: "slow",
+    type: "video",
+    cost: 200,
   },
 } as const;
 

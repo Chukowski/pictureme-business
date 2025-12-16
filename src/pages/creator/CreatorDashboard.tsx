@@ -9,10 +9,12 @@ import {
   TrendingUp, Heart, Eye, ChevronRight, Loader2, X, UserRound
 } from "lucide-react";
 import { getHomeContent, HomeContentResponse } from "@/services/contentApi";
+import { getMarketplaceTemplates, MarketplaceTemplate } from "@/services/marketplaceApi";
 import { PlanInsightsCard } from "@/components/home/PlanInsightsCard";
 import { WhatsNewBlock } from "@/components/home/WhatsNewBlock";
 import { RecommendedTemplates } from "@/components/home/RecommendedTemplates";
 import { PublicFeedBlock } from "@/components/creator/PublicFeedBlock";
+import { Badge } from "@/components/ui/badge";
 import { ENV } from "@/config/env";
 
 // =======================
@@ -81,12 +83,11 @@ function getCreatorHomeState(user: User | null, creations: UserCreation[]): Crea
 export default function CreatorDashboard() {
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
-  const [events, setEvents] = useState<EventConfig[]>([]);
   const [content, setContent] = useState<HomeContentResponse | null>(null);
+  const [marketplaceTemplates, setMarketplaceTemplates] = useState<MarketplaceTemplate[]>([]);
   const [creations, setCreations] = useState<UserCreation[]>([]);
   const [pendingJobs, setPendingJobs] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [userMetadata, setUserMetadata] = useState<UserMetadata>({});
 
   useEffect(() => {
     loadData();
@@ -102,9 +103,9 @@ export default function CreatorDashboard() {
 
       const token = localStorage.getItem("auth_token");
 
-      const [userEvents, homeContent, tokenStats, creationsData, pendingData] = await Promise.all([
-        getUserEvents().catch(() => []),
+      const [homeContent, templates, tokenStats, creationsData, pendingData] = await Promise.all([
         getHomeContent('personal').catch(() => null),
+        getMarketplaceTemplates({ limit: 10 }).catch(() => []),
         getTokenStats().catch(() => null),
         // Fetch user's creations from API
         token ? fetch(`${ENV.API_URL}/api/creations`, {
@@ -126,16 +127,10 @@ export default function CreatorDashboard() {
         setUser(currentUser);
       }
 
-      setEvents(userEvents);
       if (homeContent) setContent(homeContent);
+      setMarketplaceTemplates(templates || []);
       setCreations(creationsData.creations || []);
       setPendingJobs(pendingData.pending || []);
-
-      // Load user metadata from localStorage
-      const savedMeta = localStorage.getItem('creator_metadata');
-      if (savedMeta) {
-        try { setUserMetadata(JSON.parse(savedMeta)); } catch { }
-      }
 
     } catch (error) {
       console.error("Failed to load dashboard", error);
@@ -172,59 +167,38 @@ export default function CreatorDashboard() {
       />
 
       {/* ========================= */}
-      {/* BENTO GRID DISCOVERY */}
+      {/* SECTION B: BENTO DASHBOARD GRID */}
       {/* ========================= */}
-      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6 h-auto lg:h-[400px]">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
 
-        {/* 1. Featured Style (Large Vertical) - Span 1 Col */}
-        <FeaturedStyleCard navigate={navigate} />
+        {/* Left Column: Featured Style (1 Col) */}
+        <div className="lg:col-span-1 h-full min-h-[400px]">
+          <FeaturedStyleCard navigate={navigate} template={marketplaceTemplates[0]} />
+        </div>
 
-        {/* Center Column - Span 2 Cols */}
-        {/* Recent Creations + Suggestions */}
-        <div className="md:col-span-2 flex flex-col gap-6 h-full">
-          {/* 2. Recent Creations (Horizontal) */}
+        {/* Middle Column: Recent Creations & Marketplace (2 Cols) */}
+        <div className="lg:col-span-2 flex flex-col gap-6">
           <RecentCreationsBento
             creations={recentCreations}
             hasCreations={hasCreations}
             navigate={navigate}
           />
 
-          {/* Placeholder for Top Creators or New Block */}
-          <div className="flex-1 bg-zinc-900/30 rounded-2xl border border-white/5 p-4 flex items-center justify-between group cursor-pointer hover:bg-zinc-900/50 transition-colors" onClick={() => navigate('/creator/feed')}>
-            <div className="flex items-center gap-4">
-              <div className="flex -space-x-2">
-                {[1, 2, 3].map(i => (
-                  <div key={i} className="w-8 h-8 rounded-full bg-zinc-800 border-2 border-zinc-900"></div>
-                ))}
-              </div>
-              <div>
-                <h4 className="text-sm font-semibold text-white">Top Creators</h4>
-                <p className="text-xs text-zinc-500">See who's trending this week</p>
-              </div>
+          <div className="bg-[#1A1A1A] rounded-2xl border border-white/5 p-5">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-lg font-semibold text-white tracking-wide">Explore Templates</h3>
+              <Button variant="link" className="text-indigo-400 text-xs p-0 h-auto" onClick={() => navigate('/creator/templates')}>View All</Button>
             </div>
-            <ChevronRight className="w-4 h-4 text-zinc-600 group-hover:text-white transition-colors" />
+            <RecommendedTemplates templates={marketplaceTemplates} />
           </div>
         </div>
 
-        {/* Right Column - Trending Tags & Community Challenge */}
-        <div className="space-y-6 flex flex-col">
-          {/* Trending Tags (Moved here) */}
+        {/* Right Column: Trending & Challenges (1 Col) */}
+        <div className="lg:col-span-1 flex flex-col gap-6">
           <TrendingTagsCard navigate={navigate} />
-
-          {/* Community Challenge */}
-          <div className="flex-1 bg-gradient-to-br from-indigo-900/20 to-purple-900/20 rounded-2xl border border-white/5 p-5 relative overflow-hidden group cursor-pointer hover:border-indigo-500/30 transition-all">
-            <div className="absolute top-0 right-0 p-3">
-              <span className="text-[10px] font-bold text-indigo-400 bg-indigo-400/10 px-2 py-1 rounded-full uppercase tracking-wider">Weekly</span>
-            </div>
-            <div className="mt-6">
-              <h3 className="text-lg font-bold text-white mb-1">Neon Portrait</h3>
-              <p className="text-xs text-zinc-400 mb-4">Create a portrait with neon lighting.</p>
-              <Button size="sm" variant="secondary" className="w-full text-xs h-8 bg-white/10 hover:bg-white/20 text-white border-0">
-                Join Challenge
-              </Button>
-            </div>
-          </div>
+          <CommunityChallengeCard navigate={navigate} />
         </div>
+
       </div>
 
       {/* ========================= */}
@@ -237,8 +211,8 @@ export default function CreatorDashboard() {
       {/* ========================= */}
       {/* THE MARKETPLACE FEED */}
       {/* ========================= */}
-      <div className="mt-8">
-        <h2 className="text-xl font-semibold text-white mb-4">The Marketplace Feed</h2>
+      <div className="mt-10">
+        <h2 className="text-xl font-bold text-white mb-6 tracking-tight">Feed</h2>
         <CreatorsGallerySection
           creations={content?.public_creations || []}
           navigate={navigate}
@@ -254,47 +228,54 @@ export default function CreatorDashboard() {
 // =======================
 function HeroSection({ user, homeState, creations, navigate }: { user: User | null; homeState: CreatorHomeState; creations: UserCreation[]; navigate: (path: string) => void }) {
   return (
-    <div className="relative w-full aspect-[21/9] md:aspect-[3/1] lg:aspect-[4/1] rounded-2xl overflow-hidden group bg-black">
+    <div className="relative w-full aspect-[21/9] md:aspect-[2.5/1] rounded-2xl overflow-hidden group bg-[#050505] shadow-2xl shadow-black/50 border border-white/5">
       {/* Visual Proof Background (Collage/Video) */}
-      <div className="absolute inset-0 opacity-40 z-0 select-none pointer-events-none">
-        {creations.length > 0 ? (
-          <div className="grid grid-cols-4 gap-0 w-full h-full">
-            {creations.slice(0, 4).map((c, i) => (
+      <div className="absolute inset-0 z-0 select-none pointer-events-none mix-blend-screen scale-105">
+        <div className="grid grid-cols-4 gap-0 w-full h-full filter blur-[2px] opacity-50">
+          {creations.length > 0 ? (
+            creations.slice(0, 4).map((c, i) => (
               <div key={i} className="h-full relative overflow-hidden">
-                <img src={c.url} className="w-full h-full object-cover grayscale mix-blend-luminosity hover:grayscale-0 transition-all duration-700 opacity-60" />
+                <img src={c.url} className="w-full h-full object-cover" />
               </div>
-            ))}
-          </div>
-        ) : (
-          <div className="w-full h-full bg-[url('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2564&auto=format&fit=crop')] bg-cover bg-center grayscale opacity-30"></div>
-        )}
+            ))
+          ) : (
+            // Curated "Visual Proof" for new users
+            <>
+              <div className="h-full relative overflow-hidden"><img src="https://images.unsplash.com/photo-1620641788421-7f6c368615b8?q=80&w=800&auto=format&fit=crop" className="w-full h-full object-cover" /></div>
+              <div className="h-full relative overflow-hidden"><img src="https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?q=80&w=800&auto=format&fit=crop" className="w-full h-full object-cover" /></div>
+              <div className="h-full relative overflow-hidden"><img src="https://images.unsplash.com/photo-1635322966219-b75ed3a93227?q=80&w=800&auto=format&fit=crop" className="w-full h-full object-cover" /></div>
+              <div className="h-full relative overflow-hidden"><img src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=800&auto=format&fit=crop" className="w-full h-full object-cover" /></div>
+            </>
+          )}
+        </div>
       </div>
 
-      {/* Gradient Overlay */}
-      <div className="absolute inset-0 bg-gradient-to-r from-black via-black/80 to-transparent z-0"></div>
-      <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent z-0"></div>
+      {/* Gradient Overlays for Text Readability & Fade */}
+      <div className="absolute inset-0 bg-gradient-to-r from-[#050505] via-[#050505]/70 to-transparent z-0"></div>
+      <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-transparent to-transparent z-0"></div>
 
-      <div className="absolute inset-0 z-10 flex flex-col items-center justify-center text-center p-6">
-        <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white tracking-tight mb-4 drop-shadow-2xl">
+      <div className="absolute inset-0 z-10 flex flex-col items-start justify-center text-left p-8 md:p-12 pl-10 md:pl-16">
+        <h1 className="text-4xl md:text-6xl font-bold text-white tracking-tight mb-4 drop-shadow-[0_4px_10px_rgba(255,255,255,0.1)] max-w-2xl">
           Create iconic AI photos in seconds.
         </h1>
-        <p className="text-zinc-400 text-sm md:text-base max-w-lg mb-8">
+        <p className="text-[#CCCCCC] text-sm md:text-lg max-w-lg mb-8 font-medium shadow-black drop-shadow-md">
           The world's most advanced AI photobooth marketplace.
-          {homeState === 'out_of_tokens' && <span className="block text-amber-400 mt-2">You are out of tokens. Upgrade to continue.</span>}
+          {homeState === 'out_of_tokens' && <span className="block text-amber-400 mt-2 text-sm">You are out of tokens. Upgrade to continue.</span>}
         </p>
 
         <Button
           size="lg"
           onClick={() => navigate(homeState === 'out_of_tokens' ? '/creator/settings?tab=billing' : '/creator/studio')}
           className="
-                        rounded-full px-8 py-6 text-lg font-semibold 
-                        bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500
-                        shadow-lg shadow-indigo-900/50 hover:scale-105 transition-all
+                        rounded-full px-8 py-6 text-base font-semibold 
+                        bg-[#8b5cf6] hover:bg-[#7c3aed] text-white
+                        shadow-[0_0_20px_rgba(139,92,246,0.5)] hover:shadow-[0_0_30px_rgba(139,92,246,0.7)]
+                        hover:scale-105 transition-all duration-300
                         border border-white/10
                     "
         >
-          <Sparkles className="w-5 h-5 mr-2 fill-white" />
           {homeState === 'active' ? 'Continue Creating' : 'Start Creating'}
+          <Sparkles className="w-5 h-5 ml-2 fill-white" />
         </Button>
       </div>
     </div>
@@ -304,26 +285,43 @@ function HeroSection({ user, homeState, creations, navigate }: { user: User | nu
 // =======================
 // FEATURED STYLE CARD
 // =======================
-function FeaturedStyleCard({ navigate }: { navigate: (p: string) => void }) {
+// =======================
+// FEATURED STYLE CARD
+// =======================
+
+function FeaturedStyleCard({ navigate, template }: { navigate: (p: string) => void, template?: MarketplaceTemplate }) {
+  // Fallback to static if no template provided
+  const bgImage = template?.preview_url || template?.preview_images?.[0] || "https://images.unsplash.com/photo-1635322966219-b75ed3a93227?q=80&w=2000&auto=format&fit=crop";
+  const title = template?.name || "Cyberpunk Noir";
+  const subtitle = template?.template_type ? `${template.template_type} Style` : "Neon lights, dark alleys, and futuristic vibes.";
+
   return (
     <div
-      onClick={() => navigate('/creator/templates')}
-      className="group relative h-full min-h-[300px] rounded-2xl overflow-hidden cursor-pointer border border-white/5 hover:border-indigo-500/50 transition-all bg-zinc-900"
+      onClick={() => navigate(template ? `/creator/templates/${template.id}` : '/creator/templates')}
+      className="group relative h-full min-h-[400px] rounded-2xl overflow-hidden cursor-pointer border border-white/10 bg-zinc-900 shadow-xl shadow-black/40"
     >
       <img
-        src="https://images.unsplash.com/photo-1620641788421-7f6c368615b8?q=80&w=2670&auto=format&fit=crop"
+        src={bgImage}
         className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
         alt="Featured Style"
       />
-      {/* Gradient Overlay for Text Readability */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent opacity-90"></div>
+      {/* Improved Gradient Overlay matching reference - Stronger bottom for text contrast */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent opacity-90 z-10"></div>
 
-      <div className="absolute bottom-0 left-0 w-full p-6">
-        <p className="text-xs font-bold text-indigo-400 mb-2 tracking-wider uppercase bg-black/50 backdrop-blur-md inline-block px-2 py-1 rounded">Featured Style</p>
-        <h3 className="text-3xl font-bold text-white mb-2 leading-tight">Cyberpunk<br />Noir</h3>
-        <p className="text-xs text-zinc-300 mb-4 line-clamp-2 max-w-[80%]">Neon lights, dark alleys, and futuristic vibes.</p>
-        <div className="inline-flex items-center text-xs font-semibold text-white bg-white/10 px-4 py-2 rounded-full backdrop-blur-md group-hover:bg-white/20 transition-colors border border-white/10">
-          Use Style <ArrowRight className="w-3 h-3 ml-1" />
+      <div className="absolute bottom-0 left-0 w-full p-6 z-20 flex flex-col justify-end h-full">
+        <div className="mt-auto">
+          <Badge variant="secondary" className="mb-3 bg-indigo-500/20 text-indigo-300 border-indigo-500/30 backdrop-blur-md">FEATURED STYLE</Badge>
+          <h3 className="text-4xl lg:text-5xl font-bold text-white mb-2 leading-none tracking-tight drop-shadow-lg">{title}</h3>
+          <p className="text-base text-zinc-300 font-medium opacity-90 drop-shadow-md mb-6 leading-relaxed max-w-[80%] line-clamp-3">{subtitle}</p>
+
+          <button className="
+                      flex items-center gap-2 px-6 py-3
+                      bg-white/10 hover:bg-white/20 backdrop-blur-md 
+                      border border-white/20 rounded-full 
+                      text-white text-sm font-semibold 
+                  ">
+            Use Style <ArrowRight className="w-4 h-4 ml-1" />
+          </button>
         </div>
       </div>
     </div>
@@ -335,49 +333,45 @@ function FeaturedStyleCard({ navigate }: { navigate: (p: string) => void }) {
 // =======================
 function RecentCreationsBento({ creations, hasCreations, navigate }: { creations: UserCreation[], hasCreations: boolean, navigate: (p: string) => void }) {
   return (
-    <div className="flex-[2] bg-zinc-900/50 rounded-2xl border border-white/5 p-6 relative overflow-hidden flex flex-col">
-      <div className="flex items-center justify-between mb-4 z-10">
-        <div>
-          <h3 className="text-lg font-semibold text-white">Your Recent Creations</h3>
-          <p className="text-xs text-zinc-500">Ready to download</p>
-        </div>
-        {hasCreations && (
-          <Button variant="ghost" size="sm" onClick={() => navigate('/creator/studio')} className="text-zinc-400 hover:text-white text-xs h-8">
-            My Studio <ChevronRight className="w-3 h-3 ml-1" />
-          </Button>
-        )}
+    <div className="bg-[#1A1A1A] rounded-2xl border border-white/5 p-5 relative overflow-hidden flex flex-col group shadow-lg h-auto">
+      <div className="flex items-center justify-between mb-4 z-10 w-full">
+        <h3 className="text-lg font-semibold text-white tracking-wide">Your Recent Creations</h3>
+        <span onClick={() => navigate('/creator/studio')} className="text-xs text-zinc-400 cursor-pointer hover:text-white flex items-center gap-1">
+          My Studio <ChevronRight className="w-3 h-3" />
+        </span>
       </div>
 
       {hasCreations ? (
-        <div className="flex gap-4 h-full overflow-x-auto pb-1 scrollbar-hide z-10 items-stretch">
-          {creations.map(c => (
-            <div key={c.id} onClick={() => navigate('/creator/studio')} className="aspect-[3/4] h-full min-h-[140px] flex-shrink-0 rounded-xl overflow-hidden border border-white/5 cursor-pointer relative group hover:scale-[1.02] transition-transform bg-zinc-800">
-              <img src={c.url} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" loading="lazy" />
-              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                <RefreshCw className="w-6 h-6 text-white drop-shadow-lg" />
-              </div>
+        <div className="grid grid-cols-4 gap-3 h-auto z-10">
+          {creations.slice(0, 4).map(c => (
+            <div key={c.id} onClick={() => navigate('/creator/studio')} className="aspect-square rounded-xl overflow-hidden border border-white/5 cursor-pointer relative group/item hover:scale-[1.02] transition-transform bg-zinc-800 shadow-md">
+              <img src={c.url} className="w-full h-full object-cover opacity-90 group-hover/item:opacity-100 transition-opacity" loading="lazy" />
+            </div>
+          ))}
+          {/* Fillers if less than 4 */}
+          {[...Array(Math.max(0, 4 - creations.length))].map((_, i) => (
+            <div key={`empty-${i}`} className="aspect-square rounded-xl bg-zinc-800/50 border border-white/5 flex items-center justify-center">
+              <Image className="w-5 h-5 text-zinc-700" />
             </div>
           ))}
         </div>
       ) : (
-        <div className="flex-1 flex items-center justify-center z-10 bg-zinc-900/50 rounded-xl border border-white/5 border-dashed min-h-[140px]">
-          <div className="text-center">
-            <Image className="w-8 h-8 text-zinc-600 mx-auto mb-2" />
-            <p className="text-sm text-zinc-500 mb-3">No creations yet</p>
+        <div className="flex-1 flex items-center justify-center z-10 bg-zinc-900/50 rounded-xl border border-white/5 border-dashed mt-0">
+          <div className="text-center p-4">
+            <div className="w-12 h-12 rounded-full bg-zinc-800 mx-auto flex items-center justify-center mb-3">
+              <Camera className="w-5 h-5 text-zinc-500" />
+            </div>
+            <p className="text-sm text-zinc-400 mb-4">No creations yet. Start your journey.</p>
             <Button
-              size="sm"
-              variant="secondary"
+              variant="outline"
+              className="rounded-full border-white/10 bg-white/5 hover:bg-white/10 text-white hover:text-white"
               onClick={() => navigate('/creator/studio')}
-              className="text-xs bg-white/5 hover:bg-white/10 text-indigo-300 border border-white/5"
             >
-              Start creating
+              Start Creating
             </Button>
           </div>
         </div>
       )}
-
-      {/* Glow effect */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80%] h-[80%] bg-indigo-500/5 rounded-full blur-3xl pointer-events-none"></div>
     </div>
   );
 }
@@ -392,18 +386,21 @@ function TrendingTagsCard({ navigate }: { navigate: (p: string) => void }) {
     { label: "Anime", icon: Sparkles },
     { label: "Headshot", icon: UserRound },
     { label: "Cyberpunk", icon: Zap },
+    { label: "Studio", icon: Image },
+    { label: "Retro", icon: Clock },
   ];
 
   return (
-    <div className="flex-1 bg-zinc-900/50 rounded-2xl border border-white/5 p-5 flex flex-col justify-center min-h-[140px]">
-      <div className="flex items-center gap-2 mb-4">
-        <TrendingUp className="w-4 h-4 text-pink-400" />
-        <h3 className="text-sm font-semibold text-white">Trending Tags</h3>
+    <div className="flex-shrink-0 bg-[#1A1A1A] rounded-2xl border border-white/5 p-5 flex flex-col group shadow-lg">
+      <div className="flex items-center justify-between mb-4 w-full cursor-pointer hover:opacity-80 transition-opacity" onClick={() => navigate('/creator/templates')}>
+        <h3 className="text-lg font-semibold text-white tracking-wide">Tags</h3>
+        <ChevronRight className="w-5 h-5 text-zinc-500" />
       </div>
-      <div className="flex flex-wrap gap-2">
+
+      <div className="flex flex-wrap gap-2 content-start">
         {tags.map((t, i) => (
-          <button key={i} onClick={() => navigate('/creator/templates')} className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 hover:bg-white/10 rounded-full border border-white/5 text-xs text-zinc-300 hover:text-white transition-colors">
-            <t.icon className="w-3 h-3 opacity-60" />
+          <button key={i} onClick={() => navigate('/creator/templates')} className="flex items-center gap-1.5 px-3 py-2 bg-white/5 hover:bg-white/10 rounded-lg border border-white/5 text-sm text-zinc-300 hover:text-white transition-all transform hover:scale-105 hover:shadow-md">
+            <t.icon className="w-3.5 h-3.5 opacity-70" />
             {t.label}
           </button>
         ))}
@@ -439,60 +436,65 @@ function PendingGenerationsSection({ pendingJobs }: { pendingJobs: any[] }) {
 }
 
 // =======================
-// CREATORS GALLERY (Instagram-style Masonry)
+// MARKETPLACE FEED (Remix Engine)
 // =======================
 function CreatorsGallerySection({ creations, navigate }: { creations: any[]; navigate: (path: string) => void }) {
   if (!creations || creations.length === 0) {
     return (
       <div className="text-center py-12 bg-zinc-900/30 rounded-xl border border-white/5 border-dashed">
-        <p className="text-zinc-500">Community gallery loading...</p>
+        <p className="text-zinc-500">Marketplace loading...</p>
       </div>
     );
   }
 
   return (
     <div className="space-y-4">
-      {/* Masonry Grid - Instagram Style */}
-      <div className="columns-2 md:columns-3 lg:columns-4 gap-3 space-y-3">
+      {/* Masonry Grid - 3 Columns as requested */}
+      <div className="columns-1 md:columns-3 gap-4 space-y-4">
         {creations.map((creation: any, index: number) => (
           <div
             key={creation.id || index}
-            className="break-inside-avoid group relative rounded-xl overflow-hidden bg-zinc-900 border border-white/5 hover:border-white/20 transition-all cursor-pointer"
+            className="break-inside-avoid group relative rounded-2xl overflow-hidden bg-zinc-900 border border-white/5 hover:border-white/20 transition-all cursor-pointer shadow-lg"
+            onClick={() => navigate('/creator/create')} // Simulate "Remix" action opening wizard
           >
             <img
               src={creation.image_url || creation.url}
               alt={creation.template_name || creation.prompt || ''}
-              className="w-full object-cover group-hover:scale-[1.02] transition-transform duration-300"
+              className="w-full object-cover group-hover:scale-[1.02] transition-transform duration-500"
               loading="lazy"
             />
 
-            {/* Hover Overlay */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
-              {/* Creator Avatar & Name */}
-              <div className="absolute top-3 left-3 flex items-center gap-2">
-                <div className="w-7 h-7 rounded-full bg-zinc-700 flex items-center justify-center text-xs font-medium text-white overflow-hidden">
-                  {creation.creator_username?.charAt(0)?.toUpperCase() || 'C'}
+            {/* Gradient Overlay (Always visible at bottom, stronger on hover) */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-80 group-hover:opacity-100 transition-opacity duration-300"></div>
+
+            {/* Content Overlay */}
+            <div className="absolute bottom-0 left-0 right-0 p-4 flex items-end justify-between z-20">
+              {/* Creator Info */}
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-full bg-zinc-700 flex items-center justify-center overflow-hidden border border-white/20">
+                  {creation.creator_avatar ? (
+                    <img src={creation.creator_avatar} className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-[10px] font-bold text-white">
+                      {creation.creator_username?.charAt(0)?.toUpperCase() || 'C'}
+                    </span>
+                  )}
                 </div>
-                <span className="text-xs text-white/80 font-medium">
-                  {creation.creator_username || 'Creator'}
+                <span className="text-xs font-medium text-white/90 shadow-black drop-shadow-md">
+                  @{creation.creator_username || 'Creator'}
                 </span>
               </div>
 
-              {/* Likes Badge */}
-              <div className="absolute top-3 right-3 flex items-center gap-1 bg-black/40 backdrop-blur-sm px-2 py-1 rounded-full">
-                <Heart className="w-3 h-3 text-white" />
-                <span className="text-xs text-white">{creation.likes || 0}</span>
-              </div>
-
-              {/* Bottom Info */}
-              <div className="absolute bottom-0 left-0 right-0 p-3">
-                <p className="text-sm text-white font-medium line-clamp-1">
-                  {creation.template_name || 'AI Creation'}
-                </p>
-                <p className="text-xs text-white/60 line-clamp-2 mt-1">
-                  {creation.prompt || ''}
-                </p>
-              </div>
+              {/* Remix Button */}
+              <button className="
+                  flex items-center gap-1.5 px-3 py-1.5 
+                  bg-white/10 hover:bg-white/20 backdrop-blur-md 
+                  border border-white/20 rounded-full 
+                  text-white text-[10px] font-bold uppercase tracking-wider
+                  transition-all duration-300 hover:scale-105 group-hover:bg-white/25
+               ">
+                Remix <Zap className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+              </button>
             </div>
           </div>
         ))}
@@ -501,3 +503,46 @@ function CreatorsGallerySection({ creations, navigate }: { creations: any[]; nav
   );
 }
 
+
+// =======================
+// COMMUNITY CHALLENGE CARD (New)
+// =======================
+function CommunityChallengeCard({ navigate }: { navigate: (p: string) => void }) {
+  return (
+    <div className="flex-1 min-h-[180px] bg-gradient-to-br from-indigo-900/20 to-purple-900/20 rounded-2xl border border-indigo-500/20 p-5 flex flex-col relative overflow-hidden group cursor-pointer" onClick={() => navigate('/creator/challenges')}>
+      {/* Abstract shapes */}
+      <div className="absolute top-[-20px] right-[-20px] w-24 h-24 bg-indigo-500/20 rounded-full blur-2xl"></div>
+      <div className="absolute bottom-[-10px] left-[-10px] w-20 h-20 bg-purple-500/20 rounded-full blur-xl"></div>
+
+      <div className="flex items-center justify-between mb-3 relative z-10">
+        <Badge variant="secondary" className="bg-indigo-500 text-white border-0 text-[10px] uppercase font-bold tracking-wider">
+          Weekly Challenge
+        </Badge>
+        <span className="text-xs text-indigo-300 font-medium flex items-center gap-1">
+          <Clock className="w-3 h-3" /> 2d left
+        </span>
+      </div>
+
+      <h3 className="text-xl font-bold text-white mb-1 relative z-10">
+        "Space Odyssey"
+      </h3>
+      <p className="text-xs text-indigo-200/70 mb-4 line-clamp-2 relative z-10">
+        Create a sci-fi masterpiece featuring nebulae and astronauts.
+      </p>
+
+      <div className="mt-auto flex items-center justify-between relative z-10">
+        <div className="flex -space-x-2">
+          {[1, 2, 3].map(i => (
+            <div key={i} className="w-6 h-6 rounded-full bg-zinc-800 border border-zinc-900 flex items-center justify-center text-[8px] text-white font-bold">
+              {String.fromCharCode(64 + i)}
+            </div>
+          ))}
+          <div className="w-6 h-6 rounded-full bg-zinc-800 border border-zinc-900 flex items-center justify-center text-[8px] text-white font-bold pl-1">
+            +42
+          </div>
+        </div>
+        <Button size="sm" className="h-7 text-xs bg-white text-indigo-900 hover:bg-indigo-50 font-semibold">Join</Button>
+      </div>
+    </div>
+  );
+}
