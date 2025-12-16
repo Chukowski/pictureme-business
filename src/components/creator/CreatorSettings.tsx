@@ -9,7 +9,7 @@ import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { getCurrentUser, updateUser, logoutUser } from "@/services/eventsApi";
+import { getCurrentUser, updateUser, logoutUser, checkUsernameAvailability } from "@/services/eventsApi";
 import {
   ArrowLeft,
   User,
@@ -49,6 +49,12 @@ export default function CreatorSettings() {
   const [coverPreview, setCoverPreview] = useState<string>(currentUser?.cover_image || currentUser?.cover_image_url || '');
   const [activeTab, setActiveTab] = useState('profile');
 
+  // Username check state
+  const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null);
+  const [usernameMessage, setUsernameMessage] = useState('');
+  const [isCheckingUsername, setIsCheckingUsername] = useState(false);
+  const [lastCheckedUsername, setLastCheckedUsername] = useState('');
+
   const [formData, setFormData] = useState({
     username: currentUser?.username || currentUser?.slug || '',
     email: currentUser?.email || '',
@@ -72,6 +78,39 @@ export default function CreatorSettings() {
       navigate("/admin/auth");
     }
   }, [currentUser, navigate]);
+
+  // Check username availability with debounce
+  useEffect(() => {
+    const checkUsername = async () => {
+      const username = formData.username;
+
+      // Skip if empty or same as current authenticated user's slug
+      if (!username || username === (currentUser?.slug || currentUser?.username)) {
+        setUsernameAvailable(true);
+        setUsernameMessage('');
+        return;
+      }
+
+      // Skip if unchanged since last check
+      if (username === lastCheckedUsername) return;
+
+      setIsCheckingUsername(true);
+      try {
+        const result = await checkUsernameAvailability(username);
+        setUsernameAvailable(result.available);
+        setUsernameMessage(result.message);
+      } catch (error) {
+        console.error("Failed to check username", error);
+        setUsernameAvailable(false); // err on safe side
+      } finally {
+        setIsCheckingUsername(false);
+        setLastCheckedUsername(username);
+      }
+    };
+
+    const timer = setTimeout(checkUsername, 500);
+    return () => clearTimeout(timer);
+  }, [formData.username, currentUser, lastCheckedUsername]);
 
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>, type: 'avatar' | 'cover') => {
     const file = e.target.files?.[0];
@@ -171,6 +210,11 @@ export default function CreatorSettings() {
   const handleSaveSettings = async () => {
     if (formData.password && formData.password !== formData.confirmPassword) {
       toast.error("Passwords don't match");
+      return;
+    }
+
+    if (usernameAvailable === false) {
+      toast.error("Username is not available");
       return;
     }
 
@@ -369,13 +413,18 @@ export default function CreatorSettings() {
                     </div>
                     <div className="space-y-2">
                       <Label>Username</Label>
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 relative">
                         <Input
                           value={formData.username}
                           onChange={(e) => setFormData(prev => ({ ...prev, username: e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, '') }))}
-                          className="bg-zinc-900 border-white/10 focus:border-indigo-500"
+                          className={`bg-zinc-900 border-white/10 focus:border-indigo-500 ${usernameAvailable === false ? 'border-red-500 focus:border-red-500' :
+                              usernameAvailable === true && formData.username && formData.username !== (currentUser?.slug || currentUser?.username) ? 'border-green-500 focus:border-green-500' : ''
+                            }`}
                           placeholder="username"
                         />
+                        <div className="absolute right-14 top-1/2 -translate-y-1/2">
+                          {isCheckingUsername && <Loader2 className="w-4 h-4 animate-spin text-zinc-400" />}
+                        </div>
                         <Button
                           type="button"
                           variant="outline"
@@ -387,6 +436,12 @@ export default function CreatorSettings() {
                           <Wand2 className="w-4 h-4" />
                         </Button>
                       </div>
+                      {usernameAvailable === false && (
+                        <p className="text-red-500 text-xs">{usernameMessage || "Username is unavailable"}</p>
+                      )}
+                      {usernameAvailable === true && formData.username && formData.username !== (currentUser?.slug || currentUser?.username) && (
+                        <p className="text-green-500 text-xs">Username is available</p>
+                      )}
                     </div>
                     <div className="space-y-2">
                       <Label>Email</Label>

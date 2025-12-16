@@ -7,6 +7,33 @@
 import { ENV } from "@/config/env";
 import type { BadgeTemplateConfig } from "@/components/templates/BadgeTemplateEditor";
 
+// Check if username is available
+export async function checkUsernameAvailability(username: string): Promise<{ available: boolean; message: string }> {
+  try {
+    const token = getAuthToken();
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const response = await fetch(`${getApiUrl()}/api/users/check-username/${encodeURIComponent(username)}`, {
+      method: 'GET',
+      headers,
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to check username');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error checking username:', error);
+    return { available: false, message: 'Wait a moment...' };
+  }
+}
+
 // Helper function to get API URL dynamically
 // Uses ENV.API_URL which already handles:
 // - Reading from window.ENV
