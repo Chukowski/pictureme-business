@@ -559,7 +559,11 @@ export default function LiveEventPage() {
         {activeTab === 'overview' && (
           <>
             <LiveOverview stats={stats || { totalAlbums: 0, completedAlbums: 0, inProgressAlbums: 0, paidAlbums: 0, totalPhotos: 0, pendingApproval: 0 }} />
-            <LiveQueue albums={albums || []} onAction={handleAction} />
+            <LiveQueue
+              albums={albums || []}
+              onAction={handleAction}
+              maxPhotosPerAlbum={event?.albumTracking?.rules?.maxPhotosPerAlbum || 5}
+            />
             <LiveLogs logs={logs} />
           </>
         )}
