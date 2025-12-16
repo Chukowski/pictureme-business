@@ -5,13 +5,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { authClient } from "@/lib/auth-client";
-import { Sparkles, ArrowRight, Lock, User, Mail, Check } from "lucide-react";
+import { Sparkles, ArrowRight, Lock, User, Mail, Check, Eye, EyeOff } from "lucide-react";
 
 export default function AdminRegister() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [isLoading, setIsLoading] = useState(false);
   const plan = searchParams.get("plan");
+
+  // Password visibility state
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   // Register form state
   const [registerData, setRegisterData] = useState({
@@ -174,33 +178,45 @@ export default function AdminRegister() {
                 </div>
               </div>
 
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="register-password" className="text-zinc-300">Password</Label>
                   <div className="relative">
-                    <Lock className="absolute left-3 top-3 w-5 h-5 text-zinc-500" />
+                    <Lock className="absolute left-3 top-3 w-5 h-5 text-zinc-500 z-10" />
                     <Input
                       id="register-password"
-                      type="password"
-                      placeholder="******"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="••••••••"
                       value={registerData.password}
                       onChange={(e) =>
                         setRegisterData({ ...registerData, password: e.target.value })
                       }
                       required
                       disabled={isLoading}
-                      className="bg-black/50 border-white/10 text-white pl-10 h-12 focus:border-indigo-500 focus:ring-indigo-500/20"
+                      className="bg-black/50 border-white/10 text-white pl-10 pr-10 h-12 focus:border-indigo-500 focus:ring-indigo-500/20"
                     />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors"
+                    >
+                      {showPassword ? (
+                        <Eye className="w-4 h-4" />
+                      ) : (
+                        <EyeOff className="w-4 h-4" />
+                      )}
+                    </button>
                   </div>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="register-confirm-password" className="text-zinc-300">Confirm</Label>
                   <div className="relative">
-                    <Lock className="absolute left-3 top-3 w-5 h-5 text-zinc-500" />
+                    <Lock className="absolute left-3 top-3 w-5 h-5 text-zinc-500 z-10" />
                     <Input
                       id="register-confirm-password"
-                      type="password"
-                      placeholder="******"
+                      type={showConfirmPassword ? "text" : "password"}
+                      placeholder="••••••••"
                       value={registerData.confirmPassword}
                       onChange={(e) =>
                         setRegisterData({
@@ -210,8 +226,19 @@ export default function AdminRegister() {
                       }
                       required
                       disabled={isLoading}
-                      className="bg-black/50 border-white/10 text-white pl-10 h-12 focus:border-indigo-500 focus:ring-indigo-500/20"
+                      className="bg-black/50 border-white/10 text-white pl-10 pr-10 h-12 focus:border-indigo-500 focus:ring-indigo-500/20"
                     />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors"
+                    >
+                      {showConfirmPassword ? (
+                        <Eye className="w-4 h-4" />
+                      ) : (
+                        <EyeOff className="w-4 h-4" />
+                      )}
+                    </button>
                   </div>
                 </div>
               </div>
