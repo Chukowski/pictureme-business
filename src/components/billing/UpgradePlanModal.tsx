@@ -114,7 +114,8 @@ export function UpgradePlanModal({ open, onClose }: UpgradePlanModalProps) {
                     onClose();
                 }
             } else {
-                toast.error("Failed to upgrade plan");
+                const errorData = await response.json().catch(() => ({}));
+                toast.error(errorData.error || "Failed to upgrade plan");
             }
         } catch (error) {
             console.error("Upgrade exception:", error);
@@ -145,8 +146,8 @@ export function UpgradePlanModal({ open, onClose }: UpgradePlanModalProps) {
                                 <div
                                     key={plan.id}
                                     className={`relative p-6 rounded-2xl border transition-all duration-300 ${isCurrent
-                                            ? 'border-indigo-500 bg-indigo-500/10 shadow-[0_0_30px_-10px_rgba(99,102,241,0.3)]'
-                                            : 'border-white/10 bg-zinc-900/50 hover:border-white/20 hover:bg-zinc-900'
+                                        ? 'border-indigo-500 bg-indigo-500/10 shadow-[0_0_30px_-10px_rgba(99,102,241,0.3)]'
+                                        : 'border-white/10 bg-zinc-900/50 hover:border-white/20 hover:bg-zinc-900'
                                         }`}
                                 >
                                     {isCurrent && (
@@ -169,8 +170,8 @@ export function UpgradePlanModal({ open, onClose }: UpgradePlanModalProps) {
 
                                     <Button
                                         className={`w-full mb-8 font-semibold h-11 ${isCurrent
-                                                ? 'bg-zinc-800 text-zinc-400 cursor-default hover:bg-zinc-800'
-                                                : 'bg-[#D1F349] text-black hover:bg-[#b0cc3d]'
+                                            ? 'bg-zinc-800 text-zinc-400 cursor-default hover:bg-zinc-800'
+                                            : 'bg-[#D1F349] text-black hover:bg-[#b0cc3d]'
                                             }`}
                                         onClick={() => !isCurrent && handleUpgrade(plan.id)}
                                         disabled={isCurrent || isUpgrading}

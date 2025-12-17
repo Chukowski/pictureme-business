@@ -37,10 +37,10 @@ import {
   Mail
 } from "lucide-react";
 import { User } from "@/services/eventsApi";
-import { 
-  getTokenStats, 
-  getTokenTransactions, 
-  getTokenPackages, 
+import {
+  getTokenStats,
+  getTokenTransactions,
+  getTokenPackages,
   getUsageByEvent,
   getUsageByType,
   purchaseTokens,
@@ -64,18 +64,8 @@ interface TokenTransaction {
   type: 'generation' | 'purchase' | 'marketplace' | 'bonus' | 'refund';
   balance_after: number;
 }
-
-interface TokenPackage {
-  id: number;
-  name: string;
-  description?: string;
-  tokens: number;
-  price_usd: number;
-  popular?: boolean;
-  validity_days?: number;
-  is_enterprise?: boolean;
-  plan_type?: string;
-}
+// Removed local TokenPackage interface to use imported ApiTokenPackage
+// We will alias it locally for easier usage if needed, or just use ApiTokenPackage
 
 interface EventTokenUsage {
   event_id: string;
@@ -87,15 +77,15 @@ interface EventTokenUsage {
 export default function TokensTab({ currentUser }: TokensTabProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [transactions, setTransactions] = useState<TokenTransaction[]>([]);
-  const [packages, setPackages] = useState<TokenPackage[]>([]);
+  const [packages, setPackages] = useState<ApiTokenPackage[]>([]);
   const [eventUsage, setEventUsage] = useState<EventTokenUsage[]>([]);
   const [usageByType, setUsageByType] = useState<UsageByType[]>([]);
-  
+
   // Get plan tokens from user's role
   const userRole = (currentUser?.role || 'individual') as 'individual' | 'business_starter' | 'business_eventpro' | 'business_masters' | 'superadmin';
   const planFeatures = getPlanFeatures(userRole);
   const planTokens = planFeatures.tokensMonthly;
-  
+
   const [stats, setStats] = useState({
     current_tokens: 0,
     tokens_used_month: 0,
@@ -141,15 +131,15 @@ export default function TokensTab({ currentUser }: TokensTabProps) {
 
       setTransactions(transactionsData as TokenTransaction[]);
 
-      if (packagesData.length > 0) {
+      if ((packagesData || []).length > 0) {
         setPackages(packagesData);
       } else {
-        // Default packages
+        // Default packages (Business packs from DB)
         setPackages([
-          { id: 1, name: "Starter", tokens: 1000, price_usd: 9.99 },
-          { id: 2, name: "Pro", tokens: 5000, price_usd: 39.99, popular: true },
-          { id: 3, name: "Business", tokens: 15000, price_usd: 99.99 },
-          { id: 4, name: "Enterprise", tokens: 50000, price_usd: 299.99 }
+          { id: "937", name: "Business Starter Pack", tokens: 1000, price: 400, currency: "USD", description: "1,000 tokens - Valid for 60 days", validity_days: 60 },
+          { id: "938", name: "Business Pro Pack", tokens: 5000, price: 1500, currency: "USD", description: "5,000 tokens - Valid for 60 days", validity_days: 60, popular: true },
+          { id: "939", name: "Business Plus Pack", tokens: 8000, price: 2000, currency: "USD", description: "8,000 tokens - Valid for 60 days", validity_days: 60 },
+          { id: "940", name: "Business Enterprise Pack", tokens: 0, price: 0, currency: "USD", description: "Custom pricing for large-volume operators", validity_days: 60, is_enterprise: true }
         ]);
       }
 
@@ -170,10 +160,10 @@ export default function TokensTab({ currentUser }: TokensTabProps) {
     }
   };
 
-  const handlePurchase = async (pkg: TokenPackage) => {
+  const handlePurchase = async (pkg: ApiTokenPackage) => {
     setIsPurchasing(true);
     try {
-      const data = await purchaseTokens(pkg.id);
+      const data = await purchaseTokens(Number(pkg.id));
       if (data.checkout_url) {
         window.location.href = data.checkout_url;
       } else {
@@ -325,13 +315,12 @@ export default function TokensTab({ currentUser }: TokensTabProps) {
                   {packages.map((pkg) => (
                     <div
                       key={pkg.id}
-                      className={`relative p-4 rounded-xl border transition-all ${
-                        pkg.is_enterprise
-                          ? 'border-amber-500/50 bg-amber-500/10'
-                          : pkg.popular 
-                            ? 'border-indigo-500/50 bg-indigo-500/10' 
-                            : 'border-white/10 bg-zinc-800/50 hover:border-white/20'
-                      }`}
+                      className={`relative p-4 rounded-xl border transition-all ${pkg.is_enterprise
+                        ? 'border-amber-500/50 bg-amber-500/10'
+                        : pkg.popular
+                          ? 'border-indigo-500/50 bg-indigo-500/10'
+                          : 'border-white/10 bg-zinc-800/50 hover:border-white/20'
+                        }`}
                     >
                       {pkg.popular && !pkg.is_enterprise && (
                         <Badge className="absolute -top-2 right-4 bg-indigo-600">
@@ -344,7 +333,7 @@ export default function TokensTab({ currentUser }: TokensTabProps) {
                         </Badge>
                       )}
                       <h3 className="text-lg font-semibold text-white">{pkg.name}</h3>
-                      
+
                       {pkg.is_enterprise ? (
                         <>
                           <div className="mt-2">
@@ -373,7 +362,7 @@ export default function TokensTab({ currentUser }: TokensTabProps) {
                         <>
                           <div className="mt-2">
                             <span className="text-3xl font-bold text-white">
-                              ${pkg.price_usd.toLocaleString()}
+                              ${(pkg.price || 0).toLocaleString()}
                             </span>
                           </div>
                           <p className="text-sm text-zinc-400 mt-1">
@@ -406,9 +395,9 @@ export default function TokensTab({ currentUser }: TokensTabProps) {
                 </div>
               </DialogContent>
             </Dialog>
-            <Button 
-              variant="outline" 
-              className="w-full border-white/10 bg-white/5 hover:bg-white/10 text-zinc-200" 
+            <Button
+              variant="outline"
+              className="w-full border-white/10 bg-white/5 hover:bg-white/10 text-zinc-200"
               size="sm"
               onClick={() => setShowLedger(true)}
             >
@@ -420,7 +409,7 @@ export default function TokensTab({ currentUser }: TokensTabProps) {
       </div>
 
       {/* Usage by Type (Station) */}
-      {usageByType.length > 0 && (
+      {(usageByType || []).length > 0 && (
         <Card className="bg-zinc-900/50 border-white/10">
           <CardHeader>
             <CardTitle className="text-white flex items-center gap-2">
@@ -433,17 +422,17 @@ export default function TokensTab({ currentUser }: TokensTabProps) {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {usageByType.filter(item => item?.generation_type).map((item, index) => {
+              {usageByType?.filter(item => item?.generation_type).map((item, index) => {
                 const totalUsage = usageByType.reduce((sum, u) => sum + (u?.tokens_used || 0), 0);
                 const percentage = totalUsage > 0 ? ((item?.tokens_used || 0) / totalUsage) * 100 : 0;
                 return (
                   <div key={index} className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-white capitalize">{(item.generation_type || 'unknown').replace(/_/g, ' ')}</span>
-                      <span className="text-sm text-zinc-400">{(item.tokens_used || 0).toLocaleString()} tokens</span>
+                      <span className="text-sm font-medium text-white capitalize">{(item?.generation_type || 'unknown').replace(/_/g, ' ')}</span>
+                      <span className="text-sm text-zinc-400">{(item?.tokens_used || 0).toLocaleString()} tokens</span>
                     </div>
                     <div className="h-2 bg-zinc-800 rounded-full overflow-hidden">
-                      <div 
+                      <div
                         className="h-full bg-gradient-to-r from-cyan-500 to-indigo-500 rounded-full transition-all"
                         style={{ width: `${percentage}%` }}
                       />
@@ -458,7 +447,7 @@ export default function TokensTab({ currentUser }: TokensTabProps) {
       )}
 
       {/* Usage by Event */}
-      {eventUsage.length > 0 && (
+      {(eventUsage || []).length > 0 && (
         <Card className="bg-zinc-900/50 border-white/10">
           <CardHeader>
             <CardTitle className="text-white flex items-center gap-2">
@@ -500,9 +489,9 @@ export default function TokensTab({ currentUser }: TokensTabProps) {
               Your latest token activity
             </CardDescription>
           </div>
-          <Button 
-            variant="ghost" 
-            size="sm" 
+          <Button
+            variant="ghost"
+            size="sm"
             className="text-zinc-400"
             onClick={() => setShowLedger(true)}
           >
@@ -510,7 +499,7 @@ export default function TokensTab({ currentUser }: TokensTabProps) {
           </Button>
         </CardHeader>
         <CardContent>
-          {transactions.length === 0 ? (
+          {(transactions || []).length === 0 ? (
             <div className="text-center py-8 text-zinc-500">
               <Coins className="w-10 h-10 mx-auto mb-2 opacity-50" />
               <p>No transactions yet</p>

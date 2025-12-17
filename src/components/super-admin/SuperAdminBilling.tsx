@@ -35,6 +35,9 @@ interface TokenPackage {
     is_active: boolean;
     stripe_price_id?: string;
     created_at?: string;
+    plan_type?: 'individual' | 'business';
+    validity_days?: number;
+    is_enterprise?: boolean;
 }
 
 interface Transaction {
@@ -62,7 +65,9 @@ export default function SuperAdminBilling() {
         tokens: 100,
         price_usd: 10,
         is_active: true,
-        stripe_price_id: ""
+        stripe_price_id: "",
+        plan_type: "individual" as 'individual' | 'business',
+        validity_days: 30
     });
 
     useEffect(() => {
@@ -83,12 +88,17 @@ export default function SuperAdminBilling() {
                 const data = await response.json();
                 setPackages(data);
             } else {
-                // If endpoint doesn't exist, use defaults
+                // If endpoint doesn't exist, use correct defaults from database
                 setPackages([
-                    { id: 1, name: "Starter Pack", tokens: 100, price_usd: 10, is_active: true },
-                    { id: 2, name: "Basic Pack", tokens: 500, price_usd: 40, is_active: true },
-                    { id: 3, name: "Pro Pack", tokens: 1000, price_usd: 70, is_active: true },
-                    { id: 4, name: "Enterprise Pack", tokens: 5000, price_usd: 300, is_active: true },
+                    // Individual/Creator Packs
+                    { id: 955, name: "Starter Pack", description: "Perfect for trying out new styles and quick experiments.", tokens: 100, price_usd: 4.99, is_active: true, plan_type: 'individual', validity_days: 30 },
+                    { id: 953, name: "Creative Pack", description: "Best value for regular creators. Includes bonus tokens.", tokens: 500, price_usd: 19.99, is_active: true, plan_type: 'individual', validity_days: 30 },
+                    { id: 954, name: "Pro Pack", description: "Maximum power for heavy usage and extensive projects.", tokens: 1000, price_usd: 34.99, is_active: true, plan_type: 'individual', validity_days: 30 },
+                    // Business/Event Packs
+                    { id: 937, name: "Business Starter Pack", description: "1,000 tokens - Valid for 60 days", tokens: 1000, price_usd: 400, is_active: true, plan_type: 'business', validity_days: 60 },
+                    { id: 938, name: "Business Pro Pack", description: "5,000 tokens - Valid for 60 days", tokens: 5000, price_usd: 1500, is_active: true, plan_type: 'business', validity_days: 60 },
+                    { id: 939, name: "Business Plus Pack", description: "8,000 tokens - Valid for 60 days", tokens: 8000, price_usd: 2000, is_active: true, plan_type: 'business', validity_days: 60 },
+                    { id: 940, name: "Business Enterprise Pack", description: "Custom pricing for large-volume operators", tokens: 0, price_usd: 0, is_active: true, plan_type: 'business', validity_days: 60, is_enterprise: true },
                 ]);
             }
         } catch (error) {
@@ -123,7 +133,9 @@ export default function SuperAdminBilling() {
             tokens: 100,
             price_usd: 10,
             is_active: true,
-            stripe_price_id: ""
+            stripe_price_id: "",
+            plan_type: "individual",
+            validity_days: 30
         });
         setIsDialogOpen(true);
     };
@@ -136,7 +148,9 @@ export default function SuperAdminBilling() {
             tokens: pkg.tokens,
             price_usd: pkg.price_usd,
             is_active: pkg.is_active,
-            stripe_price_id: pkg.stripe_price_id || ""
+            stripe_price_id: pkg.stripe_price_id || "",
+            plan_type: pkg.plan_type || "individual",
+            validity_days: pkg.validity_days || 30
         });
         setIsDialogOpen(true);
     };
@@ -252,6 +266,111 @@ export default function SuperAdminBilling() {
         }
     };
 
+    // Helper function to render package table
+    const renderPackageTable = (pkgList: TokenPackage[]) => {
+        if (pkgList.length === 0) {
+            return (
+                <div className="text-center py-8 text-zinc-500">
+                    <Package className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                    <p>No packages found</p>
+                </div>
+            );
+        }
+        return (
+            <div className="rounded-xl border border-white/10 bg-zinc-900/50 backdrop-blur-sm overflow-hidden">
+                <Table>
+                    <TableHeader className="bg-white/5">
+                        <TableRow className="border-white/10 hover:bg-transparent">
+                            <TableHead className="text-zinc-400">Package</TableHead>
+                            <TableHead className="text-zinc-400">Type</TableHead>
+                            <TableHead className="text-zinc-400">Tokens</TableHead>
+                            <TableHead className="text-zinc-400">Price</TableHead>
+                            <TableHead className="text-zinc-400">$/Token</TableHead>
+                            <TableHead className="text-zinc-400">Status</TableHead>
+                            <TableHead className="text-right text-zinc-400">Actions</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {pkgList.map((pkg) => (
+                            <TableRow key={pkg.id} className="border-white/10 hover:bg-white/5 transition-colors">
+                                <TableCell>
+                                    <div className="flex items-center gap-3">
+                                        <div className={`p-2 rounded-lg ${pkg.plan_type === 'business' ? 'bg-purple-500/10' : 'bg-indigo-500/10'}`}>
+                                            <Package className={`w-4 h-4 ${pkg.plan_type === 'business' ? 'text-purple-400' : 'text-indigo-400'}`} />
+                                        </div>
+                                        <div>
+                                            <p className="font-medium text-white">{pkg.name}</p>
+                                            {pkg.description && (
+                                                <p className="text-xs text-zinc-500">{pkg.description}</p>
+                                            )}
+                                        </div>
+                                    </div>
+                                </TableCell>
+                                <TableCell>
+                                    <Badge variant="outline" className={pkg.plan_type === 'business' ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' : 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20'}>
+                                        {pkg.plan_type || 'individual'}
+                                    </Badge>
+                                </TableCell>
+                                <TableCell>
+                                    <span className="font-mono text-yellow-400">
+                                        {pkg.tokens.toLocaleString()}
+                                    </span>
+                                </TableCell>
+                                <TableCell>
+                                    <span className="font-bold text-white">
+                                        ${pkg.price_usd.toFixed(2)}
+                                    </span>
+                                </TableCell>
+                                <TableCell>
+                                    <span className="text-xs text-zinc-400">
+                                        ${pkg.tokens > 0 ? pricePerToken(pkg) : 'N/A'}
+                                    </span>
+                                </TableCell>
+                                <TableCell>
+                                    <div className="flex items-center gap-2">
+                                        <Switch
+                                            checked={pkg.is_active}
+                                            onCheckedChange={() => togglePackageStatus(pkg)}
+                                        />
+                                        <Badge
+                                            variant="outline"
+                                            className={pkg.is_active
+                                                ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                                                : "bg-zinc-500/10 text-zinc-400 border-zinc-500/20"
+                                            }
+                                        >
+                                            {pkg.is_active ? 'Active' : 'Inactive'}
+                                        </Badge>
+                                    </div>
+                                </TableCell>
+                                <TableCell className="text-right">
+                                    <div className="flex items-center justify-end gap-2">
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => openEditDialog(pkg)}
+                                            className="hover:bg-white/10"
+                                        >
+                                            <Edit2 className="w-4 h-4" />
+                                        </Button>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => deletePackage(pkg.id)}
+                                            className="hover:bg-red-500/10 text-red-400"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </Button>
+                                    </div>
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            </div>
+        );
+    };
+
     return (
         <div className="space-y-6">
             <div>
@@ -268,131 +387,74 @@ export default function SuperAdminBilling() {
 
                 {/* Token Packages Tab */}
                 <TabsContent value="packages" className="space-y-4">
-                    <div className="flex justify-between items-center">
-                        <h2 className="text-xl font-semibold">Token Packages ({packages.length})</h2>
-                        <div className="flex items-center gap-2">
-                            {packages.length > 4 && (
+                    {/* Plan Type Sub-Tabs */}
+                    <Tabs defaultValue="individual" className="space-y-4">
+                        <div className="flex justify-between items-center">
+                            <TabsList className="bg-zinc-800 border border-white/10">
+                                <TabsTrigger value="individual" className="data-[state=active]:bg-indigo-600">
+                                    👤 Individual / Creator
+                                </TabsTrigger>
+                                <TabsTrigger value="business" className="data-[state=active]:bg-purple-600">
+                                    🏢 Business / Event
+                                </TabsTrigger>
+                                <TabsTrigger value="all" className="data-[state=active]:bg-zinc-600">
+                                    All
+                                </TabsTrigger>
+                            </TabsList>
+                            <div className="flex items-center gap-2">
+                                {packages.length > 10 && (
+                                    <Button
+                                        variant="outline"
+                                        onClick={cleanupDuplicates}
+                                        className="border-amber-500/20 text-amber-400 hover:bg-amber-500/10"
+                                    >
+                                        <Sparkles className="w-4 h-4 mr-2" /> Clean Duplicates
+                                    </Button>
+                                )}
                                 <Button
                                     variant="outline"
-                                    onClick={cleanupDuplicates}
-                                    className="border-amber-500/20 text-amber-400 hover:bg-amber-500/10"
+                                    onClick={fetchPackages}
+                                    className="border-white/10"
                                 >
-                                    <Sparkles className="w-4 h-4 mr-2" /> Clean Duplicates
+                                    <RefreshCw className="w-4 h-4" />
                                 </Button>
-                            )}
-                            <Button
-                                variant="outline"
-                                onClick={fetchPackages}
-                                className="border-white/10"
-                            >
-                                <RefreshCw className="w-4 h-4" />
-                            </Button>
-                            <Button onClick={openCreateDialog} className="bg-indigo-600 hover:bg-indigo-700">
-                                <Plus className="w-4 h-4 mr-2" /> Add Package
-                            </Button>
+                                <Button onClick={openCreateDialog} className="bg-indigo-600 hover:bg-indigo-700">
+                                    <Plus className="w-4 h-4 mr-2" /> Add Package
+                                </Button>
+                            </div>
                         </div>
-                    </div>
 
-                    {isLoading ? (
-                        <div className="flex items-center justify-center py-12">
-                            <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
-                        </div>
-                    ) : (
-                        <div className="rounded-xl border border-white/10 bg-zinc-900/50 backdrop-blur-sm overflow-hidden">
-                            <Table>
-                                <TableHeader className="bg-white/5">
-                                    <TableRow className="border-white/10 hover:bg-transparent">
-                                        <TableHead className="text-zinc-400">Package</TableHead>
-                                        <TableHead className="text-zinc-400">Tokens</TableHead>
-                                        <TableHead className="text-zinc-400">Price</TableHead>
-                                        <TableHead className="text-zinc-400">$/Token</TableHead>
-                                        <TableHead className="text-zinc-400">Status</TableHead>
-                                        <TableHead className="text-right text-zinc-400">Actions</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {packages.map((pkg) => (
-                                        <TableRow key={pkg.id} className="border-white/10 hover:bg-white/5 transition-colors">
-                                            <TableCell>
-                                                <div className="flex items-center gap-3">
-                                                    <div className="p-2 rounded-lg bg-indigo-500/10">
-                                                        <Package className="w-4 h-4 text-indigo-400" />
-                                                    </div>
-                                                    <div>
-                                                        <p className="font-medium text-white">{pkg.name}</p>
-                                                        {pkg.description && (
-                                                            <p className="text-xs text-zinc-500">{pkg.description}</p>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            </TableCell>
-                                            <TableCell>
-                                                <span className="font-mono text-yellow-400">
-                                                    {pkg.tokens.toLocaleString()}
-                                                </span>
-                                            </TableCell>
-                                            <TableCell>
-                                                <span className="font-bold text-white">
-                                                    ${pkg.price_usd.toFixed(2)}
-                                                </span>
-                                            </TableCell>
-                                            <TableCell>
-                                                <span className="text-xs text-zinc-400">
-                                                    ${pricePerToken(pkg)}
-                                                </span>
-                                            </TableCell>
-                                            <TableCell>
-                                                <div className="flex items-center gap-2">
-                                                    <Switch
-                                                        checked={pkg.is_active}
-                                                        onCheckedChange={() => togglePackageStatus(pkg)}
-                                                    />
-                                                    <Badge
-                                                        variant="outline"
-                                                        className={pkg.is_active
-                                                            ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-                                                            : "bg-zinc-500/10 text-zinc-400 border-zinc-500/20"
-                                                        }
-                                                    >
-                                                        {pkg.is_active ? 'Active' : 'Inactive'}
-                                                    </Badge>
-                                                </div>
-                                            </TableCell>
-                                            <TableCell className="text-right">
-                                                <div className="flex items-center justify-end gap-2">
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        onClick={() => openEditDialog(pkg)}
-                                                        className="hover:bg-white/10"
-                                                    >
-                                                        <Edit2 className="w-4 h-4" />
-                                                    </Button>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        onClick={() => deletePackage(pkg.id)}
-                                                        className="hover:bg-red-500/10 text-red-400"
-                                                    >
-                                                        <Trash2 className="w-4 h-4" />
-                                                    </Button>
-                                                </div>
-                                            </TableCell>
-                                        </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
-                        </div>
-                    )}
+                        {/* Individual Packages */}
+                        <TabsContent value="individual" className="space-y-4">
+                            <h3 className="text-lg font-medium text-indigo-400">Creator / Individual Packages</h3>
+                            {renderPackageTable(packages.filter(p => p.plan_type === 'individual' || (!p.plan_type && !p.name?.toLowerCase().includes('business'))))}
+                        </TabsContent>
+
+                        {/* Business Packages */}
+                        <TabsContent value="business" className="space-y-4">
+                            <h3 className="text-lg font-medium text-purple-400">Business / Event Packages</h3>
+                            {renderPackageTable(packages.filter(p => p.plan_type === 'business' || p.name?.toLowerCase().includes('business')))}
+                        </TabsContent>
+
+                        {/* All Packages */}
+                        <TabsContent value="all" className="space-y-4">
+                            <h3 className="text-lg font-medium text-zinc-400">All Packages ({packages.length})</h3>
+                            {isLoading ? (
+                                <div className="flex items-center justify-center py-12">
+                                    <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
+                                </div>
+                            ) : renderPackageTable(packages)}
+                        </TabsContent>
+                    </Tabs>
 
                     {/* Info Box */}
                     <div className="p-4 rounded-lg bg-indigo-500/10 border border-indigo-500/20">
                         <h3 className="font-medium text-indigo-400 mb-2">💡 About Token Packages</h3>
                         <ul className="text-sm text-zinc-400 space-y-1">
-                            <li>• These packages are available for all users to purchase</li>
-                            <li>• Enterprise users can have custom packages with special pricing</li>
+                            <li>• <strong>Individual/Creator</strong> packs are for personal use (Spark, Vibe, Studio tiers)</li>
+                            <li>• <strong>Business/Event</strong> packs are for event operators (Event Starter, Pro, Plus tiers)</li>
                             <li>• Deactivated packages won't appear in the store but existing purchases remain valid</li>
-                            <li>• Stripe Price ID is optional - if empty, a one-time payment session will be created</li>
+                            <li>• Stripe Price ID links directly to a Stripe product for recurring billing</li>
                         </ul>
                     </div>
                 </TabsContent>
@@ -558,6 +620,50 @@ export default function SuperAdminBilling() {
                                     className="bg-zinc-950 border-white/10"
                                 />
                             </div>
+                        </div>
+
+                        {/* Plan Type Selector */}
+                        <div className="space-y-2">
+                            <Label>Plan Type *</Label>
+                            <div className="flex gap-4">
+                                <label className={`flex items-center gap-2 px-4 py-2 rounded-lg cursor-pointer border ${formData.plan_type === 'individual' ? 'bg-indigo-600/20 border-indigo-500' : 'bg-zinc-800 border-white/10'}`}>
+                                    <input
+                                        type="radio"
+                                        name="plan_type"
+                                        value="individual"
+                                        checked={formData.plan_type === 'individual'}
+                                        onChange={() => setFormData({ ...formData, plan_type: 'individual' })}
+                                        className="sr-only"
+                                    />
+                                    <span className="text-sm">👤 Individual / Creator</span>
+                                </label>
+                                <label className={`flex items-center gap-2 px-4 py-2 rounded-lg cursor-pointer border ${formData.plan_type === 'business' ? 'bg-purple-600/20 border-purple-500' : 'bg-zinc-800 border-white/10'}`}>
+                                    <input
+                                        type="radio"
+                                        name="plan_type"
+                                        value="business"
+                                        checked={formData.plan_type === 'business'}
+                                        onChange={() => setFormData({ ...formData, plan_type: 'business' })}
+                                        className="sr-only"
+                                    />
+                                    <span className="text-sm">🏢 Business / Event</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        {/* Validity Days */}
+                        <div className="space-y-2">
+                            <Label>Validity (Days)</Label>
+                            <Input
+                                type="number"
+                                value={formData.validity_days}
+                                onChange={(e) => setFormData({ ...formData, validity_days: parseInt(e.target.value) || 30 })}
+                                className="bg-zinc-950 border-white/10 w-32"
+                                placeholder="30"
+                            />
+                            <p className="text-xs text-zinc-500">
+                                How long purchased tokens remain valid (0 = never expire)
+                            </p>
                         </div>
 
                         {formData.tokens > 0 && formData.price_usd > 0 && (

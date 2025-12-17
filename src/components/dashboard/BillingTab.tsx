@@ -229,6 +229,7 @@ const ROLE_TO_PLAN_MAP: Record<string, string> = {
 
   // Free/default
   'free': 'event_starter',
+  'user': 'spark', // Default Better Auth role -> Spark
 };
 
 // Helper to normalize role string for lookup
@@ -239,7 +240,25 @@ const normalizeRole = (role: string): string => {
 export default function BillingTab({ currentUser, openPlansModal = false }: BillingTabProps) {
   // Helper to get plan from user role
   const getPlanFromUserRole = (): Plan | null => {
-    const userRole = currentUser?.role || currentUser?.subscription_tier || '';
+    // 1. Check strict subscription_tier first (most accurate)
+    const tier = currentUser?.subscription_tier ? normalizeRole(currentUser.subscription_tier) : '';
+    if (tier && ROLE_TO_PLAN_MAP[tier]) {
+      const planId = ROLE_TO_PLAN_MAP[tier];
+      const plan = [...BUSINESS_PLANS, ...INDIVIDUAL_PLANS].find(p => p.id === planId);
+      if (plan) return { ...plan, current: true };
+    }
+
+    // 2. Check plan_name
+    const planName = currentUser?.plan_name ? normalizeRole(currentUser.plan_name) : '';
+    if (planName) {
+      // Direct match for names like "Spark", "Vibe"
+      if (planName.includes('spark')) return { ...INDIVIDUAL_PLANS.find(p => p.id === 'spark')!, current: true };
+      if (planName.includes('vibe')) return { ...INDIVIDUAL_PLANS.find(p => p.id === 'vibe')!, current: true };
+      if (planName.includes('studio')) return { ...INDIVIDUAL_PLANS.find(p => p.id === 'studio')!, current: true };
+    }
+
+    // 3. Fallback to Role
+    const userRole = currentUser?.role || '';
     const normalizedRole = normalizeRole(userRole);
 
     // Try exact match first, then normalized
@@ -260,7 +279,14 @@ export default function BillingTab({ currentUser, openPlansModal = false }: Bill
       } else if (normalizedRole.includes('spark')) {
         planId = 'spark';
       } else {
-        planId = 'event_starter'; // Default fallback
+        // Default fallback logic:
+        // If it looks like a business role, go to starter.
+        // Otherwise assume individual (Spark).
+        if (normalizedRole.startsWith('business')) {
+          planId = 'event_starter';
+        } else {
+          planId = 'spark';
+        }
       }
     }
 
@@ -921,7 +947,7 @@ export default function BillingTab({ currentUser, openPlansModal = false }: Bill
             </Button>
           </CardHeader>
           <CardContent>
-            {paymentMethods.length === 0 ? (
+            {(paymentMethods || []).length === 0 ? (
               <div className="text-center py-8 text-zinc-500">
                 <CreditCard className="w-10 h-10 mx-auto mb-2 opacity-50" />
                 <p>No payment methods added</p>
@@ -982,7 +1008,7 @@ export default function BillingTab({ currentUser, openPlansModal = false }: Bill
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {invoices.length === 0 ? (
+            {(invoices || []).length === 0 ? (
               <div className="text-center py-8 text-zinc-500">
                 <FileText className="w-10 h-10 mx-auto mb-2 opacity-50" />
                 <p>No invoices yet</p>
