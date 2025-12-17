@@ -53,6 +53,7 @@ import { getCurrentUser } from "@/services/eventsApi";
 import { getMarketplaceTemplates } from "@/services/marketplaceApi";
 
 import { processImageWithAI, AspectRatio, AI_MODELS, resolveModelId } from "@/services/aiProcessor";
+import { processCreatorImage } from "@/services/creatorAiProcessor";
 import { ENV } from "@/config/env";
 import { SaveTemplateModal } from "@/components/templates/SaveTemplateModal";
 import { useMyTemplates, UserTemplate } from "@/hooks/useMyTemplates";
@@ -653,10 +654,14 @@ function CreatorStudioPageContent() {
         try {
             if (mode === "image") {
                 const templateBgs = selectedTemplate?.images || selectedTemplate?.backgrounds || [];
-                const result = await processImageWithAI({
-                    userPhotoBase64: inputImage!, backgroundPrompt: prompt || selectedTemplate?.prompt || "portrait",
-                    backgroundImageUrls: [...referenceImages, ...templateBgs], aspectRatio: aspectRatio as AspectRatio,
-                    aiModel: model, onProgress: setStatusMessage, isPublic
+                const result = await processCreatorImage({
+                    userPhotoBase64: inputImage!,
+                    backgroundPrompt: prompt || selectedTemplate?.prompt || "portrait",
+                    backgroundImageUrls: [...referenceImages, ...templateBgs],
+                    aspectRatio: aspectRatio as "auto" | "1:1" | "4:5" | "3:2" | "16:9" | "9:16",
+                    aiModel: model,
+                    onProgress: setStatusMessage,
+                    isPublic
                 });
 
                 const templateInfo = selectedTemplate ? {

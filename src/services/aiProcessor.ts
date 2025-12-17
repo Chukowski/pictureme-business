@@ -3,11 +3,12 @@ import { applyBrandingOverlay } from "./imageOverlay";
 import { ENV } from "../config/env";
 
 // Configuration state - FAL_KEY is ONLY loaded from backend for security
+// Configuration state - FAL_KEY is ONLY loaded from backend for security
 let FAL_KEY: string | undefined = undefined;
-let DEFAULT_FAL_MODEL: string = "fal-ai/nano-banana/edit"; // Default to Nano Banana (Gemini/Imagen 3)
+export let DEFAULT_FAL_MODEL: string = "fal-ai/nano-banana/edit"; // Default to Nano Banana (Gemini/Imagen 3)
 let configLoaded = false;
 
-async function chargeTokensForGeneration(
+export async function chargeTokensForGeneration(
   modelId: string,
   context?: string,
   eventId?: number,
@@ -297,13 +298,12 @@ export interface ProcessImageOptions {
   skipTokenCharge?: boolean;
   eventSlug?: string;
   userSlug?: string;
-  isPublic?: boolean;
 }
 
 /**
  * Get image dimensions based on aspect ratio (standard quality)
  */
-function getImageDimensions(aspectRatio: AspectRatio = '9:16'): { width: number; height: number } {
+export function getImageDimensions(aspectRatio: AspectRatio = '9:16'): { width: number; height: number } {
   switch (aspectRatio) {
     case '1:1':
       return { width: 1080, height: 1080 };
@@ -324,7 +324,7 @@ function getImageDimensions(aspectRatio: AspectRatio = '9:16'): { width: number;
  * 1 megapixel = 1,000,000 pixels
  * These dimensions are optimized to be just under 1MP while maintaining aspect ratio
  */
-function getFluxOptimizedDimensions(aspectRatio: AspectRatio = '9:16'): { width: number; height: number } {
+export function getFluxOptimizedDimensions(aspectRatio: AspectRatio = '9:16'): { width: number; height: number } {
   switch (aspectRatio) {
     case '1:1':
       // 1000x1000 = 1,000,000 pixels (exactly 1MP)
@@ -348,7 +348,7 @@ function getFluxOptimizedDimensions(aspectRatio: AspectRatio = '9:16'): { width:
 /**
  * Get Flux image_size enum value when available, or custom dimensions
  */
-function getFluxImageSize(aspectRatio: AspectRatio = '9:16'): string | { width: number; height: number } {
+export function getFluxImageSize(aspectRatio: AspectRatio = '9:16'): string | { width: number; height: number } {
   // Use Flux's built-in presets when they match our aspect ratios
   switch (aspectRatio) {
     case '1:1':
@@ -622,7 +622,6 @@ Output a single cohesive image.`;
       num_images: 1,
       image_urls: uploadedUrls, // Send all uploaded images
       image_url: uploadedUrls[0], // Backward compatibility
-      visibility: options.isPublic === false ? 'private' : 'public',
     };
 
     // If we have multiple images, we are in trouble with the current Go backend signature.

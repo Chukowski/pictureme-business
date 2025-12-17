@@ -406,7 +406,7 @@ export const PhotoBoothPage = ({ configOverride, userSlugOverride, eventSlugOver
           } else if (status === "applying_branding") {
             setProcessingStatus("Applying branding...");
           }
-        }
+        },
       });
 
       setProcessingStatus("Finalizing...");
