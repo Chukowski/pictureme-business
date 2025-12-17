@@ -9,7 +9,9 @@ import {
     Camera,
     Video,
     Image as ImageIcon,
-    Layers
+    Layers,
+    Plus,
+    X
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -50,6 +52,11 @@ interface CreatorStudioSidebarProps {
     selectedTemplate: MarketplaceTemplate | null;
     onToggleTemplateLibrary: () => void;
     onSelectTemplate?: (t: MarketplaceTemplate) => void;
+    referenceImages?: string[];
+    onRemoveReferenceImage?: (index: number) => void;
+    isPublic: boolean;
+    setIsPublic: (v: boolean) => void;
+    isFreeTier: boolean;
 }
 
 export function CreatorStudioSidebar({
@@ -69,13 +76,38 @@ export function CreatorStudioSidebar({
     endFrameImage,
     onUploadClick,
     selectedTemplate,
-    onToggleTemplateLibrary
+    onToggleTemplateLibrary,
+    referenceImages = [],
+    onRemoveReferenceImage,
+    isPublic,
+    setIsPublic,
+    isFreeTier
 }: CreatorStudioSidebarProps) {
 
     const [videoTab, setVideoTab] = useState<"frames" | "ingredients">("frames");
 
     const currentModelObj = [...IMAGE_MODELS, ...VIDEO_MODELS].find(m => m.shortId === model || m.id === model);
     const currentModelName = currentModelObj?.name || model;
+
+    // Helper to render aspect ratio visual
+    const renderRatioVisual = (ratio: string) => {
+        let width = 12;
+        let height = 12;
+        switch (ratio) {
+            case "1:1": width = 16; height = 16; break;
+            case "4:5": width = 12; height = 15; break;
+            case "16:9": width = 20; height = 11; break;
+            case "9:16": width = 9; height = 16; break;
+        }
+        return (
+            <div className="w-5 h-5 flex items-center justify-center mr-2">
+                <div
+                    className="border border-current rounded-[1px]"
+                    style={{ width: `${width}px`, height: `${height}px` }}
+                />
+            </div>
+        );
+    };
 
     return (
         <div className="w-[340px] flex-shrink-0 flex flex-col z-20 mx-3 my-3 h-[calc(100vh-7rem)] rounded-3xl bg-[#121212] border border-white/10 shadow-2xl overflow-hidden sticky top-3">
@@ -234,6 +266,7 @@ export function CreatorStudioSidebar({
                                                     <div className="p-3 flex items-center justify-between hover:bg-white/5 cursor-pointer transition-colors">
                                                         <span className="text-xs font-medium text-zinc-300">Ratio</span>
                                                         <div className="flex items-center gap-2">
+                                                            {renderRatioVisual(aspectRatio)}
                                                             <span className="text-xs text-zinc-400">{aspectRatio}</span>
                                                             <ChevronRight className="w-3 h-3 text-zinc-600" />
                                                         </div>
@@ -241,7 +274,10 @@ export function CreatorStudioSidebar({
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent className="bg-zinc-900 border-white/10 text-white">
                                                     {["1:1", "4:5", "16:9", "9:16"].map(r => (
-                                                        <DropdownMenuItem key={r} onClick={() => setAspectRatio(r)}>{r}</DropdownMenuItem>
+                                                        <DropdownMenuItem key={r} onClick={() => setAspectRatio(r)} className="flex items-center">
+                                                            {renderRatioVisual(r)}
+                                                            {r}
+                                                        </DropdownMenuItem>
                                                     ))}
                                                 </DropdownMenuContent>
                                             </DropdownMenu>
@@ -327,6 +363,7 @@ export function CreatorStudioSidebar({
                                                     <div className="p-3 flex items-center justify-between hover:bg-white/5 cursor-pointer transition-colors">
                                                         <span className="text-xs font-medium text-zinc-300">Ratio</span>
                                                         <div className="flex items-center gap-2">
+                                                            {renderRatioVisual(aspectRatio)}
                                                             <span className="text-xs text-zinc-400">{aspectRatio}</span>
                                                             <ChevronRight className="w-3 h-3 text-zinc-600" />
                                                         </div>
@@ -334,7 +371,10 @@ export function CreatorStudioSidebar({
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent className="bg-zinc-900 border-white/10 text-white">
                                                     {["1:1", "4:5", "16:9", "9:16"].map(r => (
-                                                        <DropdownMenuItem key={r} onClick={() => setAspectRatio(r)}>{r}</DropdownMenuItem>
+                                                        <DropdownMenuItem key={r} onClick={() => setAspectRatio(r)} className="flex items-center">
+                                                            {renderRatioVisual(r)}
+                                                            {r}
+                                                        </DropdownMenuItem>
                                                     ))}
                                                 </DropdownMenuContent>
                                             </DropdownMenu>
@@ -377,6 +417,41 @@ export function CreatorStudioSidebar({
                                                 <span className="text-xs text-zinc-400 font-medium">Upload Subject</span>
                                             </>
                                         )}
+                                    </div>
+                                </div>
+
+                                {/* Reference / Background Images (Multi-Input Support) */}
+                                <div className="space-y-2">
+                                    <Label className="text-[10px] font-bold text-zinc-500 uppercase flex items-center justify-between">
+                                        <span>Reference / Backgrounds</span>
+                                        <span className="text-[10px] font-normal text-zinc-600">{referenceImages?.length || 0} images</span>
+                                    </Label>
+
+                                    <div className="grid grid-cols-4 gap-2">
+                                        {/* Existing References */}
+                                        {referenceImages && referenceImages.map((img, idx) => (
+                                            <div key={idx} className="relative aspect-square rounded-lg overflow-hidden group bg-zinc-900 border border-white/10">
+                                                <img src={img} className="w-full h-full object-cover" />
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        if (onRemoveReferenceImage) onRemoveReferenceImage(idx);
+                                                    }}
+                                                    className="absolute top-1 right-1 p-0.5 bg-black/50 text-white rounded-full opacity-0 group-hover:opacity-100 hover:bg-red-500 transition-all"
+                                                >
+                                                    <X className="w-3 h-3" />
+                                                </button>
+                                            </div>
+                                        ))}
+
+                                        {/* Add New Button */}
+                                        <button
+                                            onClick={() => onUploadClick("ref")}
+                                            className="aspect-square rounded-lg bg-zinc-900 border border-dashed border-zinc-700 hover:border-[#D1F349] hover:bg-zinc-800/50 flex items-center justify-center transition-all"
+                                            title="Add Reference Images"
+                                        >
+                                            <Plus className="w-4 h-4 text-zinc-500" />
+                                        </button>
                                     </div>
                                 </div>
 
@@ -424,6 +499,7 @@ export function CreatorStudioSidebar({
                                             <div className="p-3 flex items-center justify-between hover:bg-white/5 cursor-pointer transition-colors">
                                                 <span className="text-xs font-medium text-zinc-300">Ratio</span>
                                                 <div className="flex items-center gap-2">
+                                                    {renderRatioVisual(aspectRatio)}
                                                     <span className="text-xs text-zinc-400">{aspectRatio}</span>
                                                     <ChevronRight className="w-3 h-3 text-zinc-600" />
                                                 </div>
@@ -431,7 +507,10 @@ export function CreatorStudioSidebar({
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent className="bg-zinc-900 border-white/10 text-white">
                                             {["1:1", "4:5", "16:9", "9:16"].map(r => (
-                                                <DropdownMenuItem key={r} onClick={() => setAspectRatio(r)}>{r}</DropdownMenuItem>
+                                                <DropdownMenuItem key={r} onClick={() => setAspectRatio(r)} className="flex items-center">
+                                                    {renderRatioVisual(r)}
+                                                    {r}
+                                                </DropdownMenuItem>
                                             ))}
                                         </DropdownMenuContent>
                                     </DropdownMenu>
@@ -444,7 +523,22 @@ export function CreatorStudioSidebar({
             </div>
 
             {mode !== 'booth' && (
-                <div className="p-4 border-t border-white/5 bg-zinc-950 mt-auto">
+                <div className="p-4 border-t border-white/5 bg-zinc-950 mt-auto flex flex-col gap-3">
+                    {/* Privacy Toggle */}
+                    <div className="flex items-center justify-between px-1">
+                        <div className="flex flex-col">
+                            <Label htmlFor="public-mode" className="text-xs font-medium text-zinc-300">Public Feed</Label>
+                            {isFreeTier && <span className="text-[10px] text-zinc-500">Free tier is always public</span>}
+                        </div>
+                        <Switch
+                            id="public-mode"
+                            checked={isPublic}
+                            onCheckedChange={setIsPublic}
+                            disabled={isFreeTier}
+                            className={cn(isFreeTier && "opacity-50 cursor-not-allowed")}
+                        />
+                    </div>
+
                     <Button
                         onClick={onGenerate}
                         disabled={isProcessing}

@@ -297,6 +297,7 @@ export interface ProcessImageOptions {
   skipTokenCharge?: boolean;
   eventSlug?: string;
   userSlug?: string;
+  isPublic?: boolean;
 }
 
 /**
@@ -621,6 +622,7 @@ Output a single cohesive image.`;
       num_images: 1,
       image_urls: uploadedUrls, // Send all uploaded images
       image_url: uploadedUrls[0], // Backward compatibility
+      visibility: options.isPublic === false ? 'private' : 'public',
     };
 
     // If we have multiple images, we are in trouble with the current Go backend signature.

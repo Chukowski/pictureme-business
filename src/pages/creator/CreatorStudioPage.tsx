@@ -278,6 +278,43 @@ function CreatorStudioPageContent() {
     const [searchQuery, setSearchQuery] = useState("");
     const [activeCategory, setActiveCategory] = useState("All");
 
+    // Privacy & Tier State
+    const isFreeTier = useMemo(() => {
+        if (!user) return true;
+
+        // Check 1: Explicit subscription status (safest indicator)
+        if (user.subscription_status === 'active' || user.subscription_status === 'trialing') {
+            return false;
+        }
+
+        // Check 2: Explicit Plan Names/Tiers
+        const tier = user.subscription_tier?.toLowerCase();
+        const planName = user.plan_name?.toLowerCase();
+        const role = user.role?.toLowerCase();
+
+        // Check for Paid Individual Plans (Spark, Vibe, Studio)
+        if (tier === 'spark' || planName === 'spark') return false;
+        if (tier === 'vibe' || planName === 'vibe') return false;
+        if (tier === 'studio' || planName === 'studio') return false;
+
+        // Check for Business Plans
+        if (role?.startsWith('business_') || tier?.startsWith('business_')) return false;
+
+        // Check 3: Token Quota (Signal for paid plans if status/tier checks fail)
+        // Free tier typically has 0 or minimal daily tokens. Spark has 50 monthly.
+        if ((user.tokens_total || 0) >= 40) return false;
+
+        // Default to free
+        return true;
+    }, [user]);
+
+    const [isPublic, setIsPublic] = useState(true);
+
+    // Enforce public for free tier
+    useEffect(() => {
+        if (isFreeTier) setIsPublic(true);
+    }, [isFreeTier]);
+
     // Create Mode State
     const [mode, setMode] = useState<SidebarMode>("image");
     const [prompt, setPrompt] = useState("");
@@ -587,7 +624,8 @@ function CreatorStudioPageContent() {
                 method: "POST", headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
                 body: JSON.stringify({
                     image_url: item.url, thumbnail_url: item.previewUrl || item.url, prompt: item.prompt || "",
-                    model_id: item.model || "", aspect_ratio: item.ratio || "1:1", type: item.type
+                    model_id: item.model || "", aspect_ratio: item.ratio || "1:1", type: item.type,
+                    visibility: item.isPublic ? 'public' : 'private'
                 })
             });
             if (res.ok) {
@@ -618,7 +656,7 @@ function CreatorStudioPageContent() {
                 const result = await processImageWithAI({
                     userPhotoBase64: inputImage!, backgroundPrompt: prompt || selectedTemplate?.prompt || "portrait",
                     backgroundImageUrls: [...referenceImages, ...templateBgs], aspectRatio: aspectRatio as AspectRatio,
-                    aiModel: model, onProgress: setStatusMessage
+                    aiModel: model, onProgress: setStatusMessage, isPublic
                 });
 
                 const templateInfo = selectedTemplate ? {
@@ -642,7 +680,8 @@ function CreatorStudioPageContent() {
                     model,
                     ratio: aspectRatio,
                     status: 'completed',
-                    template: templateInfo
+                    template: templateInfo,
+                    isPublic
                 }, true); // Skip backend save because the backend generation endpoint auto-saves
             } else if (mode === "video") {
                 const endpoint = `${ENV.API_URL || "http://localhost:3002"}/api/generate/video`;
@@ -655,12 +694,13 @@ function CreatorStudioPageContent() {
                         aspect_ratio: aspectRatio,
                         audio: audioOn,
                         start_image_url: inputImage,
-                        end_image_url: endFrameImage
+                        end_image_url: endFrameImage,
+                        visibility: isPublic ? 'public' : 'private'
                     })
                 });
                 if (!resp.ok) throw new Error("Failed");
                 const data = await resp.json();
-                addToHistory({ id: crypto.randomUUID(), url: data.url, type: 'video', timestamp: Date.now(), prompt, model, ratio: aspectRatio, status: 'completed' });
+                addToHistory({ id: crypto.randomUUID(), url: data.url, type: 'video', timestamp: Date.now(), prompt, model, ratio: aspectRatio, status: 'completed', isPublic });
             }
             toast.success("Created!");
         } catch (e) { toast.error("Failed"); } finally { setIsProcessing(false); }
@@ -756,6 +796,11 @@ function CreatorStudioPageContent() {
                             selectedTemplate={selectedTemplate}
                             onSelectTemplate={applyTemplate}
                             onToggleTemplateLibrary={() => setShowTemplateLibrary(prev => !prev)}
+                            referenceImages={referenceImages}
+                            onRemoveReferenceImage={(idx) => setReferenceImages(prev => prev.filter((_, i) => i !== idx))}
+                            isPublic={isPublic}
+                            setIsPublic={setIsPublic}
+                            isFreeTier={isFreeTier}
                         />
 
                         {/* COLUMN 3: CANVAS / TIMELINE or TEMPLATE LIBRARY */}
