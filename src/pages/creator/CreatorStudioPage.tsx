@@ -700,19 +700,19 @@ function CreatorStudioPageContent() {
             {showRail ? (
                 <AppRail activeView={activeView} onViewChange={setActiveView} onToggle={() => setShowRail(false)} />
             ) : (
-                <div className="absolute left-4 top-4 z-50">
+                <div className="absolute left-2 top-4 z-50">
                     <button
                         onClick={() => setShowRail(true)}
-                        className="p-2 text-zinc-500 hover:text-white hover:bg-white/5 rounded-lg transition-all"
+                        className="p-1.5 text-zinc-600 hover:text-white hover:bg-white/5 rounded-md transition-all"
                         title="Expand Menu"
                     >
-                        <PanelLeftOpen className="w-6 h-6" />
+                        <PanelLeftOpen className="w-5 h-5" />
                     </button>
                 </div>
             )}
 
             {/* MAIN CONTENT AREA */}
-            <div className={cn("flex-1 flex min-w-0 transition-all duration-300", !showRail && "pl-14")}>
+            <div className={cn("flex-1 flex min-w-0 transition-all duration-300", !showRail && "pl-10")}>
                 {activeView === "templates" ? (
                     <TemplatesView />
                 ) : activeView === "booths" ? (
