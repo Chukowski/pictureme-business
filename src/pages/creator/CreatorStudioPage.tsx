@@ -147,7 +147,7 @@ const getTemplateMeta = (keys: string[]) => {
 const AppRail = ({ activeView, onViewChange }: { activeView: MainView, onViewChange: (v: MainView) => void }) => {
     const navigate = useNavigate();
     return (
-        <div className="w-[72px] flex flex-col items-center py-6 bg-[#0A0A0A] border-r border-white/5 z-30 flex-shrink-0">
+        <div className="w-[72px] flex flex-col items-center py-6 z-30 flex-shrink-0 ml-3 my-3 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 shadow-2xl h-[calc(100vh-1.5rem)]">
             <div className="flex-1 flex flex-col gap-6 w-full">
                 <button
                     onClick={() => onViewChange("create")}
