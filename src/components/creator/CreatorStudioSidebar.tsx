@@ -78,7 +78,7 @@ export function CreatorStudioSidebar({
     const currentModelName = currentModelObj?.name || model;
 
     return (
-        <div className="w-[380px] flex-shrink-0 flex flex-col z-20 m-2 h-auto max-h-[calc(100vh-80px)] rounded-3xl bg-[#121212] border border-white/10 shadow-2xl overflow-hidden">
+        <div className="w-[380px] flex-shrink-0 flex flex-col z-20 mx-3 my-3 h-[calc(100vh-6rem)] rounded-3xl bg-[#121212] border border-white/10 shadow-2xl overflow-hidden sticky top-3">
 
             {/* Use simple div for scrolling to allow auto-height behavior properly. Removing ScrollArea. */}
             <div className="flex-1 overflow-y-auto px-3 py-4 space-y-4 custom-scrollbar">
