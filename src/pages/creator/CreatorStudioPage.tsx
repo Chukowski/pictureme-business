@@ -25,6 +25,8 @@ import {
     Zap,
     Image as ImageIcon,
     ChevronRight,
+    ChevronLeft,
+    PanelLeftOpen,
     Settings,
     Wand2,
     Coins,
@@ -144,10 +146,19 @@ const getTemplateMeta = (keys: string[]) => {
     } catch (e) { return undefined; }
 };
 
-const AppRail = ({ activeView, onViewChange }: { activeView: MainView, onViewChange: (v: MainView) => void }) => {
+const AppRail = ({ activeView, onViewChange, onToggle }: { activeView: MainView, onViewChange: (v: MainView) => void, onToggle: () => void }) => {
     const navigate = useNavigate();
     return (
-        <div className="w-[72px] flex flex-col items-center py-6 z-30 flex-shrink-0 ml-3 my-3 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 shadow-2xl h-[calc(100vh-6rem)] sticky top-3">
+        <div className="w-[72px] flex flex-col items-center py-4 z-30 flex-shrink-0 ml-3 my-3 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 shadow-2xl h-[calc(100vh-7rem)] sticky top-3 transition-all duration-300">
+            {/* Toggle Button */}
+            <button
+                onClick={onToggle}
+                className="mb-4 p-2 text-zinc-500 hover:text-white transition-colors"
+                title="Collapse Menu"
+            >
+                <ChevronLeft className="w-4 h-4" />
+            </button>
+
             <div className="flex-1 flex flex-col gap-6 w-full">
                 <button
                     onClick={() => onViewChange("create")}
@@ -323,7 +334,8 @@ function CreatorStudioPageContent() {
     const [history, setHistory] = useState<HistoryItem[]>([]);
     const [previewItem, setPreviewItem] = useState<HistoryItem | null>(null);
     const [showSaveTemplate, setShowSaveTemplate] = useState(false);
-    const [isPromptExpanded, setIsPromptExpanded] = useState(false); // State for prompt expansion
+    const [showRail, setShowRail] = useState(true);
+    const [isPromptExpanded, setIsPromptExpanded] = useState(false);
 
     const formatModelName = (modelId: string) => {
         const allModels = [...LOCAL_IMAGE_MODELS, ...LOCAL_VIDEO_MODELS];
@@ -685,7 +697,18 @@ function CreatorStudioPageContent() {
         <div className="h-[calc(100vh-64px)] flex bg-black text-white overflow-hidden font-sans">
 
             {/* --- COLUMN 1: APP RAIL --- */}
-            <AppRail activeView={activeView} onViewChange={setActiveView} />
+            {showRail ? (
+                <AppRail activeView={activeView} onViewChange={setActiveView} onToggle={() => setShowRail(false)} />
+            ) : (
+                <div className="flex-shrink-0 z-30 ml-3 my-3 sticky top-3">
+                    <button
+                        onClick={() => setShowRail(true)}
+                        className="p-3 rounded-xl bg-black/40 backdrop-blur-md border border-white/10 text-white hover:bg-white/10 transition-colors shadow-2xl"
+                    >
+                        <PanelLeftOpen className="w-5 h-5" />
+                    </button>
+                </div>
+            )}
 
             {/* MAIN CONTENT AREA */}
             <div className="flex-1 flex min-w-0">
