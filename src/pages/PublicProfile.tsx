@@ -18,7 +18,7 @@ import {
   ArrowLeft
 } from "lucide-react";
 import { ENV } from "@/config/env";
-import { getCurrentUser } from "@/services/eventsApi";
+import { getCurrentUser, toggleLike } from "@/services/eventsApi";
 import { toast } from "sonner";
 
 interface UserProfile {
@@ -43,6 +43,7 @@ interface UserProfile {
     likes: number;
     posts: number;
     views: number;
+    is_liked?: boolean;
   };
 }
 
@@ -57,6 +58,7 @@ interface Creation {
   views: number;
   created_at: string;
   is_published: boolean;
+  is_liked?: boolean;
 }
 
 export default function PublicProfile() {
@@ -100,6 +102,61 @@ export default function PublicProfile() {
       console.error("Error fetching profile:", error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleToggleLike = async (creation: Creation, e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent opening modal/video
+
+    if (!currentUser) {
+      toast.error("Please login to like creations");
+      // navigate('/admin/auth'); // Optional: redirect to login
+      return;
+    }
+
+    // Optimistic update
+    const previousCreations = [...creations];
+    const previousProfile = profile ? { ...profile } : null;
+
+    // Update creations list
+    const updatedCreations = creations.map(c => {
+      if (c.id === creation.id) {
+        return {
+          ...c,
+          likes: c.is_liked ? c.likes - 1 : c.likes + 1,
+          is_liked: !c.is_liked
+        };
+      }
+      return c;
+    });
+    setCreations(updatedCreations);
+
+    // Update total profile likes
+    if (profile) {
+      setProfile({
+        ...profile,
+        stats: {
+          ...profile.stats,
+          likes: creation.is_liked
+            ? profile.stats.likes - 1
+            : profile.stats.likes + 1
+        }
+      });
+    }
+
+    try {
+      const result = await toggleLike(parseInt(creation.id));
+
+      // Update with actual server (optional if returning full object, but result has likes)
+      // We can just rely on optimistic is fine, checking success
+      if (!result.success) throw new Error("Failed to like");
+
+    } catch (error) {
+      console.error("Like failed", error);
+      toast.error("Failed to update like");
+      // Revert
+      setCreations(previousCreations);
+      if (previousProfile) setProfile(previousProfile);
     }
   };
 
@@ -306,13 +363,13 @@ export default function PublicProfile() {
           </TabsList>
 
           <TabsContent value="all" className="mt-0">
-            <CreationsGrid creations={filteredCreations} isOwnProfile={isOwnProfile} />
+            <CreationsGrid creations={filteredCreations} isOwnProfile={isOwnProfile} onLike={handleToggleLike} />
           </TabsContent>
           <TabsContent value="image" className="mt-0">
-            <CreationsGrid creations={filteredCreations} isOwnProfile={isOwnProfile} />
+            <CreationsGrid creations={filteredCreations} isOwnProfile={isOwnProfile} onLike={handleToggleLike} />
           </TabsContent>
           <TabsContent value="video" className="mt-0">
-            <CreationsGrid creations={filteredCreations} isOwnProfile={isOwnProfile} />
+            <CreationsGrid creations={filteredCreations} isOwnProfile={isOwnProfile} onLike={handleToggleLike} />
           </TabsContent>
           <TabsContent value="boards" className="mt-0">
             <div className="text-center py-12 text-zinc-500">
@@ -327,7 +384,7 @@ export default function PublicProfile() {
 }
 
 // Creations Grid Component
-function CreationsGrid({ creations, isOwnProfile }: { creations: Creation[], isOwnProfile: boolean }) {
+function CreationsGrid({ creations, isOwnProfile, onLike }: { creations: Creation[], isOwnProfile: boolean, onLike: (c: Creation, e: React.MouseEvent) => void }) {
   if (creations.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16">
@@ -397,12 +454,17 @@ function CreationsGrid({ creations, isOwnProfile }: { creations: Creation[], isO
 
           {/* Hover Overlay */}
           <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-3">
-            <div className="flex items-center gap-4 text-sm">
-              <span className="flex items-center gap-1">
-                <Heart className="w-4 h-4" />
-                {creation.likes}
-              </span>
-              <span className="flex items-center gap-1">
+            <div className="flex items-center gap-4 text-sm w-full">
+              <button
+                className="flex items-center gap-1 hover:scale-105 transition-transform"
+                onClick={(e) => onLike(creation, e)}
+              >
+                <Heart
+                  className={`w-4 h-4 ${creation.is_liked ? "fill-red-500 text-red-500" : "text-white"}`}
+                />
+                <span className="text-white font-medium">{creation.likes}</span>
+              </button>
+              <span className="flex items-center gap-1 text-white/80">
                 <Eye className="w-4 h-4" />
                 {creation.views}
               </span>

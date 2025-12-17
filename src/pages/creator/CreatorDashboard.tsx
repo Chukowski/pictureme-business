@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { getCurrentUser, getUserEvents, EventConfig, User, getTokenStats } from "@/services/eventsApi";
+import { getCurrentUser, getUserEvents, EventConfig, User, getTokenStats, toggleLike } from "@/services/eventsApi";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,6 +17,179 @@ import { PublicFeedBlock } from "@/components/creator/PublicFeedBlock";
 import { Badge } from "@/components/ui/badge";
 import { ENV } from "@/config/env";
 import { toast } from "sonner";
+
+
+// ... existing types ...
+
+
+// =======================
+// MARKETPLACE FEED CARD (Private Component)
+// =======================
+function MarketplaceFeedCard({ creation, onImageClick, onRemixClick }: { creation: any, onImageClick: (e: React.MouseEvent) => void, onRemixClick: (e: React.MouseEvent) => void }) {
+  const [likes, setLikes] = useState(creation.likes || 0);
+  const [isLiked, setIsLiked] = useState(creation.is_liked || false);
+  const [isLiking, setIsLiking] = useState(false);
+
+  const handleLike = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+
+    // Check auth
+    if (!localStorage.getItem("auth_token")) {
+      toast.error("Please login to like");
+      return;
+    }
+
+    if (isLiking) return;
+    setIsLiking(true);
+
+    // Optimistic
+    const prevLikes = likes;
+    const prevIsLiked = isLiked;
+    setLikes(prev => isLiked ? prev - 1 : prev + 1);
+    setIsLiked(!isLiked);
+
+    try {
+      const res = await toggleLike(creation.id);
+      if (!res.success) throw new Error("Failed");
+    } catch (error) {
+      console.error(error);
+      setLikes(prevLikes);
+      setIsLiked(prevIsLiked);
+      toast.error("Failed to update like");
+    } finally {
+      setIsLiking(false);
+    }
+  };
+
+  return (
+    <div
+      className="break-inside-avoid group relative rounded-2xl overflow-hidden bg-zinc-900 border border-white/5 hover:border-white/20 transition-all cursor-pointer shadow-lg aspect-[4/5] h-min"
+      onClick={onImageClick}
+    >
+      <img
+        src={creation.image_url || creation.url}
+        alt={creation.template_name || creation.prompt || ''}
+        className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-500"
+        loading="lazy"
+      />
+
+      {/* Gradient Overlay */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-80 group-hover:opacity-100 transition-opacity duration-300"></div>
+
+      {/* Like Button (Top Right) */}
+      <div className="absolute top-3 right-3 z-30 opacity-0 group-hover:opacity-100 transition-opacity">
+        <button
+          onClick={handleLike}
+          className="p-2 rounded-full bg-black/40 backdrop-blur-md hover:bg-black/60 transition-colors border border-white/10"
+        >
+          <Heart className={`w-4 h-4 ${isLiked ? "fill-pink-500 text-pink-500" : "text-white"}`} />
+        </button>
+      </div>
+
+      {/* Like Count (visible on hover or if liked) */}
+      {(likes > 0 || isLiked) && (
+        <div className="absolute top-3 right-3 z-20 pointer-events-none group-hover:opacity-0 transition-opacity">
+          <Badge variant="secondary" className="bg-black/30 backdrop-blur-sm hover:bg-black/40 border-0 gap-1 pl-1.5 pr-2 h-8">
+            <Heart className={`w-3.5 h-3.5 ${isLiked ? "fill-pink-500 text-pink-500" : "text-white"}`} />
+            <span className="text-xs font-medium text-white">{likes}</span>
+          </Badge>
+        </div>
+      )}
+
+      {/* Content Overlay */}
+      <div className="absolute bottom-0 left-0 right-0 p-4 flex items-end justify-between z-20">
+        {/* Creator Info */}
+        <div
+          className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity max-w-[65%]"
+          onClick={onImageClick}
+        >
+          <div className="w-6 h-6 shrink-0 rounded-full bg-zinc-700 flex items-center justify-center overflow-hidden border border-white/20">
+            {creation.creator_avatar ? (
+              <img src={creation.creator_avatar} className="w-full h-full object-cover" />
+            ) : (
+              <span className="text-[10px] font-bold text-white">
+                {creation.creator_username?.charAt(0)?.toUpperCase() || 'C'}
+              </span>
+            )}
+          </div>
+          <span className="text-xs font-medium text-white/90 shadow-black drop-shadow-md truncate">
+            @{creation.creator_username || 'Creator'}
+          </span>
+        </div>
+
+        {/* Remix Button */}
+        <button
+          className="
+            flex items-center gap-1.5 px-3 py-1.5 
+            bg-white/10 hover:bg-white/20 backdrop-blur-md 
+            border border-white/20 rounded-full 
+            text-white text-[10px] font-bold uppercase tracking-wider
+            transition-all duration-300 hover:scale-105 group-hover:bg-white/25
+            shrink-0
+         "
+          onClick={onRemixClick}
+        >
+          Remix <Zap className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+
+// =======================
+// MARKETPLACE FEED (Remix Engine)
+// =======================
+function CreatorsGallerySection({ creations, navigate }: { creations: any[]; navigate: (path: string, options?: any) => void }) {
+  if (!creations || creations.length === 0) {
+    return (
+      <div className="text-center py-12 bg-zinc-900/30 rounded-xl border border-white/5 border-dashed">
+        <p className="text-zinc-500">Marketplace loading...</p>
+      </div>
+    );
+  }
+
+  const handleImageClick = (creation: any, e: React.MouseEvent) => {
+    e.stopPropagation();
+    // Navigate to the creator's public profile
+    // Use slug > username > user_id as fallback chain
+    const creatorIdentifier = creation.creator_slug || creation.creator_username || creation.creator_user_id;
+    if (creatorIdentifier) {
+      navigate(`/profile/${creatorIdentifier}`);
+    } else {
+      toast.error("Creator profile not available");
+    }
+  };
+
+  const handleRemixClick = (creation: any, e: React.MouseEvent) => {
+    e.stopPropagation();
+    // Navigate to creator studio with prompt and template pre-filled
+    const remixState = {
+      prompt: creation.prompt || '',
+      templateId: creation.template_id || null,
+      templateUrl: creation.template_url || null,
+      sourceImageUrl: creation.image_url || creation.url || null,
+      remixFrom: creation.id,
+    };
+    navigate('/creator/create', { state: remixState });
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* Masonry Grid - 3 Columns as requested */}
+      <div className="columns-1 md:columns-3 gap-4 space-y-4">
+        {creations.map((creation: any, index: number) => (
+          <MarketplaceFeedCard
+            key={creation.id || index}
+            creation={creation}
+            onImageClick={(e) => handleImageClick(creation, e)}
+            onRemixClick={(e) => handleRemixClick(creation, e)}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
 
 // =======================
 // TYPES
@@ -436,105 +609,7 @@ function PendingGenerationsSection({ pendingJobs }: { pendingJobs: any[] }) {
   );
 }
 
-// =======================
-// MARKETPLACE FEED (Remix Engine)
-// =======================
-function CreatorsGallerySection({ creations, navigate }: { creations: any[]; navigate: (path: string, options?: any) => void }) {
-  if (!creations || creations.length === 0) {
-    return (
-      <div className="text-center py-12 bg-zinc-900/30 rounded-xl border border-white/5 border-dashed">
-        <p className="text-zinc-500">Marketplace loading...</p>
-      </div>
-    );
-  }
 
-  const handleImageClick = (creation: any, e: React.MouseEvent) => {
-    e.stopPropagation();
-    // Navigate to the creator's public profile
-    // Use slug > username > user_id as fallback chain
-    const creatorIdentifier = creation.creator_slug || creation.creator_username || creation.creator_user_id;
-    if (creatorIdentifier) {
-      navigate(`/profile/${creatorIdentifier}`);
-    } else {
-      // No identifier available, show toast
-      toast.error("Creator profile not available");
-    }
-  };
-
-  const handleRemixClick = (creation: any, e: React.MouseEvent) => {
-    e.stopPropagation();
-    // Navigate to creator studio with prompt and template pre-filled
-    const remixState = {
-      prompt: creation.prompt || '',
-      templateId: creation.template_id || null,
-      templateUrl: creation.template_url || null,
-      sourceImageUrl: creation.image_url || creation.url || null,
-      remixFrom: creation.id,
-    };
-    navigate('/creator/create', { state: remixState });
-  };
-
-  return (
-    <div className="space-y-4">
-      {/* Masonry Grid - 3 Columns as requested */}
-      <div className="columns-1 md:columns-3 gap-4 space-y-4">
-        {creations.map((creation: any, index: number) => (
-          <div
-            key={creation.id || index}
-            className="break-inside-avoid group relative rounded-2xl overflow-hidden bg-zinc-900 border border-white/5 hover:border-white/20 transition-all cursor-pointer shadow-lg"
-            onClick={(e) => handleImageClick(creation, e)}
-          >
-            <img
-              src={creation.image_url || creation.url}
-              alt={creation.template_name || creation.prompt || ''}
-              className="w-full object-cover group-hover:scale-[1.02] transition-transform duration-500"
-              loading="lazy"
-            />
-
-            {/* Gradient Overlay (Always visible at bottom, stronger on hover) */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-80 group-hover:opacity-100 transition-opacity duration-300"></div>
-
-            {/* Content Overlay */}
-            <div className="absolute bottom-0 left-0 right-0 p-4 flex items-end justify-between z-20">
-              {/* Creator Info */}
-              <div
-                className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
-                onClick={(e) => handleImageClick(creation, e)}
-              >
-                <div className="w-6 h-6 rounded-full bg-zinc-700 flex items-center justify-center overflow-hidden border border-white/20">
-                  {creation.creator_avatar ? (
-                    <img src={creation.creator_avatar} className="w-full h-full object-cover" />
-                  ) : (
-                    <span className="text-[10px] font-bold text-white">
-                      {creation.creator_username?.charAt(0)?.toUpperCase() || 'C'}
-                    </span>
-                  )}
-                </div>
-                <span className="text-xs font-medium text-white/90 shadow-black drop-shadow-md">
-                  @{creation.creator_username || 'Creator'}
-                </span>
-              </div>
-
-              {/* Remix Button */}
-              <button
-                className="
-                  flex items-center gap-1.5 px-3 py-1.5 
-                  bg-white/10 hover:bg-white/20 backdrop-blur-md 
-                  border border-white/20 rounded-full 
-                  text-white text-[10px] font-bold uppercase tracking-wider
-                  transition-all duration-300 hover:scale-105 group-hover:bg-white/25
-               "
-                onClick={(e) => handleRemixClick(creation, e)}
-              >
-                Remix <Zap className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
 
 
 // =======================

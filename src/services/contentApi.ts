@@ -49,6 +49,9 @@ export interface PublicCreation {
   visibility: 'public' | 'private' | 'unlisted';
   is_featured: boolean;
   created_at: string;
+  is_liked?: boolean;
+  type?: 'image' | 'video';
+  model?: string;
 }
 
 export interface HomeContentResponse {

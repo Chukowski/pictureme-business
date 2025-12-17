@@ -737,7 +737,31 @@ export const updateUser = async (data: Partial<User> & { password?: string }): P
   }
 
   return response.json();
+
 };
+
+/**
+ * Toggle like on a creation
+ */
+export async function toggleLike(creationId: number): Promise<{ success: boolean; likes: number; liked: boolean }> {
+  const token = getAuthToken();
+  if (!token) throw new Error('Authentication required');
+
+  const response = await fetch(`${getApiUrl()}/api/creations/${creationId}/like`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    }
+  });
+
+  if (!response.ok) {
+    if (response.status === 401) throw new Error('Unauthorized');
+    throw new Error('Failed to toggle like');
+  }
+
+  return response.json();
+}
 
 /**
  * Get user token statistics

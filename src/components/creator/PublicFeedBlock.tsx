@@ -1,5 +1,7 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { PublicCreation } from "@/services/contentApi";
+import { getCurrentUser, toggleLike } from "@/services/eventsApi";
+import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Heart, Eye, User } from "lucide-react";
@@ -34,8 +36,45 @@ export function PublicFeedBlock({ creations = [] }: PublicFeedBlockProps) {
 }
 
 function FeedCard({ creation }: { creation: PublicCreation }) {
+    const [likes, setLikes] = useState(creation.likes);
+    const [isLiked, setIsLiked] = useState(creation.is_liked || false);
+    const [isLiking, setIsLiking] = useState(false);
+
+    const handleLike = async (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const currentUser = getCurrentUser();
+        if (!currentUser) {
+            toast.error("Please login to like creations");
+            return;
+        }
+
+        if (isLiking) return;
+        setIsLiking(true);
+
+        // Optimistic update
+        const prevLikes = likes;
+        const prevIsLiked = isLiked;
+
+        setLikes(prev => isLiked ? prev - 1 : prev + 1);
+        setIsLiked(!isLiked);
+
+        try {
+            const result = await toggleLike(creation.id);
+            if (!result.success) throw new Error("Failed to like");
+        } catch (error) {
+            // Revert
+            setLikes(prevLikes);
+            setIsLiked(prevIsLiked);
+            toast.error("Failed to update like");
+        } finally {
+            setIsLiking(false);
+        }
+    };
+
     return (
-        <Card className="bg-zinc-900 border-white/10 overflow-hidden group hover:border-indigo-500/50 transition-all">
+        <Card className="bg-zinc-900 border-white/10 overflow-hidden group hover:border-indigo-500/50 transition-all cursor-pointer">
             <CardContent className="p-0 relative aspect-[9/16]">
                 {/* Image */}
                 <img
@@ -55,8 +94,15 @@ function FeedCard({ creation }: { creation: PublicCreation }) {
                         </div>
                     </div>
                     <div className="flex items-center justify-between mt-3">
-                        <Badge variant="secondary" className="bg-white/10 text-white text-[10px] backdrop-blur-md border-0 gap-1 pl-1">
-                            <Heart className="w-3 h-3 text-pink-500" /> {creation.likes}
+                        <Badge
+                            variant="secondary"
+                            className={`backdrop-blur-md border-0 gap-1 pl-1 cursor-pointer transition-colors ${isLiked
+                                ? "bg-pink-500/20 text-pink-200 hover:bg-pink-500/30"
+                                : "bg-white/10 text-white hover:bg-white/20"
+                                }`}
+                            onClick={handleLike}
+                        >
+                            <Heart className={`w-3 h-3 ${isLiked ? "fill-current text-pink-500" : "text-pink-500"}`} /> {likes}
                         </Badge>
                         <span className="text-[10px] text-zinc-500 flex items-center gap-1">
                             <Eye className="w-3 h-3" /> {creation.views}
