@@ -80,7 +80,13 @@ export default function PublicProfile() {
   const fetchProfile = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch(`${ENV.API_URL}/api/users/profile/${username}`);
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      const token = localStorage.getItem('auth_token');
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      const response = await fetch(`${ENV.API_URL}/api/users/profile/${username}`, { headers });
 
       if (!response.ok) {
         if (response.status === 404) {
