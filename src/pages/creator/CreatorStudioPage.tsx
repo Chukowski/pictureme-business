@@ -149,7 +149,7 @@ const getTemplateMeta = (keys: string[]) => {
 const AppRail = ({ activeView, onViewChange, onToggle }: { activeView: MainView, onViewChange: (v: MainView) => void, onToggle: () => void }) => {
     const navigate = useNavigate();
     return (
-        <div className="w-[72px] flex flex-col items-center py-4 z-30 flex-shrink-0 ml-3 my-3 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 shadow-2xl h-[calc(100vh-7rem)] sticky top-3 transition-all duration-300">
+        <div className="w-[60px] flex flex-col items-center py-4 z-30 flex-shrink-0 ml-3 my-3 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 shadow-2xl h-[calc(100vh-7rem)] sticky top-3 transition-all duration-300">
             {/* Toggle Button */}
             <button
                 onClick={onToggle}
@@ -694,16 +694,16 @@ function CreatorStudioPageContent() {
     if (!user) return null;
 
     return (
-        <div className="h-[calc(100vh-64px)] flex bg-black text-white overflow-hidden font-sans">
+        <div className="h-[calc(100vh-64px)] flex bg-black text-white overflow-hidden font-sans relative">
 
             {/* --- COLUMN 1: APP RAIL --- */}
             {showRail ? (
                 <AppRail activeView={activeView} onViewChange={setActiveView} onToggle={() => setShowRail(false)} />
             ) : (
-                <div className="flex-shrink-0 z-30 ml-3 my-3 sticky top-3">
+                <div className="absolute left-3 top-3 z-50">
                     <button
                         onClick={() => setShowRail(true)}
-                        className="p-3 rounded-xl bg-black/40 backdrop-blur-md border border-white/10 text-white hover:bg-white/10 transition-colors shadow-2xl"
+                        className="p-2 rounded-lg bg-black/40 backdrop-blur-md border border-white/10 text-white hover:bg-white/10 transition-colors shadow-2xl"
                     >
                         <PanelLeftOpen className="w-5 h-5" />
                     </button>
