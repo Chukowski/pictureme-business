@@ -263,15 +263,15 @@ export function CreatorStudioSidebar({
                         </DropdownMenu>
 
                         {/* 4. INPUTS (Dynamic based on Mode) */}
-                        <div className="flex flex-col gap-2 w-full shrink-0 min-h-[6rem]">
+                        <div className="flex flex-col gap-2 w-full shrink-0">
                             {mode === 'video' ? (
                                 // VIDEO MODE INPUTS
-                                <div className="grid grid-cols-2 gap-2 h-full w-full">
+                                <div className="grid grid-cols-2 gap-2 w-full">
                                     {/* Start Frame */}
                                     <div
                                         onClick={() => onUploadClick("main")}
                                         className={cn(
-                                            "h-full rounded-xl border border-dashed border-zinc-700 bg-zinc-900/30 hover:bg-zinc-900 hover:border-zinc-500 transition-all cursor-pointer flex flex-col items-center justify-center gap-2 overflow-hidden relative group",
+                                            "aspect-video w-full rounded-xl border border-dashed border-zinc-700 bg-zinc-900/30 hover:bg-zinc-900 hover:border-zinc-500 transition-all cursor-pointer flex flex-col items-center justify-center gap-2 overflow-hidden relative group",
                                             inputImage && "border-solid border-[#D1F349]/50"
                                         )}
                                     >
@@ -292,7 +292,7 @@ export function CreatorStudioSidebar({
                                     <div
                                         onClick={() => onUploadClick("end")}
                                         className={cn(
-                                            "h-full rounded-xl border border-dashed border-zinc-700 bg-zinc-900/30 hover:bg-zinc-900 hover:border-zinc-500 transition-all cursor-pointer flex flex-col items-center justify-center gap-2 overflow-hidden relative group",
+                                            "aspect-video w-full rounded-xl border border-dashed border-zinc-700 bg-zinc-900/30 hover:bg-zinc-900 hover:border-zinc-500 transition-all cursor-pointer flex flex-col items-center justify-center gap-2 overflow-hidden relative group",
                                             endFrameImage && "border-solid border-[#D1F349]/50"
                                         )}
                                     >
@@ -311,12 +311,12 @@ export function CreatorStudioSidebar({
                                 </div>
                             ) : (
                                 // IMAGE MODE INPUTS
-                                <div className="grid grid-cols-3 gap-2 h-full w-full">
+                                <div className="grid grid-cols-3 gap-2 w-full">
                                     {/* Main Subject Input */}
                                     <div
                                         onClick={() => onUploadClick("main")}
                                         className={cn(
-                                            "h-full col-span-1 rounded-xl border border-dashed border-zinc-700 bg-zinc-900/30 hover:bg-zinc-900 hover:border-zinc-500 transition-all cursor-pointer flex flex-col items-center justify-center gap-2 overflow-hidden group relative",
+                                            "aspect-square w-full col-span-1 rounded-xl border border-dashed border-zinc-700 bg-zinc-900/30 hover:bg-zinc-900 hover:border-zinc-500 transition-all cursor-pointer flex flex-col items-center justify-center gap-2 overflow-hidden group relative",
                                             inputImage && "border-solid border-[#D1F349]/50"
                                         )}
                                     >
@@ -331,11 +331,11 @@ export function CreatorStudioSidebar({
                                     </div>
 
                                     {/* Reference Images */}
-                                    <div className="col-span-2 grid grid-cols-2 gap-2 h-full">
+                                    <div className="col-span-2 grid grid-cols-2 gap-2 w-full">
                                         {/* Add Reference Button */}
                                         <button
                                             onClick={() => onUploadClick("ref")}
-                                            className="h-full rounded-xl bg-zinc-900/30 border border-white/5 hover:bg-zinc-800 transition-all flex flex-col items-center justify-center gap-1 group"
+                                            className="aspect-square w-full rounded-xl bg-zinc-900/30 border border-white/5 hover:bg-zinc-800 transition-all flex flex-col items-center justify-center gap-1 group"
                                         >
                                             <div className="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center group-hover:bg-[#D1F349] group-hover:text-black transition-colors">
                                                 <Plus className="w-4 h-4" />
@@ -345,7 +345,7 @@ export function CreatorStudioSidebar({
 
                                         {/* Show first ref or placeholder count */}
                                         {referenceImages.length > 0 ? (
-                                            <div className="relative h-full rounded-xl overflow-hidden border border-white/5 group">
+                                            <div className="relative aspect-square w-full rounded-xl overflow-hidden border border-white/5 group">
                                                 <img src={referenceImages[0]} className="w-full h-full object-cover" />
                                                 {referenceImages.length > 1 && (
                                                     <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
@@ -354,7 +354,7 @@ export function CreatorStudioSidebar({
                                                 )}
                                             </div>
                                         ) : (
-                                            <div className="h-full rounded-xl bg-zinc-900/10 border border-white/5 flex items-center justify-center">
+                                            <div className="aspect-square w-full rounded-xl bg-zinc-900/10 border border-white/5 flex items-center justify-center">
                                                 <span className="text-[10px] text-zinc-700">No refs</span>
                                             </div>
                                         )}
