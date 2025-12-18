@@ -316,6 +316,9 @@ export default function CreatorDashboard() {
   // Compute home state
   const homeState = useMemo(() => getCreatorHomeState(user, creations), [user, creations]);
 
+  // Compute featured template - Moved up to avoid Rule of Hooks violation
+  const featuredTemplate = useMemo(() => getFeaturedTemplate(marketplaceTemplates), [marketplaceTemplates]);
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -346,8 +349,8 @@ export default function CreatorDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
 
         {/* Left Column: Featured Style (1 Col) */}
-        <div className="lg:col-span-1 h-full min-h-[400px]">
-          <FeaturedStyleCard navigate={navigate} template={marketplaceTemplates[0]} />
+        <div className="lg:col-span-1 h-full">
+          <FeaturedStyleCard navigate={navigate} template={featuredTemplate} />
         </div>
 
         {/* Middle Column: Recent Creations & Marketplace (2 Cols) */}
@@ -402,10 +405,10 @@ export default function CreatorDashboard() {
 // =======================
 function HeroSection({ user, homeState, creations, navigate }: { user: User | null; homeState: CreatorHomeState; creations: UserCreation[]; navigate: (path: string) => void }) {
   return (
-    <div className="relative w-full aspect-[21/9] md:aspect-[2.5/1] rounded-2xl overflow-hidden group bg-[#050505] shadow-2xl shadow-black/50 border border-white/5">
+    <div className="relative w-full aspect-[3/4] md:aspect-[2.5/1] rounded-2xl overflow-hidden group bg-[#050505] shadow-2xl shadow-black/50 border border-white/5">
       {/* Visual Proof Background (Collage/Video) */}
       <div className="absolute inset-0 z-0 select-none pointer-events-none mix-blend-screen scale-105">
-        <div className="grid grid-cols-4 gap-0 w-full h-full filter blur-[2px] opacity-50">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-0 w-full h-full filter blur-[2px] opacity-50">
           {creations.length > 0 ? (
             creations.slice(0, 4).map((c, i) => (
               <div key={i} className="h-full relative overflow-hidden">
@@ -417,22 +420,22 @@ function HeroSection({ user, homeState, creations, navigate }: { user: User | nu
             <>
               <div className="h-full relative overflow-hidden"><img src="https://images.unsplash.com/photo-1620641788421-7f6c368615b8?q=80&w=800&auto=format&fit=crop" className="w-full h-full object-cover" /></div>
               <div className="h-full relative overflow-hidden"><img src="https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?q=80&w=800&auto=format&fit=crop" className="w-full h-full object-cover" /></div>
-              <div className="h-full relative overflow-hidden"><img src="https://images.unsplash.com/photo-1635322966219-b75ed3a93227?q=80&w=800&auto=format&fit=crop" className="w-full h-full object-cover" /></div>
-              <div className="h-full relative overflow-hidden"><img src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=800&auto=format&fit=crop" className="w-full h-full object-cover" /></div>
+              <div className="hidden md:block h-full relative overflow-hidden"><img src="https://images.unsplash.com/photo-1635322966219-b75ed3a93227?q=80&w=800&auto=format&fit=crop" className="w-full h-full object-cover" /></div>
+              <div className="hidden md:block h-full relative overflow-hidden"><img src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=800&auto=format&fit=crop" className="w-full h-full object-cover" /></div>
             </>
           )}
         </div>
       </div>
 
       {/* Gradient Overlays for Text Readability & Fade */}
-      <div className="absolute inset-0 bg-gradient-to-r from-[#050505] via-[#050505]/70 to-transparent z-0"></div>
-      <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-transparent to-transparent z-0"></div>
+      <div className="absolute inset-0 bg-gradient-to-t md:bg-gradient-to-r from-[#050505] via-[#050505]/70 to-transparent z-0"></div>
+      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[#050505]/90 z-0 md:hidden"></div>
 
-      <div className="absolute inset-0 z-10 flex flex-col items-start justify-center text-left p-8 md:p-12 pl-10 md:pl-16">
-        <h1 className="text-4xl md:text-6xl font-bold text-white tracking-tight mb-4 drop-shadow-[0_4px_10px_rgba(255,255,255,0.1)] max-w-2xl">
+      <div className="absolute inset-0 z-10 flex flex-col items-start justify-end md:justify-center text-left p-6 md:p-12 pl-6 md:pl-16 pb-12 md:pb-12">
+        <h1 className="text-4xl md:text-6xl font-bold text-white tracking-tight mb-4 drop-shadow-[0_4px_10px_rgba(255,255,255,0.1)] max-w-2xl leading-none md:leading-tight">
           Create iconic AI photos in seconds.
         </h1>
-        <p className="text-[#CCCCCC] text-sm md:text-lg max-w-lg mb-8 font-medium shadow-black drop-shadow-md">
+        <p className="text-[#CCCCCC] text-base md:text-lg max-w-lg mb-8 font-medium shadow-black drop-shadow-md">
           The world's most advanced AI photobooth marketplace.
           {homeState === 'out_of_tokens' && <span className="block text-amber-400 mt-2 text-sm">You are out of tokens. Upgrade to continue.</span>}
         </p>
@@ -445,7 +448,7 @@ function HeroSection({ user, homeState, creations, navigate }: { user: User | nu
                         bg-[#8b5cf6] hover:bg-[#7c3aed] text-white
                         shadow-[0_0_20px_rgba(139,92,246,0.5)] hover:shadow-[0_0_30px_rgba(139,92,246,0.7)]
                         hover:scale-105 transition-all duration-300
-                        border border-white/10
+                        border border-white/10 w-full md:w-auto
                     "
         >
           {homeState === 'active' ? 'Continue Creating' : 'Start Creating'}
@@ -463,40 +466,82 @@ function HeroSection({ user, homeState, creations, navigate }: { user: User | nu
 // FEATURED STYLE CARD
 // =======================
 
-function FeaturedStyleCard({ navigate, template }: { navigate: (p: string) => void, template?: MarketplaceTemplate }) {
-  // Fallback to static if no template provided
-  const bgImage = template?.preview_url || template?.preview_images?.[0] || "https://images.unsplash.com/photo-1635322966219-b75ed3a93227?q=80&w=2000&auto=format&fit=crop";
-  const title = template?.name || "Cyberpunk Noir";
-  const subtitle = template?.template_type ? `${template.template_type} Style` : "Neon lights, dark alleys, and futuristic vibes.";
+// Helper to select the featured template based on priority:
+// 1. Manual ('featured' tag)
+// 2. Promoted ('promoted' tag)
+// 3. Auto (Highest downloads)
+function getFeaturedTemplate(templates: MarketplaceTemplate[]): MarketplaceTemplate | undefined {
+  if (!templates || templates.length === 0) return undefined;
+
+  // 1. Manual Featured
+  const manual = templates.find(t => t.tags?.includes('featured'));
+  if (manual) return manual;
+
+  // 2. Promoted
+  const promoted = templates.find(t => t.tags?.includes('promoted'));
+  if (promoted) return promoted;
+
+  // 3. Auto-Featured (Best performance / Downloads)
+  // We use [...templates] to avoid mutating the original array
+  return [...templates].sort((a, b) => (b.downloads || 0) - (a.downloads || 0))[0];
+}
+
+function FeaturedStyleCard({ navigate, template }: { navigate: (p: string, options?: any) => void, template?: MarketplaceTemplate }) {
+  if (!template) return null;
+
+  const bgImage = template.preview_url || template.preview_images?.[0] || template.backgrounds?.[0];
+  const title = template.name;
+  // Creator info
+  const creatorName = template.creator?.name || "System";
 
   return (
     <div
-      onClick={() => navigate(template ? `/creator/templates/${template.id}` : '/creator/templates')}
-      className="group relative h-full min-h-[400px] rounded-2xl overflow-hidden cursor-pointer border border-white/10 bg-zinc-900 shadow-xl shadow-black/40"
+      onClick={() => navigate('/creator/studio', { state: { view: 'create', selectedTemplate: template } })}
+      className="group relative w-full h-[240px] md:h-full md:min-h-[400px] rounded-2xl overflow-hidden cursor-pointer border border-white/10 bg-zinc-900 shadow-xl shadow-black/40 transition-all hover:border-white/20"
     >
+      {/* Background Image */}
       <img
         src={bgImage}
         className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-        alt="Featured Style"
+        alt={title}
+        loading="lazy"
       />
-      {/* Improved Gradient Overlay matching reference - Stronger bottom for text contrast */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent opacity-90 z-10"></div>
 
-      <div className="absolute bottom-0 left-0 w-full p-6 z-20 flex flex-col justify-end h-full">
-        <div className="mt-auto">
-          <Badge variant="secondary" className="mb-3 bg-indigo-500/20 text-indigo-300 border-indigo-500/30 backdrop-blur-md">FEATURED STYLE</Badge>
-          <h3 className="text-4xl lg:text-5xl font-bold text-white mb-2 leading-none tracking-tight drop-shadow-lg">{title}</h3>
-          <p className="text-base text-zinc-300 font-medium opacity-90 drop-shadow-md mb-6 leading-relaxed max-w-[80%] line-clamp-3">{subtitle}</p>
+      {/* Gradient Overlay - Optimized for readability */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent opacity-90 z-10"></div>
 
-          <button className="
-                      flex items-center gap-2 px-6 py-3
-                      bg-white/10 hover:bg-white/20 backdrop-blur-md 
-                      border border-white/20 rounded-full 
-                      text-white text-sm font-semibold 
-                  ">
-            Use Style <ArrowRight className="w-4 h-4 ml-1" />
-          </button>
+      {/* Content Container */}
+      <div className="absolute inset-0 p-5 md:p-6 z-20 flex flex-col justify-end">
+
+        {/* Badge */}
+        <div className="mb-2 md:mb-3">
+          <Badge variant="secondary" className="bg-white/10 text-white backdrop-blur-md border-white/10 text-[10px] md:text-xs font-bold tracking-wider uppercase px-2 py-0.5 md:py-1">
+            Featured Style
+          </Badge>
         </div>
+
+        {/* Title */}
+        <h3 className="text-2xl md:text-4xl lg:text-5xl font-bold text-white mb-1 md:mb-2 leading-none tracking-tight drop-shadow-lg line-clamp-2">
+          {title}
+        </h3>
+
+        {/* Creator Byline */}
+        <div className="flex items-center gap-2 mb-4 md:mb-6">
+          <span className="text-xs md:text-sm text-zinc-300 font-medium drop-shadow-md">
+            by {creatorName}
+          </span>
+        </div>
+
+        {/* CTA Button */}
+        <button className="
+            flex items-center gap-2 px-4 py-2 md:px-6 md:py-3 w-fit
+            bg-white text-black hover:bg-zinc-200
+            rounded-full 
+            text-xs md:text-sm font-bold 
+            transition-all duration-300 transform group-hover:translate-x-1 shadow-lg
+        ">
+          Use Style <ArrowRight className="w-3 h-3 md:w-4 md:h-4" />
+        </button>
       </div>
     </div>
   );

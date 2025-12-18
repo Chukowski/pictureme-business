@@ -300,6 +300,23 @@ function CreatorStudioPageContent() {
             setActiveView((location.state as any).view);
         }
     }, [location.state]);
+    const [availableModels, setAvailableModels] = useState<any[]>([]);
+
+    useEffect(() => {
+        const fetchConfig = async () => {
+            try {
+                const res = await fetch(`${ENV.API_URL}/api/config`);
+                const data = await res.json();
+                if (data.supported_models) {
+                    setAvailableModels(data.supported_models);
+                }
+            } catch (e) {
+                console.error("Failed to load config", e);
+            }
+        };
+        fetchConfig();
+    }, []);
+
     const [searchQuery, setSearchQuery] = useState("");
     const [activeCategory, setActiveCategory] = useState("All");
 
@@ -356,6 +373,7 @@ function CreatorStudioPageContent() {
             templateUrl?: string;
             sourceImageUrl?: string;
             remixFrom?: string;
+            selectedTemplate?: MarketplaceTemplate;
         } | null;
 
         if (remixState) {
@@ -366,6 +384,24 @@ function CreatorStudioPageContent() {
             // Set source image if provided (for style reference)
             if (remixState.sourceImageUrl) {
                 setInputImage(remixState.sourceImageUrl);
+            }
+            // Pre-select template if provided
+            if (remixState.selectedTemplate) {
+                setSelectedTemplate(remixState.selectedTemplate);
+                if (remixState.selectedTemplate.ai_model) {
+                    setModel(remixState.selectedTemplate.ai_model);
+                }
+                if (remixState.selectedTemplate.aspectRatio) {
+                    setAspectRatio(remixState.selectedTemplate.aspectRatio);
+                }
+                // Also set prompt from template if available (matches applyTemplate behavior)
+                if ((remixState.selectedTemplate as any).prompt) {
+                    setPrompt((remixState.selectedTemplate as any).prompt);
+                }
+                // Set reference images from template if available (Style Reference)
+                if (remixState.selectedTemplate.images && remixState.selectedTemplate.images.length > 0) {
+                    setReferenceImages([remixState.selectedTemplate.images[0]]);
+                }
             }
             // Clear the state after consuming it to prevent re-triggering
             window.history.replaceState({}, document.title);
@@ -756,6 +792,10 @@ function CreatorStudioPageContent() {
         setPrompt(tpl.prompt || "");
         if (tpl.ai_model) setModel(tpl.ai_model);
         if (tpl.aspectRatio) setAspectRatio(tpl.aspectRatio);
+        // Automatically set the first image as a style reference
+        if (tpl.images && tpl.images.length > 0) {
+            setReferenceImages([tpl.images[0]]);
+        }
         setShowTemplateLibrary(false);
         toast.success(`Applied style: ${tpl.name}`);
     };
@@ -833,7 +873,8 @@ function CreatorStudioPageContent() {
                                 isPublic={isPublic}
                                 setIsPublic={setIsPublic}
                                 isFreeTier={isFreeTier}
-                                onCloseMobile={() => setActiveView("home")}
+                                onCloseMobile={() => setShowRail(false)}
+                                availableModels={availableModels}
                             />
                         </div>
 

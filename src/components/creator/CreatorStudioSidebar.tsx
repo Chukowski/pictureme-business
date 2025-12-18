@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
     Settings,
     Upload,
@@ -96,8 +96,47 @@ export function CreatorStudioSidebar({
     isPublic,
     setIsPublic,
     isFreeTier,
-    onCloseMobile
-}: CreatorStudioSidebarProps) {
+    onCloseMobile,
+    availableModels = [] // New prop for dynamic models from backend
+}: CreatorStudioSidebarProps & { availableModels?: any[] }) {
+
+    // Merge Local Models with Backend Costs
+    const imageModels = useMemo(() => {
+        return LOCAL_IMAGE_MODELS.map((local: any) => {
+            const backend = availableModels.find(m => m.id === local.shortId || m.id === local.id);
+            return {
+                ...local,
+                cost: backend ? backend.cost : (local.cost || 1) // default cost 1 if not found
+            };
+        });
+    }, [availableModels]);
+
+    const videoModels = useMemo(() => {
+        return LOCAL_VIDEO_MODELS.map((local: any) => {
+            const backend = availableModels.find(m => m.id === local.shortId || m.id === local.id);
+            return {
+                ...local,
+                cost: backend ? backend.cost : (local.type === 'video' ? 150 : 10) // default 150 for video
+            };
+        });
+    }, [availableModels]);
+
+    // Auto-switch model when mode changes
+    useEffect(() => {
+        // Check if current model is valid for the new mode
+        const validModels = mode === 'image' ? imageModels : videoModels;
+        const isValid = validModels.some(m => m.shortId === model);
+
+        if (!isValid && validModels.length > 0) {
+            setModel(validModels[0].shortId); // Default to first available
+        }
+    }, [mode, imageModels, videoModels, model, setModel]);
+
+    // Current selected model object
+    const selectedModelObj = useMemo(() => {
+        if (mode === 'image') return imageModels.find(m => m.shortId === model) || imageModels[0];
+        return videoModels.find(m => m.shortId === model) || videoModels[0];
+    }, [mode, model, imageModels, videoModels]);
 
     const renderRatioVisual = (r: string) => {
         let width = 10;
@@ -163,11 +202,11 @@ export function CreatorStudioSidebar({
                         <p className="text-sm">Booth settings coming soon...</p>
                     </div>
                 ) : (
-                    <div className="space-y-4">
+                    <div className="flex flex-col gap-4 pb-20"> {/* Changed to flex gap and added padding bottom */}
                         {/* 2. TEMPLATE / STYLE HERO */}
                         <div
                             onClick={onToggleTemplateLibrary}
-                            className="group relative aspect-video w-full rounded-2xl overflow-hidden cursor-pointer border border-white/10 hover:border-[#D1F349]/50 transition-all shadow-lg"
+                            className="group relative h-32 w-full shrink-0 rounded-2xl overflow-hidden cursor-pointer border border-white/10 hover:border-[#D1F349]/50 transition-all shadow-lg"
                         >
                             <div className="absolute inset-0 bg-zinc-900">
                                 {(selectedTemplate?.images?.[0] || selectedTemplate?.preview_images?.[0]) ? (
@@ -200,86 +239,137 @@ export function CreatorStudioSidebar({
                         {/* 3. MODEL SELECTOR (Slim row) */}
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                                <button className="w-full h-10 flex items-center justify-between px-3 bg-zinc-900/50 rounded-lg border border-white/5 hover:bg-white/5 transition-colors">
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Model</span>
+                                <Button variant="outline" className="w-full shrink-0 justify-between bg-zinc-900/50 border-white/10 hover:bg-zinc-900/80 hover:text-white">
+                                    <div className="flex items-center gap-2 overflow-hidden">
+                                        <span className="truncate">
+                                            {selectedModelObj ? selectedModelObj.name : "Select Model"}
+                                        </span>
                                     </div>
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-xs font-medium text-white">{model.split('/').pop()?.replace(/-/g, ' ')}</span>
-                                        <ChevronRight className="w-3 h-3 text-zinc-600" />
-                                    </div>
-                                </button>
+                                    <ChevronRight className="w-4 h-4 rotate-90 opacity-50" />
+                                </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent className="w-[300px] bg-[#121212] border-white/10 text-white z-[70]">
-                                {(mode === 'image' ? LOCAL_IMAGE_MODELS : LOCAL_VIDEO_MODELS).map(m => (
-                                    <DropdownMenuItem key={m.id} onClick={() => setModel(m.shortId)} className="flex items-center justify-between text-xs py-2">
-                                        <span>{m.name}</span>
-                                        {model === m.shortId && <Check className="w-3 h-3 text-[#D1F349]" />}
+                            <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width] bg-zinc-950 border-zinc-800">
+                                {(mode === 'image' ? imageModels : videoModels).map((m) => (
+                                    <DropdownMenuItem
+                                        key={m.id}
+                                        onClick={() => setModel(m.shortId)}
+                                        className="flex items-center justify-between cursor-pointer focus:bg-zinc-900"
+                                    >
+                                        <span className={cn(m.shortId === model && "text-[#D1F349]")}>{m.name}</span>
+                                        {m.shortId === model && <Check className="w-4 h-4 text-[#D1F349]" />}
                                     </DropdownMenuItem>
                                 ))}
                             </DropdownMenuContent>
                         </DropdownMenu>
 
-                        {/* 4. INPUTS (Combined Row/Grid Style) */}
-                        <div className="space-y-2">
-                            <div className="grid grid-cols-3 gap-2 h-28">
-                                {/* Main Subject Input */}
-                                <div
-                                    onClick={() => onUploadClick("main")}
-                                    className={cn(
-                                        "col-span-1 rounded-xl border border-dashed border-zinc-700 bg-zinc-900/30 hover:bg-zinc-900 hover:border-zinc-500 transition-all cursor-pointer flex flex-col items-center justify-center gap-2 overflow-hidden group relative",
-                                        inputImage && "border-solid border-[#D1F349]/50"
-                                    )}
-                                >
-                                    {inputImage ? (
-                                        <img src={inputImage} className="w-full h-full object-cover" />
-                                    ) : (
-                                        <>
-                                            <Upload className="w-5 h-5 text-[#D1F349]" />
-                                            <span className="text-[10px] font-medium text-zinc-400 text-center leading-tight">Upload<br />Subject</span>
-                                        </>
-                                    )}
-                                </div>
-
-                                {/* Reference Images */}
-                                <div className="col-span-2 grid grid-cols-2 gap-2">
-                                    {/* Add Reference Button */}
-                                    <button
-                                        onClick={() => onUploadClick("ref")}
-                                        className="h-full rounded-xl bg-zinc-900/30 border border-white/5 hover:bg-zinc-800 transition-all flex flex-col items-center justify-center gap-1 group"
+                        {/* 4. INPUTS (Dynamic based on Mode) */}
+                        <div className="flex flex-col gap-2 w-full shrink-0 min-h-[6rem]">
+                            {mode === 'video' ? (
+                                // VIDEO MODE INPUTS
+                                <div className="grid grid-cols-2 gap-2 h-full w-full">
+                                    {/* Start Frame */}
+                                    <div
+                                        onClick={() => onUploadClick("main")}
+                                        className={cn(
+                                            "h-full rounded-xl border border-dashed border-zinc-700 bg-zinc-900/30 hover:bg-zinc-900 hover:border-zinc-500 transition-all cursor-pointer flex flex-col items-center justify-center gap-2 overflow-hidden relative group",
+                                            inputImage && "border-solid border-[#D1F349]/50"
+                                        )}
                                     >
-                                        <div className="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center group-hover:bg-[#D1F349] group-hover:text-black transition-colors">
-                                            <Plus className="w-4 h-4" />
-                                        </div>
-                                        <span className="text-[10px] text-zinc-500">Add Ref</span>
-                                    </button>
+                                        {inputImage ? (
+                                            <>
+                                                <img src={inputImage} className="w-full h-full object-cover" />
+                                                <div className="absolute top-2 left-2 px-2 py-0.5 bg-black/60 backdrop-blur rounded text-[10px] text-white">Start</div>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <ImageIcon className="w-5 h-5 text-zinc-500 group-hover:text-[#D1F349] transition-colors" />
+                                                <span className="text-[10px] font-medium text-zinc-400">Start Frame</span>
+                                            </>
+                                        )}
+                                    </div>
 
-                                    {/* Show first ref or placeholder count */}
-                                    {referenceImages.length > 0 ? (
-                                        <div className="relative h-full rounded-xl overflow-hidden border border-white/5 group">
-                                            <img src={referenceImages[0]} className="w-full h-full object-cover" />
-                                            {referenceImages.length > 1 && (
-                                                <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-                                                    <span className="text-xs font-bold text-white">+{referenceImages.length - 1}</span>
-                                                </div>
-                                            )}
-                                        </div>
-                                    ) : (
-                                        <div className="h-full rounded-xl bg-zinc-900/10 border border-white/5 flex items-center justify-center">
-                                            <span className="text-[10px] text-zinc-700">No refs</span>
-                                        </div>
-                                    )}
+                                    {/* End Frame */}
+                                    <div
+                                        onClick={() => onUploadClick("end")}
+                                        className={cn(
+                                            "h-full rounded-xl border border-dashed border-zinc-700 bg-zinc-900/30 hover:bg-zinc-900 hover:border-zinc-500 transition-all cursor-pointer flex flex-col items-center justify-center gap-2 overflow-hidden relative group",
+                                            endFrameImage && "border-solid border-[#D1F349]/50"
+                                        )}
+                                    >
+                                        {endFrameImage ? (
+                                            <>
+                                                <img src={endFrameImage} className="w-full h-full object-cover" />
+                                                <div className="absolute top-2 left-2 px-2 py-0.5 bg-black/60 backdrop-blur rounded text-[10px] text-white">End</div>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Video className="w-5 h-5 text-zinc-500 group-hover:text-[#D1F349] transition-colors" />
+                                                <span className="text-[10px] font-medium text-zinc-400">End Frame</span>
+                                            </>
+                                        )}
+                                    </div>
                                 </div>
-                            </div>
+                            ) : (
+                                // IMAGE MODE INPUTS
+                                <div className="grid grid-cols-3 gap-2 h-full w-full">
+                                    {/* Main Subject Input */}
+                                    <div
+                                        onClick={() => onUploadClick("main")}
+                                        className={cn(
+                                            "h-full col-span-1 rounded-xl border border-dashed border-zinc-700 bg-zinc-900/30 hover:bg-zinc-900 hover:border-zinc-500 transition-all cursor-pointer flex flex-col items-center justify-center gap-2 overflow-hidden group relative",
+                                            inputImage && "border-solid border-[#D1F349]/50"
+                                        )}
+                                    >
+                                        {inputImage ? (
+                                            <img src={inputImage} className="w-full h-full object-cover" />
+                                        ) : (
+                                            <>
+                                                <Upload className="w-5 h-5 text-[#D1F349]" />
+                                                <span className="text-[10px] font-medium text-zinc-400 text-center leading-tight">Upload<br />Subject</span>
+                                            </>
+                                        )}
+                                    </div>
+
+                                    {/* Reference Images */}
+                                    <div className="col-span-2 grid grid-cols-2 gap-2 h-full">
+                                        {/* Add Reference Button */}
+                                        <button
+                                            onClick={() => onUploadClick("ref")}
+                                            className="h-full rounded-xl bg-zinc-900/30 border border-white/5 hover:bg-zinc-800 transition-all flex flex-col items-center justify-center gap-1 group"
+                                        >
+                                            <div className="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center group-hover:bg-[#D1F349] group-hover:text-black transition-colors">
+                                                <Plus className="w-4 h-4" />
+                                            </div>
+                                            <span className="text-[10px] text-zinc-500">Add Ref</span>
+                                        </button>
+
+                                        {/* Show first ref or placeholder count */}
+                                        {referenceImages.length > 0 ? (
+                                            <div className="relative h-full rounded-xl overflow-hidden border border-white/5 group">
+                                                <img src={referenceImages[0]} className="w-full h-full object-cover" />
+                                                {referenceImages.length > 1 && (
+                                                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                                                        <span className="text-xs font-bold text-white">+{referenceImages.length - 1}</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ) : (
+                                            <div className="h-full rounded-xl bg-zinc-900/10 border border-white/5 flex items-center justify-center">
+                                                <span className="text-[10px] text-zinc-700">No refs</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                         {/* 5. PROMPT AREA (Clean) */}
-                        <div className="relative bg-zinc-900/30 rounded-xl border border-white/5 focus-within:border-[#D1F349]/50 transition-colors">
+                        <div className="relative shrink-0 mt-2 bg-zinc-900/30 rounded-xl border border-white/5 focus-within:border-[#D1F349]/50 transition-colors">
                             <Textarea
-                                placeholder="Describe your image..."
+                                placeholder={mode === 'video' ? "Describe your video..." : "Describe your image..."}
                                 value={prompt}
                                 onChange={(e) => setPrompt(e.target.value)}
-                                className="min-h-[100px] bg-transparent border-none text-xs md:text-sm resize-none p-3 placeholder:text-zinc-600 focus-visible:ring-0"
+                                className="min-h-[160px] bg-transparent border-none text-xs md:text-sm resize-none p-3 placeholder:text-zinc-600 focus-visible:ring-0"
                             />
                             <button className="absolute bottom-2 right-2 p-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white transition-colors">
                                 <Wand2 className="w-3 h-3" />
@@ -308,13 +398,7 @@ export function CreatorStudioSidebar({
                                 </DropdownMenuContent>
                             </DropdownMenu>
 
-                            {/* Unused Slot / Privacy Indicator */}
-                            <div className="h-10 flex items-center justify-center px-3 bg-zinc-900/20 rounded-lg border border-white/5">
-                                <div className="flex items-center gap-2 opacity-50">
-                                    <Coins className="w-3 h-3 text-[#D1F349]" />
-                                    <span className="text-[10px] text-zinc-400">10 Credits</span>
-                                </div>
-                            </div>
+
                         </div>
                     </div>
                 )}
@@ -343,15 +427,18 @@ export function CreatorStudioSidebar({
                         onClick={onGenerate}
                         disabled={isProcessing}
                         className={cn(
-                            "flex-1 h-12 font-bold text-sm hover:brightness-110 transition-all rounded-xl shadow-lg shadow-[#D1F349]/10 text-black",
+                            "flex-1 h-12 font-bold text-sm hover:brightness-110 transition-all rounded-xl shadow-lg shadow-[#D1F349]/10 text-black flex items-center justify-center gap-2",
                             mode === 'image' ? "bg-[#D1F349] hover:bg-[#c2e340]" : "bg-white hover:bg-zinc-200"
                         )}
                     >
                         {isProcessing ? <Loader2 className="animate-spin w-5 h-5" /> : (
-                            <div className="flex flex-col items-center leading-none gap-0.5">
+                            <>
                                 <span>Generate</span>
-                                <span className="text-[8px] opacity-60 font-medium">CREATE MAGIC</span>
-                            </div>
+                                <div className="flex items-center gap-1 bg-black/10 px-2 py-0.5 rounded-full">
+                                    <Coins className="w-3 h-3 opacity-70" />
+                                    <span className="text-xs font-semibold">{(selectedModelObj as any).cost}</span>
+                                </div>
+                            </>
                         )}
                     </Button>
                 </div>
