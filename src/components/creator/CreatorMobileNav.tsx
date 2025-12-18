@@ -79,18 +79,18 @@ export function CreatorMobileNav() {
 
                     {/* 1. Home */}
                     <button
-                        onClick={() => navigate('/creator/dashboard')}
+                        onClick={() => navigate('/creator')}
                         className="flex-1 flex flex-col items-center justify-center gap-1 h-full w-16"
                     >
                         <div className={cn(
                             "p-1.5 rounded-xl transition-all duration-300",
-                            isActive('/creator/dashboard') ? "bg-white/10 text-white" : "text-zinc-500 hover:text-zinc-300"
+                            isActive('/creator') ? "bg-white/10 text-white" : "text-zinc-500 hover:text-zinc-300"
                         )}>
-                            <LayoutDashboard strokeWidth={isActive('/creator/dashboard') ? 2.5 : 2} className="w-6 h-6" />
+                            <LayoutDashboard strokeWidth={isActive('/creator') ? 2.5 : 2} className="w-6 h-6" />
                         </div>
                         <span className={cn(
                             "text-[10px] font-medium transition-colors",
-                            isActive('/creator/dashboard') ? "text-white" : "text-zinc-500"
+                            isActive('/creator') ? "text-white" : "text-zinc-500"
                         )}>
                             Home
                         </span>

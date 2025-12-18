@@ -61,8 +61,9 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { CreatorStudioSidebar, SidebarMode } from "@/components/creator/CreatorStudioSidebar";
 import { TemplateLibrary, MarketplaceTemplate } from "@/components/creator/TemplateLibrary";
+import { CreatorBottomNav } from "@/components/creator/CreatorBottomNav";
 
-type MainView = "create" | "templates" | "booths" | "gallery";
+type MainView = "home" | "create" | "templates" | "booths" | "gallery";
 
 // --- Categories for browsing ---
 const CATEGORIES = ["All", "Fantasy", "Portrait", "Cinematic", "Product", "UGC"];
@@ -162,6 +163,22 @@ const AppRail = ({ activeView, onViewChange, onToggle }: { activeView: MainView,
 
             <div className="flex-1 flex flex-col gap-6 w-full">
                 <button
+                    onClick={() => onViewChange("home")}
+                    className={cn(
+                        "w-full flex flex-col items-center gap-1 py-2 relative group",
+                        (activeView === "home" || activeView === "gallery") ? "text-white" : "text-zinc-500 hover:text-zinc-300"
+                    )}
+                >
+                    <div className={cn(
+                        "p-2.5 rounded-xl transition-all",
+                        (activeView === "home" || activeView === "gallery") ? "bg-white/10" : "group-hover:bg-white/5"
+                    )}>
+                        <LayoutGrid className="w-6 h-6" />
+                    </div>
+                    <span className="text-[10px] font-medium">Home</span>
+                    {(activeView === "home" || activeView === "gallery") && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-white rounded-r-full" />}
+                </button>
+                <button
                     onClick={() => onViewChange("create")}
                     className={cn(
                         "w-full flex flex-col items-center gap-1 py-2 relative group",
@@ -191,7 +208,7 @@ const AppRail = ({ activeView, onViewChange, onToggle }: { activeView: MainView,
                     )}>
                         <LayoutTemplate className="w-6 h-6" />
                     </div>
-                    <span className="text-[10px] font-medium">Templates</span>
+                    <span className="text-[10px] font-medium">Models</span>
                     {activeView === "templates" && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-white rounded-r-full" />}
                 </button>
 
@@ -247,7 +264,7 @@ const TemplatesView = () => (
         <div className="max-w-6xl mx-auto">
             <div className="flex items-center justify-between mb-8">
                 <div>
-                    <h2 className="text-2xl font-bold text-white">My Templates</h2>
+                    <h2 className="text-2xl font-bold text-white">My Models</h2>
                     <p className="text-zinc-400">Manage your trained models and styles</p>
                 </div>
                 <Button className="bg-white text-black hover:bg-zinc-200">
@@ -275,7 +292,14 @@ function CreatorStudioPageContent() {
     const { templates: myTemplates, saveTemplate } = useMyTemplates();
 
     // View State
-    const [activeView, setActiveView] = useState<MainView>("create");
+    const [activeView, setActiveView] = useState<MainView>((location.state as any)?.view || "create");
+
+    // Update view if location state changes (e.g. navigation from bottom nav while on same page?)
+    useEffect(() => {
+        if ((location.state as any)?.view) {
+            setActiveView((location.state as any).view);
+        }
+    }, [location.state]);
     const [searchQuery, setSearchQuery] = useState("");
     const [activeCategory, setActiveCategory] = useState("All");
 
@@ -739,31 +763,33 @@ function CreatorStudioPageContent() {
     if (!user) return null;
 
     return (
-        <div className="h-[calc(100vh-64px)] flex bg-black text-white overflow-hidden font-sans relative">
+        <div className="min-h-dvh md:h-[calc(100vh-64px)] md:overflow-hidden flex flex-col md:flex-row bg-black text-white font-sans relative">
 
-            {/* --- COLUMN 1: APP RAIL --- */}
-            {showRail ? (
-                <AppRail activeView={activeView} onViewChange={setActiveView} onToggle={() => setShowRail(false)} />
-            ) : (
-                <div className="absolute left-2 top-4 z-50">
-                    <button
-                        onClick={() => setShowRail(true)}
-                        className="p-1.5 text-zinc-600 hover:text-white hover:bg-white/5 rounded-md transition-all"
-                        title="Expand Menu"
-                    >
-                        <PanelLeftOpen className="w-5 h-5" />
-                    </button>
-                </div>
-            )}
+            {/* --- COLUMN 1: APP RAIL (Desktop Only) --- */}
+            <div className="hidden md:block">
+                {showRail ? (
+                    <AppRail activeView={activeView} onViewChange={setActiveView} onToggle={() => setShowRail(false)} />
+                ) : (
+                    <div className="absolute left-2 top-4 z-50">
+                        <button
+                            onClick={() => setShowRail(true)}
+                            className="p-1.5 text-zinc-600 hover:text-white hover:bg-white/5 rounded-md transition-all"
+                            title="Expand Menu"
+                        >
+                            <PanelLeftOpen className="w-5 h-5" />
+                        </button>
+                    </div>
+                )}
+            </div>
 
             {/* MAIN CONTENT AREA */}
-            <div className={cn("flex-1 flex min-w-0 transition-all duration-300", !showRail && "pl-10")}>
+            <div className={cn("flex-1 flex flex-col md:flex-row min-w-0 transition-all duration-300 pb-32 md:pb-0", !showRail && "md:pl-10")}>
                 {activeView === "templates" ? (
                     <TemplatesView />
                 ) : activeView === "booths" ? (
-                    <div className="flex-1 bg-black overflow-y-auto w-full"><BoothDashboard /></div>
-                ) : activeView === "gallery" ? (
-                    <div className="flex-1 bg-black p-8 overflow-y-auto">
+                    <div className="flex-1 bg-black md:overflow-y-auto overflow-visible w-full"><BoothDashboard /></div>
+                ) : (activeView === "gallery" || activeView === "home") ? (
+                    <div className="flex-1 bg-black p-8 md:overflow-y-auto overflow-visible">
                         <div className="max-w-7xl mx-auto">
                             <h2 className="text-2xl font-bold text-white mb-6">Gallery</h2>
                             <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4">
@@ -782,50 +808,39 @@ function CreatorStudioPageContent() {
                     /* --- CREATE VIEW (Existing Layout) --- */
                     <>
                         {/* COLUMN 2: CONTROL PANEL (Refactored) */}
-                        <CreatorStudioSidebar
-                            mode={mode}
-                            setMode={setMode}
-                            prompt={prompt}
-                            setPrompt={setPrompt}
-                            model={model}
-                            setModel={setModel}
-                            aspectRatio={aspectRatio}
-                            setAspectRatio={setAspectRatio}
-                            duration={duration}
-                            setDuration={setDuration}
-                            isProcessing={isProcessing}
-                            onGenerate={handleGenerate}
-                            inputImage={inputImage}
-                            endFrameImage={endFrameImage}
-                            onUploadClick={triggerFileUpload}
-                            selectedTemplate={selectedTemplate}
-                            onSelectTemplate={applyTemplate}
-                            onToggleTemplateLibrary={() => setShowTemplateLibrary(prev => !prev)}
-                            referenceImages={referenceImages}
-                            onRemoveReferenceImage={(idx) => setReferenceImages(prev => prev.filter((_, i) => i !== idx))}
-                            isPublic={isPublic}
-                            setIsPublic={setIsPublic}
-                            isFreeTier={isFreeTier}
-                        />
+                        <div className="flex-shrink-0 w-full md:w-auto">
+                            <CreatorStudioSidebar
+                                mode={mode}
+                                setMode={setMode}
+                                prompt={prompt}
+                                setPrompt={setPrompt}
+                                model={model}
+                                setModel={setModel}
+                                aspectRatio={aspectRatio}
+                                setAspectRatio={setAspectRatio}
+                                duration={duration}
+                                setDuration={setDuration}
+                                isProcessing={isProcessing}
+                                onGenerate={handleGenerate}
+                                inputImage={inputImage}
+                                endFrameImage={endFrameImage}
+                                onUploadClick={triggerFileUpload}
+                                selectedTemplate={selectedTemplate}
+                                onSelectTemplate={applyTemplate} // Kept original prop as it's used
+                                onToggleTemplateLibrary={() => setShowTemplateLibrary(true)}
+                                referenceImages={referenceImages}
+                                onRemoveReferenceImage={(idx) => setReferenceImages(prev => prev.filter((_, i) => i !== idx))}
+                                isPublic={isPublic}
+                                setIsPublic={setIsPublic}
+                                isFreeTier={isFreeTier}
+                                onCloseMobile={() => setActiveView("home")}
+                            />
+                        </div>
 
-                        {/* COLUMN 3: CANVAS / TIMELINE or TEMPLATE LIBRARY */}
-                        <div className="flex-1 bg-black flex flex-col relative w-full overflow-hidden">
+                        {/* COLUMN 3: CANVAS / TIMELINE */}
+                        <div className="hidden md:flex flex-1 bg-black flex-col relative w-full overflow-hidden">
 
-                            {/* TEMPLATE LIBRARY OVERLAY (Sliding Card) */}
-                            <div
-                                className={cn(
-                                    "absolute inset-4 z-20 bg-[#121212] rounded-2xl border border-white/10 shadow-2xl transition-all duration-500 ease-in-out flex flex-col overflow-hidden",
-                                    showTemplateLibrary ? "translate-y-0 opacity-100" : "translate-y-[105%] opacity-0 pointer-events-none"
-                                )}
-                            >
-                                <TemplateLibrary
-                                    onSelect={applyTemplate}
-                                    onClose={() => setShowTemplateLibrary(false)}
-                                    marketplaceTemplates={marketplaceTemplates}
-                                    myLibraryTemplates={myLibraryTemplates}
-                                    selectedTemplateId={selectedTemplate?.id}
-                                />
-                            </div>
+                            {/* Desktop/Tablet Template Library is handled as global overlay now */}
 
                             {/* Canvas Header */}
                             <div className="h-14 border-b border-white/5 flex items-center justify-between px-6 bg-black z-10 sticky top-0">
@@ -882,7 +897,32 @@ function CreatorStudioPageContent() {
             </div >
 
             {/* Hidden Input */}
-            < input type="file" ref={fileInputRef} className="hidden" onChange={handleFileUpload} accept="image/*" />
+            <input type="file" ref={fileInputRef} className="hidden" onChange={handleFileUpload} accept="image/*" />
+
+            {/* --- OVERLAYS & MOBILE NAV --- */}
+
+            {/* Template Library Overlay (Full Screen) */}
+            {showTemplateLibrary && (
+                <div className="fixed inset-0 z-[60] bg-[#121212] flex flex-col animate-in slide-in-from-bottom-5 duration-300">
+                    <TemplateLibrary
+                        onClose={() => setShowTemplateLibrary(false)}
+                        onSelect={applyTemplate}
+                        marketplaceTemplates={marketplaceTemplates}
+                        myLibraryTemplates={myLibraryTemplates}
+                        selectedTemplateId={selectedTemplate?.id}
+                    />
+                </div>
+            )}
+
+            {/* Mobile Create Mode Header */}
+            {/* Mobile Bottom Navigation (Hidden in Create Mode) */}
+            {activeView !== "create" && (
+                <CreatorBottomNav
+                    onOpenCreate={() => setActiveView("create")}
+                    onLibraryClick={() => setActiveView("gallery")}
+                    activeTab={activeView}
+                />
+            )}
 
             {/* Lightbox Modal */}
             < Dialog open={!!previewItem} onOpenChange={(o) => !o && setPreviewItem(null)}>

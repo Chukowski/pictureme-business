@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { CreatorNavbar } from "@/components/creator/CreatorNavbar";
-import { CreatorMobileNav } from "@/components/creator/CreatorMobileNav";
+import { CreatorBottomNav } from "@/components/creator/CreatorBottomNav";
 import { getCurrentUser, getTokenStats, User } from "@/services/eventsApi";
 import { cn } from "@/lib/utils";
 
@@ -49,7 +49,7 @@ export function CreatorLayout() {
 
       {/* Mobile Floating Navigation - Hidden on desktop */}
       <div className="md:hidden">
-        <CreatorMobileNav />
+        {!location.pathname.includes('/studio') && <CreatorBottomNav />}
       </div>
 
       {/* Main Content */}

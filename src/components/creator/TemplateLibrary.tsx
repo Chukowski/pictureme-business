@@ -84,8 +84,21 @@ export function TemplateLibrary({
         return matchesSearch && matchesCategory && matchesModel;
     });
 
+    const [selectedId, setSelectedId] = useState<string | undefined>(selectedTemplateId);
+
+    const handleCardClick = (t: MarketplaceTemplate) => {
+        setSelectedId(t.id);
+    };
+
+    const handleConfirm = () => {
+        const t = templates.find(t => t.id === selectedId);
+        if (t) {
+            onSelect(t);
+        }
+    };
+
     return (
-        <div className="flex flex-col h-full bg-[#121212] text-white">
+        <div className="flex flex-col h-full bg-[#121212] text-white relative z-50">
             {/* --- HEADER SECTION --- */}
             <div className="flex-shrink-0 border-b border-white/5 bg-[#121212] p-4 space-y-4">
 
@@ -114,7 +127,7 @@ export function TemplateLibrary({
 
                     {/* Search & Close */}
                     <div className="flex items-center gap-2">
-                        <div className="relative w-64">
+                        <div className="relative w-full md:w-64 hidden md:block">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
                             <Input
                                 placeholder="Search"
@@ -132,7 +145,7 @@ export function TemplateLibrary({
                 </div>
 
                 {/* 2. Secondary Bar: Categories & Tab Switcher */}
-                <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center justify-between gap-4 overflow-hidden">
                     {/* Categories (Pills) */}
                     <div className="flex-1 overflow-x-auto no-scrollbar">
                         <div className="flex items-center gap-2">
@@ -154,7 +167,7 @@ export function TemplateLibrary({
                     </div>
 
                     {/* Library/Marketplace Toggle */}
-                    <div className="flex bg-zinc-900 rounded-lg p-0.5 border border-white/5 shrink-0">
+                    <div className="flex bg-zinc-900 rounded-lg p-0.5 border border-white/5 shrink-0 hidden md:flex">
                         <button
                             onClick={() => setActiveTab("marketplace")}
                             className={cn(
@@ -178,15 +191,15 @@ export function TemplateLibrary({
             </div>
 
             {/* --- CONTENT GRID --- */}
-            <ScrollArea className="flex-1 p-6">
+            <ScrollArea className="flex-1 p-4 md:p-6 pb-24 md:pb-6">
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                     {filteredTemplates.map((t) => (
                         <div
                             key={t.id}
-                            onClick={() => onSelect(t)}
+                            onClick={() => handleCardClick(t)}
                             className={cn(
                                 "group relative aspect-[3/4] rounded-xl overflow-hidden cursor-pointer bg-zinc-900 border transition-all",
-                                selectedTemplateId === t.id ? "border-[#D1F349] ring-1 ring-[#D1F349]" : "border-transparent ring-0 hover:ring-2 hover:ring-white/20"
+                                selectedId === t.id ? "border-[#D1F349] ring-2 ring-[#D1F349]" : "border-transparent ring-0 hover:ring-2 hover:ring-white/20"
                             )}
                         >
                             {/* Image */}
@@ -208,8 +221,10 @@ export function TemplateLibrary({
                             </div>
 
                             {/* Selection Indicator */}
-                            {selectedTemplateId === t.id && (
-                                <div className="absolute top-3 right-3 w-3 h-3 rounded-full bg-[#D1F349] shadow-[0_0_8px_rgba(209,243,73,0.8)]" />
+                            {selectedId === t.id && (
+                                <div className="absolute top-3 right-3 w-4 h-4 rounded-full bg-[#D1F349] shadow-[0_0_8px_rgba(209,243,73,0.8)] flex items-center justify-center">
+                                    <div className="w-2 h-2 rounded-full bg-black" />
+                                </div>
                             )}
                         </div>
                     ))}
@@ -218,11 +233,24 @@ export function TemplateLibrary({
                         <div className="col-span-full h-64 flex flex-col items-center justify-center text-zinc-500">
                             <Search className="w-8 h-8 opacity-20 mb-2" />
                             <p>No templates found</p>
-                            {/* Debug info if dev environment (optional, removed for prod) */}
                         </div>
                     )}
                 </div>
             </ScrollArea>
+
+            {/* Sticky Footer for Mobile Next Action */}
+            <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black to-transparent z-50 pointer-events-none flex justify-center pb-8 md:pb-4">
+                <Button
+                    onClick={handleConfirm}
+                    disabled={!selectedId}
+                    className={cn(
+                        "pointer-events-auto rounded-full px-8 py-6 font-bold text-base shadow-2xl transition-all duration-300 transform",
+                        selectedId ? "translate-y-0 opacity-100 bg-[#D1F349] text-black hover:bg-[#c2e440]" : "translate-y-20 opacity-0"
+                    )}
+                >
+                    Next <Sparkles className="w-4 h-4 ml-2" />
+                </Button>
+            </div>
         </div>
     );
 }
