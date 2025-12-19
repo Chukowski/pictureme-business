@@ -802,6 +802,12 @@ function CreatorStudioPageContent() {
 
     if (!user) return null;
 
+    const handleRemoveInputImage = () => setInputImage(null);
+    const handleRemoveEndFrameImage = () => setEndFrameImage(null);
+    const handleRemoveReferenceImage = (index: number) => {
+        setReferenceImages(prev => prev.filter((_, i) => i !== index));
+    };
+
     return (
         <div className="min-h-dvh md:h-[calc(100vh-64px)] md:overflow-hidden flex flex-col md:flex-row bg-black text-white font-sans relative">
 
@@ -848,7 +854,7 @@ function CreatorStudioPageContent() {
                     /* --- CREATE VIEW (Existing Layout) --- */
                     <>
                         {/* COLUMN 2: CONTROL PANEL (Refactored) */}
-                        <div className="flex-shrink-0 w-full md:w-auto">
+                        <div className="hidden md:block flex-shrink-0 w-full md:w-auto">
                             <CreatorStudioSidebar
                                 mode={mode}
                                 setMode={setMode}
@@ -865,11 +871,13 @@ function CreatorStudioPageContent() {
                                 inputImage={inputImage}
                                 endFrameImage={endFrameImage}
                                 onUploadClick={triggerFileUpload}
+                                onRemoveInputImage={handleRemoveInputImage}
+                                onRemoveEndFrameImage={handleRemoveEndFrameImage}
                                 selectedTemplate={selectedTemplate}
-                                onSelectTemplate={applyTemplate} // Kept original prop as it's used
+                                onSelectTemplate={applyTemplate}
                                 onToggleTemplateLibrary={() => setShowTemplateLibrary(true)}
                                 referenceImages={referenceImages}
-                                onRemoveReferenceImage={(idx) => setReferenceImages(prev => prev.filter((_, i) => i !== idx))}
+                                onRemoveReferenceImage={handleRemoveReferenceImage}
                                 isPublic={isPublic}
                                 setIsPublic={setIsPublic}
                                 isFreeTier={isFreeTier}
@@ -943,27 +951,31 @@ function CreatorStudioPageContent() {
             {/* --- OVERLAYS & MOBILE NAV --- */}
 
             {/* Template Library Overlay (Full Screen) */}
-            {showTemplateLibrary && (
-                <div className="fixed inset-0 z-[60] bg-[#121212] flex flex-col animate-in slide-in-from-bottom-5 duration-300">
-                    <TemplateLibrary
-                        onClose={() => setShowTemplateLibrary(false)}
-                        onSelect={applyTemplate}
-                        marketplaceTemplates={marketplaceTemplates}
-                        myLibraryTemplates={myLibraryTemplates}
-                        selectedTemplateId={selectedTemplate?.id}
-                    />
-                </div>
-            )}
+            {
+                showTemplateLibrary && (
+                    <div className="fixed inset-0 z-[60] bg-[#121212] flex flex-col animate-in slide-in-from-bottom-5 duration-300">
+                        <TemplateLibrary
+                            onClose={() => setShowTemplateLibrary(false)}
+                            onSelect={applyTemplate}
+                            marketplaceTemplates={marketplaceTemplates}
+                            myLibraryTemplates={myLibraryTemplates}
+                            selectedTemplateId={selectedTemplate?.id}
+                        />
+                    </div>
+                )
+            }
 
             {/* Mobile Create Mode Header */}
             {/* Mobile Bottom Navigation (Hidden in Create Mode) */}
-            {activeView !== "create" && (
-                <CreatorBottomNav
-                    onOpenCreate={() => setActiveView("create")}
-                    onLibraryClick={() => setActiveView("gallery")}
-                    activeTab={activeView}
-                />
-            )}
+            {
+                activeView !== "create" && (
+                    <CreatorBottomNav
+                        onOpenCreate={() => setActiveView("create")}
+                        onLibraryClick={() => setActiveView("gallery")}
+                        activeTab={activeView}
+                    />
+                )
+            }
 
             {/* Lightbox Modal */}
             < Dialog open={!!previewItem} onOpenChange={(o) => !o && setPreviewItem(null)}>

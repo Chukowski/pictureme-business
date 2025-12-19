@@ -66,6 +66,8 @@ interface CreatorStudioSidebarProps {
     inputImage: string | null;
     endFrameImage?: string | null;
     onUploadClick: (type: "main" | "end" | "ref") => void;
+    onRemoveInputImage?: () => void;
+    onRemoveEndFrameImage?: () => void;
     selectedTemplate: MarketplaceTemplate | null;
     onSelectTemplate: (t: MarketplaceTemplate) => void;
     onToggleTemplateLibrary: () => void;
@@ -75,6 +77,7 @@ interface CreatorStudioSidebarProps {
     setIsPublic: (val: boolean) => void;
     isFreeTier: boolean;
     onCloseMobile?: () => void;
+    availableModels?: any[];
 }
 
 export function CreatorStudioSidebar({
@@ -88,6 +91,8 @@ export function CreatorStudioSidebar({
     inputImage,
     endFrameImage,
     onUploadClick,
+    onRemoveInputImage,
+    onRemoveEndFrameImage,
     selectedTemplate,
     onSelectTemplate,
     onToggleTemplateLibrary,
@@ -98,7 +103,7 @@ export function CreatorStudioSidebar({
     isFreeTier,
     onCloseMobile,
     availableModels = [] // New prop for dynamic models from backend
-}: CreatorStudioSidebarProps & { availableModels?: any[] }) {
+}: CreatorStudioSidebarProps) {
 
     // Merge Local Models with Backend Costs
     const imageModels = useMemo(() => {
@@ -279,6 +284,12 @@ export function CreatorStudioSidebar({
                                             <>
                                                 <img src={inputImage} className="w-full h-full object-cover" />
                                                 <div className="absolute top-2 left-2 px-2 py-0.5 bg-black/60 backdrop-blur rounded text-[10px] text-white">Start</div>
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); onRemoveInputImage?.(); }}
+                                                    className="absolute top-1 right-1 p-1 bg-black/50 hover:bg-black/80 rounded-full text-white transition-colors"
+                                                >
+                                                    <X className="w-3 h-3" />
+                                                </button>
                                             </>
                                         ) : (
                                             <>
@@ -300,6 +311,12 @@ export function CreatorStudioSidebar({
                                             <>
                                                 <img src={endFrameImage} className="w-full h-full object-cover" />
                                                 <div className="absolute top-2 left-2 px-2 py-0.5 bg-black/60 backdrop-blur rounded text-[10px] text-white">End</div>
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); onRemoveEndFrameImage?.(); }}
+                                                    className="absolute top-1 right-1 p-1 bg-black/50 hover:bg-black/80 rounded-full text-white transition-colors"
+                                                >
+                                                    <X className="w-3 h-3" />
+                                                </button>
                                             </>
                                         ) : (
                                             <>
@@ -321,7 +338,15 @@ export function CreatorStudioSidebar({
                                         )}
                                     >
                                         {inputImage ? (
-                                            <img src={inputImage} className="w-full h-full object-cover" />
+                                            <>
+                                                <img src={inputImage} className="w-full h-full object-cover" />
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); onRemoveInputImage?.(); }}
+                                                    className="absolute top-2 right-2 p-1 bg-black/50 hover:bg-black/80 rounded-full text-white transition-colors"
+                                                >
+                                                    <X className="w-3 h-3" />
+                                                </button>
+                                            </>
                                         ) : (
                                             <>
                                                 <Upload className="w-5 h-5 text-[#D1F349]" />
@@ -352,6 +377,12 @@ export function CreatorStudioSidebar({
                                                         <span className="text-xs font-bold text-white">+{referenceImages.length - 1}</span>
                                                     </div>
                                                 )}
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); onRemoveReferenceImage(0); }}
+                                                    className="absolute top-1 right-1 p-1.5 bg-black/50 hover:bg-black/80 rounded-full text-white transition-colors opacity-0 group-hover:opacity-100"
+                                                >
+                                                    <X className="w-3 h-3" />
+                                                </button>
                                             </div>
                                         ) : (
                                             <div className="aspect-square w-full rounded-xl bg-zinc-900/10 border border-white/5 flex items-center justify-center">
