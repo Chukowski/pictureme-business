@@ -329,11 +329,11 @@ export function CreatorStudioSidebar({
                             ) : (
                                 // IMAGE MODE INPUTS
                                 <div className="grid grid-cols-3 gap-2 w-full">
-                                    {/* Main Subject Input */}
+                                    {/* 1. Main Subject Input (Always first) */}
                                     <div
                                         onClick={() => onUploadClick("main")}
                                         className={cn(
-                                            "aspect-square w-full col-span-1 rounded-xl border border-dashed border-zinc-700 bg-zinc-900/30 hover:bg-zinc-900 hover:border-zinc-500 transition-all cursor-pointer flex flex-col items-center justify-center gap-2 overflow-hidden group relative",
+                                            "aspect-square w-full rounded-xl border border-dashed border-zinc-700 bg-zinc-900/30 hover:bg-zinc-900 hover:border-zinc-500 transition-all cursor-pointer flex flex-col items-center justify-center gap-2 overflow-hidden group relative",
                                             inputImage && "border-solid border-[#D1F349]/50"
                                         )}
                                     >
@@ -342,10 +342,11 @@ export function CreatorStudioSidebar({
                                                 <img src={inputImage} className="w-full h-full object-cover" />
                                                 <button
                                                     onClick={(e) => { e.stopPropagation(); onRemoveInputImage?.(); }}
-                                                    className="absolute top-2 right-2 p-1 bg-black/50 hover:bg-black/80 rounded-full text-white transition-colors"
+                                                    className="absolute top-1 right-1 p-1 bg-black/50 hover:bg-black/80 rounded-full text-white transition-colors"
                                                 >
                                                     <X className="w-3 h-3" />
                                                 </button>
+                                                <div className="absolute active-badge top-2 left-2 px-2 py-0.5 bg-black/60 backdrop-blur rounded text-[10px] text-white hidden">Subject</div>
                                             </>
                                         ) : (
                                             <>
@@ -355,9 +356,21 @@ export function CreatorStudioSidebar({
                                         )}
                                     </div>
 
-                                    {/* Reference Images */}
-                                    <div className="col-span-2 grid grid-cols-2 gap-2 w-full">
-                                        {/* Add Reference Button */}
+                                    {/* 2. Reference Images (Mapped) */}
+                                    {referenceImages.map((refImg, index) => (
+                                        <div key={index} className="aspect-square w-full rounded-xl overflow-hidden border border-white/5 relative group bg-zinc-900/30">
+                                            <img src={refImg} className="w-full h-full object-cover" />
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); onRemoveReferenceImage(index); }}
+                                                className="absolute top-1 right-1 p-1 bg-black/50 hover:bg-black/80 rounded-full text-white transition-colors opacity-0 group-hover:opacity-100"
+                                            >
+                                                <X className="w-3 h-3" />
+                                            </button>
+                                        </div>
+                                    ))}
+
+                                    {/* 3. Add Reference Button (Only if < 3 refs) */}
+                                    {referenceImages.length < 3 && (
                                         <button
                                             onClick={() => onUploadClick("ref")}
                                             className="aspect-square w-full rounded-xl bg-zinc-900/30 border border-white/5 hover:bg-zinc-800 transition-all flex flex-col items-center justify-center gap-1 group"
@@ -367,29 +380,7 @@ export function CreatorStudioSidebar({
                                             </div>
                                             <span className="text-[10px] text-zinc-500">Add Ref</span>
                                         </button>
-
-                                        {/* Show first ref or placeholder count */}
-                                        {referenceImages.length > 0 ? (
-                                            <div className="relative aspect-square w-full rounded-xl overflow-hidden border border-white/5 group">
-                                                <img src={referenceImages[0]} className="w-full h-full object-cover" />
-                                                {referenceImages.length > 1 && (
-                                                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-                                                        <span className="text-xs font-bold text-white">+{referenceImages.length - 1}</span>
-                                                    </div>
-                                                )}
-                                                <button
-                                                    onClick={(e) => { e.stopPropagation(); onRemoveReferenceImage(0); }}
-                                                    className="absolute top-1 right-1 p-1.5 bg-black/50 hover:bg-black/80 rounded-full text-white transition-colors opacity-0 group-hover:opacity-100"
-                                                >
-                                                    <X className="w-3 h-3" />
-                                                </button>
-                                            </div>
-                                        ) : (
-                                            <div className="aspect-square w-full rounded-xl bg-zinc-900/10 border border-white/5 flex items-center justify-center">
-                                                <span className="text-[10px] text-zinc-700">No refs</span>
-                                            </div>
-                                        )}
-                                    </div>
+                                    )}
                                 </div>
                             )}
                         </div>
