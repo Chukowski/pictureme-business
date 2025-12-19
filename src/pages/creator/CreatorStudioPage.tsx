@@ -853,8 +853,8 @@ function CreatorStudioPageContent() {
                 ) : (
                     /* --- CREATE VIEW (Existing Layout) --- */
                     <>
-                        {/* COLUMN 2: CONTROL PANEL (Refactored) */}
-                        <div className="hidden md:block flex-shrink-0 w-full md:w-auto">
+                        {/* COLUMN 2: CONTROL PANEL (Refactored) - Now visible on all screen sizes */}
+                        <div className="flex-shrink-0 w-full md:w-auto">
                             <CreatorStudioSidebar
                                 mode={mode}
                                 setMode={setMode}
