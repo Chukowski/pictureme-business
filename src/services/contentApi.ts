@@ -42,6 +42,10 @@ export interface PublicCreation {
   template_id?: string;
   template_name?: string;
   creator_username?: string;
+  creator_avatar?: string;
+  creator_slug?: string;
+  creator_user_id?: string | number;
+  prompt?: string;
   image_url: string;
   thumbnail_url?: string;
   likes: number;

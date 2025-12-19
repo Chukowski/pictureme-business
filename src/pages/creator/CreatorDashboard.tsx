@@ -17,6 +17,7 @@ import { PublicFeedBlock } from "@/components/creator/PublicFeedBlock";
 import { Badge } from "@/components/ui/badge";
 import { ENV } from "@/config/env";
 import { toast } from "sonner";
+import { CreationDetailView, GalleryItem } from "@/components/creator/CreationDetailView";
 
 
 // ... existing types ...
@@ -140,7 +141,14 @@ function MarketplaceFeedCard({ creation, onImageClick, onRemixClick }: { creatio
 // =======================
 // MARKETPLACE FEED (Remix Engine)
 // =======================
-function CreatorsGallerySection({ creations, navigate }: { creations: any[]; navigate: (path: string, options?: any) => void }) {
+// =======================
+// MARKETPLACE FEED (Remix Engine)
+// =======================
+function CreatorsGallerySection({ creations, onImageClick, onRemixClick }: {
+  creations: any[];
+  onImageClick: (creation: any, index: number) => void;
+  onRemixClick: (creation: any) => void;
+}) {
   if (!creations || creations.length === 0) {
     return (
       <div className="text-center py-12 bg-zinc-900/30 rounded-xl border border-white/5 border-dashed">
@@ -148,31 +156,6 @@ function CreatorsGallerySection({ creations, navigate }: { creations: any[]; nav
       </div>
     );
   }
-
-  const handleImageClick = (creation: any, e: React.MouseEvent) => {
-    e.stopPropagation();
-    // Navigate to the creator's public profile
-    // Use slug > username > user_id as fallback chain
-    const creatorIdentifier = creation.creator_slug || creation.creator_username || creation.creator_user_id;
-    if (creatorIdentifier) {
-      navigate(`/profile/${creatorIdentifier}`);
-    } else {
-      toast.error("Creator profile not available");
-    }
-  };
-
-  const handleRemixClick = (creation: any, e: React.MouseEvent) => {
-    e.stopPropagation();
-    // Navigate to creator studio with prompt and template pre-filled
-    const remixState = {
-      prompt: creation.prompt || '',
-      templateId: creation.template_id || null,
-      templateUrl: creation.template_url || null,
-      sourceImageUrl: creation.image_url || creation.url || null,
-      remixFrom: creation.id,
-    };
-    navigate('/creator/create', { state: remixState });
-  };
 
   return (
     <div className="space-y-4">
@@ -182,8 +165,14 @@ function CreatorsGallerySection({ creations, navigate }: { creations: any[]; nav
           <MarketplaceFeedCard
             key={creation.id || index}
             creation={creation}
-            onImageClick={(e) => handleImageClick(creation, e)}
-            onRemixClick={(e) => handleRemixClick(creation, e)}
+            onImageClick={(e) => {
+              e.stopPropagation();
+              onImageClick(creation, index);
+            }}
+            onRemixClick={(e) => {
+              e.stopPropagation();
+              onRemixClick(creation);
+            }}
           />
         ))}
       </div>
@@ -263,6 +252,10 @@ export default function CreatorDashboard() {
   const [pendingJobs, setPendingJobs] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Community Feed Preview State
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewIndex, setPreviewIndex] = useState(0);
+
   useEffect(() => {
     loadData();
   }, []);
@@ -331,71 +324,123 @@ export default function CreatorDashboard() {
   const hasCreations = creations.length > 0;
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500 p-4 md:p-8 pb-32">
+    <>
+      <div className="space-y-8 animate-in fade-in duration-500 p-4 md:p-8 pb-32">
 
-      {/* ========================= */}
-      {/* HERO SECTION (Spotlight Carousel) */}
-      {/* ========================= */}
-      <HeroSection
-        user={user}
-        homeState={homeState}
-        creations={creations.slice(0, 4)}
-        navigate={navigate}
-        pendingJobs={pendingJobs}
-      />
-
-      {/* ========================= */}
-      {/* SECTION B: BENTO DASHBOARD GRID */}
-      {/* ========================= */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-
-        {/* Left Column: Featured Style (1 Col) */}
-        <div className="lg:col-span-1 h-full">
-          <FeaturedStyleCard navigate={navigate} template={featuredTemplate} />
-        </div>
-
-        {/* Middle Column: Recent Creations & Marketplace (2 Cols) */}
-        <div className="lg:col-span-2 flex flex-col gap-6">
-          <RecentCreationsBento
-            creations={recentCreations}
-            hasCreations={hasCreations}
-            navigate={navigate}
-          />
-
-          <div className="bg-[#1A1A1A] rounded-2xl border border-white/5 p-5">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="text-lg font-semibold text-white tracking-wide">Explore Templates</h3>
-              <Button variant="link" className="text-indigo-400 text-xs p-0 h-auto" onClick={() => navigate('/creator/templates')}>View All</Button>
-            </div>
-            <RecommendedTemplates templates={marketplaceTemplates} />
-          </div>
-        </div>
-
-        {/* Right Column: Trending & Challenges (1 Col) */}
-        <div className="lg:col-span-1 flex flex-col gap-6">
-          <TrendingTagsCard navigate={navigate} />
-          <CommunityChallengeCard navigate={navigate} />
-        </div>
-
-      </div>
-
-      {/* ========================= */}
-      {/* PENDING GENERATIONS */}
-      {/* ========================= */}
-      {/* Removed standalone PendingGenerationsSection as it's now in Hero Bar */}
-
-      {/* ========================= */}
-      {/* THE MARKETPLACE FEED */}
-      {/* ========================= */}
-      <div className="mt-10">
-        <h2 className="text-xl font-bold text-white mb-6 tracking-tight">Feed</h2>
-        <CreatorsGallerySection
-          creations={content?.public_creations || []}
+        {/* ========================= */}
+        {/* HERO SECTION (Spotlight Carousel) */}
+        {/* ========================= */}
+        <HeroSection
+          user={user}
+          homeState={homeState}
+          creations={creations.slice(0, 4)}
           navigate={navigate}
+          pendingJobs={pendingJobs}
         />
+
+        {/* ========================= */}
+        {/* SECTION B: BENTO DASHBOARD GRID */}
+        {/* ========================= */}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+
+          {/* Left Column: Featured Style (1 Col) */}
+          <div className="lg:col-span-1 h-full">
+            <FeaturedStyleCard navigate={navigate} template={featuredTemplate} />
+          </div>
+
+          {/* Middle Column: Recent Creations & Marketplace (2 Cols) */}
+          <div className="lg:col-span-2 flex flex-col gap-6">
+            <RecentCreationsBento
+              creations={recentCreations}
+              hasCreations={hasCreations}
+              navigate={navigate}
+            />
+
+            <div className="bg-[#1A1A1A] rounded-2xl border border-white/5 p-5">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-lg font-semibold text-white tracking-wide">Explore Templates</h3>
+                <Button variant="link" className="text-indigo-400 text-xs p-0 h-auto" onClick={() => navigate('/creator/templates')}>View All</Button>
+              </div>
+              <RecommendedTemplates templates={marketplaceTemplates} />
+            </div>
+          </div>
+
+          {/* Right Column: Trending & Challenges (1 Col) */}
+          <div className="lg:col-span-1 flex flex-col gap-6">
+            <TrendingTagsCard navigate={navigate} />
+            <CommunityChallengeCard navigate={navigate} />
+          </div>
+
+        </div>
+
+        {/* ========================= */}
+        {/* PENDING GENERATIONS */}
+        {/* ========================= */}
+        {/* Removed standalone PendingGenerationsSection as it's now in Hero Bar */}
+
+        {/* ========================= */}
+        {/* THE MARKETPLACE FEED */}
+        {/* ========================= */}
+        <div className="mt-10">
+          <h2 className="text-xl font-bold text-white mb-6 tracking-tight">Feed</h2>
+          <CreatorsGallerySection
+            creations={content?.public_creations || []}
+            onImageClick={(creation, index) => {
+              setPreviewIndex(index);
+              setPreviewOpen(true);
+            }}
+            onRemixClick={(creation) => {
+              const remixState = {
+                prompt: creation.prompt || '',
+                templateId: creation.template_id || null,
+                templateUrl: creation.template_url || null,
+                sourceImageUrl: creation.image_url || null,
+                remixFrom: creation.id,
+              };
+              navigate('/creator/create', { state: remixState });
+            }}
+          />
+        </div>
+
       </div>
 
-    </div>
+      {/* Immersive Community Preview */}
+      <CreationDetailView
+        open={previewOpen}
+        onClose={() => setPreviewOpen(false)}
+        items={(content?.public_creations || []).map(c => ({
+          ...c,
+          url: c.image_url,
+          previewUrl: c.thumbnail_url || c.image_url,
+          type: c.type || 'image',
+          prompt: c.prompt,
+          model: c.model,
+          isOwner: false
+        })) as GalleryItem[]}
+        initialIndex={previewIndex}
+        onDownload={(item) => {
+          const link = document.createElement("a");
+          link.href = item.url;
+          link.download = `community-${item.id}.${item.type === 'video' ? 'mp4' : 'png'}`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        }}
+        onReusePrompt={(item) => {
+          setPreviewOpen(false);
+          navigate('/creator/studio', {
+            state: {
+              prompt: item.prompt || '',
+              templateId: item.template?.id || null,
+              sourceImageUrl: item.url,
+              view: 'create'
+            }
+          });
+        }}
+        onDelete={undefined}
+        onTogglePublic={undefined}
+      />
+    </>
   );
 }
 

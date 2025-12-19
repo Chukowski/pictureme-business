@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
     X, Copy, RefreshCw, Save, Download,
     ChevronDown, Trash2, Maximize2, Wand2,
-    Globe, Lock, Info, ChevronUp, Loader2
+    Globe, Lock, Info, ChevronUp, Loader2,
+    User, Cpu
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -21,13 +22,14 @@ import {
     TooltipContent,
 } from "@/components/ui/tooltip";
 import { motion, AnimatePresence } from "framer-motion";
+import { useNavigate } from 'react-router-dom';
 
-export interface HistoryItem {
-    id: string;
+export interface GalleryItem {
+    id: string | number;
     url: string;
     previewUrl?: string;
     type: 'image' | 'video';
-    timestamp: number;
+    timestamp?: number;
     prompt?: string;
     model?: string;
     ratio?: string;
@@ -41,18 +43,24 @@ export interface HistoryItem {
         name: string;
         image: string;
     };
+    // Creator Info (for public feed)
+    creator_username?: string;
+    creator_avatar?: string;
+    creator_slug?: string;
+    creator_user_id?: string | number;
+    isOwner?: boolean;
 }
 
 interface CreationDetailViewProps {
-    items: HistoryItem[];
+    items: GalleryItem[];
     initialIndex: number;
     open: boolean;
     onClose: () => void;
-    onTogglePublic: (item: HistoryItem) => void;
-    onReusePrompt: (item: HistoryItem) => void;
-    onUseAsTemplate: (item: HistoryItem) => void;
-    onDownload: (item: HistoryItem) => void;
-    onDelete: (id: string) => void;
+    onTogglePublic?: (item: GalleryItem) => void;
+    onReusePrompt: (item: GalleryItem) => void;
+    onUseAsTemplate?: (item: GalleryItem) => void;
+    onDownload: (item: GalleryItem) => void;
+    onDelete?: (id: string | number) => void;
 }
 
 const slideVariants = {
@@ -83,6 +91,7 @@ export function CreationDetailView({
     onDownload,
     onDelete
 }: CreationDetailViewProps) {
+    const navigate = useNavigate();
     const [currentIndex, setCurrentIndex] = useState(initialIndex);
     const [direction, setDirection] = useState(0);
     const [isPromptExpanded, setIsPromptExpanded] = useState(false);
@@ -116,26 +125,25 @@ export function CreationDetailView({
         }
     };
 
-    // Keyboard navigation
+    const handleKeyDown = (e: KeyboardEvent) => {
+        if (!open) return;
+        if (e.key === 'ArrowUp') handlePrev();
+        if (e.key === 'ArrowDown') handleNext();
+        if (e.key === 'Escape') onClose();
+    };
+
     useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-            if (!open) return;
-            if (e.key === 'ArrowUp') handlePrev();
-            if (e.key === 'ArrowDown') handleNext();
-            if (e.key === 'Escape') onClose();
-        };
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [open, currentIndex, items.length]);
 
     const item = items[currentIndex];
 
-    // Final safety check for rendering only
     const renderContent = () => {
         if (!item || !open) return null;
 
         const formatModelName = (modelId: string) => {
-            if (!modelId) return "Unknown Model";
+            if (!modelId) return "AI Model";
             const parts = modelId.split('/');
             const last = parts[parts.length - 1];
             return last.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
@@ -161,6 +169,15 @@ export function CreationDetailView({
             }
         };
 
+        const goToProfile = (e: React.MouseEvent) => {
+            e.stopPropagation();
+            const identifier = item.creator_slug || item.creator_username || item.creator_user_id;
+            if (identifier) {
+                onClose();
+                navigate(`/profile/${identifier}`);
+            }
+        };
+
         return (
             <AnimatePresence initial={false} custom={direction} mode="popLayout">
                 <motion.div
@@ -174,7 +191,7 @@ export function CreationDetailView({
                         y: { type: "tween", duration: 0.4, ease: [0.32, 0.72, 0, 1] },
                         opacity: { duration: 0.3 }
                     }}
-                    className="absolute inset-0 w-full h-full flex flex-col items-center justify-center p-0 md:p-12 z-0 overflow-hidden"
+                    className="absolute inset-0 w-full h-full flex flex-col items-center justify-center p-0 z-0 overflow-hidden"
                     onTouchStart={onTouchStart}
                     onTouchEnd={onTouchEnd}
                     onWheel={onWheel}
@@ -182,7 +199,7 @@ export function CreationDetailView({
                         if (e.target === e.currentTarget) setShowUI(!showUI);
                     }}
                 >
-                    {/* Immersive Background (Full compressed version) */}
+                    {/* Immersive Background */}
                     <div className="absolute inset-0 opacity-40 blur-3xl scale-110 pointer-events-none transition-all duration-700">
                         <img
                             key={`bg-${item.id}`}
@@ -192,8 +209,8 @@ export function CreationDetailView({
                         />
                     </div>
 
-                    {/* Main Visual - Optimized Performance */}
-                    <div className="relative w-full h-full flex items-center justify-center p-0 md:p-8" onClick={() => setShowUI(!showUI)}>
+                    {/* Main Visual */}
+                    <div className="relative w-full h-full flex items-center justify-center p-0" onClick={() => setShowUI(!showUI)}>
                         {item.type === 'video' ? (
                             <video
                                 key={item.id}
@@ -205,14 +222,11 @@ export function CreationDetailView({
                                 playsInline
                             />
                         ) : (
-                            <div className="relative h-full w-full flex items-center justify-center">
-                                {/* Compressed Preview Only for Gallery Navigation Speed */}
-                                <img
-                                    src={item.previewUrl || item.url}
-                                    className="h-full w-full object-contain drop-shadow-[0_0_50px_rgba(0,0,0,0.5)] scale-100"
-                                    alt="Preview"
-                                />
-                            </div>
+                            <img
+                                src={item.previewUrl || item.url}
+                                className="h-full w-full object-contain drop-shadow-[0_0_50px_rgba(0,0,0,0.5)] scale-100"
+                                alt="Preview"
+                            />
                         )}
                     </div>
 
@@ -223,40 +237,77 @@ export function CreationDetailView({
                     )}>
                         <div className="w-10 h-10" />
                         <div className="flex flex-col items-end gap-2 text-right">
-                            <Badge className="bg-[#D1F349] text-black font-black px-3 py-1 text-[10px] tracking-widest border-none shadow-lg">
-                                {currentIndex + 1} / {items.length}
-                            </Badge>
-                            <div className="text-[10px] font-black text-white/50 uppercase tracking-tighter bg-black/40 backdrop-blur-md px-2 py-0.5 rounded border border-white/5">
-                                {formatModelName(item.model || "")}
+                            {/* Counter only for Owner (Gallery View) */}
+                            {item.isOwner && (
+                                <Badge className="bg-[#D1F349] text-black font-black px-3 py-1 text-[10px] tracking-widest border-none shadow-lg">
+                                    {currentIndex + 1} / {items.length}
+                                </Badge>
+                            )}
+
+                            {/* Projected Model Metadata */}
+                            <div className="flex items-center gap-2 bg-black/40 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/5 shadow-2xl">
+                                <Cpu className="w-3 h-3 text-[#D1F349]" />
+                                <span className="text-[10px] font-black text-white uppercase tracking-widest">
+                                    {formatModelName(item.model || "")}
+                                </span>
                             </div>
                         </div>
                     </div>
 
                     <div className={cn(
-                        "absolute bottom-0 left-0 w-full md:max-w-xl p-6 md:p-8 z-40 transition-all duration-500 bg-gradient-to-t from-black/95 via-black/40 to-transparent pt-32 pb-12",
+                        "absolute bottom-0 left-0 w-full md:max-w-2xl p-6 md:p-8 z-40 transition-all duration-500 bg-gradient-to-t from-black/95 via-black/40 to-transparent pt-32 pb-12",
                         !showUI ? "translate-y-20 opacity-0" : "translate-y-0 opacity-100"
                     )}>
                         <div className="space-y-4">
-                            <div
-                                className={cn(
-                                    "text-white/90 text-sm md:text-base font-bold leading-relaxed drop-shadow-md cursor-pointer transition-all pr-12 md:pr-0",
-                                    !isPromptExpanded && "line-clamp-2"
+                            {/* Creator Byline */}
+                            {(item.creator_username || item.creator_avatar) && !item.isOwner && (
+                                <div className="flex items-center gap-3 mb-2 group/creator cursor-pointer w-fit" onClick={goToProfile}>
+                                    <div className="w-10 h-10 rounded-full border-2 border-[#D1F349]/50 overflow-hidden bg-zinc-800 shadow-lg group-hover/creator:scale-110 transition-transform">
+                                        {item.creator_avatar ? (
+                                            <img src={item.creator_avatar} className="w-full h-full object-cover" alt={item.creator_username} />
+                                        ) : (
+                                            <div className="w-full h-full flex items-center justify-center text-white font-bold text-sm">
+                                                {item.creator_username?.charAt(0).toUpperCase()}
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <span className="text-white font-black text-sm tracking-tight drop-shadow-md">@{item.creator_username}</span>
+                                        <span className="text-[#D1F349] text-[10px] font-bold uppercase tracking-widest leading-none opacity-80">View Profile</span>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Projected Real Prompt */}
+                            <div className="relative group/prompt">
+                                <div
+                                    className={cn(
+                                        "text-white/90 text-sm md:text-base font-bold leading-relaxed drop-shadow-md cursor-pointer transition-all pr-12 md:pr-0",
+                                        !isPromptExpanded && "line-clamp-2"
+                                    )}
+                                    onClick={(e) => { e.stopPropagation(); setIsPromptExpanded(!isPromptExpanded); }}
+                                >
+                                    {item.prompt || "No prompt metadata available"}
+                                </div>
+                                {item.prompt && (
+                                    <div className="mt-1 flex items-center gap-2 opacity-0 group-hover/prompt:opacity-100 transition-opacity">
+                                        <span className="text-[10px] font-black text-[#D1F349] uppercase tracking-widest">Original Prompt</span>
+                                    </div>
                                 )}
-                                onClick={(e) => { e.stopPropagation(); setIsPromptExpanded(!isPromptExpanded); }}
-                            >
-                                {item.prompt}
                             </div>
 
                             <div className="flex items-center gap-4">
-                                <button
-                                    onClick={(e) => { e.stopPropagation(); onTogglePublic(item); }}
-                                    className="flex items-center gap-2 bg-white/10 backdrop-blur-md hover:bg-white/20 px-3 py-1.5 rounded-full border border-white/10 transition-colors"
-                                >
-                                    {item.isPublic ? <Globe className="w-3 h-3 text-[#D1F349]" /> : <Lock className="w-3 h-3 text-zinc-400" />}
-                                    <span className={cn("text-[10px] font-black uppercase tracking-widest", item.isPublic ? "text-[#D1F349]" : "text-zinc-600")}>
-                                        {item.isPublic ? "Public" : "Private"}
-                                    </span>
-                                </button>
+                                {item.isOwner && onTogglePublic && (
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); onTogglePublic(item); }}
+                                        className="flex items-center gap-2 bg-white/10 backdrop-blur-md hover:bg-white/20 px-3 py-1.5 rounded-full border border-white/10 transition-colors"
+                                    >
+                                        {item.isPublic ? <Globe className="w-3 h-3 text-[#D1F349]" /> : <Lock className="w-3 h-3 text-zinc-400" />}
+                                        <span className={cn("text-[10px] font-black uppercase tracking-widest", item.isPublic ? "text-[#D1F349]" : "text-zinc-600")}>
+                                            {item.isPublic ? "Public" : "Private"}
+                                        </span>
+                                    </button>
+                                )}
 
                                 <button
                                     onClick={(e) => {
@@ -272,27 +323,39 @@ export function CreationDetailView({
                         </div>
                     </div>
 
+                    {/* Action Buttons Column with Enhanced Blur Panel */}
                     <div className={cn(
-                        "absolute top-1/2 -translate-y-1/2 right-6 flex flex-col items-center gap-7 z-50 transition-all duration-500",
+                        "absolute top-1/2 -translate-y-1/2 right-6 p-2 rounded-full z-50 transition-all duration-500",
                         !showUI ? "translate-x-24 opacity-0" : "translate-x-0 opacity-100"
                     )}>
-                        <TooltipProvider delayDuration={0}>
-                            <div className="flex flex-col items-center gap-6">
-                                <ActionButton icon={Wand2} label="Remix" variant="primary" onClick={() => onReusePrompt(item)} />
-                                <ActionButton icon={Save} label="Library" onClick={() => onUseAsTemplate(item)} />
-                                <ActionButton icon={Download} label="Get" onClick={() => onDownload(item)} />
-                                <ActionButton icon={Trash2} label="Delete" variant="danger" onClick={() => onDelete(item.id)} />
-                            </div>
-                        </TooltipProvider>
+                        <div className="absolute inset-0 bg-white/5 backdrop-blur-3xl rounded-full border border-white/10 shadow-2xl" />
 
-                        <div className="w-px h-8 bg-white/10 mt-2" />
+                        <div className="relative flex flex-col items-center gap-5 py-6 px-1">
+                            <TooltipProvider delayDuration={0}>
+                                <div className="flex flex-col items-center gap-6">
+                                    <ActionButton icon={Wand2} label="Remix" variant="primary" onClick={() => onReusePrompt(item)} />
 
-                        <button
-                            onClick={(e) => { e.stopPropagation(); setShowUI(false); }}
-                            className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center text-white/40 hover:text-white border border-white/5 group transition-all hover:scale-110 active:scale-95"
-                        >
-                            <Info className="w-5 h-5 transition-transform" />
-                        </button>
+                                    {onUseAsTemplate && (
+                                        <ActionButton icon={Save} label="Library" onClick={() => onUseAsTemplate(item)} />
+                                    )}
+
+                                    <ActionButton icon={Download} label="Get" onClick={() => onDownload(item)} />
+
+                                    {item.isOwner && onDelete && (
+                                        <ActionButton icon={Trash2} label="Delete" variant="danger" onClick={() => onDelete(item.id)} />
+                                    )}
+                                </div>
+                            </TooltipProvider>
+
+                            <div className="w-px h-8 bg-white/10 mt-1" />
+
+                            <button
+                                onClick={(e) => { e.stopPropagation(); setShowUI(false); }}
+                                className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center text-white/40 hover:text-white border border-white/10 group transition-all hover:scale-110 active:scale-95"
+                            >
+                                <Info className="w-5 h-5 transition-transform" />
+                            </button>
+                        </div>
                     </div>
                 </motion.div>
             </AnimatePresence>
@@ -302,7 +365,7 @@ export function CreationDetailView({
     return (
         <AnimatePresence>
             {open && (
-                <div className="fixed inset-0 z-[100] bg-black overflow-hidden flex flex-col">
+                <div className="fixed inset-0 z-[9999] bg-black overflow-hidden flex flex-col">
                     <div className={cn(
                         "absolute top-6 left-6 z-[110] transition-opacity duration-500",
                         !showUI ? "opacity-0 pointer-events-none" : "opacity-100"
@@ -356,7 +419,7 @@ function ActionButton({ onClick, icon: Icon, label, variant = "default" }: any) 
                 >
                     <div className={cn(
                         "w-12 h-12 rounded-full flex items-center justify-center backdrop-blur-md transition-all border border-white/10",
-                        variant === "primary" ? "bg-[#D1F349] text-black border-none shadow-[0_0_20px_rgba(209,243,73,0.3)]" : "bg-black/40 text-white hover:bg-black/60",
+                        variant === "primary" ? "bg-[#D1F349] text-black border-none shadow-[0_0_20px_rgba(209,243,73,0.3)]" : "bg-white/10 text-white hover:bg-white/20",
                         variant === "danger" && "hover:bg-red-500/20 text-red-500"
                     )}>
                         <Icon className={cn("w-5 h-5", variant === "primary" && "fill-current")} />

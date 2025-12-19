@@ -62,14 +62,14 @@ import { cn } from "@/lib/utils";
 import { CreatorStudioSidebar, SidebarMode } from "@/components/creator/CreatorStudioSidebar";
 import { TemplateLibrary, MarketplaceTemplate } from "@/components/creator/TemplateLibrary";
 import { CreatorBottomNav } from "@/components/creator/CreatorBottomNav";
-import { CreationDetailView, HistoryItem } from "@/components/creator/CreationDetailView";
+import { CreationDetailView, GalleryItem } from "@/components/creator/CreationDetailView";
 
 type MainView = "home" | "create" | "templates" | "booths" | "gallery";
 
 // --- Categories for browsing ---
 const CATEGORIES = ["All", "Fantasy", "Portrait", "Cinematic", "Product", "UGC"];
 
-// HistoryItem moved to CreationDetailView.tsx for shared use
+// GalleryItem moved to CreationDetailView.tsx for shared use
 
 // --- Local Models Definition to avoid import circular dependency issues ---
 const LOCAL_IMAGE_MODELS = [
@@ -411,8 +411,8 @@ function CreatorStudioPageContent() {
     const [statusMessage, setStatusMessage] = useState("Preparing...");
 
     // History
-    const [history, setHistory] = useState<HistoryItem[]>([]);
-    const [previewItem, setPreviewItem] = useState<HistoryItem | null>(null);
+    const [history, setHistory] = useState<GalleryItem[]>([]);
+    const [previewItem, setPreviewItem] = useState<GalleryItem | null>(null);
     const [showSaveTemplate, setShowSaveTemplate] = useState(false);
     const [showRail, setShowRail] = useState(true);
     const [isPromptExpanded, setIsPromptExpanded] = useState(false);
@@ -478,7 +478,7 @@ function CreatorStudioPageContent() {
             if (!token) return;
             try {
                 const completedRes = await fetch(`${ENV.API_URL}/api/creations`, { headers: { "Authorization": `Bearer ${token}` } });
-                let allItems: HistoryItem[] = [];
+                let allItems: GalleryItem[] = [];
 
                 if (completedRes.ok) {
                     const data = await completedRes.json();
@@ -579,7 +579,7 @@ function CreatorStudioPageContent() {
         }
     };
 
-    const handleReusePrompt = (item: HistoryItem) => {
+    const handleReusePrompt = (item: GalleryItem) => {
         setPrompt(item.prompt || "");
         if (item.model) setModel(item.model);
         if (item.ratio) setAspectRatio(item.ratio);
@@ -614,7 +614,7 @@ function CreatorStudioPageContent() {
         toast.success("Prompt and settings restored");
     };
 
-    const handleUseAsTemplate = (item: HistoryItem) => {
+    const handleUseAsTemplate = (item: GalleryItem) => {
         if (item.type === "video") return toast.error("Images only");
         setSelectedTemplate({
             id: `history-${item.id}`, name: "From history", prompt: item.prompt, images: [item.url],
@@ -623,7 +623,7 @@ function CreatorStudioPageContent() {
         handleReusePrompt(item);
     };
 
-    const handleDownload = async (item: HistoryItem) => {
+    const handleDownload = async (item: GalleryItem) => {
         const link = document.createElement("a");
         link.href = item.url;
         link.download = `creation-${item.id}.${item.type === 'video' ? 'mp4' : 'png'}`;
@@ -632,7 +632,7 @@ function CreatorStudioPageContent() {
         document.body.removeChild(link);
     };
 
-    const handleTogglePublic = async (item: HistoryItem) => {
+    const handleTogglePublic = async (item: GalleryItem) => {
         const newVisibility = !item.isPublic;
 
         // Optimistic update for both list and preview
@@ -659,7 +659,7 @@ function CreatorStudioPageContent() {
         }
     };
 
-    const addToHistory = async (item: HistoryItem, skipBackendSave = false) => {
+    const addToHistory = async (item: GalleryItem, skipBackendSave = false) => {
         setHistory(prev => [item, ...prev]); // optimistic
 
         // Always persist template meta by URL if available, as a fallback
