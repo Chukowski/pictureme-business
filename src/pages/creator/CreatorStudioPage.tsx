@@ -62,32 +62,14 @@ import { cn } from "@/lib/utils";
 import { CreatorStudioSidebar, SidebarMode } from "@/components/creator/CreatorStudioSidebar";
 import { TemplateLibrary, MarketplaceTemplate } from "@/components/creator/TemplateLibrary";
 import { CreatorBottomNav } from "@/components/creator/CreatorBottomNav";
+import { CreationDetailView, HistoryItem } from "@/components/creator/CreationDetailView";
 
 type MainView = "home" | "create" | "templates" | "booths" | "gallery";
 
 // --- Categories for browsing ---
 const CATEGORIES = ["All", "Fantasy", "Portrait", "Cinematic", "Product", "UGC"];
 
-interface HistoryItem {
-    id: string;
-    url: string; // remote asset URL (persisted)
-    previewUrl?: string; // optional base64/preview for immediate display
-    type: 'image' | 'video';
-    timestamp: number;
-    prompt?: string;
-    model?: string;
-    ratio?: string;
-    duration?: string;
-    shareCode?: string;
-    isPublic?: boolean;
-    status?: 'completed' | 'processing' | 'failed'; // For showing pending generations
-    jobId?: number; // Pending generation job ID
-    template?: {
-        id: string;
-        name: string;
-        image: string;
-    };
-}
+// HistoryItem moved to CreationDetailView.tsx for shared use
 
 // --- Local Models Definition to avoid import circular dependency issues ---
 const LOCAL_IMAGE_MODELS = [
@@ -564,7 +546,18 @@ function CreatorStudioPageContent() {
             } catch (e) { console.error(e); }
         };
         loadHistory();
-    }, [user?.id, navigate]);
+
+        // POLL FOR UPDATES: Every 10 seconds if there are pending items
+        // This fixes the "vanishing indicator" glitch by ensuring the status is refreshed
+        const interval = setInterval(() => {
+            const hasPending = history.some(item => item.status !== 'completed' && item.status !== 'failed');
+            if (hasPending || history.length === 0) {
+                loadHistory();
+            }
+        }, 10000);
+
+        return () => clearInterval(interval);
+    }, [user?.id, navigate, history.length]); // Dependencies ensure we check when history items change status
 
     // Handlers
     const handleDeleteHistory = async (id: string) => {
@@ -881,7 +874,13 @@ function CreatorStudioPageContent() {
                                 isPublic={isPublic}
                                 setIsPublic={setIsPublic}
                                 isFreeTier={isFreeTier}
-                                onCloseMobile={() => setShowRail(false)}
+                                onCloseMobile={() => {
+                                    if (window.history.length > 2) {
+                                        navigate(-1);
+                                    } else {
+                                        navigate('/creator/dashboard');
+                                    }
+                                }}
                                 availableModels={availableModels}
                             />
                         </div>
@@ -977,150 +976,18 @@ function CreatorStudioPageContent() {
                 )
             }
 
-            {/* Lightbox Modal */}
-            < Dialog open={!!previewItem} onOpenChange={(o) => !o && setPreviewItem(null)}>
-                <DialogContent className="max-w-6xl w-full h-[90vh] bg-black border-white/10 p-0 flex overflow-hidden !rounded-2xl">
-                    <div className="flex-1 bg-zinc-950 flex items-center justify-center relative p-8">
-                        {previewItem?.type === 'image' ?
-                            <img src={previewItem.url} className="max-h-full max-w-full object-contain rounded-lg shadow-2xl" /> :
-                            <video src={previewItem?.url} controls className="max-h-full max-w-full rounded-lg shadow-2xl" autoPlay loop />
-                        }
-                    </div>
-                    <div className="w-96 bg-[#09090b] border-l border-white/10 flex flex-col z-50 shadow-2xl">
-                        <div className="p-6 flex-1 overflow-y-auto space-y-6">
-                            <div className="flex items-center justify-between">
-                                <h3 className="font-bold text-white text-xl">Details</h3>
-                                {previewItem?.status === 'completed' && (
-                                    <Badge className="bg-[#D1F349] text-black hover:bg-[#b0cc3d]">Completed</Badge>
-                                )}
-                            </div>
-
-                            {/* Prompt Section */}
-                            <div className="space-y-2">
-                                <div className="flex items-center justify-between text-sm text-zinc-400">
-                                    <span className="font-medium">Prompt</span>
-                                    <button
-                                        onClick={() => {
-                                            navigator.clipboard.writeText(previewItem?.prompt || "");
-                                            toast.success("Prompt copied!");
-                                        }}
-                                        className="text-white hover:text-[#D1F349] transition-colors p-1"
-                                        title="Copy prompt"
-                                    >
-                                        <Copy className="w-4 h-4" />
-                                    </button>
-                                </div>
-                                <div
-                                    className={cn(
-                                        "bg-zinc-900/50 p-4 rounded-xl border border-white/5 text-sm text-zinc-300 italic leading-relaxed relative cursor-pointer hover:bg-zinc-900/80 transition-colors group",
-                                        !isPromptExpanded && "line-clamp-3"
-                                    )}
-                                    onClick={() => setIsPromptExpanded(!isPromptExpanded)}
-                                >
-                                    "{previewItem?.prompt}"
-                                    {!isPromptExpanded && (
-                                        <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-zinc-900/90 to-transparent flex items-end justify-center pb-2">
-                                            <ChevronDown className="w-4 h-4 text-zinc-500 group-hover:text-white" />
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* Metadata */}
-                            <div className="space-y-4 bg-zinc-900/30 p-4 rounded-xl border border-white/5">
-                                <div className="flex justify-between items-center text-sm">
-                                    <span className="text-zinc-500">Model</span>
-                                    <span className="text-white font-medium bg-zinc-800 px-2 py-1 rounded text-xs">
-                                        {formatModelName(previewItem?.model || "")}
-                                    </span>
-                                </div>
-                                <div className="flex justify-between items-center text-sm">
-                                    <span className="text-zinc-500">Ratio</span>
-                                    <span className="text-white font-medium bg-zinc-800 px-2 py-1 rounded text-xs">
-                                        {previewItem?.ratio || 'Custom'}
-                                    </span>
-                                </div>
-                                <div className="flex justify-between items-center text-sm">
-                                    <span className="text-zinc-500">Privacy</span>
-                                    <div className="flex items-center gap-2">
-                                        <span className={cn("text-xs font-medium", previewItem?.isPublic ? "text-[#D1F349]" : "text-zinc-500")}>
-                                            {previewItem?.isPublic ? "Public" : "Private"}
-                                        </span>
-                                        <Switch
-                                            checked={previewItem?.isPublic || false}
-                                            onCheckedChange={() => previewItem && handleTogglePublic(previewItem)}
-                                            className="data-[state=checked]:bg-[#D1F349] data-[state=unchecked]:bg-zinc-700"
-                                        />
-                                    </div>
-                                </div>
-
-                                {/* Template Info Card */}
-                                {previewItem?.template && (
-                                    <div className="mt-4">
-                                        <div className="group relative aspect-video w-full overflow-hidden rounded-xl border border-white/10 bg-zinc-900/50 hover:border-[#D1F349]/50 transition-colors cursor-pointer"
-                                            onClick={() => { if (previewItem) { handleReusePrompt(previewItem); setPreviewItem(null); } }}
-                                        >
-                                            {previewItem.template.image && (
-                                                <img
-                                                    src={previewItem.template.image}
-                                                    alt={previewItem.template.name}
-                                                    className="h-full w-full object-cover opacity-60 group-hover:opacity-40 transition-opacity"
-                                                />
-                                            )}
-                                            <div className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center">
-                                                <span className="text-lg font-bold text-white drop-shadow-md uppercase tracking-wide">
-                                                    {previewItem.template.name}
-                                                </span>
-                                            </div>
-                                            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <Badge className="bg-[#D1F349] text-black">Template</Badge>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Action Buttons */}
-                        <div className="p-6 bg-zinc-900/50 border-t border-white/5 space-y-3">
-                            < Button
-                                className="w-full bg-[#D1F349] hover:bg-[#b0cc3d] text-black font-bold h-11"
-                                onClick={() => { if (previewItem) { handleReusePrompt(previewItem); setPreviewItem(null); } }}
-                            >
-                                <RefreshCw className="w-4 h-4 mr-2" />
-                                Reuse Prompt
-                            </Button>
-
-                            <div className="grid grid-cols-2 gap-3">
-                                <Button
-                                    variant="outline"
-                                    className="border-white/10 bg-zinc-800/50 hover:bg-zinc-800 text-white hover:text-white"
-                                    onClick={() => { if (previewItem) { handleUseAsTemplate(previewItem); setPreviewItem(null); } }}
-                                >
-                                    <Save className="w-4 h-4 mr-2" />
-                                    Save as Template
-                                </Button>
-                                <Button
-                                    variant="outline"
-                                    className="border-white/10 bg-zinc-800/50 hover:bg-zinc-800 text-white hover:text-white"
-                                    onClick={() => previewItem && handleDownload(previewItem)}
-                                >
-                                    <Download className="w-4 h-4 mr-2" />
-                                    Download
-                                </Button>
-                            </div>
-
-                            <Button
-                                onClick={() => previewItem && handleDeleteHistory(previewItem.id)}
-                                variant="ghost"
-                                className="w-full text-red-500 hover:text-red-400 hover:bg-red-500/10 h-8 text-xs"
-                            >
-                                Delete Asset
-                            </Button>
-                        </div>
-                    </div>
-                </DialogContent>
-            </Dialog >
+            {/* immersive vertical navigation detail view */}
+            <CreationDetailView
+                items={history}
+                initialIndex={history.findIndex(h => h.id === previewItem?.id)}
+                open={!!previewItem}
+                onClose={() => setPreviewItem(null)}
+                onTogglePublic={handleTogglePublic}
+                onReusePrompt={handleReusePrompt}
+                onUseAsTemplate={handleUseAsTemplate}
+                onDownload={handleDownload}
+                onDelete={handleDeleteHistory}
+            />
 
             <SaveTemplateModal
                 open={showSaveTemplate}

@@ -173,9 +173,10 @@ export function CreatorStudioSidebar({
                 </div>
                 <button
                     onClick={onCloseMobile}
-                    className="w-8 h-8 flex items-center justify-center rounded-full bg-zinc-900/50 text-zinc-400 hover:text-white transition-colors"
+                    className="w-10 h-10 flex items-center justify-center rounded-full bg-white/5 active:bg-white/10 text-zinc-400 active:text-white transition-all shadow-inner"
+                    aria-label="Close Studio"
                 >
-                    <X className="w-4 h-4" />
+                    <X className="w-5 h-5" />
                 </button>
             </div>
 

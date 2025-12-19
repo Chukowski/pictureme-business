@@ -4,6 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { getCurrentUser, logoutUser } from "@/services/eventsApi";
 import { cn } from '@/lib/utils';
 import { Component as MagicButton } from '@/components/ui/animated-button';
+import { ENV } from "@/config/env";
 import {
     Drawer,
     DrawerContent,
@@ -45,11 +46,46 @@ export const CreatorBottomNav = ({ onOpenCreate, onLibraryClick, onHomeClick, ac
 
     const [activeIndex, setActiveIndex] = useState(getActiveIndex());
     const [isProfileOpen, setIsProfileOpen] = useState(false);
+    const [pendingCount, setPendingCount] = useState(0);
+    const [showSuccess, setShowSuccess] = useState(false);
 
     // Sync active index
     useEffect(() => {
         setActiveIndex(getActiveIndex());
     }, [activeTab, location.pathname, location.state]);
+
+    // Polling for generation status
+    useEffect(() => {
+        const pollGenerations = async () => {
+            const token = localStorage.getItem("auth_token");
+            if (!token) return;
+
+            try {
+                const res = await fetch(`${ENV.API_URL}/api/generate/pending`, {
+                    headers: { "Authorization": `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    const currentCount = (data.pending || []).length;
+
+                    setPendingCount(prev => {
+                        // If we had jobs and now we don't, show success
+                        if (prev > 0 && currentCount === 0) {
+                            setShowSuccess(true);
+                            setTimeout(() => setShowSuccess(false), 5000);
+                        }
+                        return currentCount;
+                    });
+                }
+            } catch (err) {
+                console.error("Failed to poll generations", err);
+            }
+        };
+
+        pollGenerations();
+        const intervalId = setInterval(pollGenerations, 10000);
+        return () => clearInterval(intervalId);
+    }, []);
 
     // Close profile on route change
     useEffect(() => {
@@ -105,15 +141,40 @@ export const CreatorBottomNav = ({ onOpenCreate, onLibraryClick, onHomeClick, ac
                     if (isCreate) {
                         return (
                             <div key={item.label} className="relative -top-6 z-10 font-sans">
+                                {showSuccess && (
+                                    <div
+                                        onClick={() => {
+                                            navigate('/creator/studio', { state: { view: 'gallery' } });
+                                            setShowSuccess(false);
+                                        }}
+                                        className="absolute -top-12 left-1/2 -translate-x-1/2 bg-[#D1F349] text-black text-[10px] font-bold px-3 py-1.5 rounded-full shadow-[0_0_20px_rgba(209,243,73,0.4)] animate-in fade-in slide-in-from-bottom-2 duration-300 flex items-center gap-1.5 whitespace-nowrap z-50 cursor-pointer active:scale-95 transition-transform"
+                                    >
+                                        <Sparkles className="w-3 h-3" />
+                                        Images Created!
+                                    </div>
+                                )}
+
                                 <MagicButton
                                     onClick={() => handleItemClick(index, item)}
+                                    speed={pendingCount > 0 ? "0.8s" : "3s"}
                                     className={cn(
-                                        "w-14 h-14",
-                                        isActive && "shadow-[0_0_20px_rgba(209,243,73,0.4)]"
+                                        "w-14 h-14 transition-all duration-300",
+                                        isActive && "shadow-[0_0_20px_rgba(209,243,73,0.4)]",
+                                        pendingCount > 0 && "scale-110 shadow-[0_0_30px_rgba(209,243,73,0.6)]"
                                     )}
                                 >
-                                    <Wand2 className={cn("w-6 h-6", isActive ? "text-[#D1F349] fill-[#D1F349]/20" : "text-zinc-200")} />
+                                    <Wand2 className={cn(
+                                        "w-6 h-6 transition-all duration-500",
+                                        isActive ? "text-[#D1F349] fill-[#D1F349]/20" : "text-zinc-200",
+                                        pendingCount > 0 && "animate-pulse text-[#D1F349]"
+                                    )} />
                                 </MagicButton>
+
+                                {pendingCount > 0 && (
+                                    <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-indigo-500 rounded-full flex items-center justify-center border-2 border-black animate-in zoom-in duration-300">
+                                        <span className="text-[10px] font-bold text-white">{pendingCount}</span>
+                                    </div>
+                                )}
                             </div>
                         );
                     }

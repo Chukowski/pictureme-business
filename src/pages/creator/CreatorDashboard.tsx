@@ -341,6 +341,7 @@ export default function CreatorDashboard() {
         homeState={homeState}
         creations={creations.slice(0, 4)}
         navigate={navigate}
+        pendingJobs={pendingJobs}
       />
 
       {/* ========================= */}
@@ -381,9 +382,7 @@ export default function CreatorDashboard() {
       {/* ========================= */}
       {/* PENDING GENERATIONS */}
       {/* ========================= */}
-      {pendingJobs.length > 0 && (
-        <PendingGenerationsSection pendingJobs={pendingJobs} />
-      )}
+      {/* Removed standalone PendingGenerationsSection as it's now in Hero Bar */}
 
       {/* ========================= */}
       {/* THE MARKETPLACE FEED */}
@@ -403,58 +402,88 @@ export default function CreatorDashboard() {
 // =======================
 // HERO SECTION
 // =======================
-function HeroSection({ user, homeState, creations, navigate }: { user: User | null; homeState: CreatorHomeState; creations: UserCreation[]; navigate: (path: string) => void }) {
+function HeroSection({ user, homeState, creations, navigate, pendingJobs = [] }: { user: User | null; homeState: CreatorHomeState; creations: UserCreation[]; navigate: (path: string) => void; pendingJobs?: any[] }) {
   return (
-    <div className="relative w-full aspect-[3/4] md:aspect-[2.5/1] rounded-2xl overflow-hidden group bg-[#050505] shadow-2xl shadow-black/50 border border-white/5">
-      {/* Visual Proof Background (Collage/Video) */}
-      <div className="absolute inset-0 z-0 select-none pointer-events-none mix-blend-screen scale-105">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-0 w-full h-full filter blur-[2px] opacity-50">
-          {creations.length > 0 ? (
-            creations.slice(0, 4).map((c, i) => (
-              <div key={i} className="h-full relative overflow-hidden">
-                <img src={c.url} className="w-full h-full object-cover" />
-              </div>
-            ))
-          ) : (
-            // Curated "Visual Proof" for new users
-            <>
-              <div className="h-full relative overflow-hidden"><img src="https://images.unsplash.com/photo-1620641788421-7f6c368615b8?q=80&w=800&auto=format&fit=crop" className="w-full h-full object-cover" /></div>
-              <div className="h-full relative overflow-hidden"><img src="https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?q=80&w=800&auto=format&fit=crop" className="w-full h-full object-cover" /></div>
-              <div className="hidden md:block h-full relative overflow-hidden"><img src="https://images.unsplash.com/photo-1635322966219-b75ed3a93227?q=80&w=800&auto=format&fit=crop" className="w-full h-full object-cover" /></div>
-              <div className="hidden md:block h-full relative overflow-hidden"><img src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=800&auto=format&fit=crop" className="w-full h-full object-cover" /></div>
-            </>
-          )}
+    <div className="flex flex-col gap-3">
+      <div className="relative w-full aspect-[2/1] md:aspect-[2.5/1] rounded-3xl overflow-hidden group bg-[#050505] shadow-2xl shadow-black/50 border border-white/5">
+        {/* Visual Proof Background (Collage/Video) */}
+        <div className="absolute inset-0 z-0 select-none pointer-events-none mix-blend-screen scale-105">
+          <div className="grid grid-cols-3 md:grid-cols-4 gap-0 w-full h-full filter blur-[1px] opacity-40">
+            {creations.length > 0 ? (
+              creations.slice(0, 4).map((c, i) => (
+                <div key={i} className="h-full relative overflow-hidden transition-transform duration-700 group-hover:scale-110">
+                  <img src={c.url} className="w-full h-full object-cover" />
+                </div>
+              ))
+            ) : (
+              // Curated "Visual Proof" for new users
+              <>
+                <div className="h-full relative overflow-hidden"><img src="https://images.unsplash.com/photo-1620641788421-7f6c368615b8?q=80&w=800&auto=format&fit=crop" className="w-full h-full object-cover" /></div>
+                <div className="h-full relative overflow-hidden"><img src="https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?q=80&w=800&auto=format&fit=crop" className="w-full h-full object-cover" /></div>
+                <div className="h-full relative overflow-hidden"><img src="https://images.unsplash.com/photo-1635322966219-b75ed3a93227?q=80&w=800&auto=format&fit=crop" className="w-full h-full object-cover" /></div>
+                <div className="hidden md:block h-full relative overflow-hidden"><img src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=800&auto=format&fit=crop" className="w-full h-full object-cover" /></div>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Gradient Overlays for Text Readability & Fade */}
+        <div className="absolute inset-0 bg-gradient-to-r from-[#050505] via-[#050505]/80 to-transparent z-0"></div>
+        <div className="absolute inset-0 bg-gradient-to-t from-[#050505]/40 via-transparent to-transparent z-0 md:hidden"></div>
+
+        <div className="absolute inset-0 z-10 flex flex-row items-center justify-between p-5 md:p-12 pl-6 md:pl-16">
+          <div className="flex flex-col items-start text-left">
+            <h1 className="text-2xl md:text-6xl font-bold text-white tracking-tight mb-1 md:mb-2 drop-shadow-lg max-w-full md:max-w-2xl leading-tight">
+              Create iconic AI photos in seconds.
+            </h1>
+            <p className="text-[#CCCCCC]/80 text-[10px] md:text-lg max-w-[90%] md:max-w-lg mb-0 md:mb-8 font-medium shadow-black drop-shadow-md">
+              The world's most advanced AI marketplace.
+              {homeState === 'out_of_tokens' && <span className="block text-amber-400 mt-1 text-[8px] md:text-sm">Out of tokens. Upgrade to continue.</span>}
+            </p>
+          </div>
+
+          <Button
+            size="sm"
+            onClick={() => navigate(homeState === 'out_of_tokens' ? '/creator/settings?tab=billing' : '/creator/studio')}
+            className="
+                          rounded-full px-4 md:px-8 py-2 md:py-6 text-[10px] md:text-base font-semibold 
+                          bg-[#8b5cf6] hover:bg-[#7c3aed] text-white
+                          shadow-[0_0_15px_rgba(139,92,246,0.3)] hover:shadow-[0_0_25px_rgba(139,92,246,0.5)]
+                          hover:scale-105 transition-all duration-300
+                          border border-white/10 shrink-0
+                      "
+          >
+            {homeState === 'active' ? 'Continue' : 'Start'}
+            <Sparkles className="w-3 h-3 md:w-5 md:h-5 ml-1 md:ml-2 fill-white" />
+          </Button>
         </div>
       </div>
 
-      {/* Gradient Overlays for Text Readability & Fade */}
-      <div className="absolute inset-0 bg-gradient-to-t md:bg-gradient-to-r from-[#050505] via-[#050505]/70 to-transparent z-0"></div>
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[#050505]/90 z-0 md:hidden"></div>
-
-      <div className="absolute inset-0 z-10 flex flex-col items-start justify-end md:justify-center text-left p-6 md:p-12 pl-6 md:pl-16 pb-12 md:pb-12">
-        <h1 className="text-4xl md:text-6xl font-bold text-white tracking-tight mb-4 drop-shadow-[0_4px_10px_rgba(255,255,255,0.1)] max-w-2xl leading-none md:leading-tight">
-          Create iconic AI photos in seconds.
-        </h1>
-        <p className="text-[#CCCCCC] text-base md:text-lg max-w-lg mb-8 font-medium shadow-black drop-shadow-md">
-          The world's most advanced AI photobooth marketplace.
-          {homeState === 'out_of_tokens' && <span className="block text-amber-400 mt-2 text-sm">You are out of tokens. Upgrade to continue.</span>}
-        </p>
-
-        <Button
-          size="lg"
-          onClick={() => navigate(homeState === 'out_of_tokens' ? '/creator/settings?tab=billing' : '/creator/studio')}
-          className="
-                        rounded-full px-8 py-6 text-base font-semibold 
-                        bg-[#8b5cf6] hover:bg-[#7c3aed] text-white
-                        shadow-[0_0_20px_rgba(139,92,246,0.5)] hover:shadow-[0_0_30px_rgba(139,92,246,0.7)]
-                        hover:scale-105 transition-all duration-300
-                        border border-white/10 w-full md:w-auto
-                    "
-        >
-          {homeState === 'active' ? 'Continue Creating' : 'Start Creating'}
-          <Sparkles className="w-5 h-5 ml-2 fill-white" />
-        </Button>
-      </div>
+      {/* GENERATION BAR (Appears when jobs are active) */}
+      {pendingJobs.length > 0 && (
+        <div className="w-full bg-indigo-500/10 border border-indigo-500/20 rounded-2xl p-3 flex items-center justify-between animate-in slide-in-from-top-2">
+          <div className="flex items-center gap-3">
+            <div className="relative">
+              <div className="w-8 h-8 rounded-full border-2 border-indigo-500/20 border-t-indigo-400 animate-spin"></div>
+              <Wand2 className="absolute inset-0 m-auto w-4 h-4 text-indigo-400 animate-pulse" />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-white leading-none mb-1">
+                {pendingJobs.length} {pendingJobs.length === 1 ? 'Generation' : 'Generations'} in progress
+              </p>
+              <p className="text-[10px] text-indigo-300/70 font-medium">Your masterpieces will be ready in seconds</p>
+            </div>
+          </div>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => navigate('/creator/studio')}
+            className="text-[10px] h-8 px-4 text-indigo-400 hover:text-indigo-300 hover:bg-indigo-500/10 font-bold"
+          >
+            View in Studio <ChevronRight className="w-3 h-3 ml-1" />
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
