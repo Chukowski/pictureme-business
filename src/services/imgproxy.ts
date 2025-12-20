@@ -9,6 +9,10 @@
 
 const IMGPROXY_BASE_URL = 'https://img.pictureme.now';
 
+// Toggle this to enable/disable imgproxy processing
+// Set to false until imgproxy server is properly configured
+const IMGPROXY_ENABLED = false;
+
 // If you have signing enabled in imgproxy, set these keys
 // For now, we use 'insecure' mode (signature = "insecure")
 const USE_SIGNATURE = false;
@@ -51,11 +55,15 @@ export interface ImgproxyOptions {
 
 /**
  * Encode source URL for imgproxy
- * Uses plain URL format (percent-encoded) with plain/ prefix
+ * Uses URL-safe Base64 encoding without padding
  */
 function encodeSourceUrl(url: string): string {
-    // Use plain format - just percent-encode the URL
-    return `plain/${encodeURIComponent(url)}`;
+    // URL-safe Base64 encoding without padding
+    const base64 = btoa(url);
+    return base64
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=+$/, '');
 }
 
 
@@ -145,15 +153,15 @@ export function getImgproxyUrl(sourceUrl: string, options: ImgproxyOptions = {})
     }
 
     // Build the URL
-    const signature = USE_SIGNATURE ? 'signed' : 'insecure'; // TODO: Implement signing if needed
     const processingOptions = buildProcessingOptions(options);
     const encodedUrl = encodeSourceUrl(sourceUrl);
-    const extension = options.format ? `.${options.format}` : '';
+    const extension = options.format ? `@${options.format}` : '';
 
-    // URL structure: /{signature}/{processing_options}/{encoded_url}{extension}
+    // URL structure: /{processing_options}/{base64_encoded_url}{@extension}
+    // Note: This imgproxy instance doesn't require /insecure prefix
     const path = processingOptions
-        ? `/${signature}/${processingOptions}/${encodedUrl}${extension}`
-        : `/${signature}/${encodedUrl}${extension}`;
+        ? `/${processingOptions}/${encodedUrl}${extension}`
+        : `/${encodedUrl}${extension}`;
 
     return `${IMGPROXY_BASE_URL}${path}`;
 }
