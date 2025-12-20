@@ -11,7 +11,7 @@ const IMGPROXY_BASE_URL = 'https://img.pictureme.now';
 
 // Toggle this to enable/disable imgproxy processing
 // Set to false until imgproxy server is properly configured
-const IMGPROXY_ENABLED = false;
+const IMGPROXY_ENABLED = true;
 
 // If you have signing enabled in imgproxy, set these keys
 // For now, we use 'insecure' mode (signature = "insecure")
@@ -106,6 +106,11 @@ function buildProcessingOptions(options: ImgproxyOptions): string {
  * })
  */
 export function getImgproxyUrl(sourceUrl: string, options: ImgproxyOptions = {}): string {
+    // If imgproxy is disabled, return original URL
+    if (!IMGPROXY_ENABLED) {
+        return sourceUrl;
+    }
+
     // Don't process data URLs or blob URLs
     if (sourceUrl.startsWith('data:') || sourceUrl.startsWith('blob:')) {
         return sourceUrl;
@@ -123,6 +128,7 @@ export function getImgproxyUrl(sourceUrl: string, options: ImgproxyOptions = {})
 
     return `${IMGPROXY_BASE_URL}${path}`;
 }
+
 
 
 /**

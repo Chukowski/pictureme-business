@@ -58,6 +58,7 @@ import { ENV } from "@/config/env";
 import { SaveTemplateModal } from "@/components/templates/SaveTemplateModal";
 import { useMyTemplates, UserTemplate } from "@/hooks/useMyTemplates";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { getThumbnailUrl } from "@/services/imgproxy";
 import { cn } from "@/lib/utils";
 import { CreatorStudioSidebar, SidebarMode } from "@/components/creator/CreatorStudioSidebar";
 import { TemplateLibrary, MarketplaceTemplate } from "@/components/creator/TemplateLibrary";
@@ -940,7 +941,7 @@ function CreatorStudioPageContent() {
                                                 <div key={item.id} onClick={() => item.status === 'completed' && setPreviewItem(item)} className="group relative aspect-[3/4] bg-zinc-900 rounded-xl overflow-hidden cursor-pointer hover:ring-2 ring-[#D1F349]/50 transition-all shadow-lg">
 
                                                     {item.status === 'completed' ? (
-                                                        item.type === 'image' ? <img src={item.url} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" /> : <video src={item.url} className="w-full h-full object-cover" />
+                                                        item.type === 'image' ? <img src={getThumbnailUrl(item.url, 400)} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" loading="lazy" /> : <video src={item.url} className="w-full h-full object-cover" />
                                                     ) : (
                                                         <div className="w-full h-full flex flex-col items-center justify-center bg-zinc-800 text-zinc-500 gap-2">
                                                             <Loader2 className="animate-spin w-6 h-6" />

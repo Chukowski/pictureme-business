@@ -20,6 +20,7 @@ import { ENV } from "@/config/env";
 import { getCurrentUser, toggleLike } from "@/services/eventsApi";
 import { toast } from "sonner";
 import { CreationDetailView, GalleryItem } from "@/components/creator/CreationDetailView";
+import { getAvatarUrl, getOptimizedUrl, getThumbnailUrl } from "@/services/imgproxy";
 
 interface UserProfile {
   id: number;
@@ -201,7 +202,7 @@ export default function PublicProfile() {
         <div className="relative h-48 md:h-64 w-full">
           {profile.cover_image_url ? (
             <img
-              src={profile.cover_image_url}
+              src={getOptimizedUrl(profile.cover_image_url, 1400)}
               alt="Cover"
               className="w-full h-full object-cover"
             />
@@ -217,7 +218,7 @@ export default function PublicProfile() {
             <div className="w-32 h-32 md:w-40 md:h-40 rounded-full border-4 border-black overflow-hidden bg-zinc-800 shadow-xl">
               {profile.avatar_url ? (
                 <img
-                  src={profile.avatar_url}
+                  src={getAvatarUrl(profile.avatar_url, 200)}
                   alt={profile.username}
                   className="w-full h-full object-cover"
                 />
@@ -412,7 +413,7 @@ function CreationsGrid({ creations, isOwnProfile, onLike, onItemClick }: {
             </>
           ) : (
             <img
-              src={creation.thumbnail_url || creation.url}
+              src={getThumbnailUrl(creation.thumbnail_url || creation.url, 400)}
               alt=""
               className="w-full h-full object-cover transition-transform group-hover:scale-105"
             />

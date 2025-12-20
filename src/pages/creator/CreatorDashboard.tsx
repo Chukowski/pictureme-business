@@ -18,7 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { ENV } from "@/config/env";
 import { toast } from "sonner";
 import { CreationDetailView, GalleryItem } from "@/components/creator/CreationDetailView";
-import { getFeedImageUrl, getAvatarUrl } from "@/services/imgproxy";
+import { getFeedImageUrl, getAvatarUrl, getThumbnailUrl } from "@/services/imgproxy";
 
 
 // ... existing types ...
@@ -771,7 +771,7 @@ function RecentCreationsBento({ creations, hasCreations, navigate }: { creations
         <div className="grid grid-cols-4 gap-3 h-auto z-10">
           {creations.slice(0, 4).map(c => (
             <div key={c.id} onClick={() => navigate('/creator/studio')} className="aspect-square rounded-xl overflow-hidden border border-white/5 cursor-pointer relative group/item hover:scale-[1.02] transition-transform bg-zinc-800 shadow-md">
-              <img src={c.url} className="w-full h-full object-cover opacity-90 group-hover/item:opacity-100 transition-opacity" loading="lazy" />
+              <img src={getThumbnailUrl(c.url, 200)} className="w-full h-full object-cover opacity-90 group-hover/item:opacity-100 transition-opacity" loading="lazy" />
             </div>
           ))}
           {/* Fillers if less than 4 */}

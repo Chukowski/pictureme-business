@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { getOptimizedUrl, getThumbnailUrl, getAvatarUrl } from "@/services/imgproxy";
 import {
     X, Copy, RefreshCw, Save, Download,
     ChevronDown, Trash2, Maximize2, Wand2,
@@ -210,7 +211,7 @@ export function CreationDetailView({
                     <div className="absolute inset-0 opacity-40 blur-3xl scale-110 pointer-events-none transition-all duration-700">
                         <img
                             key={`bg-${item.id}`}
-                            src={item.previewUrl || item.url}
+                            src={getThumbnailUrl(item.previewUrl || item.url, 400)}
                             className="w-full h-full object-cover"
                             alt=""
                         />
@@ -230,7 +231,7 @@ export function CreationDetailView({
                             />
                         ) : (
                             <img
-                                src={item.previewUrl || item.url}
+                                src={getOptimizedUrl(item.previewUrl || item.url, 1200)}
                                 className="h-full w-full object-contain drop-shadow-[0_0_50px_rgba(0,0,0,0.5)] scale-100"
                                 alt="Preview"
                             />
@@ -271,7 +272,7 @@ export function CreationDetailView({
                                 <div className="flex items-center gap-3 mb-2 group/creator cursor-pointer w-fit" onClick={goToProfile}>
                                     <div className="w-10 h-10 rounded-full border-2 border-[#D1F349]/50 overflow-hidden bg-zinc-800 shadow-lg group-hover/creator:scale-110 transition-transform">
                                         {item.creator_avatar ? (
-                                            <img src={item.creator_avatar} className="w-full h-full object-cover" alt={item.creator_username} />
+                                            <img src={getAvatarUrl(item.creator_avatar, 48)} className="w-full h-full object-cover" alt={item.creator_username} />
                                         ) : (
                                             <div className="w-full h-full flex items-center justify-center text-white font-bold text-sm">
                                                 {item.creator_username?.charAt(0).toUpperCase()}
