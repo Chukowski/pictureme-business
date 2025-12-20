@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { getCurrentUser, getUserEvents, EventConfig, User, getTokenStats, toggleLike } from "@/services/eventsApi";
 import { Card, CardContent } from "@/components/ui/card";
@@ -334,7 +334,15 @@ export default function CreatorDashboard() {
       }
 
       if (moreCreations.length > 0) {
-        setPublicCreations(prev => [...prev, ...moreCreations]);
+        setPublicCreations(prev => {
+          const combined = [...prev, ...moreCreations];
+          const seen = new Set();
+          return combined.filter(c => {
+            if (seen.has(c.id)) return false;
+            seen.add(c.id);
+            return true;
+          });
+        });
         setFeedOffset(prev => prev + moreCreations.length);
       } else {
         setHasMore(false);
@@ -443,28 +451,10 @@ export default function CreatorDashboard() {
 
           {/* Infinite Scroll Trigger */}
           {hasMore && (
-            <div
-              className="py-12 flex justify-center"
-              ref={(el) => {
-                if (el) {
-                  const observer = new IntersectionObserver((entries) => {
-                    if (entries[0].isIntersecting) {
-                      loadMorePublicCreations();
-                    }
-                  }, { threshold: 0.1 });
-                  observer.observe(el);
-                }
-              }}
-            >
-              {isFeedLoading ? (
-                <div className="flex items-center gap-2 text-zinc-500 animate-pulse">
-                  <div className="w-2 h-2 rounded-full bg-[#D1F349]" />
-                  <span className="text-xs font-bold uppercase tracking-widest text-[#D1F349]">Loading...</span>
-                </div>
-              ) : (
-                <div className="w-1 h-1 bg-transparent" />
-              )}
-            </div>
+            <InfiniteScrollTrigger
+              onIntersect={loadMorePublicCreations}
+              isLoading={isFeedLoading}
+            />
           )}
         </div>
 
@@ -686,6 +676,37 @@ function FeaturedStyleCard({ navigate, template }: { navigate: (p: string, optio
           Use Style <ArrowRight className="w-3 h-3 md:w-4 md:h-4" />
         </button>
       </div>
+    </div>
+  );
+}
+
+// =======================
+// INFINITE SCROLL TRIGGER
+// =======================
+function InfiniteScrollTrigger({ onIntersect, isLoading }: { onIntersect: () => void; isLoading: boolean }) {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!ref.current) return;
+    const observer = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting) {
+        onIntersect();
+      }
+    }, { threshold: 0.1 });
+    observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, [onIntersect]);
+
+  return (
+    <div className="py-12 flex justify-center" ref={ref}>
+      {isLoading ? (
+        <div className="flex items-center gap-2 text-zinc-500 animate-pulse">
+          <div className="w-2 h-2 rounded-full bg-[#D1F349]" />
+          <span className="text-xs font-bold uppercase tracking-widest text-[#D1F349]">Loading...</span>
+        </div>
+      ) : (
+        <div className="w-1 h-1 bg-transparent" />
+      )}
     </div>
   );
 }
