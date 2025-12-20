@@ -496,6 +496,7 @@ function CreatorStudioPageContent() {
                                 ratio: c.aspect_ratio,
                                 isPublic: c.is_published || c.visibility === 'public',
                                 status: 'completed',
+                                isOwner: true,  // User's own creations - enables delete and visibility toggle
                                 template: getTemplateMeta([realId, c.url]) // Hydrate from ID or URL lookup
                             };
                         });
