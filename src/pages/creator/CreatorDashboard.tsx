@@ -415,6 +415,9 @@ export default function CreatorDashboard() {
           type: c.type || 'image',
           prompt: c.prompt,
           model: c.model,
+          creator_avatar: c.creator_avatar,
+          creator_username: c.creator_username,
+          creator_slug: c.creator_slug,
           isOwner: false
         })) as GalleryItem[]}
         initialIndex={previewIndex}
