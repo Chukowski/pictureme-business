@@ -20,7 +20,9 @@ import { ENV } from "@/config/env";
 import { getCurrentUser, toggleLike } from "@/services/eventsApi";
 import { toast } from "sonner";
 import { CreationDetailView, GalleryItem } from "@/components/creator/CreationDetailView";
-import { getAvatarUrl, getOptimizedUrl, getThumbnailUrl } from "@/services/imgproxy";
+import { getAvatarUrl, getOptimizedUrl, getThumbnailUrl, getDownloadUrl, getProcessingUrl } from "@/services/imgproxy";
+import { useUserTier } from "@/services/userTier";
+
 
 interface UserProfile {
   id: number;
@@ -75,6 +77,7 @@ export default function PublicProfile() {
   const [previewIndex, setPreviewIndex] = useState(0);
 
   const currentUser = getCurrentUser();
+  const { tier: userTier } = useUserTier();
   const isOwnProfile = currentUser?.username === username || currentUser?.slug === username;
 
   useEffect(() => {
@@ -349,23 +352,30 @@ export default function PublicProfile() {
         })) as GalleryItem[]}
         initialIndex={previewIndex}
         onDownload={(item) => {
+          // Use imgproxy for optimized download based on user's tier
+          const downloadUrl = item.type === 'video' ? item.url : getDownloadUrl(item.url, userTier);
           const link = document.createElement("a");
-          link.href = item.url;
-          link.download = `creation-${item.id}.${item.type === 'video' ? 'mp4' : 'png'}`;
+          link.href = downloadUrl;
+          link.download = `creation-${item.id}.${item.type === 'video' ? 'mp4' : 'webp'}`;
           document.body.appendChild(link);
           link.click();
           document.body.removeChild(link);
         }}
         onReusePrompt={(item) => {
           setPreviewOpen(false);
+          // Use imgproxy-processed URL for remix to avoid 413 errors
+          const optimizedSourceUrl = item.type === 'image'
+            ? getProcessingUrl(item.url, 2048)
+            : item.url;
           const remixState = {
             prompt: item.prompt || '',
             selectedTemplate: (item as any).template || null,
-            sourceImageUrl: item.url,
+            sourceImageUrl: optimizedSourceUrl,
             view: 'create'
           };
           navigate('/creator/studio', { state: remixState });
         }}
+
       />
     </>
   );

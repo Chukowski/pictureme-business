@@ -18,7 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { ENV } from "@/config/env";
 import { toast } from "sonner";
 import { CreationDetailView, GalleryItem } from "@/components/creator/CreationDetailView";
-import { getFeedImageUrl, getAvatarUrl, getThumbnailUrl } from "@/services/imgproxy";
+import { getFeedImageUrl, getAvatarUrl, getThumbnailUrl, getProcessingUrl } from "@/services/imgproxy";
 
 
 // ... existing types ...
@@ -447,11 +447,15 @@ export default function CreatorDashboard() {
               setPreviewOpen(true);
             }}
             onRemixClick={(creation) => {
+              // Use imgproxy-processed URL for remix to avoid 413 errors
+              const optimizedSourceUrl = creation.image_url
+                ? getProcessingUrl(creation.image_url, 2048)
+                : null;
               const remixState = {
                 prompt: creation.prompt || '',
                 templateId: creation.template_id || null,
                 templateUrl: creation.template_url || null,
-                sourceImageUrl: creation.image_url || null,
+                sourceImageUrl: optimizedSourceUrl,
                 remixFrom: creation.id,
               };
               navigate('/creator/create', { state: remixState });

@@ -199,7 +199,7 @@ export function CreationDetailView({
                         y: { type: "tween", duration: 0.4, ease: [0.32, 0.72, 0, 1] },
                         opacity: { duration: 0.3 }
                     }}
-                    className="absolute inset-0 w-full h-full flex flex-col items-center justify-center p-0 z-0 overflow-hidden"
+                    className="absolute inset-0 w-full h-full flex flex-col items-center justify-center p-0 z-0 overflow-hidden touch-none"
                     onTouchStart={onTouchStart}
                     onTouchEnd={onTouchEnd}
                     onWheel={onWheel}

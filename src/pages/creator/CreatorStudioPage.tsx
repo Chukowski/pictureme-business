@@ -58,12 +58,13 @@ import { ENV } from "@/config/env";
 import { SaveTemplateModal } from "@/components/templates/SaveTemplateModal";
 import { useMyTemplates, UserTemplate } from "@/hooks/useMyTemplates";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { getThumbnailUrl } from "@/services/imgproxy";
+import { getThumbnailUrl, getProcessingUrl, getDownloadUrl } from "@/services/imgproxy";
 import { cn } from "@/lib/utils";
 import { CreatorStudioSidebar, SidebarMode } from "@/components/creator/CreatorStudioSidebar";
 import { TemplateLibrary, MarketplaceTemplate } from "@/components/creator/TemplateLibrary";
 import { CreatorBottomNav } from "@/components/creator/CreatorBottomNav";
 import { CreationDetailView, GalleryItem } from "@/components/creator/CreationDetailView";
+import { useUserTier } from "@/services/userTier";
 
 type MainView = "home" | "create" | "templates" | "booths" | "gallery";
 
@@ -274,6 +275,7 @@ function CreatorStudioPageContent() {
     // Initial user from local storage
     const initialUser = getCurrentUser();
     const [currentUser, setCurrentUser] = useState<User | null>(initialUser);
+    const { tier: userTier } = useUserTier();
 
     const { templates: myTemplates, saveTemplate } = useMyTemplates();
 
@@ -645,9 +647,11 @@ function CreatorStudioPageContent() {
     };
 
     const handleDownload = async (item: GalleryItem) => {
+        // Use imgproxy for optimized download based on user's tier (videos stay as-is)
+        const downloadUrl = item.type === 'video' ? item.url : getDownloadUrl(item.url, userTier);
         const link = document.createElement("a");
-        link.href = item.url;
-        link.download = `creation-${item.id}.${item.type === 'video' ? 'mp4' : 'png'}`;
+        link.href = downloadUrl;
+        link.download = `creation-${item.id}.${item.type === 'video' ? 'mp4' : 'webp'}`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);

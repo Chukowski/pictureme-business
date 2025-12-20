@@ -97,6 +97,7 @@ import CreatorSettingsPage from "./pages/settings/CreatorSettingsPage";
 
 import { TopNavbar } from "./components/TopNavbar";
 import { BusinessOnly } from "./components/routing/BusinessOnly";
+import { UserTierProvider } from "./services/userTier";
 
 // Get user info for CopilotKit context
 const getUserProperties = () => {
@@ -340,13 +341,15 @@ const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <AppContent />
-          </BrowserRouter>
-        </TooltipProvider>
+        <UserTierProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <AppContent />
+            </BrowserRouter>
+          </TooltipProvider>
+        </UserTierProvider>
       </ThemeProvider>
     </QueryClientProvider>
   );

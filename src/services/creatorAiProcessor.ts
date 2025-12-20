@@ -1,6 +1,7 @@
 import { applyBrandingOverlay } from "./imageOverlay";
 import { ENV } from "../config/env";
 import { resolveModelId, DEFAULT_FAL_MODEL, getImageDimensions, getFluxOptimizedDimensions, getFluxImageSize, ProcessImageResult, chargeTokensForGeneration } from "./aiProcessor";
+import { getProcessingUrl } from "./imgproxy";
 
 export interface ProcessCreatorImageOptions {
     userPhotoBase64: string;
@@ -26,45 +27,109 @@ export interface ProcessCreatorImageOptions {
 }
 
 /**
- * Convert URL to Data URI (Base64)
+ * Compress image to reduce file size before upload
+ * Max dimension: 2048px, Quality: 85%
+ */
+async function compressImage(dataUri: string, maxDimension = 2048, quality = 0.85): Promise<string> {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        img.onload = () => {
+            let { width, height } = img;
+
+            // Scale down if larger than max dimension
+            if (width > maxDimension || height > maxDimension) {
+                const ratio = Math.min(maxDimension / width, maxDimension / height);
+                width = Math.round(width * ratio);
+                height = Math.round(height * ratio);
+            }
+
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) {
+                reject(new Error('Failed to get canvas context'));
+                return;
+            }
+            ctx.drawImage(img, 0, 0, width, height);
+
+            // Convert to JPEG with compression
+            const compressedDataUri = canvas.toDataURL('image/jpeg', quality);
+            console.log(`🗜️ Compressed: ${Math.round(dataUri.length / 1024)}KB → ${Math.round(compressedDataUri.length / 1024)}KB`);
+            resolve(compressedDataUri);
+        };
+        img.onerror = () => reject(new Error('Failed to load image for compression'));
+        img.src = dataUri;
+    });
+}
+
+/**
+ * Convert URL to Data URI (Base64) and compress
  * Handles CORS issues by fetching through proxied endpoint if needed
- * Duplicated from aiProcessor.ts to keep this file self-contained for utility needs
+ * Uses imgproxy for remote URLs to get optimized versions
  */
 async function imageUrlToDataUri(url: string): Promise<string> {
-    // If already base64, return as is
+    // If already base64, compress it and return
     if (url.startsWith("data:")) {
-        return url;
+        return compressImage(url);
     }
+
+    // For remote URLs, use imgproxy to get optimized version (max 2048px width)
+    const optimizedUrl = getProcessingUrl(url, 2048);
+
     try {
-        // Try direct fetch first
-        console.log("📥 Loading image for conversion:", url);
-        const response = await fetch(url, { mode: 'cors' });
+        // Try direct fetch first (imgproxy URL)
+        console.log("📥 Loading optimized image:", optimizedUrl);
+        const response = await fetch(optimizedUrl, { mode: 'cors' });
         if (!response.ok) {
             throw new Error(`Failed to fetch image: ${response.status}`);
         }
         const blob = await response.blob();
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
-            reader.onloadend = () => resolve(reader.result as string);
+            reader.onloadend = () => {
+                // Already optimized by imgproxy, but compress further if needed
+                compressImage(reader.result as string).then(resolve).catch(reject);
+            };
             reader.onerror = reject;
             reader.readAsDataURL(blob);
         });
     } catch (error) {
-        console.warn("⚠️ Direct fetch failed, trying proxy...", error);
-        // If direct fetch fails (CORS), try via our proxy
-        const apiUrl = ENV.API_URL || '';
-        const proxyUrl = `${apiUrl}/api/proxy/image?url=${encodeURIComponent(url)}`;
+        console.warn("⚠️ Imgproxy fetch failed, trying original URL...", error);
+        // Fallback to original URL
+        try {
+            const response = await fetch(url, { mode: 'cors' });
+            if (!response.ok) throw new Error(`Failed: ${response.status}`);
+            const blob = await response.blob();
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    compressImage(reader.result as string).then(resolve).catch(reject);
+                };
+                reader.onerror = reject;
+                reader.readAsDataURL(blob);
+            });
+        } catch (e2) {
+            console.warn("⚠️ Direct fetch failed, trying proxy...", e2);
+            // If direct fetch fails (CORS), try via our proxy
+            const apiUrl = ENV.API_URL || '';
+            const proxyUrl = `${apiUrl}/api/proxy/image?url=${encodeURIComponent(url)}`;
 
-        const response = await fetch(proxyUrl);
-        const blob = await response.blob();
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onloadend = () => resolve(reader.result as string);
-            reader.onerror = reject;
-            reader.readAsDataURL(blob);
-        });
+            const response = await fetch(proxyUrl);
+            const blob = await response.blob();
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    compressImage(reader.result as string).then(resolve).catch(reject);
+                };
+                reader.onerror = reject;
+                reader.readAsDataURL(blob);
+            });
+        }
     }
 }
+
 
 /**
  * Process an image specifically for individual Creator Studio users.

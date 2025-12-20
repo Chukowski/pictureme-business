@@ -1,5 +1,5 @@
 /**
- * imgproxy URL Generator
+ * imgproxy URL Generator - Full Implementation
  * 
  * Generates URLs for imgproxy image processing service.
  * Documentation: https://docs.imgproxy.net/
@@ -9,36 +9,39 @@
 
 const IMGPROXY_BASE_URL = 'https://img.pictureme.now';
 
-// Toggle this to enable/disable imgproxy processing
-// Set to false until imgproxy server is properly configured
+// Toggle this to enable/disable imgproxy processing globally
 const IMGPROXY_ENABLED = true;
 
 // If you have signing enabled in imgproxy, set these keys
-// For now, we use 'insecure' mode (signature = "insecure")
 const USE_SIGNATURE = false;
 
+// ============== TYPES ==============
+
 export type ResizeType = 'fit' | 'fill' | 'fill-down' | 'force' | 'auto';
-export type Gravity = 'no' | 'so' | 'ea' | 'we' | 'noea' | 'nowe' | 'soea' | 'sowe' | 'ce' | 'sm';
-export type Format = 'png' | 'jpg' | 'webp' | 'avif' | 'gif';
+export type Gravity = 'no' | 'so' | 'ea' | 'we' | 'noea' | 'nowe' | 'soea' | 'sowe' | 'ce' | 'sm' | 'fp';
+export type Format = 'png' | 'jpg' | 'webp' | 'avif' | 'gif' | 'best';
+
+export type QualityTier = 'free' | 'pro' | 'studio' | 'original';
 
 export interface ImgproxyOptions {
     // Resize options
     width?: number;
     height?: number;
     resizeType?: ResizeType;
-    enlarge?: boolean;
+    enlarge?: boolean;  // Don't upscale small images
     extend?: boolean;
 
     // Quality and format
     quality?: number; // 1-100
     format?: Format;
+    maxBytes?: number; // Auto-degrade quality to meet size limit
 
     // Cropping
     gravity?: Gravity;
 
     // Effects
     blur?: number; // Gaussian blur sigma
-    sharpen?: number; // Sharpen sigma
+    sharpen?: number; // Sharpen sigma (0.5-1 recommended after resize)
 
     // Background (for transparent images)
     background?: string; // Hex color without #, e.g., 'ffffff'
@@ -46,85 +49,139 @@ export interface ImgproxyOptions {
     // Device pixel ratio (for retina displays)
     dpr?: number;
 
-    // Strip metadata
+    // Metadata handling
     stripMetadata?: boolean;
-
-    // Cache control (for CDN)
-    cacheBuster?: string;
+    stripColorProfile?: boolean;
+    keepCopyright?: boolean;
 }
 
+// ============== TIER CONFIGURATIONS ==============
+
 /**
- * Encode source URL for imgproxy
- * Uses URL-safe Base64 encoding without padding
+ * Quality configurations by user tier
+ * Free users get compressed images, Pro/Studio get higher quality
+ */
+export const TIER_CONFIG: Record<QualityTier, Partial<ImgproxyOptions>> = {
+    free: {
+        quality: 75,
+        format: 'webp',
+        stripMetadata: true,
+        stripColorProfile: true,
+        sharpen: 0.3,
+    },
+    pro: {
+        quality: 85,
+        format: 'webp',
+        stripMetadata: true,
+        sharpen: 0.4,
+    },
+    studio: {
+        quality: 92,
+        format: 'webp',
+        stripMetadata: false,
+        keepCopyright: true,
+        sharpen: 0.5,
+    },
+    original: {
+        // No compression, just serve optimized format
+        quality: 100,
+        format: 'webp',
+        stripMetadata: false,
+    }
+};
+
+// ============== URL ENCODING ==============
+
+/**
+ * Encode the source URL in Base64 (URL-safe variant)
  */
 function encodeSourceUrl(url: string): string {
-    // URL-safe Base64 encoding without padding
     const base64 = btoa(url);
-    return base64
-        .replace(/\+/g, '-')
-        .replace(/\//g, '_')
-        .replace(/=+$/, '');
+    // Convert to URL-safe Base64
+    return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
+// ============== PROCESSING OPTIONS BUILDER ==============
 
 /**
- * Build processing options string from options object
- * Format for this imgproxy instance: rs:type:width:height (no extension needed)
+ * Build the processing options string following imgproxy URL format
+ * Format: rs:type:w:h:enlarge:extend/g:gravity/q:quality/sm:t/format:webp/...
  */
 function buildProcessingOptions(options: ImgproxyOptions): string {
     const parts: string[] = [];
 
-    // Resize (rs:type:width:height) - tested and working
+    // Resize: rs:type:width:height:enlarge:extend
     if (options.width || options.height) {
         const resizeType = options.resizeType || 'fit';
-        const width = options.width || 0;
-        const height = options.height || 0;
-        parts.push(`rs:${resizeType}:${width}:${height}`);
+        const w = options.width || 0;
+        const h = options.height || 0;
+        const enlarge = options.enlarge ? 1 : 0;
+        const extend = options.extend ? 1 : 0;
+        parts.push(`rs:${resizeType}:${w}:${h}:${enlarge}:${extend}`);
     }
 
-    // Quality (quality:value)
+    // Gravity
+    if (options.gravity) {
+        parts.push(`g:${options.gravity}`);
+    }
+
+    // Quality
     if (options.quality) {
-        parts.push(`quality:${options.quality}`);
+        parts.push(`q:${options.quality}`);
     }
 
-    // Format (format:ext) - useful since we removed the extension from the URL
+    // Max bytes (auto quality degradation)
+    if (options.maxBytes) {
+        parts.push(`mb:${options.maxBytes}`);
+    }
+
+    // DPR (Device Pixel Ratio)
+    if (options.dpr && options.dpr > 1) {
+        parts.push(`dpr:${options.dpr}`);
+    }
+
+    // Strip metadata
+    if (options.stripMetadata) {
+        parts.push('sm:t');
+    }
+
+    // Strip color profile
+    if (options.stripColorProfile) {
+        parts.push('scp:t');
+    }
+
+    // Keep copyright
+    if (options.keepCopyright) {
+        parts.push('kcr:t');
+    }
+
+    // Blur
+    if (options.blur) {
+        parts.push(`bl:${options.blur}`);
+    }
+
+    // Sharpen
+    if (options.sharpen) {
+        parts.push(`sh:${options.sharpen}`);
+    }
+
+    // Background color
+    if (options.background) {
+        parts.push(`bg:${options.background}`);
+    }
+
+    // Format (always last before URL)
     if (options.format) {
         parts.push(`format:${options.format}`);
-    }
-
-    // Blur (blur:sigma)
-    if (options.blur) {
-        parts.push(`blur:${options.blur}`);
-    }
-
-    // Sharpen (sharpen:sigma)
-    if (options.sharpen) {
-        parts.push(`sharpen:${options.sharpen}`);
     }
 
     return parts.join('/');
 }
 
+// ============== MAIN URL GENERATOR ==============
 
 /**
- * Generate an imgproxy URL for processing an image
- * 
- * @param sourceUrl - The original image URL to process
- * @param options - Processing options
- * @returns The imgproxy URL
- * 
- * @example
- * // Resize to 400px width, maintain aspect ratio, convert to WebP
- * getImgproxyUrl('https://example.com/image.jpg', { width: 400, format: 'webp' })
- * 
- * @example
- * // Create a 200x200 thumbnail with smart cropping
- * getImgproxyUrl('https://example.com/image.jpg', { 
- *   width: 200, 
- *   height: 200, 
- *   resizeType: 'fill',
- *   gravity: 'sm' 
- * })
+ * Generate an imgproxy URL for any source image
  */
 export function getImgproxyUrl(sourceUrl: string, options: ImgproxyOptions = {}): string {
     // If imgproxy is disabled, return original URL
@@ -137,12 +194,16 @@ export function getImgproxyUrl(sourceUrl: string, options: ImgproxyOptions = {})
         return sourceUrl;
     }
 
+    // Don't double-process imgproxy URLs
+    if (sourceUrl.startsWith(IMGPROXY_BASE_URL)) {
+        return sourceUrl;
+    }
+
     // Build the URL
     const processingOptions = buildProcessingOptions(options);
     const encodedUrl = encodeSourceUrl(sourceUrl);
 
-    // URL structure: /{processing_options}/{base64_encoded_url}
-    // Note: No extension needed - imgproxy auto-detects format
+    // URL structure: /{processing}}/{base64_encoded_url}
     const path = processingOptions
         ? `/${processingOptions}/${encodedUrl}`
         : `/${encodedUrl}`;
@@ -150,10 +211,39 @@ export function getImgproxyUrl(sourceUrl: string, options: ImgproxyOptions = {})
     return `${IMGPROXY_BASE_URL}${path}`;
 }
 
-
+// ============== TIER-BASED FUNCTIONS ==============
 
 /**
- * Convenience function for thumbnails
+ * Get image URL with tier-based quality settings
+ */
+export function getImageByTier(
+    sourceUrl: string,
+    tier: QualityTier = 'free',
+    additionalOptions: Partial<ImgproxyOptions> = {}
+): string {
+    const tierConfig = TIER_CONFIG[tier];
+    return getImgproxyUrl(sourceUrl, { ...tierConfig, ...additionalOptions });
+}
+
+/**
+ * Get download URL - always highest quality for the tier
+ */
+export function getDownloadUrl(sourceUrl: string, tier: QualityTier = 'pro'): string {
+    const config = tier === 'original'
+        ? { quality: 100, format: 'webp' as Format }
+        : { ...TIER_CONFIG[tier], quality: Math.max(TIER_CONFIG[tier].quality || 80, 90) };
+
+    return getImgproxyUrl(sourceUrl, {
+        ...config,
+        stripMetadata: false, // Keep metadata for downloads
+        keepCopyright: true,
+    });
+}
+
+// ============== CONVENIENCE FUNCTIONS ==============
+
+/**
+ * Thumbnail for grids and previews
  */
 export function getThumbnailUrl(sourceUrl: string, size: number = 300): string {
     return getImgproxyUrl(sourceUrl, {
@@ -163,25 +253,28 @@ export function getThumbnailUrl(sourceUrl: string, size: number = 300): string {
         gravity: 'sm', // Smart gravity for best crop
         quality: 80,
         format: 'webp',
-        stripMetadata: true
+        stripMetadata: true,
+        stripColorProfile: true,
+        sharpen: 0.3,
     });
 }
 
 /**
- * Convenience function for feed/gallery images
+ * Feed/gallery images (medium quality, fast loading)
  */
 export function getFeedImageUrl(sourceUrl: string, width: number = 600): string {
     return getImgproxyUrl(sourceUrl, {
         width,
         resizeType: 'fit',
-        quality: 85,
+        quality: 82,
         format: 'webp',
-        stripMetadata: true
+        stripMetadata: true,
+        sharpen: 0.4,
     });
 }
 
 /**
- * Convenience function for full-resolution optimized images
+ * Full-resolution optimized images (for detail views)
  */
 export function getOptimizedUrl(sourceUrl: string, maxWidth: number = 1920): string {
     return getImgproxyUrl(sourceUrl, {
@@ -189,12 +282,13 @@ export function getOptimizedUrl(sourceUrl: string, maxWidth: number = 1920): str
         resizeType: 'fit',
         quality: 90,
         format: 'webp',
-        stripMetadata: true
+        stripMetadata: true,
+        sharpen: 0.5,
     });
 }
 
 /**
- * Convenience function for avatar/profile images
+ * Avatar/profile images (small, square, smart crop)
  */
 export function getAvatarUrl(sourceUrl: string, size: number = 100): string {
     return getImgproxyUrl(sourceUrl, {
@@ -204,12 +298,13 @@ export function getAvatarUrl(sourceUrl: string, size: number = 100): string {
         gravity: 'sm',
         quality: 85,
         format: 'webp',
-        stripMetadata: true
+        stripMetadata: true,
+        stripColorProfile: true,
     });
 }
 
 /**
- * Convenience function for blurred placeholder (LQIP - Low Quality Image Placeholder)
+ * Blurred placeholder (LQIP - Low Quality Image Placeholder)
  */
 export function getPlaceholderUrl(sourceUrl: string): string {
     return getImgproxyUrl(sourceUrl, {
@@ -218,6 +313,60 @@ export function getPlaceholderUrl(sourceUrl: string): string {
         quality: 30,
         blur: 5,
         format: 'webp',
-        stripMetadata: true
+        stripMetadata: true,
+        stripColorProfile: true,
     });
+}
+
+/**
+ * Cover/banner images (wide, high quality)
+ */
+export function getCoverUrl(sourceUrl: string, width: number = 1400): string {
+    return getImgproxyUrl(sourceUrl, {
+        width,
+        resizeType: 'fit',
+        quality: 88,
+        format: 'webp',
+        stripMetadata: true,
+        sharpen: 0.4,
+    });
+}
+
+/**
+ * For remix/AI processing - optimized for upload (compressed but high enough quality)
+ */
+export function getProcessingUrl(sourceUrl: string, maxDimension: number = 2048): string {
+    return getImgproxyUrl(sourceUrl, {
+        width: maxDimension,
+        height: maxDimension,
+        resizeType: 'fit',
+        enlarge: false,
+        quality: 88,
+        format: 'webp',
+        stripMetadata: true,
+        stripColorProfile: true,
+    });
+}
+
+/**
+ * For immersive/background use (lower quality, for blur backgrounds)
+ */
+export function getBackgroundUrl(sourceUrl: string): string {
+    return getImgproxyUrl(sourceUrl, {
+        width: 1200,
+        resizeType: 'fit',
+        quality: 60,
+        blur: 20,
+        format: 'webp',
+        stripMetadata: true,
+    });
+}
+
+/**
+ * Video thumbnail extraction (if imgproxy Pro is available)
+ * Falls back to original URL if not supported
+ */
+export function getVideoThumbnailUrl(videoUrl: string, second: number = 1): string {
+    // For now, return original - would need Pro features
+    return videoUrl;
 }

@@ -160,11 +160,19 @@ All colors MUST be HSL.
     @apply border-border;
   }
 
+  html {
+    overscroll-behavior-y: none;
+    height: 100%;
+  }
+
   body {
     @apply bg-background text-foreground;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    overscroll-behavior-y: none;
+    height: 100%;
+    -webkit-tap-highlight-color: transparent;
   }
 
   h1,
