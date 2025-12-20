@@ -218,17 +218,28 @@ export const CreatorBottomNav = ({ onOpenCreate, onLibraryClick, onHomeClick, ac
 
                                         <DrawerHeader className="flex flex-col items-center gap-6 pt-16 pb-8">
                                             <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-white/10 shadow-2xl">
-                                                {currentUser?.avatar_url ? (
-                                                    <img src={currentUser.avatar_url} alt="Profile" className="w-full h-full object-cover" />
+                                                {currentUser?.image ? (
+                                                    <img src={currentUser.image} alt="Profile" className="w-full h-full object-cover" />
                                                 ) : (
                                                     <div className="w-full h-full bg-zinc-800 flex items-center justify-center">
                                                         <User className="w-10 h-10 text-zinc-400" />
                                                     </div>
                                                 )}
                                             </div>
-                                            <div className="text-center space-y-1">
+                                            <div className="text-center space-y-2">
                                                 <DrawerTitle className="text-2xl font-bold tracking-tight">{currentUser?.full_name || currentUser?.username}</DrawerTitle>
                                                 <p className="text-base text-zinc-500">{currentUser?.email}</p>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="text-[#D1F349] hover:text-[#D1F349] hover:bg-[#D1F349]/10 text-xs font-bold"
+                                                    onClick={() => {
+                                                        setIsProfileOpen(false);
+                                                        navigate(`/profile/${currentUser?.slug || currentUser?.username}`);
+                                                    }}
+                                                >
+                                                    View Profile
+                                                </Button>
                                             </div>
                                         </DrawerHeader>
 
