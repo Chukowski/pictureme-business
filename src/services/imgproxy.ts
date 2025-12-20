@@ -82,8 +82,29 @@ function buildProcessingOptions(options: ImgproxyOptions): string {
         parts.push(`rs:${resizeType}:${width}:${height}`);
     }
 
+    // Quality (quality:value)
+    if (options.quality) {
+        parts.push(`quality:${options.quality}`);
+    }
+
+    // Format (format:ext) - useful since we removed the extension from the URL
+    if (options.format) {
+        parts.push(`format:${options.format}`);
+    }
+
+    // Blur (blur:sigma)
+    if (options.blur) {
+        parts.push(`blur:${options.blur}`);
+    }
+
+    // Sharpen (sharpen:sigma)
+    if (options.sharpen) {
+        parts.push(`sharpen:${options.sharpen}`);
+    }
+
     return parts.join('/');
 }
+
 
 /**
  * Generate an imgproxy URL for processing an image
