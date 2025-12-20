@@ -51,16 +51,13 @@ export interface ImgproxyOptions {
 
 /**
  * Encode source URL for imgproxy
- * Uses URL-safe Base64 encoding
+ * Uses plain URL format (percent-encoded) with plain/ prefix
  */
 function encodeSourceUrl(url: string): string {
-    // URL-safe Base64 encoding
-    const base64 = btoa(url);
-    return base64
-        .replace(/\+/g, '-')
-        .replace(/\//g, '_')
-        .replace(/=+$/, '');
+    // Use plain format - just percent-encode the URL
+    return `plain/${encodeURIComponent(url)}`;
 }
+
 
 /**
  * Build processing options string from options object

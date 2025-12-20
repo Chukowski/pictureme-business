@@ -474,7 +474,7 @@ export default function CreatorDashboard() {
                   { threshold: 0.1 }
                 );
                 observer.observe(el);
-                return () => observer.disconnect();
+                // Note: cleanup happens when hasMore becomes false and element unmounts
               }}
             >
               {isFeedLoading ? (
