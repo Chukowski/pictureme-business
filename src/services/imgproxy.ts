@@ -69,58 +69,17 @@ function encodeSourceUrl(url: string): string {
 
 /**
  * Build processing options string from options object
+ * Format for this imgproxy instance: rs:type:width:height (no extension needed)
  */
 function buildProcessingOptions(options: ImgproxyOptions): string {
     const parts: string[] = [];
 
-    // Resize (rs:type:width:height:enlarge:extend)
+    // Resize (rs:type:width:height) - tested and working
     if (options.width || options.height) {
         const resizeType = options.resizeType || 'fit';
         const width = options.width || 0;
         const height = options.height || 0;
-        const enlarge = options.enlarge ? 1 : 0;
-        const extend = options.extend ? 1 : 0;
-        parts.push(`rs:${resizeType}:${width}:${height}:${enlarge}:${extend}`);
-    }
-
-    // Gravity (g:type)
-    if (options.gravity) {
-        parts.push(`g:${options.gravity}`);
-    }
-
-    // Quality (q:value)
-    if (options.quality) {
-        parts.push(`q:${options.quality}`);
-    }
-
-    // DPR (dpr:value)
-    if (options.dpr && options.dpr > 1) {
-        parts.push(`dpr:${options.dpr}`);
-    }
-
-    // Blur (bl:sigma)
-    if (options.blur) {
-        parts.push(`bl:${options.blur}`);
-    }
-
-    // Sharpen (sh:sigma)
-    if (options.sharpen) {
-        parts.push(`sh:${options.sharpen}`);
-    }
-
-    // Background (bg:hex)
-    if (options.background) {
-        parts.push(`bg:${options.background}`);
-    }
-
-    // Strip metadata
-    if (options.stripMetadata) {
-        parts.push('sm:1');
-    }
-
-    // Cache buster (cb:value) - useful for cache invalidation
-    if (options.cacheBuster) {
-        parts.push(`cb:${options.cacheBuster}`);
+        parts.push(`rs:${resizeType}:${width}:${height}`);
     }
 
     return parts.join('/');
@@ -155,16 +114,16 @@ export function getImgproxyUrl(sourceUrl: string, options: ImgproxyOptions = {})
     // Build the URL
     const processingOptions = buildProcessingOptions(options);
     const encodedUrl = encodeSourceUrl(sourceUrl);
-    const extension = options.format ? `@${options.format}` : '';
 
-    // URL structure: /{processing_options}/{base64_encoded_url}{@extension}
-    // Note: This imgproxy instance doesn't require /insecure prefix
+    // URL structure: /{processing_options}/{base64_encoded_url}
+    // Note: No extension needed - imgproxy auto-detects format
     const path = processingOptions
-        ? `/${processingOptions}/${encodedUrl}${extension}`
-        : `/${encodedUrl}${extension}`;
+        ? `/${processingOptions}/${encodedUrl}`
+        : `/${encodedUrl}`;
 
     return `${IMGPROXY_BASE_URL}${path}`;
 }
+
 
 /**
  * Convenience function for thumbnails
