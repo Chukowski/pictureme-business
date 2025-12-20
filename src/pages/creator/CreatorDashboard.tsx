@@ -449,15 +449,33 @@ export default function CreatorDashboard() {
             }}
           />
 
-          {/* Infinite Scroll Trigger */}
-          {hasMore ? (
-            <InfiniteScrollTrigger
-              onIntersect={loadMorePublicCreations}
-              isLoading={isFeedLoading}
+          {/* Infinite Scroll Trigger - only render if there's more to load */}
+          {hasMore && !isFeedLoading && (
+            <div
+              className="py-8"
+              ref={(el) => {
+                if (!el) return;
+                const observer = new IntersectionObserver(
+                  (entries) => {
+                    if (entries[0].isIntersecting) {
+                      loadMorePublicCreations();
+                      observer.disconnect();
+                    }
+                  },
+                  { threshold: 0.1 }
+                );
+                observer.observe(el);
+              }}
             />
-          ) : publicCreations.length > 0 ? (
-            <EndOfFeedIndicator />
-          ) : null}
+          )}
+          {isFeedLoading && (
+            <div className="py-8 flex justify-center">
+              <div className="flex items-center gap-2 animate-pulse">
+                <div className="w-2 h-2 rounded-full bg-[#D1F349]" />
+                <span className="text-xs font-bold uppercase tracking-widest text-[#D1F349]">Loading...</span>
+              </div>
+            </div>
+          )}
         </div>
 
       </div>
