@@ -144,9 +144,16 @@ export function CreationDetailView({
 
         const formatModelName = (modelId: string) => {
             if (!modelId) return "AI Model";
-            const parts = modelId.split('/');
-            const last = parts[parts.length - 1];
-            return last.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+            // Handle FAL model IDs like "fal-ai/nano-banana/edit" or "fal-ai/seedream-2.0"
+            const parts = modelId.replace('fal-ai/', '').split('/');
+            // Take the model name part (usually the first after removing provider)
+            const modelPart = parts[0] || parts[parts.length - 1];
+            // Convert kebab-case to Title Case
+            return modelPart
+                .split('-')
+                .filter(word => word && !['ai', 'fal', 'v1', 'v2'].includes(word.toLowerCase()))
+                .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                .join(' ');
         };
 
         const onTouchStart = (e: React.TouchEvent) => {
