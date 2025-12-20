@@ -18,6 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { ENV } from "@/config/env";
 import { toast } from "sonner";
 import { CreationDetailView, GalleryItem } from "@/components/creator/CreationDetailView";
+import { getFeedImageUrl, getAvatarUrl } from "@/services/imgproxy";
 
 
 // ... existing types ...
@@ -68,7 +69,7 @@ function MarketplaceFeedCard({ creation, onImageClick, onRemixClick }: { creatio
       onClick={onImageClick}
     >
       <img
-        src={creation.image_url || creation.url}
+        src={getFeedImageUrl(creation.image_url || creation.url, 600)}
         alt={creation.template_name || creation.prompt || ''}
         className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-500"
         loading="lazy"
@@ -106,7 +107,7 @@ function MarketplaceFeedCard({ creation, onImageClick, onRemixClick }: { creatio
         >
           <div className="w-6 h-6 shrink-0 rounded-full bg-zinc-700 flex items-center justify-center overflow-hidden border border-white/20">
             {creation.creator_avatar ? (
-              <img src={creation.creator_avatar} className="w-full h-full object-cover" />
+              <img src={getAvatarUrl(creation.creator_avatar, 48)} className="w-full h-full object-cover" />
             ) : (
               <span className="text-[10px] font-bold text-white">
                 {creation.creator_username?.charAt(0)?.toUpperCase() || 'C'}
