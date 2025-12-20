@@ -450,12 +450,14 @@ export default function CreatorDashboard() {
           />
 
           {/* Infinite Scroll Trigger */}
-          {hasMore && (
+          {hasMore ? (
             <InfiniteScrollTrigger
               onIntersect={loadMorePublicCreations}
               isLoading={isFeedLoading}
             />
-          )}
+          ) : publicCreations.length > 0 ? (
+            <EndOfFeedIndicator />
+          ) : null}
         </div>
 
       </div>
@@ -685,11 +687,14 @@ function FeaturedStyleCard({ navigate, template }: { navigate: (p: string, optio
 // =======================
 function InfiniteScrollTrigger({ onIntersect, isLoading }: { onIntersect: () => void; isLoading: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
+  const isLoadingRef = useRef(isLoading);
+  isLoadingRef.current = isLoading;
 
   useEffect(() => {
     if (!ref.current) return;
     const observer = new IntersectionObserver((entries) => {
-      if (entries[0].isIntersecting) {
+      // Only trigger if visible AND not currently loading
+      if (entries[0].isIntersecting && !isLoadingRef.current) {
         onIntersect();
       }
     }, { threshold: 0.1 });
@@ -698,15 +703,24 @@ function InfiniteScrollTrigger({ onIntersect, isLoading }: { onIntersect: () => 
   }, [onIntersect]);
 
   return (
-    <div className="py-12 flex justify-center" ref={ref}>
-      {isLoading ? (
+    <div className="py-8 flex justify-center" ref={ref}>
+      {isLoading && (
         <div className="flex items-center gap-2 text-zinc-500 animate-pulse">
           <div className="w-2 h-2 rounded-full bg-[#D1F349]" />
           <span className="text-xs font-bold uppercase tracking-widest text-[#D1F349]">Loading...</span>
         </div>
-      ) : (
-        <div className="w-1 h-1 bg-transparent" />
       )}
+    </div>
+  );
+}
+
+// =======================
+// END OF FEED INDICATOR
+// =======================
+function EndOfFeedIndicator() {
+  return (
+    <div className="py-8 flex justify-center">
+      <span className="text-xs text-zinc-600 uppercase tracking-widest">You've reached the end</span>
     </div>
   );
 }
