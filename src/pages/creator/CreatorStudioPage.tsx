@@ -332,11 +332,16 @@ function CreatorStudioPageContent() {
         return true;
     }, [user]);
 
-    const [isPublic, setIsPublic] = useState(true);
+    // Default visibility: Free tier = public (forced), Paid tier = private (can toggle)
+    const [isPublic, setIsPublic] = useState(false);
 
-    // Enforce public for free tier
+    // Set initial visibility based on tier (once we know)
     useEffect(() => {
-        if (isFreeTier) setIsPublic(true);
+        if (isFreeTier) {
+            setIsPublic(true); // Free tier is forced public
+        } else {
+            setIsPublic(false); // Paid tier defaults to private
+        }
     }, [isFreeTier]);
 
     // Create Mode State

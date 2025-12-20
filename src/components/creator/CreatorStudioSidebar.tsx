@@ -243,9 +243,9 @@ export function CreatorStudioSidebar({
                         </div>
 
                         {/* 3. MODEL SELECTOR (Slim row) */}
-                        <DropdownMenu>
+                        <DropdownMenu modal={false}>
                             <DropdownMenuTrigger asChild>
-                                <Button variant="outline" className="w-full shrink-0 justify-between bg-zinc-900/50 border-white/10 hover:bg-zinc-900/80 hover:text-white">
+                                <Button variant="outline" className="w-full shrink-0 justify-between bg-zinc-900/50 border-white/10 hover:bg-zinc-900/80 hover:text-white z-[60]">
                                     <div className="flex items-center gap-2 overflow-hidden">
                                         <span className="truncate">
                                             {selectedModelObj ? selectedModelObj.name : "Select Model"}
@@ -254,7 +254,7 @@ export function CreatorStudioSidebar({
                                     <ChevronRight className="w-4 h-4 rotate-90 opacity-50" />
                                 </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width] bg-zinc-950 border-zinc-800">
+                            <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width] bg-zinc-950 border-zinc-800 z-[100]" sideOffset={5}>
                                 {(mode === 'image' ? imageModels : videoModels).map((m) => (
                                     <DropdownMenuItem
                                         key={m.id}
@@ -436,12 +436,19 @@ export function CreatorStudioSidebar({
                             onClick={() => !isFreeTier && setIsPublic(!isPublic)}
                             className={cn(
                                 "h-full px-3 rounded-md flex items-center justify-center gap-2 transition-all min-w-[80px]",
-                                isPublic ? "bg-zinc-800 text-zinc-400" : "bg-red-900/20 text-red-200"
+                                isFreeTier
+                                    ? "bg-zinc-800/50 text-zinc-500 cursor-not-allowed"
+                                    : isPublic
+                                        ? "bg-zinc-800 text-[#D1F349]"
+                                        : "bg-red-900/20 text-red-200"
                             )}
                             disabled={isFreeTier}
+                            title={isFreeTier ? "Free tier creations are always public" : "Toggle visibility"}
                         >
                             {isPublic ? <Globe className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
-                            <span className="text-[10px] font-bold uppercase">{isPublic ? "Public" : "Private"}</span>
+                            <span className="text-[10px] font-bold uppercase">
+                                {isFreeTier ? "Public" : (isPublic ? "Public" : "Private")}
+                            </span>
                         </button>
                     </div>
 
