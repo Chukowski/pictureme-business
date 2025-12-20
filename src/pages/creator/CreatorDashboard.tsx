@@ -8,7 +8,7 @@ import {
   Play, RotateCcw, RefreshCw, Wand2, Store, Layout, Clock,
   TrendingUp, Heart, Eye, ChevronRight, Loader2, X, UserRound
 } from "lucide-react";
-import { getHomeContent, HomeContentResponse } from "@/services/contentApi";
+import { getHomeContent, HomeContentResponse, getPublicCreations, PublicCreation } from "@/services/contentApi";
 import { getMarketplaceTemplates, MarketplaceTemplate } from "@/services/marketplaceApi";
 import { PlanInsightsCard } from "@/components/home/PlanInsightsCard";
 import { WhatsNewBlock } from "@/components/home/WhatsNewBlock";
@@ -252,6 +252,13 @@ export default function CreatorDashboard() {
   const [pendingJobs, setPendingJobs] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Community Feed Pagination State
+  const [publicCreations, setPublicCreations] = useState<PublicCreation[]>([]);
+  const [isFeedLoading, setIsFeedLoading] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const [feedOffset, setFeedOffset] = useState(0);
+  const FEED_LIMIT = 12;
+
   // Community Feed Preview State
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewIndex, setPreviewIndex] = useState(0);
@@ -294,15 +301,48 @@ export default function CreatorDashboard() {
         setUser(currentUser);
       }
 
-      if (homeContent) setContent(homeContent);
+      if (homeContent) {
+        setContent(homeContent);
+        if (homeContent.public_creations) {
+          setPublicCreations(homeContent.public_creations);
+          setFeedOffset(homeContent.public_creations.length);
+          setHasMore(homeContent.public_creations.length >= 10);
+        }
+      }
       setMarketplaceTemplates(templates || []);
       setCreations(creationsData.creations || []);
       setPendingJobs(pendingData.pending || []);
-
     } catch (error) {
       console.error("Failed to load dashboard", error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const loadMorePublicCreations = async () => {
+    if (isFeedLoading || !hasMore) return;
+
+    setIsFeedLoading(true);
+    try {
+      const moreCreations = await getPublicCreations({
+        limit: FEED_LIMIT,
+        offset: feedOffset
+      });
+
+      if (moreCreations.length < FEED_LIMIT) {
+        setHasMore(false);
+      }
+
+      if (moreCreations.length > 0) {
+        setPublicCreations(prev => [...prev, ...moreCreations]);
+        setFeedOffset(prev => prev + moreCreations.length);
+      } else {
+        setHasMore(false);
+      }
+    } catch (error) {
+      console.error("Error loading more public creations:", error);
+    } finally {
+      setIsFeedLoading(false);
     }
   };
 
@@ -384,7 +424,7 @@ export default function CreatorDashboard() {
         <div className="mt-10">
           <h2 className="text-xl font-bold text-white mb-6 tracking-tight">Feed</h2>
           <CreatorsGallerySection
-            creations={content?.public_creations || []}
+            creations={publicCreations}
             onImageClick={(creation, index) => {
               setPreviewIndex(index);
               setPreviewOpen(true);
@@ -400,6 +440,32 @@ export default function CreatorDashboard() {
               navigate('/creator/create', { state: remixState });
             }}
           />
+
+          {/* Infinite Scroll Trigger */}
+          {hasMore && (
+            <div
+              className="py-12 flex justify-center"
+              ref={(el) => {
+                if (el) {
+                  const observer = new IntersectionObserver((entries) => {
+                    if (entries[0].isIntersecting) {
+                      loadMorePublicCreations();
+                    }
+                  }, { threshold: 0.1 });
+                  observer.observe(el);
+                }
+              }}
+            >
+              {isFeedLoading ? (
+                <div className="flex items-center gap-2 text-zinc-500 animate-pulse">
+                  <div className="w-2 h-2 rounded-full bg-[#D1F349]" />
+                  <span className="text-xs font-bold uppercase tracking-widest text-[#D1F349]">Loading...</span>
+                </div>
+              ) : (
+                <div className="w-1 h-1 bg-transparent" />
+              )}
+            </div>
+          )}
         </div>
 
       </div>
@@ -408,7 +474,7 @@ export default function CreatorDashboard() {
       <CreationDetailView
         open={previewOpen}
         onClose={() => setPreviewOpen(false)}
-        items={(content?.public_creations || []).map(c => ({
+        items={publicCreations.map(c => ({
           ...c,
           url: c.image_url,
           previewUrl: c.thumbnail_url || c.image_url,

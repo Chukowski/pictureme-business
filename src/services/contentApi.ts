@@ -83,6 +83,19 @@ export async function getHomeContent(userType: 'personal' | 'business' | 'indivi
   return response.json();
 }
 
+export async function getPublicCreations(params: { limit?: number; offset?: number; featured?: boolean } = {}): Promise<PublicCreation[]> {
+  const query = new URLSearchParams();
+  if (params.limit) query.append('limit', params.limit.toString());
+  if (params.offset) query.append('offset', params.offset.toString());
+  if (params.featured) query.append('featured', 'true');
+
+  const response = await fetch(`${getApiUrl()}/api/creations/public?${query.toString()}`, {
+    headers: getAuthHeaders()
+  });
+  if (!response.ok) throw new Error('Failed to fetch public creations');
+  return response.json();
+}
+
 export async function viewTemplate(id: string) {
   return fetch(`${getApiUrl()}/api/templates/${id}/view`, { method: 'POST', headers: getAuthHeaders() });
 }
