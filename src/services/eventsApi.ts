@@ -501,6 +501,42 @@ export function getCurrentUser(): User | null {
 }
 
 /**
+ * Fetch fresh user profile from backend
+ * Useful for updating subscription status/tokens without relogin
+ */
+export async function getCurrentUserProfile(): Promise<User | null> {
+  const token = getAuthToken();
+  if (!token) return null;
+
+  try {
+    const response = await fetch(`${getApiUrl()}/api/users/me`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (!response.ok) {
+      // If 404/401, maybe token is invalid, but let caller handle
+      return null;
+    }
+
+    const userData = await response.json();
+
+    // Update local storage if valid
+    if (userData && userData.id) {
+      // Merge with existing user to keep any local-only flags if any? 
+      // Actually safer to overwrite if backend is truth
+      localStorage.setItem('user', JSON.stringify(userData));
+    }
+
+    return userData;
+  } catch (error) {
+    console.error("Failed to fetch user profile", error);
+    return null;
+  }
+}
+
+/**
  * Get auth token from localStorage
  * Better Auth stores session in cookies, but we also store token in localStorage for API calls
  */

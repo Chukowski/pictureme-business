@@ -49,7 +49,7 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
-import { getCurrentUser } from "@/services/eventsApi";
+import { getCurrentUser, getCurrentUserProfile, User } from "@/services/eventsApi";
 import { getMarketplaceTemplates } from "@/services/marketplaceApi";
 
 import { processImageWithAI, AspectRatio, AI_MODELS, resolveModelId } from "@/services/aiProcessor";
@@ -270,8 +270,22 @@ const TemplatesView = () => (
 function CreatorStudioPageContent() {
     const navigate = useNavigate();
     const location = useLocation();
-    const user = getCurrentUser();
+    // Initial user from local storage
+    const initialUser = getCurrentUser();
+    const [currentUser, setCurrentUser] = useState<User | null>(initialUser);
+
     const { templates: myTemplates, saveTemplate } = useMyTemplates();
+
+    // Fetch fresh user profile on mount to get latest tier
+    useEffect(() => {
+        const fetchProfile = async () => {
+            const freshUser = await getCurrentUserProfile();
+            if (freshUser) {
+                setCurrentUser(freshUser);
+            }
+        };
+        fetchProfile();
+    }, []);
 
     // View State
     const [activeView, setActiveView] = useState<MainView>((location.state as any)?.view || "create");
@@ -304,17 +318,17 @@ function CreatorStudioPageContent() {
 
     // Privacy & Tier State
     const isFreeTier = useMemo(() => {
-        if (!user) return true;
+        if (!currentUser) return true;
 
         // Check 1: Explicit subscription status (safest indicator)
-        if (user.subscription_status === 'active' || user.subscription_status === 'trialing') {
+        if (currentUser.subscription_status === 'active' || currentUser.subscription_status === 'trialing') {
             return false;
         }
 
         // Check 2: Explicit Plan Names/Tiers
-        const tier = user.subscription_tier?.toLowerCase();
-        const planName = user.plan_name?.toLowerCase();
-        const role = user.role?.toLowerCase();
+        const tier = currentUser.subscription_tier?.toLowerCase();
+        const planName = currentUser.plan_name?.toLowerCase();
+        const role = currentUser.role?.toLowerCase();
 
         // Check for Paid Individual Plans (Spark, Vibe, Studio)
         if (tier === 'spark' || planName === 'spark') return false;
@@ -326,11 +340,11 @@ function CreatorStudioPageContent() {
 
         // Check 3: Token Quota (Signal for paid plans if status/tier checks fail)
         // Free tier typically has 0 or minimal daily tokens. Spark has 50 monthly.
-        if ((user.tokens_total || 0) >= 40) return false;
+        if ((currentUser.tokens_total || 0) >= 40) return false;
 
         // Default to free
         return true;
-    }, [user]);
+    }, [currentUser]);
 
     // Default visibility: Free tier = public (forced), Paid tier = private (can toggle)
     const [isPublic, setIsPublic] = useState(false);
