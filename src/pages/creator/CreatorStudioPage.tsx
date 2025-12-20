@@ -488,7 +488,7 @@ function CreatorStudioPageContent() {
 
     // Load history logic
     useEffect(() => {
-        if (!user?.id) {
+        if (!currentUser?.id) {
             navigate("/admin/auth");
             return;
         }
@@ -577,7 +577,7 @@ function CreatorStudioPageContent() {
         }, 10000);
 
         return () => clearInterval(interval);
-    }, [user?.id, navigate, history.length]); // Dependencies ensure we check when history items change status
+    }, [currentUser?.id, navigate, history.length]); // Dependencies ensure we check when history items change status
 
     // Handlers
     const handleDeleteHistory = async (id: string) => {
@@ -813,7 +813,7 @@ function CreatorStudioPageContent() {
         toast.success(`Applied style: ${tpl.name}`);
     };
 
-    if (!user) return null;
+    if (!currentUser) return null;
 
     const handleRemoveInputImage = () => setInputImage(null);
     const handleRemoveEndFrameImage = () => setEndFrameImage(null);
