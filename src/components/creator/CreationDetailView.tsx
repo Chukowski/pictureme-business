@@ -262,11 +262,11 @@ export function CreationDetailView({
                     </div>
 
                     <div className={cn(
-                        "absolute bottom-0 left-0 w-full md:max-w-2xl p-6 md:p-8 z-40 transition-all duration-500 bg-gradient-to-t from-black/95 via-black/40 to-transparent pt-32 pb-12",
+                        "absolute bottom-0 left-0 w-full p-6 md:p-8 z-40 transition-all duration-500 bg-gradient-to-t from-black/95 via-black/40 to-transparent pt-32 pb-12",
                         !showUI ? "translate-y-20 opacity-0" : "translate-y-0 opacity-100"
                     )}>
-                        <div className="space-y-4">
-                            {/* Creator Byline */}
+                        <div className="space-y-4 max-w-2xl">
+                            {/* Creator Byline - Always visible on mobile and desktop */}
                             {(item.creator_username || item.creator_avatar) && !item.isOwner && (
                                 <div className="flex items-center gap-3 mb-2 group/creator cursor-pointer w-fit" onClick={goToProfile}>
                                     <div className="w-10 h-10 rounded-full border-2 border-[#D1F349]/50 overflow-hidden bg-zinc-800 shadow-lg group-hover/creator:scale-110 transition-transform">
