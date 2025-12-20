@@ -93,7 +93,8 @@ export async function getPublicCreations(params: { limit?: number; offset?: numb
     headers: getAuthHeaders()
   });
   if (!response.ok) throw new Error('Failed to fetch public creations');
-  return response.json();
+  const data = await response.json();
+  return data.creations || [];
 }
 
 export async function viewTemplate(id: string) {
