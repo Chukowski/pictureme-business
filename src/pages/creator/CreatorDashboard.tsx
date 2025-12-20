@@ -157,25 +157,33 @@ function CreatorsGallerySection({ creations, onImageClick, onRemixClick }: {
     );
   }
 
+  // Custom stable masonry layout
+  const columns: any[][] = [[], [], []];
+  creations.forEach((item, i) => {
+    columns[i % 3].push(item);
+  });
+
   return (
-    <div className="space-y-4">
-      {/* Masonry Grid - 3 Columns as requested */}
-      <div className="columns-1 md:columns-3 gap-4 space-y-4">
-        {creations.map((creation: any, index: number) => (
-          <MarketplaceFeedCard
-            key={creation.id || index}
-            creation={creation}
-            onImageClick={(e) => {
-              e.stopPropagation();
-              onImageClick(creation, index);
-            }}
-            onRemixClick={(e) => {
-              e.stopPropagation();
-              onRemixClick(creation);
-            }}
-          />
-        ))}
-      </div>
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pb-4">
+      {columns.map((colItems, colIndex) => (
+        <div key={colIndex} className="flex flex-col gap-4">
+          {colItems.map((creation) => (
+            <MarketplaceFeedCard
+              key={creation.id}
+              creation={creation}
+              onImageClick={(e) => {
+                e.stopPropagation();
+                // Find visible index in original array if needed, or pass object
+                onImageClick(creation, creations.findIndex(c => c.id === creation.id));
+              }}
+              onRemixClick={(e) => {
+                e.stopPropagation();
+                onRemixClick(creation);
+              }}
+            />
+          ))}
+        </div>
+      ))}
     </div>
   );
 }
@@ -450,30 +458,32 @@ export default function CreatorDashboard() {
           />
 
           {/* Infinite Scroll Trigger - only render if there's more to load */}
-          {hasMore && !isFeedLoading && (
+          {/* Infinite Scroll & Loading Combined - Stable Container */}
+          {hasMore && (
             <div
-              className="py-8"
+              className="py-12 flex justify-center w-full min-h-[80px]"
               ref={(el) => {
-                if (!el) return;
+                if (!el || isFeedLoading) return; // Don't re-observe if already loading
                 const observer = new IntersectionObserver(
                   (entries) => {
-                    if (entries[0].isIntersecting) {
+                    if (entries[0].isIntersecting && !isFeedLoading) {
                       loadMorePublicCreations();
-                      observer.disconnect();
                     }
                   },
                   { threshold: 0.1 }
                 );
                 observer.observe(el);
+                return () => observer.disconnect();
               }}
-            />
-          )}
-          {isFeedLoading && (
-            <div className="py-8 flex justify-center">
-              <div className="flex items-center gap-2 animate-pulse">
-                <div className="w-2 h-2 rounded-full bg-[#D1F349]" />
-                <span className="text-xs font-bold uppercase tracking-widest text-[#D1F349]">Loading...</span>
-              </div>
+            >
+              {isFeedLoading ? (
+                <div className="flex items-center gap-2 animate-pulse">
+                  <div className="w-2 h-2 rounded-full bg-[#D1F349]" />
+                  <span className="text-xs font-bold uppercase tracking-widest text-[#D1F349]">Loading more...</span>
+                </div>
+              ) : (
+                <div className="w-full h-1 bg-transparent" />
+              )}
             </div>
           )}
         </div>
