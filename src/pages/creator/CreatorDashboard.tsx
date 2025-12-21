@@ -115,9 +115,16 @@ function MarketplaceFeedCard({ creation, onImageClick, onRemixClick }: { creatio
               </span>
             )}
           </div>
-          <span className="text-xs font-medium text-white/90 shadow-black drop-shadow-md truncate">
-            @{creation.creator_username || 'Creator'}
-          </span>
+          <div className="flex flex-col truncate">
+            <span className="text-xs font-medium text-white/90 shadow-black drop-shadow-md truncate">
+              @{creation.creator_username || 'Creator'}
+            </span>
+            {creation.parent_username && (
+              <span className="text-[9px] font-bold text-[#D1F349] opacity-90 truncate">
+                remixed from @{creation.parent_username}
+              </span>
+            )}
+          </div>
         </div>
 
         {/* Remix Button */}

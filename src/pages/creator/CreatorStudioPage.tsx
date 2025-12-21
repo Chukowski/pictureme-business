@@ -253,7 +253,10 @@ function CreatorStudioPageContent() {
         }
 
         // Attribution
-        if (state.remixFrom) setRemixFrom(state.remixFrom);
+        if (state.remixFrom) {
+            const pid = typeof state.remixFrom === 'string' ? parseInt(state.remixFrom, 10) : state.remixFrom;
+            if (!isNaN(pid)) setRemixFrom(pid);
+        }
         if (state.remixFromUsername) setRemixFromUsername(state.remixFromUsername);
 
         // If we have a full template object, use it immediately
@@ -856,16 +859,16 @@ function CreatorStudioPageContent() {
                                 isPublic={isPublic}
                                 setIsPublic={setIsPublic}
                                 isFreeTier={isFreeTier}
-                                 onCloseMobile={() => {
-                                     if (window.history.length > 2) {
-                                         navigate(-1);
-                                     } else {
-                                         navigate('/creator/dashboard');
-                                     }
-                                 }}
-                                 availableModels={availableModels}
-                                 remixFromUsername={remixFromUsername}
-                             />
+                                onCloseMobile={() => {
+                                    if (window.history.length > 2) {
+                                        navigate(-1);
+                                    } else {
+                                        navigate('/creator/dashboard');
+                                    }
+                                }}
+                                availableModels={availableModels}
+                                remixFromUsername={remixFromUsername}
+                            />
                         </div>
 
                         {/* COLUMN 3: CANVAS / TIMELINE */}
