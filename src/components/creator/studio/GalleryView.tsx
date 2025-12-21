@@ -1,6 +1,7 @@
 import React from 'react';
 import { Sparkles } from 'lucide-react';
 import { GalleryItem } from '@/components/creator/CreationDetailView';
+import { getThumbnailUrl } from '@/services/imgproxy';
 
 interface GalleryViewProps {
     history: GalleryItem[];
@@ -20,7 +21,11 @@ export const GalleryView = ({ history, setPreviewItem }: GalleryViewProps) => {
                             className="cursor-pointer aspect-[3/4] bg-zinc-900 rounded-lg overflow-hidden relative group"
                         >
                             {item.type === 'image' ? (
-                                <img src={item.url} className="w-full h-full object-cover" alt={item.prompt} />
+                                <img
+                                    src={getThumbnailUrl(item.url, 400)}
+                                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                                    alt={item.prompt}
+                                />
                             ) : (
                                 <video src={item.url} className="w-full h-full object-cover" />
                             )}

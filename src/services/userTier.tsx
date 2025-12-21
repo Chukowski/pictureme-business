@@ -22,17 +22,22 @@ export function getQualityTierFromSubscription(subscriptionTier?: string): Quali
 
     const tier = subscriptionTier.toLowerCase();
 
-    // Premium tiers get original quality
+    // Highest quality (4k / q100)
     if (tier.includes('studio') || tier.includes('masters') || tier.includes('enterprise')) {
         return 'studio';
     }
 
-    // Mid-tier plans get pro quality
-    if (tier.includes('spark') || tier.includes('vibe') || tier.includes('pro')) {
-        return 'pro';
+    // High quality (4k / q95)
+    if (tier.includes('vibe') || tier.includes('pro')) {
+        return 'vibe';
     }
 
-    // Free/trial get compressed
+    // Standard quality (2k / q90)
+    if (tier.includes('spark')) {
+        return 'spark';
+    }
+
+    // Free tier (1k / q70)
     return 'free';
 }
 
@@ -78,10 +83,10 @@ export function UserTierProvider({ children }: { children: ReactNode }) {
     const subscriptionTier = user?.subscription_tier;
 
     return (
-        <UserTierContext.Provider value= {{ tier, subscriptionTier, user, isLoading, refresh: fetchUser }
-}>
-    { children }
-    </UserTierContext.Provider>
+        <UserTierContext.Provider value={{ tier, subscriptionTier, user, isLoading, refresh: fetchUser }
+        }>
+            {children}
+        </UserTierContext.Provider>
     );
 }
 

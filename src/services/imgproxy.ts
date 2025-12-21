@@ -20,8 +20,9 @@ const USE_SIGNATURE = false;
 export type ResizeType = 'fit' | 'fill' | 'fill-down' | 'force' | 'auto';
 export type Gravity = 'no' | 'so' | 'ea' | 'we' | 'noea' | 'nowe' | 'soea' | 'sowe' | 'ce' | 'sm' | 'fp';
 export type Format = 'png' | 'jpg' | 'webp' | 'avif' | 'gif' | 'best';
+export type Preset = 'feed' | 'thumbnail' | 'view' | 'free_download' | 'spark_download' | 'vibe_download' | 'studio_download' | 'watermark';
 
-export type QualityTier = 'free' | 'pro' | 'studio' | 'original';
+export type QualityTier = 'free' | 'spark' | 'vibe' | 'studio' | 'original';
 
 export interface ImgproxyOptions {
     // Resize options
@@ -53,6 +54,9 @@ export interface ImgproxyOptions {
     stripMetadata?: boolean;
     stripColorProfile?: boolean;
     keepCopyright?: boolean;
+
+    // Preset
+    preset?: Preset;
 }
 
 // ============== TIER CONFIGURATIONS ==============
@@ -69,11 +73,17 @@ export const TIER_CONFIG: Record<QualityTier, Partial<ImgproxyOptions>> = {
         stripColorProfile: true,
         sharpen: 0.3,
     },
-    pro: {
+    spark: {
         quality: 85,
         format: 'webp',
         stripMetadata: true,
         sharpen: 0.4,
+    },
+    vibe: {
+        quality: 90,
+        format: 'webp',
+        stripMetadata: false,
+        sharpen: 0.5,
     },
     studio: {
         quality: 92,
@@ -96,9 +106,27 @@ export const TIER_CONFIG: Record<QualityTier, Partial<ImgproxyOptions>> = {
  * Encode the source URL in Base64 (URL-safe variant)
  */
 function encodeSourceUrl(url: string): string {
-    const base64 = btoa(url);
-    // Convert to URL-safe Base64
-    return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    if (!url) return '';
+    try {
+        // Standard Base64 can fail with non-Latin1 characters, 
+        // but source URLs should be properly escaped already.
+        // We use the simpler btoa as recommended in the setup guide
+        // to avoid double-encoding characters like ':' and '/'.
+        const base64 = btoa(url);
+        return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    } catch (e) {
+        // If there are non-Latin1 characters, we still need to handle them
+        // but without breaking the URL structure.
+        try {
+            const base64 = btoa(unescape(encodeURIComponent(url).replace(/%([0-9A-F]{2})/g, (match, p1) => {
+                // Keep ASCII characters literal for btoa
+                return String.fromCharCode(parseInt(p1, 16));
+            })));
+            return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+        } catch (err) {
+            return '';
+        }
+    }
 }
 
 // ============== PROCESSING OPTIONS BUILDER ==============
@@ -184,8 +212,8 @@ function buildProcessingOptions(options: ImgproxyOptions): string {
  * Generate an imgproxy URL for any source image
  */
 export function getImgproxyUrl(sourceUrl: string, options: ImgproxyOptions = {}): string {
-    // If imgproxy is disabled, return original URL
-    if (!IMGPROXY_ENABLED) {
+    // If imgproxy is disabled or no URL, return original URL
+    if (!IMGPROXY_ENABLED || !sourceUrl) {
         return sourceUrl;
     }
 
@@ -194,19 +222,28 @@ export function getImgproxyUrl(sourceUrl: string, options: ImgproxyOptions = {})
         return sourceUrl;
     }
 
-    // Don't double-process imgproxy URLs
-    if (sourceUrl.startsWith(IMGPROXY_BASE_URL)) {
+    // Don't double-process imgproxy URLs that already have a preset
+    if (sourceUrl.startsWith(IMGPROXY_BASE_URL) && sourceUrl.includes('/preset:')) {
         return sourceUrl;
     }
 
     // Build the URL
     const processingOptions = buildProcessingOptions(options);
     const encodedUrl = encodeSourceUrl(sourceUrl);
+    if (!encodedUrl) return sourceUrl;
 
     // URL structure: /{processing}}/{base64_encoded_url}
-    const path = processingOptions
-        ? `/${processingOptions}/${encodedUrl}`
-        : `/${encodedUrl}`;
+    // Priority: preset > processingOptions
+    let path = "";
+    if (options.preset) {
+        path = `/preset:${options.preset}/${encodedUrl}`;
+    } else {
+        // Fallback to standard imgproxy format (usually needs /insecure/ or signature)
+        const prefix = USE_SIGNATURE ? "/signature" : "/insecure";
+        path = processingOptions
+            ? `${prefix}/${processingOptions}/${encodedUrl}`
+            : `${prefix}/${encodedUrl}`;
+    }
 
     return `${IMGPROXY_BASE_URL}${path}`;
 }
@@ -226,18 +263,24 @@ export function getImageByTier(
 }
 
 /**
- * Get download URL - always highest quality for the tier
+ * Get download URL - always highest quality for the tier using presets
  */
-export function getDownloadUrl(sourceUrl: string, tier: QualityTier = 'pro'): string {
-    const config = tier === 'original'
-        ? { quality: 100, format: 'webp' as Format }
-        : { ...TIER_CONFIG[tier], quality: Math.max(TIER_CONFIG[tier].quality || 80, 90) };
+export function getDownloadUrl(sourceUrl: string, tier: QualityTier = 'vibe'): string {
+    // If it's the original, we just want the best optimized version
+    if (tier === 'original') {
+        return getImgproxyUrl(sourceUrl, { preset: 'view' });
+    }
 
-    return getImgproxyUrl(sourceUrl, {
-        ...config,
-        stripMetadata: false, // Keep metadata for downloads
-        keepCopyright: true,
-    });
+    // Map quality tiers to specific download presets
+    const presetMap: Record<string, Preset> = {
+        'free': 'free_download',      // 1024px, q70
+        'spark': 'spark_download',    // 2048px, q90
+        'vibe': 'vibe_download',      // 4096px, q95
+        'studio': 'studio_download'   // 4096px, q100
+    };
+
+    const preset = presetMap[tier] || 'view';
+    return getImgproxyUrl(sourceUrl, { preset });
 }
 
 // ============== CONVENIENCE FUNCTIONS ==============
@@ -246,61 +289,39 @@ export function getDownloadUrl(sourceUrl: string, tier: QualityTier = 'pro'): st
  * Thumbnail for grids and previews
  */
 export function getThumbnailUrl(sourceUrl: string, size: number = 300): string {
-    return getImgproxyUrl(sourceUrl, {
-        width: size,
-        height: size,
-        resizeType: 'fill',
-        gravity: 'sm', // Smart gravity for best crop
-        quality: 80,
-        format: 'webp',
-        stripMetadata: true,
-        stripColorProfile: true,
-        sharpen: 0.3,
-    });
+    // We prefer presets for performance and Cloudflare compatibility
+    if (size <= 300) {
+        return getImgproxyUrl(sourceUrl, { preset: 'thumbnail' });
+    }
+    if (size <= 600) {
+        return getImgproxyUrl(sourceUrl, { preset: 'feed' });
+    }
+
+    return getImgproxyUrl(sourceUrl, { preset: 'view' });
 }
 
 /**
  * Feed/gallery images (medium quality, fast loading)
  */
 export function getFeedImageUrl(sourceUrl: string, width: number = 600): string {
-    return getImgproxyUrl(sourceUrl, {
-        width,
-        resizeType: 'fit',
-        quality: 82,
-        format: 'webp',
-        stripMetadata: true,
-        sharpen: 0.4,
-    });
+    if (width <= 600) {
+        return getImgproxyUrl(sourceUrl, { preset: 'feed' });
+    }
+    return getImgproxyUrl(sourceUrl, { preset: 'view' });
 }
 
 /**
  * Full-resolution optimized images (for detail views)
  */
 export function getOptimizedUrl(sourceUrl: string, maxWidth: number = 1920): string {
-    return getImgproxyUrl(sourceUrl, {
-        width: maxWidth,
-        resizeType: 'fit',
-        quality: 90,
-        format: 'webp',
-        stripMetadata: true,
-        sharpen: 0.5,
-    });
+    return getImgproxyUrl(sourceUrl, { preset: 'view' });
 }
 
 /**
  * Avatar/profile images (small, square, smart crop)
  */
 export function getAvatarUrl(sourceUrl: string, size: number = 100): string {
-    return getImgproxyUrl(sourceUrl, {
-        width: size,
-        height: size,
-        resizeType: 'fill',
-        gravity: 'sm',
-        quality: 85,
-        format: 'webp',
-        stripMetadata: true,
-        stripColorProfile: true,
-    });
+    return getImgproxyUrl(sourceUrl, { preset: 'thumbnail' });
 }
 
 /**
@@ -322,14 +343,7 @@ export function getPlaceholderUrl(sourceUrl: string): string {
  * Cover/banner images (wide, high quality)
  */
 export function getCoverUrl(sourceUrl: string, width: number = 1400): string {
-    return getImgproxyUrl(sourceUrl, {
-        width,
-        resizeType: 'fit',
-        quality: 88,
-        format: 'webp',
-        stripMetadata: true,
-        sharpen: 0.4,
-    });
+    return getImgproxyUrl(sourceUrl, { preset: 'view' });
 }
 
 /**

@@ -16,6 +16,7 @@ import {
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogTrigger, DialogClose } from "@/components/ui/dialog";
 import { ENV } from "@/config/env";
+import { getThumbnailUrl, getOptimizedUrl } from "@/services/imgproxy";
 
 // AI Models Data
 const MODELS = [
@@ -306,7 +307,7 @@ export default function StudioTab({ currentUser }: StudioTabProps) {
                                 className="aspect-square rounded-xl border border-dashed border-white/20 bg-white/5 hover:bg-white/10 transition-colors flex flex-col items-center justify-center cursor-pointer group relative overflow-hidden"
                             >
                                 {startImageUrl ? (
-                                    <img src={startImageUrl} alt="Start frame" className="w-full h-full object-cover" />
+                                    <img src={getThumbnailUrl(startImageUrl, 300)} alt="Start frame" className="w-full h-full object-cover" />
                                 ) : (
                                     <>
                                         <div className="w-8 h-8 rounded-lg bg-zinc-900 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
@@ -323,7 +324,7 @@ export default function StudioTab({ currentUser }: StudioTabProps) {
                                 className="aspect-square rounded-xl border border-dashed border-white/20 bg-white/5 hover:bg-white/10 transition-colors flex flex-col items-center justify-center cursor-pointer group relative overflow-hidden"
                             >
                                 {endImageUrl ? (
-                                    <img src={endImageUrl} alt="End frame" className="w-full h-full object-cover" />
+                                    <img src={getThumbnailUrl(endImageUrl, 300)} alt="End frame" className="w-full h-full object-cover" />
                                 ) : (
                                     <>
                                         <div className="w-8 h-8 rounded-lg bg-zinc-900 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
@@ -546,7 +547,7 @@ export default function StudioTab({ currentUser }: StudioTabProps) {
                                     onClick={() => setSelectedHistoryItem(item)}
                                 >
                                     {item.type === 'image' ? (
-                                        <img src={item.url} alt="Generated" className="w-full h-full object-cover" />
+                                        <img src={getThumbnailUrl(item.url, 400)} alt="Generated" className="w-full h-full object-cover" />
                                     ) : (
                                         <video src={item.url} className="w-full h-full object-cover" />
                                     )}
@@ -571,7 +572,7 @@ export default function StudioTab({ currentUser }: StudioTabProps) {
                             {/* Preview Side */}
                             <div className="flex-1 bg-black flex items-center justify-center relative p-4">
                                 {selectedHistoryItem.type === 'image' ? (
-                                    <img src={selectedHistoryItem.url} alt="Detail" className="max-w-full max-h-full object-contain" />
+                                    <img src={getOptimizedUrl(selectedHistoryItem.url, 1200)} alt="Detail" className="max-w-full max-h-full object-contain" />
                                 ) : (
                                     <video src={selectedHistoryItem.url} controls autoPlay loop className="max-w-full max-h-full object-contain" />
                                 )}
