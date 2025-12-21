@@ -62,6 +62,8 @@ interface Creation {
   created_at: string;
   is_published: boolean;
   is_liked?: boolean;
+  parent_id?: number | string;
+  parent_username?: string;
 }
 
 export default function PublicProfile() {
@@ -347,8 +349,10 @@ export default function PublicProfile() {
           isOwner: isOwnProfile,
           creator_username: profile.username,
           creator_avatar: profile.avatar_url,
-          creator_slug: profile.slug,
-          creator_user_id: profile.id
+          creator_slug: profile?.slug || username,
+          creator_user_id: profile.id,
+          parent_id: c.parent_id,
+          parent_username: c.parent_username
         })) as GalleryItem[]}
         initialIndex={previewIndex}
         onDownload={async (item) => {
@@ -384,6 +388,8 @@ export default function PublicProfile() {
             prompt: item.prompt || '',
             selectedTemplate: (item as any).template || null,
             sourceImageUrl: optimizedSourceUrl,
+            remixFrom: item.id,
+            remixFromUsername: item.creator_username,
             view: 'create'
           };
           navigate('/creator/studio', { state: remixState });
