@@ -780,8 +780,9 @@ function CreatorStudioPageContent() {
         if (tpl.ai_model) setModel(tpl.ai_model);
         if (tpl.aspectRatio) setAspectRatio(tpl.aspectRatio);
         // Automatically set the first image as a style reference
-        if (tpl.images && tpl.images.length > 0) {
-            setReferenceImages([tpl.images[0]]);
+        const templateImage = tpl.preview_url || (tpl.preview_images?.length ? tpl.preview_images[0] : null) || (tpl.backgrounds?.length ? tpl.backgrounds[0] : null) || (tpl as any).images?.[0];
+        if (templateImage) {
+            setReferenceImages([templateImage]);
         }
         setShowTemplateLibrary(false);
         toast.success(`Applied style: ${tpl.name}`);

@@ -12,6 +12,7 @@ export interface MarketplaceTemplate {
     name: string;
     description?: string;
     prompt?: string;
+    preview_url?: string;
     images?: string[];
     preview_images?: string[];
     backgrounds?: string[];

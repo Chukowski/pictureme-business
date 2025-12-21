@@ -1,5 +1,6 @@
 
 import { useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Star, ArrowRight } from "lucide-react";
@@ -13,6 +14,7 @@ interface RecommendedTemplatesProps {
 
 export function RecommendedTemplates({ templates = [] }: RecommendedTemplatesProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
 
   const scroll = (direction: "left" | "right") => {
     if (scrollContainerRef.current) {
@@ -60,7 +62,10 @@ export function RecommendedTemplates({ templates = [] }: RecommendedTemplatesPro
                     <Button
                       size="sm"
                       className="bg-white text-black hover:bg-zinc-200 h-8 text-xs font-semibold"
-                      onClick={() => viewTemplate(template.id)}
+                      onClick={() => {
+                        viewTemplate(template.id);
+                        navigate('/creator/studio', { state: { view: 'create', selectedTemplate: template } });
+                      }}
                     >
                       Use Template
                     </Button>
