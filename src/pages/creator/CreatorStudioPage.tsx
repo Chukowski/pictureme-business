@@ -73,6 +73,8 @@ import { TemplatesView } from "@/components/creator/studio/TemplatesView";
 import { TimelineView } from "@/components/creator/studio/TimelineView";
 import { GalleryView } from "@/components/creator/studio/GalleryView";
 import { MobileFloatingRail } from "@/components/creator/studio/MobileFloatingRail";
+import { MagicGeneratingButton } from "@/components/creator/studio/MagicGeneratingButton";
+import { AnimatePresence } from "framer-motion";
 
 // --- Categories for browsing ---
 const CATEGORIES = ["All", "Fantasy", "Portrait", "Cinematic", "Product", "UGC"];
@@ -961,6 +963,13 @@ function CreatorStudioPageContent() {
                     </div>
                 </div>
             )}
+
+            <AnimatePresence>
+                <MagicGeneratingButton
+                    count={history.filter(item => item.status !== 'completed' && item.status !== 'failed').length}
+                    onClick={() => setActiveView('gallery')}
+                />
+            </AnimatePresence>
         </div>
     );
 }
