@@ -386,7 +386,7 @@ export default function CreatorDashboard() {
     );
   }
 
-  const recentCreations = creations.slice(0, 3);
+  const recentCreations = creations.slice(0, 4);
   const hasCreations = creations.length > 0;
 
   return (
@@ -815,8 +815,12 @@ function RecentCreationsBento({ creations, hasCreations, navigate }: { creations
           ))}
           {/* Fillers if less than 4 */}
           {[...Array(Math.max(0, 4 - creations.length))].map((_, i) => (
-            <div key={`empty-${i}`} className="aspect-square rounded-xl bg-zinc-800/50 border border-white/5 flex items-center justify-center">
-              <Image className="w-5 h-5 text-zinc-700" />
+            <div
+              key={`empty-${i}`}
+              onClick={() => navigate('/creator/studio')}
+              className="aspect-square rounded-xl bg-zinc-800/20 border border-white/5 border-dashed flex items-center justify-center cursor-pointer hover:bg-zinc-800/40 transition-all group/empty"
+            >
+              <Plus className="w-5 h-5 text-zinc-700 group-hover/empty:text-[#D1F349] transition-transform group-hover/empty:scale-110" />
             </div>
           ))}
         </div>
