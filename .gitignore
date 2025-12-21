@@ -118,3 +118,11 @@ config/database.yml
 *.pfx
 credentials.json
 service-account.json
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.backup
+
+# Infrastructure config
+cloudflare-config/
