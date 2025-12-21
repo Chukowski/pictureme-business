@@ -58,7 +58,7 @@ import { ENV } from "@/config/env";
 import { SaveTemplateModal } from "@/components/templates/SaveTemplateModal";
 import { useMyTemplates, UserTemplate } from "@/hooks/useMyTemplates";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { getThumbnailUrl, getProcessingUrl, getDownloadUrl } from "@/services/imgproxy";
+import { getThumbnailUrl, getProcessingUrl, getDownloadUrl, getProxyDownloadUrl } from "@/services/imgproxy";
 import { cn } from "@/lib/utils";
 import { CreatorStudioSidebar, SidebarMode } from "@/components/creator/CreatorStudioSidebar";
 import { TemplateLibrary, MarketplaceTemplate } from "@/components/creator/TemplateLibrary";
@@ -219,48 +219,6 @@ function CreatorStudioPageContent() {
     const [duration, setDuration] = useState("5s");
     const [audioOn, setAudioOn] = useState(false);
 
-    // Handle remix state from feed navigation
-    useEffect(() => {
-        const remixState = location.state as {
-            prompt?: string;
-            templateId?: string;
-            templateUrl?: string;
-            sourceImageUrl?: string;
-            remixFrom?: string;
-            selectedTemplate?: MarketplaceTemplate;
-        } | null;
-
-        if (remixState) {
-            // Pre-fill prompt if provided
-            if (remixState.prompt) {
-                setPrompt(remixState.prompt);
-            }
-            // Set source image if provided (for style reference)
-            if (remixState.sourceImageUrl) {
-                setInputImage(remixState.sourceImageUrl);
-            }
-            // Pre-select template if provided
-            if (remixState.selectedTemplate) {
-                setSelectedTemplate(remixState.selectedTemplate);
-                if (remixState.selectedTemplate.ai_model) {
-                    setModel(remixState.selectedTemplate.ai_model);
-                }
-                if (remixState.selectedTemplate.aspectRatio) {
-                    setAspectRatio(remixState.selectedTemplate.aspectRatio);
-                }
-                // Also set prompt from template if available (matches applyTemplate behavior)
-                if ((remixState.selectedTemplate as any).prompt) {
-                    setPrompt((remixState.selectedTemplate as any).prompt);
-                }
-                // Set reference images from template if available (Style Reference)
-                if (remixState.selectedTemplate.images && remixState.selectedTemplate.images.length > 0) {
-                    setReferenceImages([remixState.selectedTemplate.images[0]]);
-                }
-            }
-            // Clear the state after consuming it to prevent re-triggering
-            window.history.replaceState({}, document.title);
-        }
-    }, [location.state]);
 
     // Templates
     const [selectedTemplate, setSelectedTemplate] = useState<MarketplaceTemplate | null>(null);
@@ -276,7 +234,59 @@ function CreatorStudioPageContent() {
     const [inputImage, setInputImage] = useState<string | null>(null);
     const [endFrameImage, setEndFrameImage] = useState<string | null>(null);
     const [referenceImages, setReferenceImages] = useState<string[]>([]);
-    const [activeInputType, setActiveInputType] = useState<"main" | "end" | "ref">("main");
+    const [activeInputType, setActiveInputType] = useState<"main" | "end" | "ref" | "subject">("main");
+    const [remixFrom, setRemixFrom] = useState<number | null>(null);
+    const [remixFromUsername, setRemixFromUsername] = useState<string | null>(null);
+
+    // Unified Remix State Handler
+    useEffect(() => {
+        const state = location.state as any;
+        if (!state) return;
+
+        console.log("[CreatorStudioPage] Consuming remix state:", state);
+
+        if (state.prompt) setPrompt(state.prompt);
+
+        // If we have a source image, set it as the main input
+        if (state.sourceImageUrl) {
+            setInputImage(state.sourceImageUrl);
+        }
+
+        // Attribution
+        if (state.remixFrom) setRemixFrom(state.remixFrom);
+        if (state.remixFromUsername) setRemixFromUsername(state.remixFromUsername);
+
+        // If we have a full template object, use it immediately
+        if (state.selectedTemplate) {
+            applyTemplate(state.selectedTemplate);
+        }
+        // Otherwise, if we only have an ID, we'll need to resolve it once templates load
+        else if (state.templateId) {
+            console.log("[CreatorStudioPage] Pending template resolution for ID:", state.templateId);
+            // Trigger loading if not already
+            setShowTemplateLibrary(true);
+        }
+
+        // Set view mode if provided
+        if (state.view === 'create') {
+            // Intent to open in create mode/scroll to top etc.
+        }
+
+        // Clear state to avoid re-triggering on refresh
+        window.history.replaceState({}, document.title);
+    }, [location.state]);
+
+    // Template Resolution Effect (for templateId from feed)
+    useEffect(() => {
+        const pendingTemplateId = (location.state as any)?.templateId;
+        if (pendingTemplateId && marketplaceTemplates.length > 0 && !selectedTemplate) {
+            const found = marketplaceTemplates.find(t => t.id === pendingTemplateId || (t as any).template_id === pendingTemplateId);
+            if (found) {
+                console.log("[CreatorStudioPage] Resolved template from ID:", pendingTemplateId);
+                applyTemplate(found);
+            }
+        }
+    }, [marketplaceTemplates, location.state, selectedTemplate]);
 
     // Processing
     const [isProcessing, setIsProcessing] = useState(false);
@@ -524,9 +534,10 @@ function CreatorStudioPageContent() {
         setMode(item.type);
 
         // Set the creation's image as the subject input (matching public feed remix behavior)
-        if (item.url) {
+        const sourceUrl = item.url || item.previewUrl;
+        if (sourceUrl) {
             // Use imgproxy-processed URL for reference to avoid payload issues
-            const refUrl = getThumbnailUrl(item.url, 800);
+            const refUrl = getThumbnailUrl(sourceUrl, 800);
             setInputImage(refUrl);
         }
 
@@ -571,14 +582,28 @@ function CreatorStudioPageContent() {
     };
 
     const handleDownload = async (item: GalleryItem) => {
-        // Use imgproxy for optimized download based on user's tier (videos stay as-is)
-        const downloadUrl = item.type === 'video' ? item.url : getDownloadUrl(item.url, userTier);
-        const link = document.createElement("a");
-        link.href = downloadUrl;
-        link.download = `creation-${item.id}.${item.type === 'video' ? 'mp4' : 'webp'}`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        try {
+            if (item.type === 'video') {
+                // Videos proxy too just to be safe with headers/CORS
+                const proxyUrl = getProxyDownloadUrl(item.url, `creation-${item.id}.mp4`);
+                window.location.href = proxyUrl;
+                return;
+            }
+
+            // 1. Get the optimized imgproxy URL based on tier
+            const optimizedUrl = getDownloadUrl(item.url, userTier);
+
+            // 2. Wrap it in our backend proxy to force download header and bypass CORS
+            const proxyUrl = getProxyDownloadUrl(optimizedUrl, `creation-${item.id}.webp`);
+
+            // 3. Simply navigate to it - the Content-Disposition header will trigger save
+            window.location.href = proxyUrl;
+
+            toast.success("Download started");
+        } catch (e) {
+            console.error("Download failed", e);
+            window.open(item.url, '_blank');
+        }
     };
 
     const handleTogglePublic = async (item: GalleryItem) => {
@@ -628,7 +653,8 @@ function CreatorStudioPageContent() {
                 body: JSON.stringify({
                     image_url: item.url, thumbnail_url: item.previewUrl || item.url, prompt: item.prompt || "",
                     model_id: item.model || "", aspect_ratio: item.ratio || "1:1", type: item.type,
-                    visibility: item.isPublic ? 'public' : 'private'
+                    visibility: item.isPublic ? 'public' : 'private',
+                    parent_id: item.parent_id
                 })
             });
             if (res.ok) {
@@ -663,7 +689,8 @@ function CreatorStudioPageContent() {
                     aspectRatio: aspectRatio as "auto" | "1:1" | "4:5" | "3:2" | "16:9" | "9:16",
                     aiModel: model,
                     onProgress: setStatusMessage,
-                    isPublic
+                    isPublic,
+                    parent_id: remixFrom
                 });
 
                 const templateInfo = selectedTemplate ? {
@@ -688,7 +715,9 @@ function CreatorStudioPageContent() {
                     ratio: aspectRatio,
                     status: 'completed',
                     template: templateInfo,
-                    isPublic
+                    isPublic,
+                    parent_id: remixFrom,
+                    parent_username: remixFromUsername
                 }, true); // Skip backend save because the backend generation endpoint auto-saves
             } else if (mode === "video") {
                 const endpoint = `${ENV.API_URL || "http://localhost:3002"}/api/generate/video`;
@@ -702,12 +731,25 @@ function CreatorStudioPageContent() {
                         audio: audioOn,
                         start_image_url: inputImage,
                         end_image_url: endFrameImage,
-                        visibility: isPublic ? 'public' : 'private'
+                        visibility: isPublic ? 'public' : 'private',
+                        parent_id: remixFrom
                     })
                 });
                 if (!resp.ok) throw new Error("Failed");
                 const data = await resp.json();
-                addToHistory({ id: crypto.randomUUID(), url: data.url, type: 'video', timestamp: Date.now(), prompt, model, ratio: aspectRatio, status: 'completed', isPublic });
+                addToHistory({
+                    id: crypto.randomUUID(),
+                    url: data.url,
+                    type: 'video',
+                    timestamp: Date.now(),
+                    prompt,
+                    model,
+                    ratio: aspectRatio,
+                    status: 'completed',
+                    isPublic,
+                    parent_id: remixFrom,
+                    parent_username: remixFromUsername
+                });
             }
             toast.success("Created!");
         } catch (e) { toast.error("Failed"); } finally { setIsProcessing(false); }
@@ -777,7 +819,12 @@ function CreatorStudioPageContent() {
                 ) : activeView === "booths" ? (
                     <div className="flex-1 bg-black md:overflow-y-auto overflow-visible w-full"><BoothDashboard /></div>
                 ) : (activeView === "gallery" || activeView === "home") ? (
-                    <GalleryView history={history} setPreviewItem={setPreviewItem} />
+                    <GalleryView
+                        history={history}
+                        setPreviewItem={setPreviewItem}
+                        onReusePrompt={handleReusePrompt}
+                        onDownload={handleDownload}
+                    />
                 ) : (
                     /* --- CREATE VIEW (Existing Layout) --- */
                     <>
@@ -809,15 +856,16 @@ function CreatorStudioPageContent() {
                                 isPublic={isPublic}
                                 setIsPublic={setIsPublic}
                                 isFreeTier={isFreeTier}
-                                onCloseMobile={() => {
-                                    if (window.history.length > 2) {
-                                        navigate(-1);
-                                    } else {
-                                        navigate('/creator/dashboard');
-                                    }
-                                }}
-                                availableModels={availableModels}
-                            />
+                                 onCloseMobile={() => {
+                                     if (window.history.length > 2) {
+                                         navigate(-1);
+                                     } else {
+                                         navigate('/creator/dashboard');
+                                     }
+                                 }}
+                                 availableModels={availableModels}
+                                 remixFromUsername={remixFromUsername}
+                             />
                         </div>
 
                         {/* COLUMN 3: CANVAS / TIMELINE */}
@@ -826,6 +874,8 @@ function CreatorStudioPageContent() {
                             isProcessing={isProcessing}
                             statusMessage={statusMessage}
                             setPreviewItem={setPreviewItem}
+                            onReusePrompt={handleReusePrompt}
+                            onDownload={handleDownload}
                         />
                     </>
                 )}

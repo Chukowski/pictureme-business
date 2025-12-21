@@ -78,6 +78,7 @@ interface CreatorStudioSidebarProps {
     isFreeTier: boolean;
     onCloseMobile?: () => void;
     availableModels?: any[];
+    remixFromUsername?: string | null;
 }
 
 export function CreatorStudioSidebar({
@@ -102,7 +103,8 @@ export function CreatorStudioSidebar({
     setIsPublic,
     isFreeTier,
     onCloseMobile,
-    availableModels = [] // New prop for dynamic models from backend
+    availableModels = [], // New prop for dynamic models from backend
+    remixFromUsername
 }: CreatorStudioSidebarProps) {
 
     // Merge Local Models with Backend Costs
@@ -387,6 +389,12 @@ export function CreatorStudioSidebar({
                         </div>
 
                         {/* 5. PROMPT AREA (Clean) */}
+                        {remixFromUsername && (
+                            <div className="flex items-center gap-1.5 bg-[#D1F349]/10 px-2.5 py-1.5 rounded-xl border border-[#D1F349]/20 w-full mb-1">
+                                <Sparkles className="w-3.5 h-3.5 text-[#D1F349]" />
+                                <span className="text-[10px] font-black text-[#D1F349] uppercase tracking-wider">Remixing @{remixFromUsername}</span>
+                            </div>
+                        )}
                         <div className="relative shrink-0 mt-2 bg-zinc-900/30 rounded-xl border border-white/5 focus-within:border-[#D1F349]/50 transition-colors">
                             <Textarea
                                 placeholder={mode === 'video' ? "Describe your video..." : "Describe your image..."}

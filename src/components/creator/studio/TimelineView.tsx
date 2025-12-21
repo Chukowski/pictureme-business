@@ -1,5 +1,4 @@
-import React from 'react';
-import { Sparkles, Loader2 } from 'lucide-react';
+import { Sparkles, Loader2, Wand2, Download } from 'lucide-react';
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { GalleryItem } from '@/components/creator/CreationDetailView';
 import { getThumbnailUrl } from "@/services/imgproxy";
@@ -9,13 +8,17 @@ interface TimelineViewProps {
     isProcessing: boolean;
     statusMessage: string;
     setPreviewItem: (item: GalleryItem) => void;
+    onReusePrompt: (item: GalleryItem) => void;
+    onDownload: (item: GalleryItem) => void;
 }
 
 export const TimelineView = ({
     history,
     isProcessing,
     statusMessage,
-    setPreviewItem
+    setPreviewItem,
+    onReusePrompt,
+    onDownload
 }: TimelineViewProps) => {
     return (
         <div className="hidden md:flex flex-1 bg-black flex-col relative w-full overflow-hidden">
@@ -70,6 +73,23 @@ export const TimelineView = ({
                                     )}
                                     {item.status === 'completed' && (
                                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-3">
+                                            {/* Action Buttons Overlay */}
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); onReusePrompt(item); }}
+                                                    className="w-8 h-8 rounded-full bg-[#D1F349] text-black flex items-center justify-center hover:scale-110 active:scale-95 transition-transform"
+                                                    title="Remix"
+                                                >
+                                                    <Wand2 className="w-4 h-4" />
+                                                </button>
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); onDownload(item); }}
+                                                    className="w-8 h-8 rounded-full bg-white/10 backdrop-blur-md text-white flex items-center justify-center hover:bg-white/20 hover:scale-110 active:scale-95 transition-all border border-white/10"
+                                                    title="Download"
+                                                >
+                                                    <Download className="w-4 h-4" />
+                                                </button>
+                                            </div>
                                             <p className="text-[10px] text-white line-clamp-2 font-medium">{item.prompt}</p>
                                         </div>
                                     )}

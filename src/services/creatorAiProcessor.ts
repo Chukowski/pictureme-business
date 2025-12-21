@@ -15,6 +15,7 @@ export interface ProcessCreatorImageOptions {
     onProgress?: (status: string, logs?: string[]) => void;
     // Creator-specific options
     isPublic?: boolean;
+    parent_id?: number | null;
 
     // Legacy params kept for compatibility if needed internally, but not used by Creator Studio
     includeBranding?: boolean;
@@ -243,7 +244,8 @@ export async function processCreatorImage(
             image_urls: uploadedUrls,
             image_url: uploadedUrls[0],
             visibility: isPublic ? 'public' : 'private',
-            billing_context: 'personal' // Explicitly personal for Creator Studio
+            billing_context: 'personal', // Explicitly personal for Creator Studio
+            parent_id: options.parent_id
         };
 
         console.log("🚀 [CreatorAI] Sending request:", payload.visibility, payload.model_id);

@@ -56,6 +56,8 @@ export interface PublicCreation {
   is_liked?: boolean;
   type?: 'image' | 'video';
   model?: string;
+  parent_id?: number | string;
+  parent_username?: string;
 }
 
 export interface HomeContentResponse {

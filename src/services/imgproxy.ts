@@ -233,12 +233,11 @@ export function getImgproxyUrl(sourceUrl: string, options: ImgproxyOptions = {})
     if (!encodedUrl) return sourceUrl;
 
     // URL structure: /{processing}}/{base64_encoded_url}
-    // Priority: preset > processingOptions
+    // Path structure: /preset:name/encoded_url OR /insecure/options/encoded_url
     let path = "";
     if (options.preset) {
         path = `/preset:${options.preset}/${encodedUrl}`;
     } else {
-        // Fallback to standard imgproxy format (usually needs /insecure/ or signature)
         const prefix = USE_SIGNATURE ? "/signature" : "/insecure";
         path = processingOptions
             ? `${prefix}/${processingOptions}/${encodedUrl}`
@@ -281,6 +280,25 @@ export function getDownloadUrl(sourceUrl: string, tier: QualityTier = 'vibe'): s
 
     const preset = presetMap[tier] || 'view';
     return getImgproxyUrl(sourceUrl, { preset });
+}
+
+/**
+ * Get a URL that proxies through the backend to bypass CORS and force download.
+ * Usage: getProxyDownloadUrl(getDownloadUrl(item.url, userTier), "my-image.webp")
+ */
+export function getProxyDownloadUrl(targetUrl: string, fileName: string): string {
+    // Determine backend API URL - usually same origin or hardcoded for now
+    // In production it would be something like https://api.pictureme.now
+    const apiBaseUrl = window.location.hostname.includes('localhost')
+        ? 'http://localhost:3002'
+        : `https://api.${window.location.hostname.replace('www.', '')}`;
+
+    // Fallback if the replacement logic is too simple for complex domains
+    const finalApiUrl = window.location.hostname.includes('pictureme.now')
+        ? 'https://api.pictureme.now'
+        : apiBaseUrl;
+
+    return `${finalApiUrl}/api/proxy/image?url=${encodeURIComponent(targetUrl)}&download=${encodeURIComponent(fileName)}`;
 }
 
 // ============== CONVENIENCE FUNCTIONS ==============

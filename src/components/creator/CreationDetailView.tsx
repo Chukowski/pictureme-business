@@ -50,6 +50,8 @@ export interface GalleryItem {
     creator_slug?: string;
     creator_user_id?: string | number;
     isOwner?: boolean;
+    parent_id?: number | string;
+    parent_username?: string;
 }
 
 interface CreationDetailViewProps {
@@ -284,6 +286,25 @@ export function CreationDetailView({
                                         <span className="text-[#D1F349] text-[10px] font-bold uppercase tracking-widest leading-none opacity-80">View Profile</span>
                                     </div>
                                 </div>
+                            )}
+
+                            {/* Remix Attribution */}
+                            {item.parent_username && (
+                                <motion.div
+                                    initial={{ opacity: 0, x: -10 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    className="flex items-center gap-1.5 opacity-80 group/remix cursor-pointer hover:opacity-100 transition-all w-fit -mt-2 ml-2"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onClose();
+                                        navigate(`/profile/${item.parent_username}`);
+                                    }}
+                                >
+                                    <RefreshCw className="w-3 h-3 text-[#D1F349]" />
+                                    <span className="text-white/60 text-[10px] font-bold leading-none">
+                                        remixed from <span className="text-[#D1F349] group-hover/remix:underline">@{item.parent_username}</span>
+                                    </span>
+                                </motion.div>
                             )}
 
                             {/* Projected Real Prompt */}

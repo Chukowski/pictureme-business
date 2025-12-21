@@ -20,7 +20,7 @@ import { ENV } from "@/config/env";
 import { getCurrentUser, toggleLike } from "@/services/eventsApi";
 import { toast } from "sonner";
 import { CreationDetailView, GalleryItem } from "@/components/creator/CreationDetailView";
-import { getAvatarUrl, getOptimizedUrl, getThumbnailUrl, getDownloadUrl, getProcessingUrl } from "@/services/imgproxy";
+import { getAvatarUrl, getOptimizedUrl, getThumbnailUrl, getDownloadUrl, getProcessingUrl, getProxyDownloadUrl } from "@/services/imgproxy";
 import { useUserTier } from "@/services/userTier";
 
 
@@ -351,15 +351,28 @@ export default function PublicProfile() {
           creator_user_id: profile.id
         })) as GalleryItem[]}
         initialIndex={previewIndex}
-        onDownload={(item) => {
-          // Use imgproxy for optimized download based on user's tier
-          const downloadUrl = item.type === 'video' ? item.url : getDownloadUrl(item.url, userTier);
-          const link = document.createElement("a");
-          link.href = downloadUrl;
-          link.download = `creation-${item.id}.${item.type === 'video' ? 'mp4' : 'webp'}`;
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
+        onDownload={async (item) => {
+          try {
+            if (item.type === 'video') {
+              const proxyUrl = getProxyDownloadUrl(item.url, `creation-${item.id}.mp4`);
+              window.location.href = proxyUrl;
+              return;
+            }
+
+            // 1. Get optimized imgproxy URL
+            const optimizedUrl = getDownloadUrl(item.url, userTier);
+
+            // 2. Wrap in backend proxy to force download header
+            const proxyUrl = getProxyDownloadUrl(optimizedUrl, `creation-${item.id}.webp`);
+
+            // 3. Trigger download
+            window.location.href = proxyUrl;
+
+            toast.success("Download started");
+          } catch (e) {
+            console.error("Download failed", e);
+            window.open(item.url, '_blank');
+          }
         }}
         onReusePrompt={(item) => {
           setPreviewOpen(false);

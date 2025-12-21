@@ -18,7 +18,8 @@ import { Badge } from "@/components/ui/badge";
 import { ENV } from "@/config/env";
 import { toast } from "sonner";
 import { CreationDetailView, GalleryItem } from "@/components/creator/CreationDetailView";
-import { getFeedImageUrl, getAvatarUrl, getThumbnailUrl, getProcessingUrl } from "@/services/imgproxy";
+import { getFeedImageUrl, getAvatarUrl, getThumbnailUrl, getProcessingUrl, getDownloadUrl, getProxyDownloadUrl } from "@/services/imgproxy";
+import { useUserTier } from "@/services/userTier";
 
 
 // ... existing types ...
@@ -254,6 +255,7 @@ function getCreatorHomeState(user: User | null, creations: UserCreation[]): Crea
 
 export default function CreatorDashboard() {
   const navigate = useNavigate();
+  const { tier: userTier } = useUserTier();
   const [user, setUser] = useState<User | null>(null);
   const [content, setContent] = useState<HomeContentResponse | null>(null);
   const [marketplaceTemplates, setMarketplaceTemplates] = useState<MarketplaceTemplate[]>([]);
@@ -451,14 +453,17 @@ export default function CreatorDashboard() {
               const optimizedSourceUrl = creation.image_url
                 ? getProcessingUrl(creation.image_url, 2048)
                 : null;
+
               const remixState = {
                 prompt: creation.prompt || '',
                 templateId: creation.template_id || null,
-                templateUrl: creation.template_url || null,
                 sourceImageUrl: optimizedSourceUrl,
                 remixFrom: creation.id,
+                remixFromUsername: creation.creator_username,
+                view: 'create' // Intent for Studio to open in create mode
               };
-              navigate('/creator/create', { state: remixState });
+
+              navigate('/creator/studio', { state: remixState });
             }}
           />
 
@@ -509,24 +514,47 @@ export default function CreatorDashboard() {
           creator_avatar: c.creator_avatar,
           creator_username: c.creator_username,
           creator_slug: c.creator_slug,
-          isOwner: false
+          isOwner: false,
+          parent_id: c.parent_id,
+          parent_username: c.parent_username
         })) as GalleryItem[]}
         initialIndex={previewIndex}
-        onDownload={(item) => {
-          const link = document.createElement("a");
-          link.href = item.url;
-          link.download = `community-${item.id}.${item.type === 'video' ? 'mp4' : 'png'}`;
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
+        onDownload={async (item) => {
+          try {
+            if (item.type === 'video') {
+              const proxyUrl = getProxyDownloadUrl(item.url, `community-${item.id}.mp4`);
+              window.location.href = proxyUrl;
+              return;
+            }
+
+            // 1. Get optimized imgproxy URL
+            const optimizedUrl = getDownloadUrl(item.url, userTier);
+
+            // 2. Wrap in backend proxy to force download header
+            const proxyUrl = getProxyDownloadUrl(optimizedUrl, `community-${item.id}.webp`);
+
+            // 3. Trigger download
+            window.location.href = proxyUrl;
+
+            toast.success("Download started");
+          } catch (e) {
+            console.error("Download failed", e);
+            window.open(item.url, '_blank');
+          }
         }}
         onReusePrompt={(item) => {
           setPreviewOpen(false);
+          // Standardize state keys to match public feed remix behavior
+          // Use item.url directly if it's already an optimized imgproxy url or wrap it
+          const optimizedSourceUrl = getProcessingUrl(item.url, 2048);
+
           navigate('/creator/studio', {
             state: {
               prompt: item.prompt || '',
-              templateId: item.template?.id || null,
-              sourceImageUrl: item.url,
+              templateId: item.template?.id || null, // Works for both flat and nested template objects
+              sourceImageUrl: optimizedSourceUrl,
+              remixFrom: item.id,
+              remixFromUsername: item.creator_username,
               view: 'create'
             }
           });

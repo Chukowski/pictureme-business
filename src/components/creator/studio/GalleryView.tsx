@@ -1,14 +1,20 @@
-import React from 'react';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, Wand2, Download } from 'lucide-react';
 import { GalleryItem } from '@/components/creator/CreationDetailView';
 import { getThumbnailUrl } from '@/services/imgproxy';
 
 interface GalleryViewProps {
     history: GalleryItem[];
     setPreviewItem: (item: GalleryItem) => void;
+    onReusePrompt: (item: GalleryItem) => void;
+    onDownload: (item: GalleryItem) => void;
 }
 
-export const GalleryView = ({ history, setPreviewItem }: GalleryViewProps) => {
+export const GalleryView = ({
+    history,
+    setPreviewItem,
+    onReusePrompt,
+    onDownload
+}: GalleryViewProps) => {
     return (
         <div className="flex-1 bg-black p-8 md:overflow-y-auto overflow-visible">
             <div className="max-w-7xl mx-auto">
@@ -29,8 +35,24 @@ export const GalleryView = ({ history, setPreviewItem }: GalleryViewProps) => {
                             ) : (
                                 <video src={item.url} className="w-full h-full object-cover" />
                             )}
-                            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                <Sparkles className="text-white" />
+                            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-4">
+                                <div className="flex items-center gap-3">
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); onReusePrompt(item); }}
+                                        className="w-10 h-10 rounded-full bg-[#D1F349] text-black flex items-center justify-center hover:scale-110 active:scale-95 transition-transform shadow-lg"
+                                        title="Remix"
+                                    >
+                                        <Wand2 className="w-5 h-5" />
+                                    </button>
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); onDownload(item); }}
+                                        className="w-10 h-10 rounded-full bg-white text-black flex items-center justify-center hover:scale-110 active:scale-95 transition-transform shadow-lg"
+                                        title="Download"
+                                    >
+                                        <Download className="w-5 h-5" />
+                                    </button>
+                                </div>
+                                <span className="text-[10px] font-bold text-white uppercase tracking-widest opacity-50">View Details</span>
                             </div>
                         </div>
                     ))}

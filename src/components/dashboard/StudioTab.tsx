@@ -16,7 +16,8 @@ import {
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogTrigger, DialogClose } from "@/components/ui/dialog";
 import { ENV } from "@/config/env";
-import { getThumbnailUrl, getOptimizedUrl } from "@/services/imgproxy";
+import { getThumbnailUrl, getOptimizedUrl, getDownloadUrl, getProxyDownloadUrl } from "@/services/imgproxy";
+import { useUserTier } from "@/services/userTier";
 
 // AI Models Data
 const MODELS = [
@@ -48,6 +49,7 @@ interface StudioTabProps {
 }
 
 export default function StudioTab({ currentUser }: StudioTabProps) {
+    const { tier: userTier } = useUserTier();
     const [activeMode, setActiveMode] = useState<"video" | "image" | "face-swap">("video");
     const [selectedModel, setSelectedModel] = useState(MODELS[0].id);
     const [prompt, setPrompt] = useState("");
@@ -611,14 +613,34 @@ export default function StudioTab({ currentUser }: StudioTabProps) {
                                 </div>
 
                                 <div className="mt-6 space-y-3 pt-6 border-t border-white/10">
-                                    <Button className="w-full bg-white text-black hover:bg-zinc-200" onClick={() => window.open(selectedHistoryItem.url, '_blank')}>
+                                    <Button
+                                        className="w-full bg-white text-black hover:bg-zinc-200"
+                                        onClick={async () => {
+                                            try {
+                                                if (selectedHistoryItem.type === 'video') {
+                                                    const proxyUrl = getProxyDownloadUrl(selectedHistoryItem.url, `creation-${selectedHistoryItem.timestamp}.mp4`);
+                                                    window.location.href = proxyUrl;
+                                                    return;
+                                                }
+                                                const optimizedUrl = getDownloadUrl(selectedHistoryItem.url, userTier);
+                                                const proxyUrl = getProxyDownloadUrl(optimizedUrl, `creation-${selectedHistoryItem.timestamp}.webp`);
+                                                window.location.href = proxyUrl;
+                                                toast.success("Download started");
+                                            } catch (e) {
+                                                window.open(selectedHistoryItem.url, '_blank');
+                                            }
+                                        }}
+                                    >
                                         <Download className="w-4 h-4 mr-2" /> Download
                                     </Button>
                                     <div className="flex gap-2">
                                         <Button variant="outline" className="flex-1 border-white/10 hover:bg-white/5 text-zinc-300" onClick={() => {
                                             setPrompt(selectedHistoryItem.prompt || "");
+                                            if (selectedHistoryItem.type === 'image') {
+                                                setStartImageUrl(getThumbnailUrl(selectedHistoryItem.url, 800));
+                                            }
                                             setSelectedHistoryItem(null);
-                                            toast.success("Prompt copied to input");
+                                            toast.success("Prompt and image loaded to editor");
                                         }}>
                                             <Copy className="w-4 h-4 mr-2" /> Use Prompt
                                         </Button>
