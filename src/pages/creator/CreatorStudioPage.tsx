@@ -608,6 +608,13 @@ function CreatorStudioPageContent() {
         if (item.ratio) setAspectRatio(item.ratio);
         setMode(item.type);
 
+        // Set the creation's image as the subject input (matching public feed remix behavior)
+        if (item.url) {
+            // Use imgproxy-processed URL for reference to avoid payload issues
+            const refUrl = getThumbnailUrl(item.url, 800);
+            setInputImage(refUrl);
+        }
+
         // Restore template if available
         if (item.template) {
             // Check if we can find the full template in our current list
@@ -633,6 +640,8 @@ function CreatorStudioPageContent() {
             setSelectedTemplate(null);
         }
 
+        // Close the detail view and switch to create mode
+        setPreviewItem(null);
         setActiveView("create");
         toast.success("Prompt and settings restored");
     };
