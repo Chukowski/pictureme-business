@@ -66,10 +66,37 @@ import { CreatorBottomNav } from "@/components/creator/CreatorBottomNav";
 import { CreationDetailView, GalleryItem } from "@/components/creator/CreationDetailView";
 import { useUserTier } from "@/services/userTier";
 
-type MainView = "home" | "create" | "templates" | "booths" | "gallery";
+// Modular Components
+import { ErrorBoundary } from "@/components/common/ErrorBoundary";
+import { AppRail, MainView } from "@/components/creator/studio/AppRail";
+import { TemplatesView } from "@/components/creator/studio/TemplatesView";
+import { TimelineView } from "@/components/creator/studio/TimelineView";
+import { GalleryView } from "@/components/creator/studio/GalleryView";
+import { MobileFloatingRail } from "@/components/creator/studio/MobileFloatingRail";
 
 // --- Categories for browsing ---
 const CATEGORIES = ["All", "Fantasy", "Portrait", "Cinematic", "Product", "UGC"];
+
+// Helper for persisting template metadata (supports saving by ID or URL)
+const saveTemplateMeta = (key: string, template: any) => {
+    if (!key) return;
+    try {
+        localStorage.setItem(`tpl_meta_${key}`, JSON.stringify({
+            id: template.id,
+            name: template.name,
+            image: template.images?.[0] || template.image
+        }));
+    } catch (e) { }
+};
+
+const getTemplateMeta = (keys: string[]) => {
+    for (const key of keys) {
+        if (!key) continue;
+        const saved = localStorage.getItem(`tpl_meta_${key}`);
+        if (saved) return JSON.parse(saved);
+    }
+    return null;
+};
 
 // GalleryItem moved to CreationDetailView.tsx for shared use
 
@@ -91,183 +118,6 @@ const LOCAL_VIDEO_MODELS = [
 ];
 
 // Error Boundary Component
-class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean, error: Error | null }> {
-    constructor(props: { children: React.ReactNode }) {
-        super(props);
-        this.state = { hasError: false, error: null };
-    }
-
-    static getDerivedStateFromError(error: Error) {
-        return { hasError: true, error };
-    }
-
-    render() {
-        if (this.state.hasError) {
-            return (
-                <div className="p-8 text-center text-white bg-red-900/20 rounded-xl border border-red-500/30 m-4">
-                    <h2 className="text-xl font-bold mb-2">Something went wrong</h2>
-                    <p className="text-red-200 mb-4">{this.state.error?.message}</p>
-                    <Button onClick={() => window.location.reload()} variant="secondary">Reload Page</Button>
-                </div>
-            );
-        }
-        return this.props.children;
-    }
-}
-
-// Helper for persisting template metadata (supports saving by ID or URL)
-const saveTemplateMeta = (key: string, template: any) => {
-    try {
-        if (!template) return;
-        localStorage.setItem(`template_meta_${key}`, JSON.stringify(template));
-    } catch (e) { console.error(e); }
-};
-
-const getTemplateMeta = (keys: string[]) => {
-    try {
-        for (const key of keys) {
-            const data = localStorage.getItem(`template_meta_${key}`);
-            if (data) return JSON.parse(data);
-        }
-    } catch (e) { return undefined; }
-};
-
-const AppRail = ({ activeView, onViewChange, onToggle }: { activeView: MainView, onViewChange: (v: MainView) => void, onToggle: () => void }) => {
-    const navigate = useNavigate();
-    return (
-        <div className="w-[60px] flex flex-col items-center py-4 z-30 flex-shrink-0 ml-3 my-3 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 shadow-2xl h-[calc(100vh-7rem)] sticky top-3 transition-all duration-300">
-            {/* Toggle Button */}
-            <button
-                onClick={onToggle}
-                className="mb-4 p-2 text-zinc-500 hover:text-white transition-colors"
-                title="Collapse Menu"
-            >
-                <ChevronLeft className="w-4 h-4" />
-            </button>
-
-            <div className="flex-1 flex flex-col gap-6 w-full">
-                <button
-                    onClick={() => onViewChange("home")}
-                    className={cn(
-                        "w-full flex flex-col items-center gap-1 py-2 relative group",
-                        (activeView === "home" || activeView === "gallery") ? "text-white" : "text-zinc-500 hover:text-zinc-300"
-                    )}
-                >
-                    <div className={cn(
-                        "p-2.5 rounded-xl transition-all",
-                        (activeView === "home" || activeView === "gallery") ? "bg-white/10" : "group-hover:bg-white/5"
-                    )}>
-                        <LayoutGrid className="w-6 h-6" />
-                    </div>
-                    <span className="text-[10px] font-medium">Home</span>
-                    {(activeView === "home" || activeView === "gallery") && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-white rounded-r-full" />}
-                </button>
-                <button
-                    onClick={() => onViewChange("create")}
-                    className={cn(
-                        "w-full flex flex-col items-center gap-1 py-2 relative group",
-                        activeView === "create" ? "text-[#D1F349]" : "text-zinc-500 hover:text-zinc-300"
-                    )}
-                >
-                    <div className={cn(
-                        "p-2.5 rounded-xl transition-all",
-                        activeView === "create" ? "bg-white/10" : "group-hover:bg-white/5"
-                    )}>
-                        <Sparkles className="w-6 h-6" />
-                    </div>
-                    <span className="text-[10px] font-medium">Create</span>
-                    {activeView === "create" && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-[#D1F349] rounded-r-full" />}
-                </button>
-
-                <button
-                    onClick={() => onViewChange("templates")}
-                    className={cn(
-                        "w-full flex flex-col items-center gap-1 py-2 relative group",
-                        activeView === "templates" ? "text-white" : "text-zinc-500 hover:text-zinc-300"
-                    )}
-                >
-                    <div className={cn(
-                        "p-2.5 rounded-xl transition-all",
-                        activeView === "templates" ? "bg-white/10" : "group-hover:bg-white/5"
-                    )}>
-                        <LayoutTemplate className="w-6 h-6" />
-                    </div>
-                    <span className="text-[10px] font-medium">Models</span>
-                    {activeView === "templates" && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-white rounded-r-full" />}
-                </button>
-
-                <button
-                    onClick={() => onViewChange("booths")}
-                    className={cn(
-                        "w-full flex flex-col items-center gap-1 py-2 relative group",
-                        activeView === "booths" ? "text-white" : "text-zinc-500 hover:text-zinc-300"
-                    )}
-                >
-                    <div className={cn(
-                        "p-2.5 rounded-xl transition-all",
-                        activeView === "booths" ? "bg-white/10" : "group-hover:bg-white/5"
-                    )}>
-                        <Store className="w-6 h-6" />
-                    </div>
-                    <span className="text-[10px] font-medium">Booths</span>
-                    {activeView === "booths" && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-white rounded-r-full" />}
-                </button>
-
-                <button
-                    onClick={() => onViewChange("gallery")}
-                    className={cn(
-                        "w-full flex flex-col items-center gap-1 py-2 relative group",
-                        activeView === "gallery" ? "text-white" : "text-zinc-500 hover:text-zinc-300"
-                    )}
-                >
-                    <div className={cn(
-                        "p-2.5 rounded-xl transition-all",
-                        activeView === "gallery" ? "bg-white/10" : "group-hover:bg-white/5"
-                    )}>
-                        <Library className="w-6 h-6" />
-                    </div>
-                    <span className="text-[10px] font-medium">Gallery</span>
-                    {activeView === "gallery" && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-white rounded-r-full" />}
-                </button>
-            </div>
-
-            <div className="flex flex-col gap-6 w-full">
-                <button
-                    onClick={() => navigate('/creator/settings')}
-                    className="w-full flex flex-col items-center gap-1 py-2 text-zinc-500 hover:text-white transition-colors"
-                >
-                    <Settings className="w-6 h-6" />
-                </button>
-            </div>
-        </div>
-    );
-};
-
-const TemplatesView = () => (
-    <div className="flex-1 bg-black p-8 overflow-y-auto w-full">
-        <div className="max-w-6xl mx-auto">
-            <div className="flex items-center justify-between mb-8">
-                <div>
-                    <h2 className="text-2xl font-bold text-white">My Models</h2>
-                    <p className="text-zinc-400">Manage your trained models and styles</p>
-                </div>
-                <Button className="bg-white text-black hover:bg-zinc-200">
-                    <Plus className="w-4 h-4 mr-2" /> Train New Model
-                </Button>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {/* Placeholder Card */}
-                <div className="group relative aspect-[3/4] bg-zinc-900 rounded-xl border border-white/10 overflow-hidden hover:border-[#D1F349] transition-all">
-                    <div className="absolute inset-0 bg-zinc-800 flex flex-col items-center justify-center text-zinc-500 gap-2">
-                        <Store className="w-8 h-8 opacity-20" />
-                        <span className="text-xs">No custom models yet</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-);
 
 function CreatorStudioPageContent() {
     const navigate = useNavigate();
@@ -438,6 +288,71 @@ function CreatorStudioPageContent() {
     const [showSaveTemplate, setShowSaveTemplate] = useState(false);
     const [showRail, setShowRail] = useState(true);
     const [isPromptExpanded, setIsPromptExpanded] = useState(false);
+
+    // Mobile Floating Rail State
+    const [isMobileRailOpen, setIsMobileRailOpen] = useState(false);
+    const [showIdleHint, setShowIdleHint] = useState(false);
+    const idleTimerRef = useRef<NodeJS.Timeout | null>(null);
+    const touchStartX = useRef<number | null>(null);
+    const touchStartY = useRef<number | null>(null);
+
+    // Idle Detection for Mobile Hint
+    useEffect(() => {
+        const resetIdleTimer = () => {
+            setShowIdleHint(false);
+            if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+            idleTimerRef.current = setTimeout(() => {
+                if (!isMobileRailOpen && window.innerWidth < 768) {
+                    setShowIdleHint(true);
+                }
+            }, 10000); // 10 seconds of idle
+        };
+
+        const events = ['touchstart', 'touchmove', 'mousedown', 'scroll', 'keydown'];
+        events.forEach(e => window.addEventListener(e, resetIdleTimer));
+
+        resetIdleTimer(); // Initial start
+
+        return () => {
+            if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+            events.forEach(e => window.removeEventListener(e, resetIdleTimer));
+        };
+    }, [isMobileRailOpen]);
+
+    // Swipe Gesture Handlers
+    useEffect(() => {
+        const handleTouchStart = (e: TouchEvent) => {
+            touchStartX.current = e.touches[0].clientX;
+            touchStartY.current = e.touches[0].clientY;
+        };
+
+        const handleTouchMove = (e: TouchEvent) => {
+            if (touchStartX.current === null || touchStartY.current === null) return;
+
+            const currentX = e.touches[0].clientX;
+            const currentY = e.touches[0].clientY;
+
+            const diffX = touchStartX.current - currentX;
+            const diffY = Math.abs(touchStartY.current - currentY);
+
+            // Detect swipe to left (diffX > 0)
+            // Ensure swipe is horizontal (diffX > diffY)
+            // Ensure swipe starts from near the right edge (touchStartX > window.innerWidth * 0.8)
+            if (diffX > 50 && diffX > diffY && touchStartX.current > window.innerWidth * 0.7) {
+                setIsMobileRailOpen(true);
+                touchStartX.current = null;
+                touchStartY.current = null;
+            }
+        };
+
+        window.addEventListener('touchstart', handleTouchStart);
+        window.addEventListener('touchmove', handleTouchMove);
+
+        return () => {
+            window.removeEventListener('touchstart', handleTouchStart);
+            window.removeEventListener('touchmove', handleTouchMove);
+        };
+    }, []);
 
     const formatModelName = (modelId: string) => {
         const allModels = [...LOCAL_IMAGE_MODELS, ...LOCAL_VIDEO_MODELS];
@@ -862,21 +777,7 @@ function CreatorStudioPageContent() {
                 ) : activeView === "booths" ? (
                     <div className="flex-1 bg-black md:overflow-y-auto overflow-visible w-full"><BoothDashboard /></div>
                 ) : (activeView === "gallery" || activeView === "home") ? (
-                    <div className="flex-1 bg-black p-8 md:overflow-y-auto overflow-visible">
-                        <div className="max-w-7xl mx-auto">
-                            <h2 className="text-2xl font-bold text-white mb-6">Gallery</h2>
-                            <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                                {history.map(item => (
-                                    <div key={item.id} onClick={() => setPreviewItem(item)} className="cursor-pointer aspect-[3/4] bg-zinc-900 rounded-lg overflow-hidden relative group">
-                                        {item.type === 'image' ? <img src={item.url} className="w-full h-full object-cover" /> : <video src={item.url} className="w-full h-full object-cover" />}
-                                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                            <Sparkles className="text-white" />
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
+                    <GalleryView history={history} setPreviewItem={setPreviewItem} />
                 ) : (
                     /* --- CREATE VIEW (Existing Layout) --- */
                     <>
@@ -920,63 +821,15 @@ function CreatorStudioPageContent() {
                         </div>
 
                         {/* COLUMN 3: CANVAS / TIMELINE */}
-                        <div className="hidden md:flex flex-1 bg-black flex-col relative w-full overflow-hidden">
-
-                            {/* Desktop/Tablet Template Library is handled as global overlay now */}
-
-                            {/* Canvas Header */}
-                            <div className="h-14 border-b border-white/5 flex items-center justify-between px-6 bg-black z-10 sticky top-0">
-                                <h3 className="font-bold text-white">Timeline</h3>
-                                <div className="flex items-center gap-2">
-                                    <span className="text-xs text-zinc-500">{history.length} items</span>
-                                </div>
-                            </div>
-
-                            {/* Canvas Content */}
-                            <ScrollArea className="flex-1 bg-black">
-                                <div className="p-6">
-                                    {history.length === 0 && !isProcessing ? (
-                                        <div className="h-[60vh] flex flex-col items-center justify-center text-zinc-600">
-                                            <Sparkles className="w-12 h-12 mb-4 opacity-20" />
-                                            <p>Create your first masterpiece</p>
-                                        </div>
-                                    ) : (
-                                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 pb-20">
-                                            {/* Processing Card */}
-                                            {isProcessing && (
-                                                <div className="aspect-[3/4] bg-zinc-900 rounded-xl border border-indigo-500/30 flex flex-col items-center justify-center animate-pulse shadow-lg shadow-indigo-500/10">
-                                                    <Loader2 className="w-8 h-8 text-indigo-400 animate-spin mb-2" />
-                                                    <span className="text-xs text-indigo-300 font-medium">{statusMessage}</span>
-                                                </div>
-                                            )}
-
-                                            {history.map(item => (
-                                                <div key={item.id} onClick={() => item.status === 'completed' && setPreviewItem(item)} className="group relative aspect-[3/4] bg-zinc-900 rounded-xl overflow-hidden cursor-pointer hover:ring-2 ring-[#D1F349]/50 transition-all shadow-lg">
-
-                                                    {item.status === 'completed' ? (
-                                                        item.type === 'image' ? <img src={getThumbnailUrl(item.url, 400)} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" loading="lazy" /> : <video src={item.url} className="w-full h-full object-cover" />
-                                                    ) : (
-                                                        <div className="w-full h-full flex flex-col items-center justify-center bg-zinc-800 text-zinc-500 gap-2">
-                                                            <Loader2 className="animate-spin w-6 h-6" />
-                                                            <span className="text-[10px]">{item.status}</span>
-                                                        </div>
-                                                    )}
-                                                    {item.status === 'completed' && (
-                                                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-3">
-                                                            <p className="text-[10px] text-white line-clamp-2 font-medium">{item.prompt}</p>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                            </ScrollArea>
-                        </div>
+                        <TimelineView
+                            history={history}
+                            isProcessing={isProcessing}
+                            statusMessage={statusMessage}
+                            setPreviewItem={setPreviewItem}
+                        />
                     </>
-                )
-                }
-            </div >
+                )}
+            </div>
 
             {/* Hidden Input */}
             <input type="file" ref={fileInputRef} className="hidden" onChange={handleFileUpload} accept="image/*" />
@@ -1029,7 +882,32 @@ function CreatorStudioPageContent() {
                 defaults={{ prompt: prompt, model: model, aspectRatio: aspectRatio, type: mode === 'booth' ? 'image' : mode }}
                 onSave={(p) => { saveTemplate({ id: crypto.randomUUID(), ...p }); setShowSaveTemplate(false); }}
             />
-        </div >
+
+            <MobileFloatingRail
+                isOpen={isMobileRailOpen}
+                onClose={() => setIsMobileRailOpen(false)}
+                activeView={activeView}
+                onViewChange={setActiveView}
+                user={currentUser}
+                onMarketplaceClick={() => setShowTemplateLibrary(true)}
+                notificationCount={history.filter(item => item.status === 'processing').length}
+            />
+
+            {/* Mobile Slide Hint */}
+            {showIdleHint && !isMobileRailOpen && (
+                <div
+                    className="fixed right-0 top-1/2 -translate-y-1/2 z-[90] flex items-center md:hidden animate-in fade-in slide-in-from-right-4 duration-1000"
+                    onClick={() => setIsMobileRailOpen(true)}
+                >
+                    <div className="bg-black/40 backdrop-blur-md border border-white/10 rounded-l-2xl py-6 px-2 flex flex-col items-center gap-3 shadow-2xl animate-pulse">
+                        <ChevronLeft className="w-5 h-5 text-white animate-bounce-horizontal" />
+                        <span className="text-[10px] font-bold text-white tracking-[0.2em] uppercase" style={{ writingMode: 'vertical-lr' }}>
+                            Slide
+                        </span>
+                    </div>
+                </div>
+            )}
+        </div>
     );
 }
 
