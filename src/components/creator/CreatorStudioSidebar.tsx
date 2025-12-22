@@ -18,6 +18,7 @@ import {
     Lock,
     Pencil
 } from 'lucide-react';
+import { LOCAL_IMAGE_MODELS, LOCAL_VIDEO_MODELS, LEGACY_MODEL_IDS } from "@/services/aiProcessor";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -34,21 +35,7 @@ import { MarketplaceTemplate } from "@/components/creator/TemplateLibrary";
 
 export type SidebarMode = "image" | "video" | "booth";
 
-const LOCAL_IMAGE_MODELS = [
-    { id: "fal-ai/nano-banana/edit", shortId: "nano-banana", name: "Nano Banana (Fast)", type: "image", speed: "fast" },
-    { id: "fal-ai/nano-banana-pro/edit", shortId: "nano-banana-pro", name: "Nano Banana Pro", type: "image", speed: "medium" },
-    { id: "fal-ai/bytedance/seedream/v4/edit", shortId: "seedream-v4", name: "Seedream v4", type: "image", speed: "medium" },
-    { id: "fal-ai/bytedance/seedream/v4.5/edit", shortId: "seedream-v4.5", name: "Seedream 4.5", type: "image", speed: "medium" },
-    { id: "fal-ai/flux-2-pro/edit", shortId: "flux-2-pro", name: "Flux 2 Pro Edit", type: "image", speed: "medium" },
-    { id: "fal-ai/flux-realism", shortId: "flux-realism", name: "Flux Realism", type: "image", speed: "slow" },
-];
-
-const LOCAL_VIDEO_MODELS = [
-    { id: "fal-ai/kling-video/v2.6/pro/image-to-video", shortId: "kling-2.6-pro", name: "Kling 2.6 Pro", type: "video" },
-    { id: "fal-ai/kling-video/o1/video-to-video/edit", shortId: "kling-o1-edit", name: "Kling O1 Edit", type: "video" },
-    { id: "fal-ai/google/veo-3-1/image-to-video", shortId: "veo-3.1", name: "Google Veo 3.1", type: "video" },
-    { id: "fal-ai/wan/v2.2-a14b/image-to-video", shortId: "wan-v2", name: "Wan v2", type: "video" },
-];
+// Local models definitions removed to use shared constants from aiProcessor.ts
 
 interface CreatorStudioSidebarProps {
     mode: SidebarMode;
@@ -107,25 +94,65 @@ export function CreatorStudioSidebar({
     remixFromUsername
 }: CreatorStudioSidebarProps) {
 
-    // Merge Local Models with Backend Costs
+    // Merge Local Models with Backend Configurations
+    // Merge Local Models with Backend Configurations
     const imageModels = useMemo(() => {
-        return LOCAL_IMAGE_MODELS.map((local: any) => {
-            const backend = availableModels.find(m => m.id === local.shortId || m.id === local.id);
+        // Start with backend models filtered by image type and NOT legacy
+        const backendImageModels = availableModels.filter(m =>
+            (m.type === 'image' || !m.type) &&
+            !LEGACY_MODEL_IDS.includes(m.id)
+        );
+
+        // Map backend models and enrich with local metadata
+        const merged = backendImageModels.map(bm => {
+            const local = LOCAL_IMAGE_MODELS.find(lm => lm.shortId === bm.id || lm.id === bm.id);
             return {
-                ...local,
-                cost: backend ? backend.cost : (local.cost || 1) // default cost 1 if not found
+                id: bm.id,
+                shortId: bm.id,
+                name: bm.name || (local ? local.name : bm.id),
+                type: 'image',
+                cost: bm.cost || (local ? local.cost : 1),
+                speed: local ? local.speed : 'medium',
+                description: bm.description || (local ? local.description : '')
             };
         });
+
+        // Add any local models that are NOT in the backend list (as fallbacks)
+        LOCAL_IMAGE_MODELS.forEach(local => {
+            if (!merged.some(m => m.id === local.shortId || m.id === local.id)) {
+                merged.push({ ...local, cost: local.cost || 1 });
+            }
+        });
+
+        return merged;
     }, [availableModels]);
 
     const videoModels = useMemo(() => {
-        return LOCAL_VIDEO_MODELS.map((local: any) => {
-            const backend = availableModels.find(m => m.id === local.shortId || m.id === local.id);
+        const backendVideoModels = availableModels.filter(m =>
+            m.type === 'video' &&
+            !LEGACY_MODEL_IDS.includes(m.id)
+        );
+
+        const merged = backendVideoModels.map(bm => {
+            const local = LOCAL_VIDEO_MODELS.find(lm => lm.shortId === bm.id || lm.id === bm.id);
             return {
-                ...local,
-                cost: backend ? backend.cost : (local.type === 'video' ? 150 : 10) // default 150 for video
+                id: bm.id,
+                shortId: bm.id,
+                name: bm.name || (local ? local.name : bm.id),
+                type: 'video',
+                cost: bm.cost || (local ? local.cost : 150),
+                speed: local ? local.speed : 'slow',
+                description: bm.description || (local ? local.description : '')
             };
         });
+
+        LOCAL_VIDEO_MODELS.forEach(local => {
+            if (!merged.some(m => m.id === local.shortId || m.id === local.id)) {
+                merged.push({ ...local, cost: local.cost || 150 });
+            }
+        });
+
+        return merged;
     }, [availableModels]);
 
     // Auto-switch model when mode changes

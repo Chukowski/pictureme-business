@@ -119,13 +119,9 @@ const getUserProperties = () => {
 
 // Get API URL with HTTPS enforcement for production
 const getApiUrl = (): string => {
-  let url = ENV.API_URL;
+  const url = ENV.API_URL;
   if (!url && import.meta.env.DEV) {
-    url = "http://localhost:3002";
-  }
-  // Enforce HTTPS if not localhost
-  if (url && !url.includes("localhost") && url.startsWith("http:")) {
-    url = url.replace("http:", "https:");
+    return "http://localhost:3002";
   }
   return url;
 };
@@ -144,7 +140,7 @@ const AppContent = () => {
     <>
       {shouldInitCopilot && apiUrl && (
         <CopilotKit
-          runtimeUrl={`${apiUrl}/copilotkit`}
+          runtimeUrl={`${apiUrl}/copilotkit/`}
           properties={getUserProperties()}
         >
           <AkitoCopilotActions />

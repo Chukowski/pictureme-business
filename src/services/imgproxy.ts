@@ -7,6 +7,8 @@
  * Your imgproxy instance: https://img.pictureme.now/
  */
 
+import { ENV } from '@/config/env';
+
 const IMGPROXY_BASE_URL = 'https://img.pictureme.now';
 
 // Toggle this to enable/disable imgproxy processing globally
@@ -287,16 +289,13 @@ export function getDownloadUrl(sourceUrl: string, tier: QualityTier = 'vibe'): s
  * Usage: getProxyDownloadUrl(getDownloadUrl(item.url, userTier), "my-image.webp")
  */
 export function getProxyDownloadUrl(targetUrl: string, fileName: string): string {
-    // Determine backend API URL - usually same origin or hardcoded for now
-    // In production it would be something like https://api.pictureme.now
-    const apiBaseUrl = window.location.hostname.includes('localhost')
-        ? 'http://localhost:3002'
-        : `https://api.${window.location.hostname.replace('www.', '')}`;
+    // Use the centralized ENV.API_URL which already handles HTTPS enforcement and domain overrides
+    const apiUrl = ENV.API_URL;
 
-    // Fallback if the replacement logic is too simple for complex domains
-    const finalApiUrl = window.location.hostname.includes('pictureme.now')
-        ? 'https://api.pictureme.now'
-        : apiBaseUrl;
+    // Ensure we have a valid URL, otherwise fallback to a safe derivation
+    const finalApiUrl = apiUrl || (window.location.hostname.includes('localhost')
+        ? 'http://localhost:3002'
+        : `https://go.pictureme.now`);
 
     return `${finalApiUrl}/api/proxy/image?url=${encodeURIComponent(targetUrl)}&download=${encodeURIComponent(fileName)}`;
 }

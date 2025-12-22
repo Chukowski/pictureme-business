@@ -111,16 +111,14 @@ function deriveProductionUrl(type: 'api' | 'auth' | 'base'): string {
 function getEnv(key: keyof EnvConfig): string {
   let value = '';
 
-  // In production, ONLY use window.ENV - never use build-time env vars
-  // This prevents localhost:3001 from being used in production
-  if (isProduction()) {
-    if (typeof window !== 'undefined' && window.ENV && window.ENV[key]) {
-      value = window.ENV[key] as string;
-    }
+  // 1. Check window.ENV (runtime config)
+  if (typeof window !== 'undefined' && window.ENV && window.ENV[key]) {
+    value = window.ENV[key] as string;
+  }
 
-    // If window.ENV doesn't have the value, try to derive it from current origin
-    // This ensures production always has valid URLs even if config.js isn't updated
-    if (!value) {
+  // 2. Fallback to derived production URLs or build-time env vars
+  if (!value) {
+    if (isProduction()) {
       switch (key) {
         case 'VITE_API_URL':
           value = deriveProductionUrl('api');
@@ -131,26 +129,23 @@ function getEnv(key: keyof EnvConfig): string {
         case 'VITE_BASE_URL':
           value = deriveProductionUrl('base');
           break;
+        default:
+          value = import.meta.env[key] || '';
       }
-    }
-  } else {
-    // In development, try window.ENV first, then fallback to build-time env
-    if (typeof window !== 'undefined' && window.ENV && window.ENV[key]) {
-      value = window.ENV[key] as string;
     } else {
       value = import.meta.env[key] || '';
     }
   }
 
-  // FORCE OVERRIDE: If we are on pictureme.now, ALWAYS use go.pictureme.now (https)
-  // This fixes cases where old config.js might be cached or pointing to old api.pictureme.now
+  // 3. FORCE OVERRIDE for pictureme.now domain to use the new Go backend
   if (typeof window !== 'undefined' && window.location.hostname.includes('pictureme.now')) {
     if (key === 'VITE_API_URL' || key === 'VITE_AUTH_URL') {
+      // Always enforce HTTPS and use go.pictureme.now
       return 'https://go.pictureme.now';
     }
   }
 
-  // Auto-upgrade http to https for URL-type configs to prevent Mixed Content errors
+  // 4. Auto-upgrade http to https for URL-type configs to prevent Mixed Content errors
   const urlKeys: (keyof EnvConfig)[] = ['VITE_API_URL', 'VITE_AUTH_URL', 'VITE_BASE_URL', 'VITE_MINIO_SERVER_URL'];
   if (urlKeys.includes(key)) {
     return enforceHttps(value);

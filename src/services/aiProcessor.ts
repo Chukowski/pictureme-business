@@ -19,15 +19,10 @@ export async function chargeTokensForGeneration(
   console.log("🪙 chargeTokensForGeneration called:", { modelId, context, eventId, tokens, eventSlug, userSlug });
 
   try {
-    let apiUrl = ENV.API_URL;
+    const apiUrl = ENV.API_URL;
     if (!apiUrl) {
       console.warn("🪙 No API_URL configured, skipping token charge");
       return;
-    }
-
-    // Force HTTPS for production
-    if (apiUrl.startsWith('http://') && !apiUrl.includes('localhost') && !apiUrl.includes('127.0.0.1')) {
-      apiUrl = apiUrl.replace('http://', 'https://');
     }
 
     const payload: Record<string, unknown> = {
@@ -148,7 +143,7 @@ export const AI_MODELS = {
   nanoBanana: {
     id: "fal-ai/nano-banana/edit",
     shortId: "nano-banana",
-    name: "Nano Banana (Gemini 2.5 Flash)",
+    name: "Nano Banana (Fast)",
     description: "Fast, high-quality image editing",
     speed: "fast",
     type: "image",
@@ -239,6 +234,19 @@ export const AI_MODELS = {
 } as const;
 
 export type AIModelKey = keyof typeof AI_MODELS;
+
+// Helper arrays for easier iteration
+export const LOCAL_IMAGE_MODELS = Object.values(AI_MODELS).filter(m => m.type === 'image');
+export const LOCAL_VIDEO_MODELS = Object.values(AI_MODELS).filter(m => m.type === 'video');
+
+// Legacy models to be hidden from selector but still resolvable if encountered
+export const LEGACY_MODEL_IDS = [
+  'flux-realism',
+  'seedream-t2i',
+  'seedream-edit',
+  'kling-pro',
+  'google-video'
+];
 
 // Load config from backend API - this is the ONLY source for sensitive keys
 async function loadConfig() {

@@ -102,22 +102,8 @@ const getTemplateMeta = (keys: string[]) => {
 
 // GalleryItem moved to CreationDetailView.tsx for shared use
 
-// --- Local Models Definition to avoid import circular dependency issues ---
-const LOCAL_IMAGE_MODELS = [
-    { id: "fal-ai/nano-banana/edit", shortId: "nano-banana", name: "Nano Banana (Fast)", type: "image", speed: "fast" },
-    { id: "fal-ai/nano-banana-pro/edit", shortId: "nano-banana-pro", name: "Nano Banana Pro", type: "image", speed: "medium" },
-    { id: "fal-ai/bytedance/seedream/v4/edit", shortId: "seedream-v4", name: "Seedream v4", type: "image", speed: "medium" },
-    { id: "fal-ai/bytedance/seedream/v4.5/edit", shortId: "seedream-v4.5", name: "Seedream 4.5", type: "image", speed: "medium" },
-    { id: "fal-ai/flux-2-pro/edit", shortId: "flux-2-pro", name: "Flux 2 Pro Edit", type: "image", speed: "medium" },
-    { id: "fal-ai/flux-realism", shortId: "flux-realism", name: "Flux Realism", type: "image", speed: "slow" },
-];
-
-const LOCAL_VIDEO_MODELS = [
-    { id: "fal-ai/kling-video/v2.6/pro/image-to-video", shortId: "kling-2.6-pro", name: "Kling 2.6 Pro", type: "video" },
-    { id: "fal-ai/kling-video/o1/video-to-video/edit", shortId: "kling-o1-edit", name: "Kling O1 Edit", type: "video" },
-    { id: "fal-ai/google/veo-3-1/image-to-video", shortId: "veo-3.1", name: "Google Veo 3.1", type: "video" },
-    { id: "fal-ai/wan/v2.2-a14b/image-to-video", shortId: "wan-v2", name: "Wan v2", type: "video" },
-];
+// Local models definitions removed to use shared constants from aiProcessor.ts
+import { LOCAL_IMAGE_MODELS, LOCAL_VIDEO_MODELS } from "@/services/aiProcessor";
 
 // Error Boundary Component
 

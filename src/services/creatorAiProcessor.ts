@@ -84,40 +84,34 @@ async function imageUrlToDataUri(url: string): Promise<string> {
         console.log("📥 Loading optimized image:", optimizedUrl);
         const response = await fetch(optimizedUrl, { mode: 'cors' });
         if (!response.ok) {
-            throw new Error(`Failed to fetch image: ${response.status}`);
+            throw new Error(`Failed to fetch optimized image: ${response.status}`);
         }
         const blob = await response.blob();
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
             reader.onloadend = () => {
-                // Already optimized by imgproxy, but compress further if needed
                 compressImage(reader.result as string).then(resolve).catch(reject);
             };
             reader.onerror = reject;
             reader.readAsDataURL(blob);
         });
     } catch (error) {
-        console.warn("⚠️ Imgproxy fetch failed, trying original URL...", error);
-        // Fallback to original URL
-        try {
-            const response = await fetch(url, { mode: 'cors' });
-            if (!response.ok) throw new Error(`Failed: ${response.status}`);
-            const blob = await response.blob();
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onloadend = () => {
-                    compressImage(reader.result as string).then(resolve).catch(reject);
-                };
-                reader.onerror = reject;
-                reader.readAsDataURL(blob);
-            });
-        } catch (e2) {
-            console.warn("⚠️ Direct fetch failed, trying proxy...", e2);
-            // If direct fetch fails (CORS), try via our proxy
-            const apiUrl = ENV.API_URL || '';
-            const proxyUrl = `${apiUrl}/api/proxy/image?url=${encodeURIComponent(url)}`;
+        console.warn("⚠️ Imgproxy fetch failed (CORS or error), trying proxy...", error);
 
+        // Use our API proxy to bypass CORS
+        const apiUrl = ENV.API_URL;
+        // Enforce HTTPS for the proxy URL if we are in production
+        const safeApiUrl = (apiUrl.startsWith('http://') && !apiUrl.includes('localhost'))
+            ? apiUrl.replace('http://', 'https://')
+            : apiUrl;
+
+        const proxyUrl = `${safeApiUrl}/api/proxy/image?url=${encodeURIComponent(url)}`;
+
+        console.log("🔄 Fetching via proxy:", proxyUrl);
+
+        try {
             const response = await fetch(proxyUrl);
+            if (!response.ok) throw new Error(`Proxy fetch failed: ${response.status}`);
             const blob = await response.blob();
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
@@ -127,6 +121,9 @@ async function imageUrlToDataUri(url: string): Promise<string> {
                 reader.onerror = reject;
                 reader.readAsDataURL(blob);
             });
+        } catch (proxyError) {
+            console.error("❌ All image fetch methods failed:", url, proxyError);
+            throw proxyError;
         }
     }
 }
@@ -170,7 +167,9 @@ export async function processCreatorImage(
     try {
         // 1. Prepare Image URLs
         const imageUrls: string[] = [];
-        imageUrls.push(userPhotoBase64); // Image 1: Input
+        // Ensure the primary input is converted to Data URI if it is a URL (e.g. from remix)
+        const inputDataUri = await imageUrlToDataUri(userPhotoBase64);
+        imageUrls.push(inputDataUri); // Image 1: Input
 
         const bgImages = backgroundImageUrls || (backgroundImageUrl ? [backgroundImageUrl] : []);
         for (const bgUrl of bgImages) {
@@ -211,7 +210,10 @@ export async function processCreatorImage(
         }
 
         // 4. Upload Assets (to get URLs for backend)
-        const apiUrl = ENV.API_URL || "http://localhost:3002";
+        const rawApiUrl = ENV.API_URL || "http://localhost:3002";
+        const apiUrl = (rawApiUrl.startsWith('http://') && !rawApiUrl.includes('localhost'))
+            ? rawApiUrl.replace('http://', 'https://')
+            : rawApiUrl;
 
         const uploadImage = async (base64Data: string): Promise<string> => {
             const blob = await (await fetch(base64Data)).blob();
