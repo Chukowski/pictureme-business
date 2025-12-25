@@ -768,7 +768,7 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
                     ) : (
                       (() => {
                         const locked = template.template_type === 'business' && !isBusiness;
-                        const isFree = template.price === 0;
+                        const isFree = (template.tokens_cost || 0) === 0;
                         return (
                           <Button
                             size="sm"
@@ -785,7 +785,7 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
                               </>
                             ) : (
                               <>
-                                <Coins className="w-4 h-4 mr-1" /> {template.price}
+                                <Coins className="w-4 h-4 mr-1" /> {template.tokens_cost}
                               </>
                             )}
                           </Button>

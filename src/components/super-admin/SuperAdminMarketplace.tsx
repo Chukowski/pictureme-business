@@ -31,7 +31,8 @@ import {
     CheckCircle,
     XCircle,
     Clock,
-    Image as ImageIcon
+    Image as ImageIcon,
+    Star
 } from "lucide-react";
 import {
     Dialog,
@@ -378,6 +379,7 @@ export default function SuperAdminMarketplace() {
                             <TableHead className="text-zinc-400">Media</TableHead>
                             <TableHead className="text-zinc-400">Category</TableHead>
                             <TableHead className="text-zinc-400">Model</TableHead>
+                            <TableHead className="text-zinc-400">Price ($)</TableHead>
                             <TableHead className="text-zinc-400">Cost (Tokens)</TableHead>
                             <TableHead className="text-zinc-400">Stats</TableHead>
                             <TableHead className="text-zinc-400 text-center">Status</TableHead>
@@ -418,7 +420,12 @@ export default function SuperAdminMarketplace() {
                                                 )}
                                             </div>
                                             <div className="flex flex-col">
-                                                <span className="font-medium text-white">{item.name}</span>
+                                                <div className="flex items-center gap-1.5">
+                                                    <span className="font-medium text-white">{item.name}</span>
+                                                    {item.tags?.includes('featured') && (
+                                                        <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
+                                                    )}
+                                                </div>
                                                 <span className="text-[10px] font-mono text-zinc-500 uppercase">{item.id}</span>
                                             </div>
                                         </div>
@@ -440,6 +447,11 @@ export default function SuperAdminMarketplace() {
                                     </TableCell>
                                     <TableCell>
                                         <span className="text-xs text-zinc-400 font-medium">{getModelLabel(item.ai_model || "")}</span>
+                                    </TableCell>
+                                    <TableCell>
+                                        <div className="flex items-center gap-1.5">
+                                            <span className="text-emerald-400 font-mono font-bold">${item.price || 0}</span>
+                                        </div>
                                     </TableCell>
                                     <TableCell>
                                         <div className="flex items-center gap-1.5">
@@ -663,6 +675,17 @@ export default function SuperAdminMarketplace() {
                                 className="bg-zinc-950 border-white/10"
                             />
                         </div>
+                        <div className="space-y-2">
+                            <Label className="text-xs text-zinc-400">Price ($ USD)</Label>
+                            <Input
+                                type="number"
+                                step="0.01"
+                                value={formData.price}
+                                onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })}
+                                className="bg-zinc-950 border-white/10"
+                                placeholder="0.00"
+                            />
+                        </div>
 
                         <div className="space-y-2 col-span-2">
                             <Label className="text-xs text-zinc-400">Main Prompt (Use [name] for user subject)</Label>
@@ -719,6 +742,25 @@ export default function SuperAdminMarketplace() {
                                     onChange={(e) => setFormData({ ...formData, is_premium: e.target.checked })}
                                 />
                                 <Label htmlFor="is_premium" className="cursor-pointer">Premium Only</Label>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <input
+                                    type="checkbox"
+                                    id="is_featured"
+                                    className="accent-yellow-500"
+                                    checked={formData.tags?.includes('featured')}
+                                    onChange={(e) => {
+                                        const currentTags = formData.tags || [];
+                                        if (e.target.checked) {
+                                            if (!currentTags.includes('featured')) {
+                                                setFormData({ ...formData, tags: [...currentTags, 'featured'] });
+                                            }
+                                        } else {
+                                            setFormData({ ...formData, tags: currentTags.filter(t => t !== 'featured') });
+                                        }
+                                    }}
+                                />
+                                <Label htmlFor="is_featured" className="cursor-pointer text-yellow-500 font-medium">Featured Style</Label>
                             </div>
                         </div>
                     </div>
