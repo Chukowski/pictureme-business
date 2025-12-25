@@ -2,6 +2,102 @@ import { applyBrandingOverlay } from "./imageOverlay";
 import { ENV } from "../config/env";
 import { resolveModelId, DEFAULT_FAL_MODEL, getImageDimensions, getFluxOptimizedDimensions, getFluxImageSize, ProcessImageResult, chargeTokensForGeneration } from "./aiProcessor";
 import { getProcessingUrl } from "./imgproxy";
+import type { JobUpdateData } from "../hooks/useSSE";
+
+/**
+ * Wait for a generation job to complete using SSE events with polling fallback.
+ * This eliminates aggressive polling while maintaining reliability.
+ * 
+ * @param jobId - The job ID to wait for
+ * @param apiUrl - The API base URL
+ * @param timeoutMs - Maximum time to wait in milliseconds (default: 120000 = 2 minutes)
+ * @returns The completed image URL
+ * @throws Error if job fails or times out
+ */
+async function waitForJobCompletion(jobId: number, apiUrl: string, timeoutMs = 120000): Promise<string> {
+    return new Promise((resolve, reject) => {
+        let resolved = false;
+        let pollInterval: NodeJS.Timeout | null = null;
+
+        // Cleanup function
+        const cleanup = () => {
+            if (pollInterval) {
+                clearInterval(pollInterval);
+                pollInterval = null;
+            }
+            window.removeEventListener('job-updated', handleJobUpdate as EventListener);
+        };
+
+        // Handle SSE job update events
+        const handleJobUpdate = (event: CustomEvent<JobUpdateData>) => {
+            if (resolved) return;
+            const data = event.detail;
+
+            if (data.job_id === jobId) {
+                if (data.status === 'completed' && data.url) {
+                    console.log('✅ [CreatorAI] Job completed via SSE:', jobId);
+                    resolved = true;
+                    cleanup();
+                    resolve(data.url);
+                } else if (data.status === 'failed') {
+                    console.error('❌ [CreatorAI] Job failed via SSE:', data.error);
+                    resolved = true;
+                    cleanup();
+                    reject(new Error(data.error || 'Generation failed'));
+                }
+            }
+        };
+
+        // Listen for SSE job update events
+        window.addEventListener('job-updated', handleJobUpdate as EventListener);
+
+        // Set up polling as fallback (every 3 seconds instead of 1 second)
+        // SSE should deliver updates faster, but polling ensures we don't miss anything
+        const pollForStatus = async () => {
+            if (resolved) return;
+
+            try {
+                const authToken = localStorage.getItem('auth_token');
+                const statusRes = await fetch(`${apiUrl}/api/generate/status/${jobId}`, {
+                    headers: authToken ? { 'Authorization': `Bearer ${authToken}` } : {}
+                });
+
+                if (statusRes.ok) {
+                    const statusData = await statusRes.json();
+                    if (statusData.status === 'completed' && statusData.url) {
+                        console.log('✅ [CreatorAI] Job completed via polling fallback:', jobId);
+                        resolved = true;
+                        cleanup();
+                        resolve(statusData.url);
+                    } else if (statusData.status === 'failed') {
+                        console.error('❌ [CreatorAI] Job failed via polling:', statusData.error);
+                        resolved = true;
+                        cleanup();
+                        reject(new Error(statusData.error || 'Generation failed'));
+                    }
+                }
+            } catch (e) {
+                console.warn('[CreatorAI] Poll error (will retry):', e);
+            }
+        };
+
+        // Start polling fallback (less frequent since SSE is primary)
+        pollInterval = setInterval(pollForStatus, 3000);
+
+        // Also do an immediate poll
+        pollForStatus();
+
+        // Set timeout
+        setTimeout(() => {
+            if (!resolved) {
+                console.error('❌ [CreatorAI] Job timed out:', jobId);
+                cleanup();
+                reject(new Error('Generation timed out - check pending jobs later'));
+            }
+        }, timeoutMs);
+    });
+}
+
 
 export interface ProcessCreatorImageOptions {
     userPhotoBase64: string;
@@ -271,34 +367,13 @@ export async function processCreatorImage(
         const genResult = await genResponse.json();
         let processedUrl = genResult.image_url;
 
-        // 6. Polling (if async job)
+        // 6. Wait for job completion (SSE-driven with polling fallback)
         if (!processedUrl && genResult.job_id) {
-            console.log("⏳ [CreatorAI] Polling job:", genResult.job_id);
+            console.log("⏳ [CreatorAI] Waiting for job:", genResult.job_id);
             if (onProgress) onProgress("processing");
 
-            const maxAttempts = 120;
-            let attempts = 0;
-            while (attempts < maxAttempts) {
-                await new Promise(r => setTimeout(r, 1000));
-                attempts++;
-                try {
-                    const statusRes = await fetch(`${apiUrl}/api/generate/status/${genResult.job_id}`, {
-                        headers: { 'Authorization': `Bearer ${localStorage.getItem('auth_token')}` }
-                    });
-                    if (statusRes.ok) {
-                        const statusData = await statusRes.json();
-                        if (statusData.status === 'completed' && statusData.url) {
-                            processedUrl = statusData.url;
-                            break;
-                        } else if (statusData.status === 'failed') {
-                            throw new Error(statusData.error || 'Generation failed');
-                        }
-                    }
-                } catch (e) {
-                    console.warn("Poll error", e);
-                }
-            }
-            if (!processedUrl) throw new Error("Generation timed out");
+            // Wait for job completion via SSE or polling fallback
+            processedUrl = await waitForJobCompletion(genResult.job_id, apiUrl, 120000);
         }
 
         if (!processedUrl) throw new Error("No image URL returned");

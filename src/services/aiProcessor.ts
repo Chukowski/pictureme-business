@@ -1,6 +1,7 @@
 import { fal } from "@fal-ai/client";
 import { applyBrandingOverlay } from "./imageOverlay";
 import { ENV } from "../config/env";
+import type { JobUpdateData } from "../hooks/useSSE";
 
 // Configuration state - FAL_KEY is ONLY loaded from backend for security
 // Configuration state - FAL_KEY is ONLY loaded from backend for security
@@ -99,6 +100,82 @@ export async function chargeTokensForGeneration(
   } catch (error) {
     console.warn("⚠️ Failed to record token usage:", error);
   }
+}
+
+/**
+ * Wait for a generation job to complete using SSE events with polling fallback.
+ * This eliminates aggressive polling while maintaining reliability.
+ */
+async function waitForJobCompletion(jobId: number, apiUrl: string, timeoutMs = 120000): Promise<string> {
+  return new Promise((resolve, reject) => {
+    let resolved = false;
+    let pollInterval: NodeJS.Timeout | null = null;
+
+    const cleanup = () => {
+      if (pollInterval) {
+        clearInterval(pollInterval);
+        pollInterval = null;
+      }
+      window.removeEventListener('job-updated', handleJobUpdate as EventListener);
+    };
+
+    const handleJobUpdate = (event: CustomEvent<JobUpdateData>) => {
+      if (resolved) return;
+      const data = event.detail;
+
+      if (data.job_id === jobId) {
+        if (data.status === 'completed' && data.url) {
+          console.log('✅ Job completed via SSE:', jobId);
+          resolved = true;
+          cleanup();
+          resolve(data.url);
+        } else if (data.status === 'failed') {
+          console.error('❌ Job failed via SSE:', data.error);
+          resolved = true;
+          cleanup();
+          reject(new Error(data.error || 'Generation failed'));
+        }
+      }
+    };
+
+    window.addEventListener('job-updated', handleJobUpdate as EventListener);
+
+    // Polling fallback (every 3 seconds)
+    const pollForStatus = async () => {
+      if (resolved) return;
+      try {
+        const authToken = localStorage.getItem('auth_token');
+        const statusRes = await fetch(`${apiUrl}/api/generate/status/${jobId}`, {
+          headers: authToken ? { 'Authorization': `Bearer ${authToken}` } : {}
+        });
+        if (statusRes.ok) {
+          const statusData = await statusRes.json();
+          if (statusData.status === 'completed' && statusData.url) {
+            console.log('✅ Job completed via polling:', jobId);
+            resolved = true;
+            cleanup();
+            resolve(statusData.url);
+          } else if (statusData.status === 'failed') {
+            resolved = true;
+            cleanup();
+            reject(new Error(statusData.error || 'Generation failed'));
+          }
+        }
+      } catch (e) {
+        console.warn('Poll error:', e);
+      }
+    };
+
+    pollInterval = setInterval(pollForStatus, 3000);
+    pollForStatus(); // Immediate poll
+
+    setTimeout(() => {
+      if (!resolved) {
+        cleanup();
+        reject(new Error('Generation timed out'));
+      }
+    }, timeoutMs);
+  });
 }
 
 // Map short model IDs to full FAL.ai model IDs
@@ -665,48 +742,12 @@ Output a single cohesive image.`;
     let processedUrl = genResult.image_url;
 
     if (!processedUrl && genResult.job_id) {
-      // Backend returned a job ID - poll for completion
-      console.log("⏳ Background generation started, polling for completion...", genResult);
+      // Backend returned a job ID - wait for completion via SSE with polling fallback
+      console.log("⏳ Background generation started, waiting for completion via SSE...", genResult);
       if (onProgress) onProgress("processing");
 
-      const authToken = localStorage.getItem('auth_token');
-      const maxAttempts = 120; // 2 minutes with 1 second intervals
-      let attempts = 0;
-
-      while (attempts < maxAttempts) {
-        await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second
-        attempts++;
-
-        try {
-          const statusResponse = await fetch(`${apiUrl}/api/generate/status/${genResult.job_id}`, {
-            headers: authToken ? { 'Authorization': `Bearer ${authToken}` } : {}
-          });
-
-          if (!statusResponse.ok) {
-            console.log(`⏳ Status check ${attempts}/${maxAttempts} - error`);
-            continue;
-          }
-
-          const statusData = await statusResponse.json();
-          console.log(`⏳ Status check ${attempts}/${maxAttempts}:`, statusData.status);
-
-          if (statusData.status === 'completed' && statusData.url) {
-            processedUrl = statusData.url;
-            console.log("✅ Generation completed:", processedUrl);
-            break;
-          } else if (statusData.status === 'failed') {
-            throw new Error(statusData.error || 'Generation failed');
-          }
-          // Continue polling if still processing
-        } catch (pollError) {
-          console.warn("⚠️ Poll error:", pollError);
-          // Continue polling unless it's a fatal error
-        }
-      }
-
-      if (!processedUrl) {
-        throw new Error("Generation timed out - check pending jobs later");
-      }
+      // Wait for job completion (SSE primary, polling fallback)
+      processedUrl = await waitForJobCompletion(genResult.job_id, apiUrl, 120000);
     }
 
     if (!processedUrl) {

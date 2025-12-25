@@ -98,6 +98,7 @@ import CreatorSettingsPage from "./pages/settings/CreatorSettingsPage";
 import { TopNavbar } from "./components/TopNavbar";
 import { BusinessOnly } from "./components/routing/BusinessOnly";
 import { UserTierProvider } from "./services/userTier";
+import { useSSE } from "./hooks/useSSE";
 
 // Get user info for CopilotKit context
 const getUserProperties = () => {
@@ -135,6 +136,31 @@ const AppContent = () => {
   const shouldInitCopilot = location.pathname.startsWith('/admin') ||
     location.pathname.startsWith('/super-admin') ||
     location.pathname.startsWith('/creator');
+
+  // Check if user is on authenticated routes
+  const isAuthenticatedRoute = shouldInitCopilot;
+
+  // Initialize SSE for real-time updates (token balance, job status)
+  // Only active on authenticated routes and when user has auth token
+  const hasAuthToken = typeof window !== 'undefined' && !!localStorage.getItem('auth_token');
+
+  useSSE({
+    enabled: isAuthenticatedRoute && hasAuthToken,
+    onTokenUpdate: (data) => {
+      console.log('🪙 Token balance updated via SSE:', data.new_balance);
+      // The hook already updates localStorage and dispatches 'tokens-updated' event
+    },
+    onJobUpdate: (data) => {
+      console.log('📋 Job status updated via SSE:', data.job_id, data.status);
+      // The hook dispatches 'job-updated' event for components to listen
+    },
+    onConnected: () => {
+      console.log('✅ SSE connected for real-time updates');
+    },
+    onDisconnected: () => {
+      console.log('📡 SSE disconnected');
+    },
+  });
 
   return (
     <>
