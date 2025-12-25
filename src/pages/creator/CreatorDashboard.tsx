@@ -705,7 +705,7 @@ function FeaturedStyleCard({ navigate, template }: { navigate: (p: string, optio
   const bgImage = template.preview_url || template.preview_images?.[0] || template.backgrounds?.[0];
   const title = template.name;
   // Creator info
-  const creatorName = template.creator?.name || "System";
+  const creatorName = template.creator?.name || "Pictureme.now";
 
   return (
     <div
