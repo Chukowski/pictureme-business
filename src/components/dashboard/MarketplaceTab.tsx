@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -54,6 +55,8 @@ import {
 import { User } from "@/services/eventsApi";
 import { ENV } from "@/config/env";
 import { toast } from "sonner";
+import { AI_MODELS, LOCAL_IMAGE_MODELS, LOCAL_VIDEO_MODELS } from "@/services/aiProcessor";
+import { MarketplaceTemplate } from "@/services/marketplaceApi";
 
 interface MarketplaceTabProps {
   currentUser: User;
@@ -76,37 +79,7 @@ interface AccessOverrides {
   allowFreePreview?: boolean;
 }
 
-interface MarketplaceTemplate {
-  id: string;
-  name: string;
-  description: string;
-  template_type: string;
-  category: string;
-  tags: string[];
-  preview_url?: string;
-  preview_images?: string[];
-  backgrounds: string[];
-  element_images?: string[];
-  prompt?: string;
-  negative_prompt?: string;
-  pipeline_config?: PipelineConfig;
-  access_overrides?: AccessOverrides;
-  business_config?: Record<string, unknown>;
-  price: number;
-  tokens_cost: number;
-  is_public: boolean;
-  is_premium: boolean;
-  is_exportable: boolean;
-  creator?: {
-    id: string;
-    name: string;
-    avatar_url?: string;
-  };
-  creator_id?: string;
-  downloads: number;
-  rating: number;
-  is_owned: boolean;
-}
+// Interface moved to shared marketplaceApi.ts
 
 interface LibraryItem {
   id: string;
@@ -137,21 +110,19 @@ const CATEGORIES = [
   'Corporate', 'Fantasy', 'Nature', 'Holidays', 'Sports'
 ];
 
-const IMAGE_MODELS = [
-  { value: 'nano-banana', label: 'Nano Banana (Gemini 2.5 Flash)', tokens: 1, description: 'Fast generation' },
-  { value: 'nano-banana-pro', label: 'Nano Banana Pro (Gemini 3 Pro)', tokens: 4, description: 'Premium quality' },
-  { value: 'seedream-v4', label: 'Seedream v4', tokens: 1, description: 'Artistic, supports mixing' },
-  { value: 'seedream-v4.5', label: 'Seedream 4.5 (Latest)', tokens: 2, description: 'ByteDance latest' },
-  { value: 'flux-realism', label: 'Flux Realism', tokens: 2, description: 'Photorealistic' },
-  { value: 'flux-2-pro', label: 'Flux 2 Pro', tokens: 3, description: 'Professional' },
-];
+const IMAGE_MODELS = LOCAL_IMAGE_MODELS.map(m => ({
+  value: m.id,
+  label: m.name,
+  tokens: m.cost,
+  description: m.description
+}));
 
-const VIDEO_MODELS = [
-  { value: 'wan-v2', label: 'Wan v2.2', tokens: 50, description: '5s video - Fast' },
-  { value: 'kling-2.6-pro', label: 'Kling 2.6 Pro', tokens: 150, description: 'Cinematic with audio' },
-  { value: 'kling-o1-edit', label: 'Kling O1 Video Edit', tokens: 100, description: 'Edit existing video' },
-  { value: 'veo-3.1', label: 'Veo 3.1', tokens: 150, description: 'Premium video' },
-];
+const VIDEO_MODELS = LOCAL_VIDEO_MODELS.map(m => ({
+  value: m.id,
+  label: m.name,
+  tokens: m.cost,
+  description: m.description
+}));
 
 const FACESWAP_MODELS = [
   { value: 'default', label: 'Standard Faceswap', tokens: 2 },
@@ -162,9 +133,10 @@ const FACESWAP_MODELS = [
 let cachedTemplates: MarketplaceTemplate[] | null = null;
 let cachedLoraModels: LoRAModel[] | null = null;
 let cachedLibrary: LibraryItem[] | null = null;
-let cachedUserId: string | null = null;
+let cachedUserId: string | number | null = null;
 
 export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
+  const [searchParams] = useSearchParams();
   // Invalidate cache if user changed
   if (cachedUserId !== currentUser.id) {
     cachedTemplates = null;
@@ -172,19 +144,27 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
     cachedLibrary = null;
     cachedUserId = currentUser.id;
   }
-  
+
   const [activeSection, setActiveSection] = useState<'templates' | 'lora' | 'library'>('templates');
   const [templates, setTemplates] = useState<MarketplaceTemplate[]>(cachedTemplates || []);
   const [loraModels, setLoraModels] = useState<LoRAModel[]>(cachedLoraModels || []);
   const [myLibrary, setMyLibrary] = useState<LibraryItem[]>(cachedLibrary || []);
   const [isLoading, setIsLoading] = useState(!cachedTemplates);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [sortBy, setSortBy] = useState('popular');
   const [typeFilter, setTypeFilter] = useState<'all' | 'individual' | 'business'>('all');
   const [selectedTemplate, setSelectedTemplate] = useState<MarketplaceTemplate | null>(null);
   const [isPurchasing, setIsPurchasing] = useState(false);
-  
+
+  // Sync search from URL
+  useEffect(() => {
+    const search = searchParams.get('search');
+    if (search !== null) {
+      setSearchQuery(search);
+    }
+  }, [searchParams]);
+
   // Create Template Modal
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
@@ -233,10 +213,10 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
   const isBusiness = currentUser.role?.startsWith('business') || currentUser.role === 'superadmin';
 
   const getTemplateImage = (template: MarketplaceTemplate) => {
-    return template.preview_url || 
-           (template.backgrounds && template.backgrounds[0]) || 
-           (template.preview_images && template.preview_images[0]) ||
-           'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400';
+    return template.preview_url ||
+      (template.backgrounds && template.backgrounds[0]) ||
+      (template.preview_images && template.preview_images[0]) ||
+      'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400';
   };
 
   useEffect(() => {
@@ -323,7 +303,7 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
         } else {
           toast.success(`Purchased "${template.name}" for ${result.tokens_spent} tokens!`);
         }
-        
+
         const newLibraryItem: LibraryItem = {
           id: `lib_${template.id}`,
           template_id: template.id,
@@ -336,11 +316,11 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
         };
         setMyLibrary([newLibraryItem, ...myLibrary]);
         cachedLibrary = [newLibraryItem, ...(cachedLibrary || [])];
-        
-        setTemplates(templates.map(t => 
+
+        setTemplates(templates.map(t =>
           t.id === template.id ? { ...t, is_owned: true } : t
         ));
-        
+
         setSelectedTemplate(null);
       } else {
         const error = await response.json();
@@ -363,17 +343,17 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
     let total = 0;
     const imageModel = IMAGE_MODELS.find(m => m.value === newTemplate.pipeline_config.imageModel);
     if (imageModel) total += imageModel.tokens;
-    
+
     if (newTemplate.pipeline_config.faceswapEnabled) {
       const faceswapModel = FACESWAP_MODELS.find(m => m.value === newTemplate.pipeline_config.faceswapModel);
       if (faceswapModel) total += faceswapModel.tokens;
     }
-    
+
     if (newTemplate.pipeline_config.videoEnabled) {
       const videoModel = VIDEO_MODELS.find(m => m.value === newTemplate.pipeline_config.videoModel);
       if (videoModel) total += videoModel.tokens;
     }
-    
+
     return total;
   };
 
@@ -382,7 +362,7 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
       toast.error("Name and description are required");
       return;
     }
-    
+
     if (newTemplate.backgrounds.length === 0) {
       toast.error("At least one background image is required");
       return;
@@ -391,7 +371,7 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
     setIsCreating(true);
     try {
       const token = localStorage.getItem("auth_token");
-      
+
       // Build the template data
       const templateData = {
         name: newTemplate.name,
@@ -528,9 +508,9 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
       template.description.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory = selectedCategory === 'All' || template.category === selectedCategory;
     const matchesType = typeFilter === 'all' || template.template_type === typeFilter;
-    
+
     if (template.template_type === 'business' && !isBusiness) return false;
-    
+
     return matchesSearch && matchesCategory && matchesType;
   }).sort((a, b) => {
     switch (sortBy) {
@@ -552,11 +532,10 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
         <div className="flex bg-zinc-900/50 p-1 rounded-xl border border-white/10">
           <button
             onClick={() => setActiveSection('templates')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-              activeSection === 'templates'
-                ? 'bg-indigo-600 text-white'
-                : 'text-zinc-400 hover:text-white'
-            }`}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeSection === 'templates'
+              ? 'bg-indigo-600 text-white'
+              : 'text-zinc-400 hover:text-white'
+              }`}
           >
             <Grid3X3 className="w-4 h-4" />
             Templates
@@ -564,11 +543,10 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
           {isBusiness && (
             <button
               onClick={() => setActiveSection('lora')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                activeSection === 'lora'
-                  ? 'bg-indigo-600 text-white'
-                  : 'text-zinc-400 hover:text-white'
-              }`}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeSection === 'lora'
+                ? 'bg-indigo-600 text-white'
+                : 'text-zinc-400 hover:text-white'
+                }`}
             >
               <Wand2 className="w-4 h-4" />
               LoRA Models
@@ -576,11 +554,10 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
           )}
           <button
             onClick={() => setActiveSection('library')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-              activeSection === 'library'
-                ? 'bg-indigo-600 text-white'
-                : 'text-zinc-400 hover:text-white'
-            }`}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeSection === 'library'
+              ? 'bg-indigo-600 text-white'
+              : 'text-zinc-400 hover:text-white'
+              }`}
           >
             <Library className="w-4 h-4" />
             My Library
@@ -591,7 +568,7 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
         </div>
 
         {isBusiness && (
-          <Button 
+          <Button
             className="bg-lime-500 hover:bg-lime-600 text-black font-medium"
             onClick={() => setShowCreateModal(true)}
           >
@@ -677,7 +654,7 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
                       }}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                    
+
                     {/* Badges */}
                     <div className="absolute top-2 left-2 flex gap-1 flex-wrap">
                       {template.price === 0 && (
@@ -749,7 +726,7 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
                   <CardContent className="p-4">
                     <h3 className="font-semibold text-white truncate">{template.name}</h3>
                     <p className="text-sm text-zinc-400 truncate mt-1">{template.description}</p>
-                    
+
                     <div className="flex items-center justify-between mt-3">
                       <div className="flex items-center gap-2 text-sm text-zinc-500">
                         <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
@@ -793,25 +770,25 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
                         const locked = template.template_type === 'business' && !isBusiness;
                         const isFree = template.price === 0;
                         return (
-                      <Button
-                        size="sm"
-                        className={`text-white ${locked ? 'bg-white/10 text-white/60 border border-white/20 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700'}`}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handlePurchase(template);
-                        }}
-                        disabled={locked}
-                      >
-                        {isFree ? (
-                          <>
-                            <Plus className="w-4 h-4 mr-1" /> Add
-                          </>
-                        ) : (
-                          <>
-                            <Coins className="w-4 h-4 mr-1" /> {template.price}
-                          </>
-                        )}
-                      </Button>
+                          <Button
+                            size="sm"
+                            className={`text-white ${locked ? 'bg-white/10 text-white/60 border border-white/20 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700'}`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handlePurchase(template);
+                            }}
+                            disabled={locked}
+                          >
+                            {isFree ? (
+                              <>
+                                <Plus className="w-4 h-4 mr-1" /> Add
+                              </>
+                            ) : (
+                              <>
+                                <Coins className="w-4 h-4 mr-1" /> {template.price}
+                              </>
+                            )}
+                          </Button>
                         );
                       })()
                     )}
@@ -983,7 +960,7 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
                         Use in Event
                       </Button>
                     </div>
-                    
+
                     <div className="absolute top-2 left-2">
                       <Badge className={item.template_type === 'business' ? 'bg-purple-500 text-white' : 'bg-indigo-500 text-white'}>
                         {item.template_type === 'business' ? 'Business' : 'Individual'}
@@ -1388,11 +1365,10 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
                         ...newTemplate,
                         pipeline_config: { ...newTemplate.pipeline_config, imageModel: model.value }
                       })}
-                      className={`p-3 rounded-lg border cursor-pointer transition-all ${
-                        newTemplate.pipeline_config.imageModel === model.value
-                          ? 'border-indigo-500 bg-indigo-500/10'
-                          : 'border-white/10 hover:border-white/20 bg-zinc-800/50'
-                      }`}
+                      className={`p-3 rounded-lg border cursor-pointer transition-all ${newTemplate.pipeline_config.imageModel === model.value
+                        ? 'border-indigo-500 bg-indigo-500/10'
+                        : 'border-white/10 hover:border-white/20 bg-zinc-800/50'
+                        }`}
                     >
                       <div className="flex items-center justify-between">
                         <span className="font-medium text-white">{model.label}</span>
@@ -1467,11 +1443,10 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
                           ...newTemplate,
                           pipeline_config: { ...newTemplate.pipeline_config, videoModel: model.value }
                         })}
-                        className={`p-3 rounded-lg border cursor-pointer transition-all ${
-                          newTemplate.pipeline_config.videoModel === model.value
-                            ? 'border-purple-500 bg-purple-500/10'
-                            : 'border-white/10 hover:border-white/20 bg-zinc-800/50'
-                        }`}
+                        className={`p-3 rounded-lg border cursor-pointer transition-all ${newTemplate.pipeline_config.videoModel === model.value
+                          ? 'border-purple-500 bg-purple-500/10'
+                          : 'border-white/10 hover:border-white/20 bg-zinc-800/50'
+                          }`}
                       >
                         <div className="flex items-center justify-between">
                           <span className="font-medium text-white text-sm">{model.label}</span>
@@ -1522,11 +1497,10 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
                 <div className="grid grid-cols-2 gap-3">
                   <div
                     onClick={() => setNewTemplate({ ...newTemplate, is_public: true })}
-                    className={`p-4 rounded-lg border cursor-pointer transition-all ${
-                      newTemplate.is_public
-                        ? 'border-emerald-500 bg-emerald-500/10'
-                        : 'border-white/10 hover:border-white/20 bg-zinc-800/50'
-                    }`}
+                    className={`p-4 rounded-lg border cursor-pointer transition-all ${newTemplate.is_public
+                      ? 'border-emerald-500 bg-emerald-500/10'
+                      : 'border-white/10 hover:border-white/20 bg-zinc-800/50'
+                      }`}
                   >
                     <div className="flex items-center gap-2">
                       <Globe className="w-5 h-5 text-emerald-400" />
@@ -1536,11 +1510,10 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
                   </div>
                   <div
                     onClick={() => setNewTemplate({ ...newTemplate, is_public: false })}
-                    className={`p-4 rounded-lg border cursor-pointer transition-all ${
-                      !newTemplate.is_public
-                        ? 'border-amber-500 bg-amber-500/10'
-                        : 'border-white/10 hover:border-white/20 bg-zinc-800/50'
-                    }`}
+                    className={`p-4 rounded-lg border cursor-pointer transition-all ${!newTemplate.is_public
+                      ? 'border-amber-500 bg-amber-500/10'
+                      : 'border-white/10 hover:border-white/20 bg-zinc-800/50'
+                      }`}
                   >
                     <div className="flex items-center gap-2">
                       <Lock className="w-5 h-5 text-amber-400" />
@@ -1584,7 +1557,7 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
                     <Building2 className="w-4 h-4" />
                     Business Template Options
                   </h4>
-                  
+
                   <div className="grid grid-cols-2 gap-4">
                     <div className="flex items-center justify-between">
                       <Label className="text-zinc-400 text-sm">Include Header</Label>
@@ -1677,12 +1650,12 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
           </Tabs>
 
           <DialogFooter className="mt-6">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => {
                 resetNewTemplate();
                 setShowCreateModal(false);
-              }} 
+              }}
               className="border-white/10 text-white hover:bg-white/10"
             >
               Cancel

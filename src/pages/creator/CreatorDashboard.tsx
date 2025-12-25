@@ -327,7 +327,14 @@ export default function CreatorDashboard() {
           setHasMore(homeContent.public_creations.length >= 10);
         }
       }
-      setMarketplaceTemplates(templates || []);
+      const userRole = tokenStats?.user?.role || currentUser.role;
+      const isBusinessUser = userRole?.startsWith('business') || userRole === 'superadmin';
+
+      const filteredTemplates = (templates || []).filter(t =>
+        t.template_type !== 'business' || isBusinessUser
+      );
+
+      setMarketplaceTemplates(filteredTemplates);
       setCreations(creationsData.creations || []);
       setPendingJobs(pendingData.pending || []);
     } catch (error) {
@@ -431,9 +438,9 @@ export default function CreatorDashboard() {
             </div>
           </div>
 
-          {/* Right Column: Trending & Challenges (1 Col) */}
+          {/* Right Column: Trending & Tags (1 Col) */}
           <div className="lg:col-span-1 flex flex-col gap-6">
-            <TrendingTagsCard navigate={navigate} />
+            <TrendingTagsCard navigate={navigate} templates={marketplaceTemplates} />
             <CommunityChallengeCard navigate={navigate} />
           </div>
 
@@ -669,10 +676,10 @@ function HeroSection({ user, homeState, creations, navigate, pendingJobs = [] }:
 // FEATURED STYLE CARD
 // =======================
 
-// Helper to select the featured template based on priority:
+// Helper to select the featured template based on weighted score:
 // 1. Manual ('featured' tag)
 // 2. Promoted ('promoted' tag)
-// 3. Auto (Highest downloads)
+// 3. Score (70% downloads weight + 30% rating weight)
 function getFeaturedTemplate(templates: MarketplaceTemplate[]): MarketplaceTemplate | undefined {
   if (!templates || templates.length === 0) return undefined;
 
@@ -684,9 +691,12 @@ function getFeaturedTemplate(templates: MarketplaceTemplate[]): MarketplaceTempl
   const promoted = templates.find(t => t.tags?.includes('promoted'));
   if (promoted) return promoted;
 
-  // 3. Auto-Featured (Best performance / Downloads)
-  // We use [...templates] to avoid mutating the original array
-  return [...templates].sort((a, b) => (b.downloads || 0) - (a.downloads || 0))[0];
+  // 3. Weighted score sorting
+  return [...templates].sort((a, b) => {
+    const scoreA = (a.downloads || 0) * 0.7 + (a.rating || 0) * 100 * 0.3;
+    const scoreB = (b.downloads || 0) * 0.7 + (b.rating || 0) * 100 * 0.3;
+    return scoreB - scoreA;
+  })[0];
 }
 
 function FeaturedStyleCard({ navigate, template }: { navigate: (p: string, options?: any) => void, template?: MarketplaceTemplate }) {
@@ -848,27 +858,63 @@ function RecentCreationsBento({ creations, hasCreations, navigate }: { creations
 // =======================
 // TRENDING TAGS CARD
 // =======================
-function TrendingTagsCard({ navigate }: { navigate: (p: string) => void }) {
-  const tags = [
+function TrendingTagsCard({ navigate, templates }: { navigate: (p: string) => void, templates: MarketplaceTemplate[] }) {
+  const dynamicTags = useMemo(() => {
+    if (!templates || templates.length === 0) return [];
+
+    // Aggregate tags
+    const tagCounts: Record<string, number> = {};
+    templates.forEach(t => {
+      (t.tags || []).forEach(tag => {
+        const normalized = tag.toLowerCase().trim();
+        if (normalized === 'featured' || normalized === 'promoted') return;
+        tagCounts[normalized] = (tagCounts[normalized] || 0) + 1;
+      });
+    });
+
+    // Sort by frequency and take top 8
+    return Object.entries(tagCounts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 8)
+      .map(([label]) => {
+        // Map common tags to icons
+        let icon = Sparkles;
+        if (label.includes('camera') || label.includes('photo') || label.includes('polaroid')) icon = Camera;
+        if (label.includes('lego') || label.includes('blocks')) icon = Layout;
+        if (label.includes('anime') || label.includes('comic')) icon = Sparkles;
+        if (label.includes('user') || label.includes('headshot') || label.includes('person')) icon = UserRound;
+        if (label.includes('cyber') || label.includes('neon') || label.includes('tech')) icon = Zap;
+        if (label.includes('art') || label.includes('paint') || label.includes('studio')) icon = Image;
+        if (label.includes('old') || label.includes('retro') || label.includes('time')) icon = Clock;
+        if (label.includes('star') || label.includes('galaxy') || label.includes('space')) icon = Sparkles;
+
+        return { label: label.charAt(0).toUpperCase() + label.slice(1), icon };
+      });
+  }, [templates]);
+
+  // Fallback if no templates or tags found
+  const tags = dynamicTags.length > 0 ? dynamicTags : [
     { label: "Polaroid", icon: Camera },
     { label: "Lego", icon: Layout },
     { label: "Anime", icon: Sparkles },
     { label: "Headshot", icon: UserRound },
-    { label: "Cyberpunk", icon: Zap },
-    { label: "Studio", icon: Image },
-    { label: "Retro", icon: Clock },
+    { label: "Cyberpunk", icon: Zap }
   ];
 
   return (
-    <div className="flex-shrink-0 bg-[#1A1A1A] rounded-2xl border border-white/5 p-5 flex flex-col group shadow-lg">
+    <div className="flex-shrink-0 bg-[#1A1A1A] rounded-2xl border border-white/5 p-5 flex flex-col group shadow-lg min-h-[160px]">
       <div className="flex items-center justify-between mb-4 w-full cursor-pointer hover:opacity-80 transition-opacity" onClick={() => navigate('/creator/templates')}>
-        <h3 className="text-lg font-semibold text-white tracking-wide">Tags</h3>
+        <h3 className="text-lg font-semibold text-white tracking-wide">Popular Tags</h3>
         <ChevronRight className="w-5 h-5 text-zinc-500" />
       </div>
 
       <div className="flex flex-wrap gap-2 content-start">
         {tags.map((t, i) => (
-          <button key={i} onClick={() => navigate('/creator/templates')} className="flex items-center gap-1.5 px-3 py-2 bg-white/5 hover:bg-white/10 rounded-lg border border-white/5 text-sm text-zinc-300 hover:text-white transition-all transform hover:scale-105 hover:shadow-md">
+          <button
+            key={i}
+            onClick={() => navigate(`/creator/templates?search=${encodeURIComponent(t.label)}`)}
+            className="flex items-center gap-1.5 px-3 py-2 bg-white/5 hover:bg-white/10 rounded-lg border border-white/5 text-sm text-zinc-300 hover:text-white transition-all transform hover:scale-105 hover:shadow-md"
+          >
             <t.icon className="w-3.5 h-3.5 opacity-70" />
             {t.label}
           </button>

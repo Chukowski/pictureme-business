@@ -22,6 +22,7 @@ export interface MarketplaceTemplate {
     category?: string;
     is_public?: boolean;
     tags?: string[];
+    status?: string;
     pipeline_config?: {
         imageModel?: string;
         videoModel?: string;
@@ -205,7 +206,7 @@ export function TemplateLibrary({
                         >
                             {/* Image */}
                             <img
-                                src={t.images?.[0] || t.preview_images?.[0] || "/placeholder.svg"}
+                                src={t.preview_url || t.images?.[0] || t.preview_images?.[0] || "/placeholder.svg"}
                                 alt={t.name}
                                 onError={(e) => {
                                     e.currentTarget.src = "/placeholder.svg";
