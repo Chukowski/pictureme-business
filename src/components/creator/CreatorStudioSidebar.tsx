@@ -248,26 +248,41 @@ export function CreatorStudioSidebar({
                                     <img
                                         src={selectedTemplate.images?.[0] || selectedTemplate.preview_images?.[0]}
                                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                                        alt={selectedTemplate.name}
                                     />
                                 ) : (
-                                    <div className="w-full h-full flex items-center justify-center bg-zinc-900 text-zinc-700">
-                                        <Sparkles className="w-8 h-8 opacity-20" />
-                                    </div>
+                                    <img
+                                        src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800"
+                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 opacity-60"
+                                        alt="General Style"
+                                    />
                                 )}
                                 <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
                             </div>
 
-                            <div className="absolute bottom-0 left-0 right-0 p-3">
-                                <span className="text-[10px] font-bold text-[#D1F349] tracking-wider uppercase mb-0.5 block">Active Style</span>
-                                <div className="flex items-center justify-between">
-                                    <span className="text-sm font-bold text-white shadow-black drop-shadow-md truncate max-w-[200px]">
-                                        {selectedTemplate ? selectedTemplate.name : "Select a Style..."}
-                                    </span>
-                                    <div className="bg-white/10 backdrop-blur-md px-2 py-1 rounded-full flex items-center gap-1">
-                                        <Pencil className="w-3 h-3 text-white" />
-                                        <span className="text-[10px] font-medium text-white">Change</span>
-                                    </div>
+                            <div className="absolute top-2 right-2 z-20">
+                                <div className="bg-black/40 backdrop-blur-md px-2 py-1 rounded-lg flex items-center gap-1 border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <Pencil className="w-3 h-3 text-white" />
+                                    <span className="text-[10px] font-medium text-white">Change</span>
                                 </div>
+                            </div>
+
+                            <div className="absolute bottom-0 left-0 right-0 p-4">
+                                {!selectedTemplate ? (
+                                    <div className="flex flex-col">
+                                        <h3 className="text-2xl font-black text-[#D1F349] tracking-tighter leading-none mb-1">GENERAL</h3>
+                                        <span className="text-xs font-medium text-zinc-300 opacity-80">{selectedModelObj?.name || model}</span>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <span className="text-[10px] font-bold text-[#D1F349] tracking-wider uppercase mb-0.5 block">Active Style</span>
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-sm font-bold text-white shadow-black drop-shadow-md truncate max-w-[200px]">
+                                                {selectedTemplate.name}
+                                            </span>
+                                        </div>
+                                    </>
+                                )}
                             </div>
                         </div>
 
