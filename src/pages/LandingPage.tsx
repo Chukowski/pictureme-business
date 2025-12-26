@@ -110,9 +110,13 @@ export default function LandingPage() {
       {/* Navigation */}
       <nav className="fixed top-0 w-full z-50 bg-black/80 backdrop-blur-xl border-b border-white/5">
         <div className="container mx-auto px-6 h-20 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
-              <Sparkles className="w-6 h-6 text-white" />
+          <div
+            className="flex items-center gap-3 cursor-pointer group"
+            onClick={() => navigate('/')}
+          >
+            <div className="w-10 h-10 rounded-[.4rem] overflow-hidden bg-white shadow-lg shadow-black/20 group-hover:bg-transparent transition-colors duration-300">
+              <img src="/PicturemeIconv2.png" alt="Pictureme" className="w-full h-full object-cover group-hover:hidden" />
+              <img src="/PicturemeIconv2white.png" alt="Pictureme" className="w-full h-full object-cover hidden group-hover:block" />
             </div>
             <span className="text-xl font-bold tracking-tight">PictureMe.now</span>
           </div>
@@ -194,9 +198,15 @@ export default function LandingPage() {
             <span className="text-sm text-zinc-300 font-medium">Part of Akitá Smart Spaces</span>
           </div>
 
-          <h1 className="text-6xl md:text-8xl font-bold tracking-tight mb-8 leading-tight">
-            Creative work, <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400">reimagined.</span>
+          <h1 className="text-6xl md:text-8xl font-bold tracking-tight mb-8 leading-tight flex flex-col md:flex-row items-center justify-center gap-4 md:gap-8">
+            <div className="w-20 h-20 md:w-32 md:h-32 rounded-[1.5rem] md:rounded-[1rem] overflow-hidden bg-white shadow-2xl group transition-all duration-500 hover:rotate-6 hover:scale-110 shrink-0">
+              <img src="/PicturemeIconv2.png" alt="Pictureme" className="w-full h-full object-cover group-hover:hidden" />
+              <img src="/PicturemeIconv2white.png" alt="Pictureme" className="w-full h-full object-cover hidden group-hover:block" />
+            </div>
+            <div className="text-center md:text-left">
+              Creative work, <br />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400">reimagined.</span>
+            </div>
           </h1>
 
           <p className="text-xl text-zinc-400 max-w-2xl mx-auto mb-12 leading-relaxed">
@@ -511,21 +521,24 @@ export default function LandingPage() {
       {/* Footer */}
       <footer className="py-12 border-t border-white/5 bg-black text-zinc-500 text-sm">
         <div className="container mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
-          <div className="flex items-center gap-2">
-            <img
-              src="/assets/akita-logo.png"
-              alt="Akitá"
-              className="h-8 w-auto mr-2 opacity-80 hover:opacity-100 transition-opacity"
-              onError={(e) => {
-                e.currentTarget.style.display = 'none';
-                e.currentTarget.nextElementSibling?.classList.remove('hidden');
-              }}
-            />
-            <div className="w-6 h-6 rounded-lg bg-zinc-800 flex items-center justify-center hidden">
-              <Sparkles className="w-3 h-3 text-zinc-400" />
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3 group">
+              <div className="w-8 h-8 rounded-[.3rem] overflow-hidden bg-white shadow-lg shadow-black/20 group-hover:bg-transparent transition-colors duration-300">
+                <img src="/PicturemeIconv2.png" alt="Pictureme" className="w-full h-full object-cover group-hover:hidden" />
+                <img src="/PicturemeIconv2white.png" alt="Pictureme" className="w-full h-full object-cover hidden group-hover:block" />
+              </div>
+              <span className="font-semibold text-zinc-300">PictureMe.now</span>
             </div>
-            <span className="font-semibold text-zinc-300">PictureMe.now</span>
-            <span className="text-zinc-600 text-xs ml-2 border-l border-zinc-800 pl-2">by Akitá</span>
+            <div className="h-4 w-px bg-zinc-800 hidden md:block" />
+            <div className="flex items-center gap-2 opacity-60 hover:opacity-100 transition-opacity">
+              <img
+                src="/assets/akita-logo.png"
+                alt="Akitá"
+                className="h-6 w-auto"
+                onError={(e) => (e.currentTarget.style.display = 'none')}
+              />
+              <span className="text-zinc-600 text-xs">by Akitá</span>
+            </div>
           </div>
           <div className="flex gap-8">
             <button onClick={() => navigate("/privacy")} className="hover:text-white transition-colors">Privacy</button>
