@@ -16,7 +16,8 @@ import {
     Coins,
     Globe,
     Lock,
-    Pencil
+    Pencil,
+    ChevronDown
 } from 'lucide-react';
 import { LOCAL_IMAGE_MODELS, LOCAL_VIDEO_MODELS, LEGACY_MODEL_IDS } from "@/services/aiProcessor";
 import { Button } from "@/components/ui/button";
@@ -194,42 +195,61 @@ export function CreatorStudioSidebar({
     return (
         <div className="fixed inset-0 z-[60] bg-[#09090b] h-[100dvh] flex flex-col md:relative md:inset-auto md:z-20 md:w-[340px] md:h-[calc(100vh-7rem)] md:bg-[#121212] md:border md:border-white/10 md:shadow-2xl md:rounded-3xl md:translate-y-0 text-white font-sans">
 
-            {/* --- MOBILE HEADER (Compact) --- */}
-            <div className="flex items-center justify-between px-4 h-12 border-b border-white/5 md:hidden flex-shrink-0 bg-[#09090b]">
+            {/* --- SIDEBAR HEADER (Mobile Dropdown, Desktop Title) --- */}
+            <div className="flex items-center justify-between px-4 h-14 border-b border-white/5 flex-shrink-0 bg-[#09090b] md:bg-transparent">
                 <div className="flex items-center gap-2">
-                    <Sparkles className="w-4 h-4 text-[#D1F349]" />
-                    <span className="font-bold text-sm">Create Image</span>
+                    <DropdownMenu modal={false}>
+                        <DropdownMenuTrigger asChild>
+                            <button className="flex items-center gap-2 hover:bg-white/5 px-2 py-1 rounded-lg transition-colors group">
+                                {mode === 'image' && <ImageIcon className="w-4 h-4 text-[#D1F349]" />}
+                                {mode === 'video' && <Video className="w-4 h-4 text-[#D1F349]" />}
+                                {mode === 'booth' && <Camera className="w-4 h-4 text-[#D1F349]" />}
+                                <span className="font-bold text-sm tracking-tight">
+                                    {mode === 'image' && 'Create Image'}
+                                    {mode === 'video' && 'Create Video'}
+                                    {mode === 'booth' && 'Photo Booth'}
+                                </span>
+                                <ChevronDown className="w-4 h-4 text-zinc-500 group-hover:text-white transition-colors" />
+                            </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start" className="w-48 bg-zinc-950 border-zinc-800 z-[100]">
+                            {[
+                                { id: 'image', label: 'Create Image', icon: ImageIcon },
+                                { id: 'video', label: 'Create Video', icon: Video },
+                                { id: 'booth', label: 'Photo Booth', icon: Camera },
+                            ].map((item) => (
+                                <DropdownMenuItem
+                                    key={item.id}
+                                    onClick={() => setMode(item.id as any)}
+                                    className={cn(
+                                        "flex items-center gap-2 cursor-pointer focus:bg-zinc-900",
+                                        mode === item.id && "text-[#D1F349]"
+                                    )}
+                                >
+                                    <item.icon className="w-4 h-4" />
+                                    <span>{item.label}</span>
+                                    {mode === item.id && <Check className="w-3 h-3 ml-auto" />}
+                                </DropdownMenuItem>
+                            ))}
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                 </div>
-                <button
-                    onClick={onCloseMobile}
-                    className="w-10 h-10 flex items-center justify-center rounded-full bg-white/5 active:bg-white/10 text-zinc-400 active:text-white transition-all shadow-inner"
-                    aria-label="Close Studio"
-                >
-                    <X className="w-5 h-5" />
-                </button>
+
+                {onCloseMobile && (
+                    <button
+                        onClick={onCloseMobile}
+                        className="w-8 h-8 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white transition-all md:hidden"
+                        aria-label="Close Studio"
+                    >
+                        <X className="w-4 h-4" />
+                    </button>
+                )}
             </div>
 
             {/* --- SCROLLABLE CONTENT --- */}
             <div className="flex-1 overflow-y-auto px-4 py-4 md:px-3 custom-scrollbar">
 
-                {/* 1. Top Tabs (Compact) */}
-                <div className="flex p-1 bg-zinc-900/50 rounded-xl border border-white/5 mb-4">
-                    {["image", "video", "booth"].map((m) => (
-                        <button
-                            key={m}
-                            onClick={() => setMode(m as any)}
-                            className={cn(
-                                "flex-1 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded-lg transition-all flex items-center justify-center gap-2",
-                                mode === m ? "bg-zinc-800 text-white shadow-sm" : "text-zinc-500 hover:text-zinc-300"
-                            )}
-                        >
-                            {m === 'image' && <ImageIcon className="w-3 h-3" />}
-                            {m === 'video' && <Video className="w-3 h-3" />}
-                            {m === 'booth' && <Camera className="w-3 h-3" />}
-                            <span>{m}</span>
-                        </button>
-                    ))}
-                </div>
+
 
                 {mode === 'booth' ? (
                     <div className="h-48 flex flex-col items-center justify-center text-zinc-500 space-y-3">
