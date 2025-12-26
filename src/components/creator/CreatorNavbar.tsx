@@ -10,7 +10,10 @@ import {
     User as UserIcon,
     Sparkles,
     Camera,
-    Zap
+    Zap,
+    ChevronDown,
+    ImageIcon,
+    Video
 } from "lucide-react";
 import { logoutUser, User } from "@/services/eventsApi";
 import { cn } from "@/lib/utils";
@@ -55,8 +58,8 @@ export function CreatorNavbar({ user }: CreatorNavbarProps) {
     const tokens = user?.tokens_remaining || 0;
 
     return (
-        <header className="sticky top-0 z-50 bg-black/50 backdrop-blur-md border-b border-white/5">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 h-20 flex items-center justify-between">
+        <header className="fixed top-0 w-full z-50 bg-[#09090b]/80 backdrop-blur-xl">
+            <div className="w-full px-8 h-20 flex items-center justify-between">
 
                 {/* Logo & Navigation */}
                 <div className="flex items-center gap-8 z-50">
@@ -64,13 +67,13 @@ export function CreatorNavbar({ user }: CreatorNavbarProps) {
                         className="flex items-center gap-2 cursor-pointer group"
                         onClick={() => navigate('/creator/dashboard')}
                     >
-                        <div className="w-10 h-10 rounded-xl overflow-hidden bg-white shadow-lg shadow-black/20 group-hover:scale-105 transition-transform duration-300">
-                            <img src="/PicturemeIcon.png" alt="Pictureme" className="w-full h-full object-cover" />
+                        <div className="w-10 h-10 rounded-xl overflow-hidden bg-white shadow-lg shadow-black/20">
+                            <img src="/PicturemeIcon.svg" alt="Pictureme" className="w-full h-full object-cover" />
                         </div>
                     </div>
 
                     {/* Navigation Links */}
-                    <div className="hidden lg:flex items-center gap-6">
+                    <div className="hidden md:flex items-center gap-6">
                         <button
                             onClick={() => navigate('/creator/dashboard')}
                             className={cn(
@@ -82,17 +85,62 @@ export function CreatorNavbar({ user }: CreatorNavbarProps) {
                         >
                             Explore
                         </button>
-                        <button
-                            onClick={() => navigate('/creator/studio', { state: { view: 'create' } })}
-                            className={cn(
-                                "text-sm font-bold transition-all duration-300",
-                                location.pathname === '/creator/studio' && (location.state as any)?.view === 'create'
-                                    ? "text-zinc-100"
-                                    : "text-zinc-500 hover:text-white"
-                            )}
-                        >
-                            Studio
-                        </button>
+
+                        {/* Studio Dropdown */}
+                        <DropdownMenu modal={false}>
+                            <DropdownMenuTrigger asChild>
+                                <button
+                                    className={cn(
+                                        "text-sm font-bold transition-all duration-300 flex items-center gap-1",
+                                        location.pathname === '/creator/studio'
+                                            ? "text-zinc-100"
+                                            : "text-zinc-500 hover:text-white"
+                                    )}
+                                >
+                                    Studio
+                                    <ChevronDown className="w-3.5 h-3.5 opacity-50" />
+                                </button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="start" className="w-56 bg-zinc-950 border-zinc-900 p-2 z-[100] rounded-2xl shadow-2xl">
+                                <DropdownMenuItem
+                                    onClick={() => navigate('/creator/studio', { state: { view: 'create', mode: 'image' } })}
+                                    className="flex items-center gap-3 py-3 rounded-xl cursor-pointer focus:bg-zinc-900 group"
+                                >
+                                    <div className="p-2 rounded-lg bg-indigo-500/10 text-indigo-400 group-hover:bg-indigo-500/20 transition-colors">
+                                        <ImageIcon className="w-4 h-4" />
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <span className="font-bold text-[13px] text-white">Create Image</span>
+                                        <span className="text-[10px] text-zinc-500">Professional AI snapshots</span>
+                                    </div>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                    onClick={() => navigate('/creator/studio', { state: { view: 'create', mode: 'video' } })}
+                                    className="flex items-center gap-3 py-3 rounded-xl cursor-pointer focus:bg-zinc-900 group"
+                                >
+                                    <div className="p-2 rounded-lg bg-[#D1F349]/10 text-[#D1F349] group-hover:bg-[#D1F349]/20 transition-colors">
+                                        <Video className="w-4 h-4" />
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <span className="font-bold text-[13px] text-white">Create Video</span>
+                                        <span className="text-[10px] text-zinc-500">Cinematic AI animations</span>
+                                    </div>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                    onClick={() => navigate('/creator/studio', { state: { view: 'create', mode: 'booth' } })}
+                                    className="flex items-center gap-3 py-3 rounded-xl cursor-pointer focus:bg-zinc-900 group"
+                                >
+                                    <div className="p-2 rounded-lg bg-amber-500/10 text-amber-500 group-hover:bg-amber-500/20 transition-colors">
+                                        <Camera className="w-4 h-4" />
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <span className="font-bold text-[13px] text-white">Photo Booth</span>
+                                        <span className="text-[10px] text-zinc-500">Real-time AI sessions</span>
+                                    </div>
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+
                         <button
                             onClick={() => navigate('/creator/studio', { state: { view: 'gallery' } })}
                             className={cn(

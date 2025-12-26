@@ -52,6 +52,8 @@ export interface GalleryItem {
     isOwner?: boolean;
     parent_id?: number | string;
     parent_username?: string;
+    meta?: any;
+    metadata?: any;
 }
 
 interface CreationDetailViewProps {

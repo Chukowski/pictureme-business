@@ -784,7 +784,7 @@ function CreatorStudioPageContent() {
     };
 
     return (
-        <div className="min-h-dvh md:h-[calc(100vh-64px)] md:overflow-hidden flex flex-col md:flex-row bg-black text-white font-sans relative">
+        <div className="min-h-dvh h-screen overflow-hidden pt-20 flex flex-col md:flex-row bg-black text-white font-sans relative">
 
 
 
@@ -845,14 +845,16 @@ function CreatorStudioPageContent() {
                         </div>
 
                         {/* COLUMN 3: CANVAS / TIMELINE */}
-                        <TimelineView
-                            history={history}
-                            isProcessing={isProcessing}
-                            statusMessage={statusMessage}
-                            setPreviewItem={setPreviewItem}
-                            onReusePrompt={handleReusePrompt}
-                            onDownload={handleDownload}
-                        />
+                        <div className="flex-1 md:pl-[360px]">
+                            <TimelineView
+                                history={history}
+                                isProcessing={isProcessing}
+                                statusMessage={statusMessage}
+                                setPreviewItem={setPreviewItem}
+                                onReusePrompt={handleReusePrompt}
+                                onDownload={handleDownload}
+                            />
+                        </div>
                     </>
                 )}
             </div>
