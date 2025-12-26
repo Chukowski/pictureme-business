@@ -58,6 +58,10 @@ import { toast } from "sonner";
 import { AI_MODELS, LOCAL_IMAGE_MODELS, LOCAL_VIDEO_MODELS } from "@/services/aiProcessor";
 import { MarketplaceTemplate } from "@/services/marketplaceApi";
 
+import { Slider } from "@/components/ui/slider";
+import { LayoutGrid, List as ListIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
+
 interface MarketplaceTabProps {
   currentUser: User;
 }
@@ -156,6 +160,10 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
   const [typeFilter, setTypeFilter] = useState<'all' | 'individual' | 'business'>('all');
   const [selectedTemplate, setSelectedTemplate] = useState<MarketplaceTemplate | null>(null);
   const [isPurchasing, setIsPurchasing] = useState(false);
+
+  // View Controls State (Internal)
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [gridColumns, setZoomLevel] = useState([4]);
 
   // Sync search from URL
   useEffect(() => {
@@ -526,617 +534,511 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
   const isInLibrary = (templateId: string) => (myLibrary || []).some(t => t.template_id === templateId);
 
   return (
-    <div className="space-y-6 max-w-[1280px] mx-auto">
-      {/* Section Tabs */}
-      <div className="flex items-center justify-between flex-wrap gap-4">
-        <div className="flex bg-zinc-900/50 p-1 rounded-xl border border-white/10">
-          <button
-            onClick={() => setActiveSection('templates')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeSection === 'templates'
-              ? 'bg-indigo-600 text-white'
-              : 'text-zinc-400 hover:text-white'
-              }`}
-          >
-            <Grid3X3 className="w-4 h-4" />
-            Templates
-          </button>
-          {isBusiness && (
+    <div className="flex flex-col h-full animate-in fade-in duration-500 w-full overflow-hidden">
+      <div className="flex-none space-y-6 pb-6">
+        {/* Section Tabs & Actions */}
+        <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+          <div className="flex p-1.5 bg-[#18181b] rounded-full border border-white/5 shadow-2xl shadow-black/50">
             <button
-              onClick={() => setActiveSection('lora')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeSection === 'lora'
-                ? 'bg-indigo-600 text-white'
-                : 'text-zinc-400 hover:text-white'
+              onClick={() => setActiveSection('templates')}
+              className={`flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-bold transition-all duration-300 ${activeSection === 'templates'
+                ? 'bg-[#D1F349] text-black shadow-lg shadow-[#D1F349]/20'
+                : 'text-zinc-400 hover:text-white hover:bg-white/5'
                 }`}
             >
-              <Wand2 className="w-4 h-4" />
-              LoRA Models
+              <Grid3X3 className="w-4 h-4" />
+              Templates
             </button>
-          )}
-          <button
-            onClick={() => setActiveSection('library')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeSection === 'library'
-              ? 'bg-indigo-600 text-white'
-              : 'text-zinc-400 hover:text-white'
-              }`}
-          >
-            <Library className="w-4 h-4" />
-            My Library
-            {myLibrary && myLibrary.length > 0 && (
-              <Badge className="ml-1 bg-zinc-700 text-white">{myLibrary.length}</Badge>
+            {isBusiness && (
+              <button
+                onClick={() => setActiveSection('lora')}
+                className={`flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-bold transition-all duration-300 ${activeSection === 'lora'
+                  ? 'bg-[#D1F349] text-black shadow-lg shadow-[#D1F349]/20'
+                  : 'text-zinc-400 hover:text-white hover:bg-white/5'
+                  }`}
+              >
+                <Wand2 className="w-4 h-4" />
+                LoRA
+              </button>
             )}
-          </button>
+            <button
+              onClick={() => setActiveSection('library')}
+              className={`flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-bold transition-all duration-300 ${activeSection === 'library'
+                ? 'bg-[#D1F349] text-black shadow-lg shadow-[#D1F349]/20'
+                : 'text-zinc-400 hover:text-white hover:bg-white/5'
+                }`}
+            >
+              <Library className="w-4 h-4" />
+              Library
+              {myLibrary && myLibrary.length > 0 && (
+                <Badge className={`ml-2 border-0 ${activeSection === 'library' ? 'bg-black/20 text-black' : 'bg-zinc-800 text-zinc-400'}`}>
+                  {myLibrary.length}
+                </Badge>
+              )}
+            </button>
+          </div>
+
         </div>
 
-        {isBusiness && (
-          <Button
-            className="bg-lime-500 hover:bg-lime-600 text-black font-medium"
-            onClick={() => setShowCreateModal(true)}
-          >
-            <Upload className="w-4 h-4 mr-2" />
-            Create Template
-          </Button>
-        )}
-      </div>
-
-      {/* Templates Section */}
-      {activeSection === 'templates' && (
-        <>
-          {/* Filters */}
-          <div className="flex flex-wrap gap-4 items-center">
-            <div className="relative flex-1 min-w-[200px]">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
-              <Input
+        {/* Templates Section */}
+        {activeSection === 'templates' && (
+          <div className="flex flex-wrap gap-4 items-center bg-[#18181b] p-2 rounded-[2rem] border border-white/5 w-fit shadow-xl">
+            <div className="relative w-full md:w-[280px]">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+              <input
                 placeholder="Search templates..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 bg-zinc-900/50 border-white/10 text-white"
+                className="w-full h-10 pl-10 pr-4 bg-zinc-900/50 rounded-xl border-none text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-[#D1F349]/50"
               />
             </div>
 
             <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-              <SelectTrigger className="w-[150px] bg-zinc-900/50 border-white/10 text-white">
+              <SelectTrigger className="w-[140px] h-10 bg-zinc-900/50 border-none rounded-xl text-zinc-300 text-sm focus:ring-0">
                 <SelectValue placeholder="Category" />
               </SelectTrigger>
-              <SelectContent className="bg-zinc-900 border-white/10">
+              <SelectContent className="bg-[#18181b] border-white/10 rounded-xl">
                 {CATEGORIES.map(cat => (
-                  <SelectItem key={cat} value={cat} className="text-white">{cat}</SelectItem>
+                  <SelectItem key={cat} value={cat} className="text-zinc-300 focus:bg-zinc-800 focus:text-white rounded-lg cursor-pointer">
+                    {cat}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
 
-            {isBusiness && (
-              <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as 'all' | 'individual' | 'business')}>
-                <SelectTrigger className="w-[140px] bg-zinc-900/50 border-white/10 text-white">
-                  <SelectValue placeholder="Type" />
-                </SelectTrigger>
-                <SelectContent className="bg-zinc-900 border-white/10">
-                  <SelectItem value="all" className="text-white">All Types</SelectItem>
-                  <SelectItem value="individual" className="text-white">Individual</SelectItem>
-                  <SelectItem value="business" className="text-white">Business</SelectItem>
-                </SelectContent>
-              </Select>
-            )}
+            <div className="w-px h-6 bg-white/5 mx-1" />
 
             <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger className="w-[140px] bg-zinc-900/50 border-white/10 text-white">
+              <SelectTrigger className="w-[140px] h-10 bg-zinc-900/50 border-none rounded-xl text-zinc-300 text-sm focus:ring-0">
                 <SelectValue placeholder="Sort by" />
               </SelectTrigger>
-              <SelectContent className="bg-zinc-900 border-white/10">
-                <SelectItem value="popular" className="text-white">Most Popular</SelectItem>
-                <SelectItem value="rating" className="text-white">Highest Rated</SelectItem>
-                <SelectItem value="newest" className="text-white">Newest</SelectItem>
-                <SelectItem value="price-low" className="text-white">Price: Low to High</SelectItem>
-                <SelectItem value="price-high" className="text-white">Price: High to Low</SelectItem>
+              <SelectContent className="bg-[#18181b] border-white/10 rounded-xl">
+                <SelectItem value="popular" className="text-zinc-300 focus:bg-zinc-800 focus:text-white rounded-lg cursor-pointer">Most Popular</SelectItem>
+                <SelectItem value="newest" className="text-zinc-300 focus:bg-zinc-800 focus:text-white rounded-lg cursor-pointer">Newest</SelectItem>
+                <SelectItem value="price-low" className="text-zinc-300 focus:bg-zinc-800 focus:text-white rounded-lg cursor-pointer">Price: Low to High</SelectItem>
               </SelectContent>
             </Select>
-          </div>
 
-          {/* Templates Grid */}
-          {isLoading ? (
+            <div className="w-px h-6 bg-white/5 mx-1 hidden md:block" />
+
+            {/* View Controls (Integrated) */}
+            <div className="flex items-center gap-2">
+              <div className="h-9 px-3 flex items-center bg-zinc-900/50 rounded-xl min-w-[100px]">
+                <Slider
+                  value={gridColumns}
+                  onValueChange={setZoomLevel}
+                  min={2}
+                  max={6}
+                  step={1}
+                  disabled={viewMode === 'list'}
+                  className={`w-24 [&_.bg-primary]:bg-[#D1F349] [&_.border-primary]:border-[#D1F349] ${viewMode === 'list' ? 'opacity-30' : ''}`}
+                />
+              </div>
+              <div className="flex items-center gap-1 p-1 bg-zinc-900/50 rounded-xl">
+                <button
+                  onClick={() => setViewMode('list')}
+                  className={cn(
+                    "flex items-center justify-center w-8 h-8 rounded-lg transition-all",
+                    viewMode === 'list' ? "bg-[#333333] text-white shadow-md" : "text-zinc-500 hover:text-zinc-300"
+                  )}
+                  title="List View"
+                >
+                  <ListIcon className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => setViewMode('grid')}
+                  className={cn(
+                    "flex items-center justify-center w-8 h-8 rounded-lg transition-all",
+                    viewMode === 'grid' ? "bg-[#D1F349] text-black shadow-md" : "text-zinc-500 hover:text-zinc-300"
+                  )}
+                  title="Grid View"
+                >
+                  <LayoutGrid className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="flex-1 overflow-y-auto min-h-0 pr-2 pb-20 scrollbar-hide">
+        {activeSection === 'templates' && (
+
+          isLoading ? (
             <div className="flex items-center justify-center h-64">
-              <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
+              <Loader2 className="w-10 h-10 animate-spin text-[#D1F349]" />
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {filteredTemplates.map((template) => (
-                <Card
-                  key={template.id}
-                  className="bg-zinc-900/50 border-white/10 overflow-hidden group hover:border-white/20 transition-all cursor-pointer relative"
-                  onClick={() => setSelectedTemplate(template)}
-                >
-                  <div className="relative aspect-[4/3] overflow-hidden bg-zinc-800">
-                    <img
-                      src={getTemplateImage(template)}
-                      alt={template.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400';
-                      }}
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-
-                    {/* Badges */}
-                    <div className="absolute top-2 left-2 flex gap-1 flex-wrap">
-                      {template.price === 0 && (
-                        <Badge className="bg-emerald-500 text-white">FREE</Badge>
-                      )}
-                      {template.is_premium && (
-                        <Badge className="bg-amber-500 text-black">
-                          <Crown className="w-3 h-3 mr-1" />
-                          Premium
-                        </Badge>
-                      )}
-                      {template.template_type === 'business' && (
-                        <Badge className="bg-purple-500 text-white">
-                          <Building2 className="w-3 h-3 mr-1" />
-                          Business
-                        </Badge>
-                      )}
-                      {!template.is_public && (
-                        <Badge className="bg-zinc-600 text-white">
-                          <Lock className="w-3 h-3 mr-1" />
-                          Private
-                        </Badge>
-                      )}
-                    </div>
-
-                    {/* Price */}
-                    {template.price > 0 && (
-                      <div className="absolute top-2 right-2">
-                        <Badge className="bg-black/60 backdrop-blur-sm text-white">
-                          <Coins className="w-3 h-3 mr-1 text-yellow-400" />
-                          {template.price}
-                        </Badge>
-                      </div>
-                    )}
-
-                    {template.template_type === 'business' && !isBusiness && (
-                      <div className="absolute bottom-2 right-2">
-                        <Badge className="bg-purple-500/90 text-white text-[10px]">
-                          Requires Business Plan
-                        </Badge>
-                      </div>
-                    )}
-
-                    {/* Owned Badge */}
-                    {(template.is_owned || isInLibrary(template.id)) && (
-                      <div className="absolute bottom-2 right-2">
-                        <Badge className="bg-emerald-500/90 text-white">
-                          <Check className="w-3 h-3 mr-1" />
-                          Owned
-                        </Badge>
-                      </div>
-                    )}
-
-                    {/* Pipeline indicators */}
-                    <div className="absolute bottom-2 left-2 flex gap-1">
-                      {template.pipeline_config?.videoEnabled && (
-                        <Badge className="bg-indigo-500/80 text-white text-xs">
-                          <Video className="w-3 h-3" />
-                        </Badge>
-                      )}
-                      {template.pipeline_config?.faceswapEnabled && (
-                        <Badge className="bg-pink-500/80 text-white text-xs">
-                          <Sparkles className="w-3 h-3" />
-                        </Badge>
-                      )}
-                    </div>
+            <>
+              {filteredTemplates.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-20 text-center">
+                  <div className="w-20 h-20 rounded-3xl bg-[#18181b] border border-white/5 flex items-center justify-center mb-6 rotate-3">
+                    <ShoppingBag className="w-10 h-10 text-zinc-600" />
                   </div>
-
-                  <CardContent className="p-4">
-                    <h3 className="font-semibold text-white truncate">{template.name}</h3>
-                    <p className="text-sm text-zinc-400 truncate mt-1">{template.description}</p>
-
-                    <div className="flex items-center justify-between mt-3">
-                      <div className="flex items-center gap-2 text-sm text-zinc-500">
-                        <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
-                        <span>{template.rating}</span>
-                        <span>•</span>
-                        <Download className="w-3 h-3" />
-                        <span>{template.downloads}</span>
-                      </div>
-                      <Badge variant="outline" className="text-xs border-white/10 text-zinc-400">
-                        {template.category}
-                      </Badge>
-                    </div>
-                  </CardContent>
-
-                  {/* Hover overlay actions */}
-                  <div className="absolute inset-0 bg-black/65 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3 p-4 pointer-events-none group-hover:pointer-events-auto">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="text-white border-white/30 hover:bg-white/10 bg-white/5"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedTemplate(template);
-                      }}
+                  <h3 className="text-xl font-bold text-white mb-2">No templates found</h3>
+                  <p className="text-zinc-500">Try adjusting your filters or search terms</p>
+                </div>
+              ) : (
+                <div
+                  className={`grid gap-6 transition-all duration-300 ${viewMode === 'list' ? 'grid-cols-1' : ''}`}
+                  style={viewMode === 'grid' ? { gridTemplateColumns: `repeat(${gridColumns[0]}, minmax(0, 1fr))` } : {}}
+                >
+                  {filteredTemplates.map((template) => (
+                    <div
+                      key={template.id}
+                      className={`group relative bg-[#18181b] rounded-3xl overflow-hidden border border-white/5 hover:border-[#D1F349]/30 transition-all duration-500 hover:shadow-2xl hover:shadow-[#D1F349]/5 ${viewMode === 'list' ? 'flex flex-row h-48' : ''}`}
+                      onClick={() => setSelectedTemplate(template)}
                     >
-                      <Eye className="w-4 h-4 mr-1" /> Preview
-                    </Button>
-                    {template.is_owned || isInLibrary(template.id) ? (
-                      <Button
-                        size="sm"
-                        className="bg-emerald-500 hover:bg-emerald-600 text-white"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setActiveSection('library');
-                        }}
-                      >
-                        Use
-                      </Button>
-                    ) : (
-                      (() => {
-                        const locked = template.template_type === 'business' && !isBusiness;
-                        const isFree = (template.tokens_cost || 0) === 0;
-                        return (
+                      {/* Image Area */}
+                      <div className={`relative overflow-hidden bg-zinc-900 ${viewMode === 'list' ? 'w-64 aspect-auto h-full shrink-0' : 'aspect-square'}`}>
+                        <img
+                          src={getTemplateImage(template)}
+                          alt={template.name}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400';
+                          }}
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-[#18181b] via-transparent to-transparent opacity-80" />
+
+                        {/* Status Badges */}
+                        <div className="absolute top-3 left-3 flex flex-wrap gap-2">
+                          {template.price === 0 && (
+                            <span className="px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-400 text-[10px] font-bold uppercase tracking-wide border border-emerald-500/20 backdrop-blur-md">
+                              Free
+                            </span>
+                          )}
+                          {template.template_type === 'business' && (
+                            <span className="px-2.5 py-1 rounded-lg bg-purple-500/20 text-purple-400 text-[10px] font-bold uppercase tracking-wide border border-purple-500/20 backdrop-blur-md">
+                              Business
+                            </span>
+                          )}
+                          {(template.is_owned || isInLibrary(template.id)) && (
+                            <span className="px-2.5 py-1 rounded-lg bg-[#D1F349] text-black text-[10px] font-bold uppercase tracking-wide shadow-lg shadow-[#D1F349]/20">
+                              Owned
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Content Area */}
+                      <div className={`p-5 relative ${viewMode === 'list' ? 'flex-1 flex flex-col justify-between' : ''}`}>
+                        <div className="flex justify-between items-start mb-2">
+                          <div>
+                            <h3 className="font-bold text-white text-lg leading-tight truncate pr-2 group-hover:text-[#D1F349] transition-colors">{template.name}</h3>
+                            <p className="text-xs text-zinc-500 font-medium mt-1">{template.category}</p>
+                          </div>
+                          {template.price > 0 && (
+                            <div className="flex items-center gap-1 bg-white/5 px-2 py-1 rounded-lg border border-white/5">
+                              <Coins className="w-3 h-3 text-[#D1F349]" />
+                              <span className="text-xs font-bold text-white">{template.price}</span>
+                            </div>
+                          )}
+                        </div>
+
+                        <p className={`text-sm text-zinc-400 line-clamp-2 leading-relaxed ${viewMode === 'list' ? 'mb-auto' : 'mb-4 h-10'}`}>
+                          {template.description}
+                        </p>
+
+                        <div className="flex items-center gap-3">
                           <Button
-                            size="sm"
-                            className={`text-white ${locked ? 'bg-white/10 text-white/60 border border-white/20 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700'}`}
+                            className={`flex-1 rounded-xl h-10 font-bold transition-all ${(template.is_owned || isInLibrary(template.id))
+                              ? 'bg-zinc-800 text-white hover:bg-zinc-700'
+                              : 'bg-[#D1F349] text-black hover:bg-[#b0cc3d] shadow-lg shadow-[#D1F349]/10'
+                              }`}
                             onClick={(e) => {
                               e.stopPropagation();
-                              handlePurchase(template);
+                              if (template.is_owned || isInLibrary(template.id)) {
+                                setActiveSection('library');
+                              } else {
+                                handlePurchase(template);
+                              }
                             }}
-                            disabled={locked}
                           >
-                            {isFree ? (
-                              <>
-                                <Plus className="w-4 h-4 mr-1" /> Add
-                              </>
-                            ) : (
-                              <>
-                                <Coins className="w-4 h-4 mr-1" /> {template.tokens_cost}
-                              </>
-                            )}
+                            {(template.is_owned || isInLibrary(template.id)) ? 'Use' : (template.price === 0 ? 'Add for Free' : 'Purchase')}
                           </Button>
-                        );
-                      })()
-                    )}
-                  </div>
-                </Card>
-              ))}
-            </div>
-          )}
 
-          {filteredTemplates.length === 0 && !isLoading && (
-            <div className="text-center py-12">
-              <ShoppingBag className="w-12 h-12 mx-auto text-zinc-600 mb-4" />
-              <h3 className="text-lg font-semibold text-white">No templates found</h3>
-              <p className="text-zinc-400 mt-1">Try adjusting your filters</p>
-            </div>
-          )}
-        </>
-      )}
-
-      {/* LoRA Models Section */}
-      {activeSection === 'lora' && isBusiness && (
-        <div className="space-y-6">
-          {loraModels.length > 0 ? (
-            <>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {loraModels.map((model) => (
-                  <Card key={model.id} className="bg-zinc-900/50 border-white/10 overflow-hidden hover:border-indigo-500/30 transition-all">
-                    <div className="relative aspect-video overflow-hidden bg-zinc-800">
-                      <img
-                        src={model.preview_url}
-                        alt={model.name}
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400';
-                        }}
-                      />
-                      <div className="absolute top-2 right-2">
-                        <Badge className="bg-black/60 backdrop-blur-sm text-white">
-                          ${model.price}
-                        </Badge>
+                          <button
+                            className="w-10 h-10 rounded-xl bg-zinc-800 flex items-center justify-center text-zinc-400 hover:text-white hover:bg-zinc-700 transition-colors border border-white/5"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedTemplate(template);
+                            }}
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+                        </div>
                       </div>
                     </div>
-                    <CardContent className="p-4 space-y-3">
-                      <div className="flex items-start justify-between gap-2">
-                        <div>
-                          <h3 className="font-semibold text-white">{model.name}</h3>
-                          <p className="text-sm text-zinc-400 mt-1 line-clamp-2">{model.description}</p>
-                        </div>
-                        <Badge variant="outline" className="border-white/10 text-xs text-zinc-400">
-                          {model.category}
-                        </Badge>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2 text-sm text-zinc-500">
-                          <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
-                          <span>{model.rating}</span>
-                          <span>•</span>
-                          <Download className="w-3 h-3" />
-                          <span>{model.downloads}</span>
-                        </div>
-                        <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700 text-white">
-                          Buy
+                  ))}
+                </div>
+              )}
+            </>
+          )
+        )}
+
+        {/* LoRA Models Section (Redesigned) */}
+        {activeSection === 'lora' && isBusiness && (
+          <div
+            className={`grid gap-6 transition-all duration-300 ${viewMode === 'list' ? 'grid-cols-1' : ''}`}
+            style={viewMode === 'grid' ? { gridTemplateColumns: `repeat(${gridColumns[0]}, minmax(0, 1fr))` } : {}}
+          >
+            {loraModels.length > 0 ? (
+              loraModels.map((model) => (
+                <div
+                  key={model.id}
+                  className={`group relative bg-[#18181b] rounded-3xl overflow-hidden border border-white/5 hover:border-purple-500/30 transition-all duration-300 ${viewMode === 'list' ? 'flex flex-row h-48' : ''}`}
+                >
+                  <div className={`bg-zinc-900 relative ${viewMode === 'list' ? 'w-64 aspect-auto h-full shrink-0' : 'aspect-video'}`}>
+                    <img src={model.preview_url} className="w-full h-full object-cover opacity-60 group-hover:opacity-80 transition-opacity" />
+                    <div className="absolute top-3 right-3 bg-black/60 backdrop-blur-sm px-2 py-1 rounded-lg border border-white/10">
+                      <span className="text-xs font-bold text-white">${model.price}</span>
+                    </div>
+                  </div>
+                  <div className={`p-5 ${viewMode === 'list' ? 'flex-1 flex flex-col justify-between' : ''}`}>
+                    <div className="flex justify-between items-start mb-2">
+                      <h3 className="font-bold text-white text-lg">{model.name}</h3>
+                      <Badge variant="outline" className="border-white/10 text-zinc-400 text-[10px]">{model.category}</Badge>
+                    </div>
+                    <p className={`text-sm text-zinc-400 line-clamp-2 ${viewMode === 'list' ? 'mb-auto' : 'mb-4'}`}>{model.description}</p>
+                    <Button className="w-full bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-bold h-10">
+                      View Model
+                    </Button>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="col-span-full flex flex-col items-center justify-center py-24 text-center bg-[#18181b] rounded-3xl border border-white/5 border-dashed">
+                <Wand2 className="w-16 h-16 text-zinc-600 mb-6" />
+                <h3 className="text-2xl font-bold text-white mb-2">LoRA Models Coming Soon</h3>
+                <p className="text-zinc-500 max-w-md mx-auto mb-8">Train and share custom AI models to create unique styles for your events.</p>
+                <Button className="bg-[#D1F349] text-black font-bold rounded-full px-8 h-12">
+                  Join Waitlist
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* My Library Section (Redesigned) */}
+        {activeSection === 'library' && (
+          <>
+            {(!myLibrary || myLibrary.length === 0) ? (
+              <div className="flex flex-col items-center justify-center py-24 text-center bg-[#18181b] rounded-3xl border border-white/5 border-dashed">
+                <Library className="w-16 h-16 text-zinc-700 mb-6" />
+                <h3 className="text-2xl font-bold text-white mb-2">Your library is empty</h3>
+                <p className="text-zinc-500 max-w-md mx-auto mb-8">Browse the marketplace to find professionally crafted templates.</p>
+                <Button
+                  onClick={() => setActiveSection('templates')}
+                  className="bg-white text-black font-bold rounded-full px-8 h-12 hover:bg-zinc-200"
+                >
+                  Browse Templates
+                </Button>
+              </div>
+            ) : (
+              <div
+                className={`grid gap-6 transition-all duration-300 ${viewMode === 'list' ? 'grid-cols-1' : ''}`}
+                style={viewMode === 'grid' ? { gridTemplateColumns: `repeat(${gridColumns[0]}, minmax(0, 1fr))` } : {}}
+              >
+                {myLibrary.map((item) => (
+                  <div
+                    key={item.id}
+                    className={`group relative bg-[#18181b] rounded-3xl overflow-hidden border border-white/5 hover:border-white/20 transition-all duration-300 ${viewMode === 'list' ? 'flex flex-row h-40' : ''}`}
+                  >
+                    <div className={`bg-zinc-900 relative ${viewMode === 'list' ? 'w-48 aspect-auto h-full shrink-0' : 'aspect-square'}`}>
+                      <img
+                        src={item.preview_url || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400'}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                      <div className="absolute inset-0 bg-black/60 flex items-center justify-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 backdrop-blur-[2px]">
+                        <Button size="sm" className="rounded-xl bg-white text-black font-bold hover:bg-zinc-200">
+                          Use
+                        </Button>
+                        <Button size="sm" variant="ghost" className="rounded-xl text-white hover:bg-white/20">
+                          <Eye className="w-4 h-4" />
                         </Button>
                       </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-
-              {/* How it works + Upcoming */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                <Card className="bg-zinc-900/50 border-white/10 lg:col-span-2">
-                  <CardContent className="p-5 space-y-3">
-                    <div className="flex items-center gap-2 text-white font-semibold">
-                      <Sparkles className="w-4 h-4 text-indigo-400" />
-                      How LoRA Marketplace Works
-                    </div>
-                    <ol className="space-y-2 text-sm text-zinc-300 list-decimal list-inside">
-                      <li>Pick a model with a style you like.</li>
-                      <li>Apply it to your templates or badges from the editor.</li>
-                      <li>Pay per use or own it if marked “Owned”.</li>
-                      <li>Preview sample outputs before applying.</li>
-                    </ol>
-                  </CardContent>
-                </Card>
-
-                <Card className="bg-zinc-900/50 border-white/10">
-                  <CardContent className="p-5 space-y-2">
-                    <div className="flex items-center gap-2 text-white font-semibold">
-                      <Clock className="w-4 h-4 text-amber-400" />
-                      Upcoming Models
-                    </div>
-                    <div className="space-y-2 text-sm text-zinc-300">
-                      <div className="p-3 rounded-lg bg-zinc-800/60 flex items-center justify-between">
-                        <span>Neon Portrait v2</span>
-                        <Badge className="bg-amber-500/20 text-amber-400">Soon</Badge>
-                      </div>
-                      <div className="p-3 rounded-lg bg-zinc-800/60 flex items-center justify-between">
-                        <span>Product Hero Light</span>
-                        <Badge className="bg-amber-500/20 text-amber-400">Soon</Badge>
+                      <div className="absolute top-3 left-3">
+                        <Badge className="bg-black/50 backdrop-blur-md border border-white/10 text-white">
+                          {item.template_type === 'business' ? 'Business' : 'Individual'}
+                        </Badge>
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
-              </div>
-            </>
-          ) : (
-            <div className="text-center py-12 space-y-4">
-              <Wand2 className="w-12 h-12 mx-auto text-zinc-600 mb-4" />
-              <h3 className="text-lg font-semibold text-white">LoRA Model Marketplace</h3>
-              <p className="text-zinc-400 mt-1">Coming soon: Train and share custom AI models</p>
-              <Button className="mt-2 bg-indigo-600 hover:bg-indigo-700 text-white">
-                <Sparkles className="w-4 h-4 mr-2" />
-                Join Waitlist
-              </Button>
-              <div className="max-w-xl mx-auto text-left bg-zinc-900/50 border border-white/10 rounded-2xl p-5">
-                <h4 className="text-white font-semibold flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-amber-400" />
-                  Upcoming Models
-                </h4>
-                <ul className="text-sm text-zinc-300 mt-2 space-y-1 list-disc list-inside">
-                  <li>Neon Portrait v2</li>
-                  <li>Product Hero Light</li>
-                  <li>Studio Cinematic Pack</li>
-                </ul>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* My Library Section */}
-      {activeSection === 'library' && (
-        <>
-          {(!myLibrary || myLibrary.length === 0) ? (
-            <div className="text-center py-12">
-              <Library className="w-12 h-12 mx-auto text-zinc-600 mb-4" />
-              <h3 className="text-lg font-semibold text-white">Your library is empty</h3>
-              <p className="text-zinc-400 mt-1">Browse the marketplace to add templates</p>
-              <Button
-                className="mt-4 bg-indigo-600 hover:bg-indigo-700 text-white"
-                onClick={() => setActiveSection('templates')}
-              >
-                Browse Templates
-              </Button>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {(myLibrary || []).map((item) => (
-                <Card
-                  key={item.id}
-                  className="bg-zinc-900/50 border-white/10 overflow-hidden group"
-                >
-                  <div className="relative aspect-[4/3] overflow-hidden bg-zinc-800">
-                    <img
-                      src={item.preview_url || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400'}
-                      alt={item.name}
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400';
-                      }}
-                    />
-                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                      <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700 text-white">
-                        <Eye className="w-4 h-4 mr-1" />
-                        Preview
-                      </Button>
-                      <Button size="sm" variant="outline" className="border-white/20 text-white hover:bg-white/10">
-                        Use in Event
-                      </Button>
-                    </div>
-
-                    <div className="absolute top-2 left-2">
-                      <Badge className={item.template_type === 'business' ? 'bg-purple-500 text-white' : 'bg-indigo-500 text-white'}>
-                        {item.template_type === 'business' ? 'Business' : 'Individual'}
-                      </Badge>
-                    </div>
-                  </div>
-
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-white truncate">{item.name}</h3>
-                        <p className="text-sm text-zinc-400">
-                          Used {item.times_used} times
-                        </p>
+                    <div className={`p-4 flex items-center justify-between ${viewMode === 'list' ? 'flex-1' : ''}`}>
+                      <div className="min-w-0">
+                        <h3 className="font-bold text-white text-sm truncate">{item.name}</h3>
+                        <p className="text-xs text-zinc-500">Used {item.times_used} times</p>
                       </div>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleRemoveFromLibrary(item);
-                        }}
+                      <button
+                        onClick={() => handleRemoveFromLibrary(item)}
+                        className="w-8 h-8 rounded-lg flex items-center justify-center text-zinc-600 hover:text-red-400 hover:bg-red-500/10 transition-all"
                       >
                         <Trash2 className="w-4 h-4" />
-                      </Button>
+                      </button>
                     </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
-        </>
-      )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
+        )}
+      </div>
 
       {/* Template Preview Dialog */}
       <Dialog open={!!selectedTemplate} onOpenChange={() => setSelectedTemplate(null)}>
-        <DialogContent className="bg-zinc-900 border-white/10 text-white max-w-3xl">
+        <DialogContent className="bg-[#18181b] border-white/5 text-white max-w-4xl p-0 overflow-hidden gap-0 rounded-[2rem] shadow-2xl">
           {selectedTemplate && (
-            <>
-              <DialogHeader>
-                <div className="flex items-start justify-between">
-                  <div>
-                    <DialogTitle className="text-xl">{selectedTemplate.name}</DialogTitle>
-                    <DialogDescription className="text-zinc-400 mt-1">
-                      by {selectedTemplate.creator?.name || 'Unknown'}
-                    </DialogDescription>
-                  </div>
-                  <div className="flex gap-2">
-                    {selectedTemplate.price === 0 ? (
-                      <Badge className="bg-emerald-500 text-white">FREE</Badge>
-                    ) : (
-                      <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/20">
-                        <Coins className="w-3 h-3 mr-1" />
-                        {selectedTemplate.price} tokens
-                      </Badge>
-                    )}
-                    {selectedTemplate.template_type === 'business' && (
-                      <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/20">
-                        Business
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-              </DialogHeader>
-
-              <div className="mt-4">
+            <div className="flex flex-col md:flex-row h-[85vh] md:h-auto md:max-h-[85vh]">
+              {/* Left: Image */}
+              <div className="w-full md:w-1/2 bg-black relative max-h-[40vh] md:max-h-none overflow-hidden group">
                 <img
                   src={getTemplateImage(selectedTemplate)}
                   alt={selectedTemplate.name}
-                  className="w-full h-64 object-cover rounded-lg bg-zinc-800"
+                  className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity duration-700"
                   onError={(e) => {
                     (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400';
                   }}
                 />
-              </div>
+                <div className="absolute inset-0 bg-gradient-to-t from-[#18181b] via-transparent to-transparent opacity-60 md:hidden" />
 
-              <div className="mt-4 space-y-4">
-                <p className="text-zinc-300">{selectedTemplate.description}</p>
-
-                {selectedTemplate.prompt && (
-                  <div className="bg-zinc-800/50 p-3 rounded-lg">
-                    <p className="text-xs text-zinc-500 mb-1">Prompt</p>
-                    <p className="text-sm text-zinc-300">{selectedTemplate.prompt}</p>
-                  </div>
-                )}
-
-                {/* Pipeline info */}
-                {selectedTemplate.pipeline_config && (
-                  <div className="flex flex-wrap gap-2">
-                    <Badge variant="outline" className="border-indigo-500/30 text-indigo-400">
-                      <ImageIcon className="w-3 h-3 mr-1" />
-                      {IMAGE_MODELS.find(m => m.value === selectedTemplate.pipeline_config?.imageModel)?.label || 'Image'}
-                    </Badge>
-                    {selectedTemplate.pipeline_config.faceswapEnabled && (
-                      <Badge variant="outline" className="border-pink-500/30 text-pink-400">
-                        <Sparkles className="w-3 h-3 mr-1" />
-                        Faceswap
-                      </Badge>
-                    )}
-                    {selectedTemplate.pipeline_config.videoEnabled && (
-                      <Badge variant="outline" className="border-purple-500/30 text-purple-400">
-                        <Video className="w-3 h-3 mr-1" />
-                        {VIDEO_MODELS.find(m => m.value === selectedTemplate.pipeline_config?.videoModel)?.label || 'Video'}
-                      </Badge>
-                    )}
-                  </div>
-                )}
-
-                <div className="flex flex-wrap gap-2">
-                  {selectedTemplate.tags?.map((tag) => (
-                    <Badge key={tag} variant="outline" className="border-white/10 text-zinc-400">
-                      {tag}
-                    </Badge>
-                  ))}
-                </div>
-
-                <div className="flex items-center gap-6 text-sm text-zinc-400">
-                  <div className="flex items-center gap-1">
-                    <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
-                    <span>{selectedTemplate.rating} rating</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Download className="w-4 h-4" />
-                    <span>{selectedTemplate.downloads.toLocaleString()} downloads</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Coins className="w-4 h-4 text-yellow-400" />
-                    <span>{selectedTemplate.tokens_cost} tokens/use</span>
-                  </div>
-                  <Badge variant="outline" className="border-white/10 text-zinc-400">
-                    {selectedTemplate.category}
-                  </Badge>
+                <div className="absolute top-4 left-4 flex flex-wrap gap-2">
+                  {selectedTemplate.price === 0 && (
+                    <Badge className="bg-emerald-500/20 text-emerald-400 border-none backdrop-blur-md">FREE</Badge>
+                  )}
+                  {selectedTemplate.template_type === 'business' && (
+                    <Badge className="bg-purple-500/20 text-purple-400 border-none backdrop-blur-md">Business</Badge>
+                  )}
                 </div>
               </div>
 
-              <DialogFooter className="mt-6">
-                {(selectedTemplate.is_owned || isInLibrary(selectedTemplate.id)) ? (
-                  <div className="flex items-center gap-3 w-full justify-between">
-                    <Badge className="bg-emerald-500/20 text-emerald-400">
-                      <Check className="w-4 h-4 mr-1" />
-                      In Your Library
-                    </Badge>
-                    <Button variant="outline" className="border-white/10 text-white hover:bg-white/10">
-                      Use in Event
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="flex gap-3">
-                    <Button variant="outline" className="border-white/10 text-white hover:bg-white/10">
-                      <Heart className="w-4 h-4 mr-2" />
-                      Save for Later
-                    </Button>
-                    <Button
-                      className="bg-indigo-600 hover:bg-indigo-700 text-white"
-                      onClick={() => handlePurchase(selectedTemplate)}
-                      disabled={isPurchasing}
-                    >
-                      {isPurchasing ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : selectedTemplate.price === 0 ? (
-                        <>
-                          <Plus className="w-4 h-4 mr-2" />
-                          Add to Library
-                        </>
-                      ) : (
-                        <>
-                          <Coins className="w-4 h-4 mr-2" />
-                          Buy for {selectedTemplate.price} tokens
-                        </>
+              {/* Right: Content */}
+              <div className="flex-1 flex flex-col p-6 md:p-8 overflow-y-auto bg-[#18181b]">
+                <DialogHeader className="mb-6 space-y-1">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <DialogTitle className="text-3xl font-black uppercase tracking-tight text-white mb-2">{selectedTemplate.name}</DialogTitle>
+                      <DialogDescription className="text-zinc-400 text-base font-medium flex items-center gap-2">
+                        By <span className="text-white border-b border-white/10 pb-0.5">{selectedTemplate.creator?.name || 'PictureMe'}</span>
+                      </DialogDescription>
+                    </div>
+                    <div className="flex flex-col items-end gap-1">
+                      {selectedTemplate.price > 0 && (
+                        <div className="flex items-center gap-1.5 px-3 py-1 bg-white/5 rounded-full border border-white/5">
+                          <Coins className="w-4 h-4 text-[#D1F349]" />
+                          <span className="text-sm font-bold text-white">{selectedTemplate.price} Tokens</span>
+                        </div>
                       )}
-                    </Button>
+                    </div>
                   </div>
-                )}
-              </DialogFooter>
-            </>
+                </DialogHeader>
+
+                <div className="space-y-8 flex-1">
+                  {/* Description */}
+                  <div>
+                    <p className="text-zinc-300 leading-relaxed text-sm md:text-base">{selectedTemplate.description}</p>
+                  </div>
+
+                  {/* Pipeline Info */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="p-3 rounded-xl bg-zinc-900/50 border border-white/5 flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-zinc-800 flex items-center justify-center text-zinc-400">
+                        <ImageIcon className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] uppercase font-bold text-zinc-500 mb-0.5">Model</p>
+                        <p className="text-xs font-bold text-white truncate max-w-[120px]">
+                          {IMAGE_MODELS.find(m => m.value === selectedTemplate.pipeline_config?.imageModel)?.label || 'Standard'}
+                        </p>
+                      </div>
+                    </div>
+
+                    {selectedTemplate.pipeline_config?.faceswapEnabled && (
+                      <div className="p-3 rounded-xl bg-zinc-900/50 border border-white/5 flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-zinc-800 flex items-center justify-center text-pink-400">
+                          <Sparkles className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <p className="text-[10px] uppercase font-bold text-zinc-500 mb-0.5">Feature</p>
+                          <p className="text-xs font-bold text-white">Faceswap Enabled</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {selectedTemplate.pipeline_config?.videoEnabled && (
+                      <div className="p-3 rounded-xl bg-zinc-900/50 border border-white/5 flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-zinc-800 flex items-center justify-center text-purple-400">
+                          <Video className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <p className="text-[10px] uppercase font-bold text-zinc-500 mb-0.5">Feature</p>
+                          <p className="text-xs font-bold text-white">Video Ready</p>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="p-3 rounded-xl bg-zinc-900/50 border border-white/5 flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-zinc-800 flex items-center justify-center text-yellow-400">
+                        <Star className="w-5 h-5 fill-yellow-400" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] uppercase font-bold text-zinc-500 mb-0.5">Rating</p>
+                        <p className="text-xs font-bold text-white">{selectedTemplate.rating} / 5</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Prompt Preview */}
+                  {selectedTemplate.prompt && (
+                    <div className="space-y-2">
+                      <h4 className="text-xs font-black uppercase tracking-wider text-zinc-500">Prompt Preview</h4>
+                      <div className="bg-black/40 p-4 rounded-xl border border-white/5 font-mono text-xs text-zinc-400 leading-relaxed max-h-32 overflow-y-auto">
+                        {selectedTemplate.prompt}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Tags */}
+                  <div className="flex flex-wrap gap-2">
+                    {selectedTemplate.tags?.map((tag) => (
+                      <Badge key={tag} variant="secondary" className="bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-white transition-colors">#{tag}</Badge>
+                    ))}
+                  </div>
+                </div>
+
+                <DialogFooter className="mt-8 pt-6 border-t border-white/5">
+                  <div className="w-full flex gap-3">
+                    {(selectedTemplate.is_owned || isInLibrary(selectedTemplate.id)) ? (
+                      <>
+                        <Button className="flex-1 h-12 bg-white text-black font-bold text-base hover:bg-zinc-200 rounded-xl" disabled>
+                          <Check className="w-5 h-5 mr-2" />
+                          Owned
+                        </Button>
+                        <Button className="flex-1 h-12 bg-[#D1F349] text-black font-bold text-base hover:bg-[#b0cc3d] rounded-xl shadow-lg shadow-[#D1F349]/20 transition-all hover:scale-[1.02]">
+                          Use in Studio
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <Button variant="outline" className="h-12 px-6 border-white/10 bg-transparent text-white hover:bg-white/5 hover:text-white rounded-xl">
+                          <Heart className="w-5 h-5" />
+                        </Button>
+                        <Button
+                          className="flex-1 h-12 bg-[#D1F349] text-black font-bold text-base hover:bg-[#b0cc3d] rounded-xl shadow-lg shadow-[#D1F349]/20 transition-all hover:scale-[1.02]"
+                          onClick={() => handlePurchase(selectedTemplate)}
+                          disabled={isPurchasing}
+                        >
+                          {isPurchasing ? <Loader2 className="w-5 h-5 animate-spin" /> : (
+                            <>
+                              {selectedTemplate.price === 0 ? "Add to Library - Free" : `Purchase for ${selectedTemplate.price} Tokens`}
+                            </>
+                          )}
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                </DialogFooter>
+              </div>
+            </div>
           )}
         </DialogContent>
       </Dialog>
@@ -1675,6 +1577,6 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </div >
   );
 }

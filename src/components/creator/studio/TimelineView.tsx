@@ -18,6 +18,7 @@ interface TimelineViewProps {
     setPreviewItem: (item: GalleryItem) => void;
     onReusePrompt: (item: GalleryItem) => void;
     onDownload: (item: GalleryItem) => void;
+    mode?: 'image' | 'video' | 'booth';
 }
 
 export const TimelineView = ({
@@ -26,7 +27,8 @@ export const TimelineView = ({
     statusMessage,
     setPreviewItem,
     onReusePrompt,
-    onDownload
+    onDownload,
+    mode = 'image'
 }: TimelineViewProps) => {
     const [activeTab, setActiveTab] = useState<'history' | 'guide'>('history');
     const [zoomLevel, setZoomLevel] = useState([3]); // 3 columns by default
@@ -161,82 +163,160 @@ export const TimelineView = ({
 
                                 <header className="mb-12 relative z-10">
                                     <h1 className="mb-3 font-black text-4xl text-white uppercase tracking-tighter leading-none">
-                                        Make <span className="text-[#D1F349]">Videos</span> In One Click
+                                        Make <span className="text-[#D1F349]">{mode === 'video' ? 'Videos' : 'Images'}</span> In One Click
                                     </h1>
                                     <p className="text-[15px] text-zinc-400 font-medium max-w-xl leading-relaxed">
-                                        Experience the future of creation with our professional tools.
-                                        High-quality VFX, manual control, and seamless animations.
+                                        {mode === 'video'
+                                            ? "Experience the future of creation with our professional tools. High-quality VFX, manual control, and seamless animations."
+                                            : "Create stunning visuals with our advanced AI engine. Realistic details, artistic control, and premium models at your fingertips."
+                                        }
                                     </p>
                                 </header>
 
                                 <div className="grid grid-cols-3 gap-8 relative z-10">
-                                    {/* Step 1 */}
-                                    <article className="group/step">
-                                        <div className="aspect-[1.3] w-full mb-6 rounded-3xl overflow-hidden bg-zinc-900 border border-white/5 group-hover/step:border-[#D1F349]/30 transition-all relative">
-                                            <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-50" />
-                                            <div className="absolute inset-0 flex items-center justify-center">
-                                                <ImageIcon className="w-12 h-12 text-[#D1F349]/20 group-hover/step:text-[#D1F349]/40 transition-all group-hover/step:scale-110 duration-500" />
-                                            </div>
-                                            <div className="absolute bottom-4 left-4 right-4">
-                                                <div className="h-1 bg-white/10 rounded-full overflow-hidden">
-                                                    <div className="h-full bg-[#D1F349] w-1/3" />
+                                    {mode === 'video' ? (
+                                        /* VIDEO STEPS */
+                                        <>
+                                            {/* Step 1 */}
+                                            <article className="group/step">
+                                                <div className="aspect-[1.3] w-full mb-6 rounded-3xl overflow-hidden bg-zinc-900 border border-white/5 group-hover/step:border-[#D1F349]/30 transition-all relative">
+                                                    <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-50" />
+                                                    <div className="absolute inset-0 flex items-center justify-center">
+                                                        <ImageIcon className="w-12 h-12 text-[#D1F349]/20 group-hover/step:text-[#D1F349]/40 transition-all group-hover/step:scale-110 duration-500" />
+                                                    </div>
+                                                    <div className="absolute bottom-4 left-4 right-4">
+                                                        <div className="h-1 bg-white/10 rounded-full overflow-hidden">
+                                                            <div className="h-full bg-[#D1F349] w-1/3" />
+                                                        </div>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        </div>
-                                        <h2 className="text-sm font-black text-white uppercase tracking-tighter mb-2 flex items-center gap-2">
-                                            <span className="w-5 h-5 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-[10px] text-zinc-500">1</span>
-                                            Add image
-                                        </h2>
-                                        <p className="text-[13px] text-zinc-500 font-medium leading-normal">
-                                            Upload or generate an image to start your story.
-                                        </p>
-                                    </article>
+                                                <h2 className="text-sm font-black text-white uppercase tracking-tighter mb-2 flex items-center gap-2">
+                                                    <span className="w-5 h-5 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-[10px] text-zinc-500">1</span>
+                                                    Add image
+                                                </h2>
+                                                <p className="text-[13px] text-zinc-500 font-medium leading-normal">
+                                                    Upload or generate an image to start your story.
+                                                </p>
+                                            </article>
 
-                                    {/* Step 2 */}
-                                    <article className="group/step">
-                                        <div className="aspect-[1.3] w-full mb-6 rounded-3xl overflow-hidden bg-zinc-900 border border-white/5 group-hover/step:border-[#D1F349]/30 transition-all relative">
-                                            <div className="absolute inset-0 bg-gradient-to-tr from-[#D1F349]/5 to-transparent opacity-50" />
-                                            <div className="absolute inset-0 flex items-center justify-center">
-                                                <Sparkles className="w-12 h-12 text-[#D1F349]/20 group-hover/step:text-[#D1F349]/40 transition-all group-hover/step:scale-110 duration-500" />
-                                            </div>
-                                            <div className="absolute bottom-4 left-4 right-4">
-                                                <div className="h-1 bg-white/10 rounded-full overflow-hidden">
-                                                    <div className="h-full bg-[#D1F349] w-2/3" />
+                                            {/* Step 2 */}
+                                            <article className="group/step">
+                                                <div className="aspect-[1.3] w-full mb-6 rounded-3xl overflow-hidden bg-zinc-900 border border-white/5 group-hover/step:border-[#D1F349]/30 transition-all relative">
+                                                    <div className="absolute inset-0 bg-gradient-to-tr from-[#D1F349]/5 to-transparent opacity-50" />
+                                                    <div className="absolute inset-0 flex items-center justify-center">
+                                                        <Sparkles className="w-12 h-12 text-[#D1F349]/20 group-hover/step:text-[#D1F349]/40 transition-all group-hover/step:scale-110 duration-500" />
+                                                    </div>
+                                                    <div className="absolute bottom-4 left-4 right-4">
+                                                        <div className="h-1 bg-white/10 rounded-full overflow-hidden">
+                                                            <div className="h-full bg-[#D1F349] w-2/3" />
+                                                        </div>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        </div>
-                                        <h2 className="text-sm font-black text-white uppercase tracking-tighter mb-2 flex items-center gap-2">
-                                            <span className="w-5 h-5 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-[10px] text-zinc-500">2</span>
-                                            Choose style
-                                        </h2>
-                                        <p className="text-[13px] text-zinc-500 font-medium leading-normal">
-                                            Pick a preset or use AI to enhance your prompt.
-                                        </p>
-                                    </article>
+                                                <h2 className="text-sm font-black text-white uppercase tracking-tighter mb-2 flex items-center gap-2">
+                                                    <span className="w-5 h-5 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-[10px] text-zinc-500">2</span>
+                                                    Choose style
+                                                </h2>
+                                                <p className="text-[13px] text-zinc-500 font-medium leading-normal">
+                                                    Pick a preset or use AI to enhance your prompt.
+                                                </p>
+                                            </article>
 
-                                    {/* Step 3 */}
-                                    <article className="group/step">
-                                        <div className="aspect-[1.3] w-full mb-6 rounded-3xl overflow-hidden bg-zinc-900 border border-white/5 group-hover/step:border-[#D1F349]/30 transition-all relative">
-                                            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
-                                            <div className="absolute inset-0 flex items-center justify-center">
-                                                <Video className="w-12 h-12 text-[#D1F349]/20 group-hover/step:text-[#D1F349]/40 transition-all group-hover/step:scale-110 duration-500" />
-                                            </div>
-                                            <div className="absolute bottom-4 left-4 right-4">
-                                                <div className="h-1 bg-white/10 rounded-full overflow-hidden">
-                                                    <div className="h-full bg-[#D1F349] w-full shadow-[0_0_10px_#D1F349]" />
+                                            {/* Step 3 */}
+                                            <article className="group/step">
+                                                <div className="aspect-[1.3] w-full mb-6 rounded-3xl overflow-hidden bg-zinc-900 border border-white/5 group-hover/step:border-[#D1F349]/30 transition-all relative">
+                                                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
+                                                    <div className="absolute inset-0 flex items-center justify-center">
+                                                        <Video className="w-12 h-12 text-[#D1F349]/20 group-hover/step:text-[#D1F349]/40 transition-all group-hover/step:scale-110 duration-500" />
+                                                    </div>
+                                                    <div className="absolute bottom-4 left-4 right-4">
+                                                        <div className="h-1 bg-white/10 rounded-full overflow-hidden">
+                                                            <div className="h-full bg-[#D1F349] w-full shadow-[0_0_10px_#D1F349]" />
+                                                        </div>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        </div>
-                                        <h2 className="text-sm font-black text-[#D1F349] uppercase tracking-tighter mb-2 flex items-center gap-2">
-                                            <span className="w-5 h-5 rounded-full bg-[#D1F349] flex items-center justify-center text-[10px] text-black border-none">
-                                                <CheckCircle2 className="w-3.5 h-3.5" />
-                                            </span>
-                                            Get video
-                                        </h2>
-                                        <p className="text-[13px] text-zinc-500 font-medium leading-normal">
-                                            Click generate and let our engine do the magic!
-                                        </p>
-                                    </article>
+                                                <h2 className="text-sm font-black text-[#D1F349] uppercase tracking-tighter mb-2 flex items-center gap-2">
+                                                    <span className="w-5 h-5 rounded-full bg-[#D1F349] flex items-center justify-center text-[10px] text-black border-none">
+                                                        <CheckCircle2 className="w-3.5 h-3.5" />
+                                                    </span>
+                                                    Get video
+                                                </h2>
+                                                <p className="text-[13px] text-zinc-500 font-medium leading-normal">
+                                                    Click generate and let our engine do the magic!
+                                                </p>
+                                            </article>
+                                        </>
+                                    ) : (
+                                        /* IMAGE STEPS */
+                                        <>
+                                            {/* Step 1 */}
+                                            <article className="group/step">
+                                                <div className="aspect-[1.3] w-full mb-6 rounded-3xl overflow-hidden bg-zinc-900 border border-white/5 group-hover/step:border-[#D1F349]/30 transition-all relative">
+                                                    <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-50" />
+                                                    <div className="absolute inset-0 flex items-center justify-center">
+                                                        <Sparkles className="w-12 h-12 text-[#D1F349]/20 group-hover/step:text-[#D1F349]/40 transition-all group-hover/step:scale-110 duration-500" />
+                                                    </div>
+                                                    <div className="absolute bottom-4 left-4 right-4">
+                                                        <div className="h-1 bg-white/10 rounded-full overflow-hidden">
+                                                            <div className="h-full bg-[#D1F349] w-1/3" />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <h2 className="text-sm font-black text-white uppercase tracking-tighter mb-2 flex items-center gap-2">
+                                                    <span className="w-5 h-5 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-[10px] text-zinc-500">1</span>
+                                                    Visualize
+                                                </h2>
+                                                <p className="text-[13px] text-zinc-500 font-medium leading-normal">
+                                                    Describe your vision or upload a reference image.
+                                                </p>
+                                            </article>
+
+                                            {/* Step 2 */}
+                                            <article className="group/step">
+                                                <div className="aspect-[1.3] w-full mb-6 rounded-3xl overflow-hidden bg-zinc-900 border border-white/5 group-hover/step:border-[#D1F349]/30 transition-all relative">
+                                                    <div className="absolute inset-0 bg-gradient-to-tr from-[#D1F349]/5 to-transparent opacity-50" />
+                                                    <div className="absolute inset-0 flex items-center justify-center">
+                                                        <LayoutGrid className="w-12 h-12 text-[#D1F349]/20 group-hover/step:text-[#D1F349]/40 transition-all group-hover/step:scale-110 duration-500" />
+                                                    </div>
+                                                    <div className="absolute bottom-4 left-4 right-4">
+                                                        <div className="h-1 bg-white/10 rounded-full overflow-hidden">
+                                                            <div className="h-full bg-[#D1F349] w-2/3" />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <h2 className="text-sm font-black text-white uppercase tracking-tighter mb-2 flex items-center gap-2">
+                                                    <span className="w-5 h-5 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-[10px] text-zinc-500">2</span>
+                                                    Configure
+                                                </h2>
+                                                <p className="text-[13px] text-zinc-500 font-medium leading-normal">
+                                                    Select the perfect model, style, and aspect ratio.
+                                                </p>
+                                            </article>
+
+                                            {/* Step 3 */}
+                                            <article className="group/step">
+                                                <div className="aspect-[1.3] w-full mb-6 rounded-3xl overflow-hidden bg-zinc-900 border border-white/5 group-hover/step:border-[#D1F349]/30 transition-all relative">
+                                                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
+                                                    <div className="absolute inset-0 flex items-center justify-center">
+                                                        <ImageIcon className="w-12 h-12 text-[#D1F349]/20 group-hover/step:text-[#D1F349]/40 transition-all group-hover/step:scale-110 duration-500" />
+                                                    </div>
+                                                    <div className="absolute bottom-4 left-4 right-4">
+                                                        <div className="h-1 bg-white/10 rounded-full overflow-hidden">
+                                                            <div className="h-full bg-[#D1F349] w-full shadow-[0_0_10px_#D1F349]" />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <h2 className="text-sm font-black text-[#D1F349] uppercase tracking-tighter mb-2 flex items-center gap-2">
+                                                    <span className="w-5 h-5 rounded-full bg-[#D1F349] flex items-center justify-center text-[10px] text-black border-none">
+                                                        <CheckCircle2 className="w-3.5 h-3.5" />
+                                                    </span>
+                                                    Create
+                                                </h2>
+                                                <p className="text-[13px] text-zinc-500 font-medium leading-normal">
+                                                    Hit generate and watch your idea come to life.
+                                                </p>
+                                            </article>
+                                        </>
+                                    )}
                                 </div>
                             </div>
                         </div>

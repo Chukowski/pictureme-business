@@ -281,7 +281,7 @@ export function CreatorStudioSidebar({
             </nav>
 
             {/* --- SCROLLABLE CONTENT --- */}
-            <div className="flex-1 overflow-y-auto px-4 py-4 hide-scrollbar">
+            <div className="flex-1 overflow-y-auto px-4 py-4 scrollbar-hide">
                 {mode === 'booth' ? (
                     <div className="h-48 flex flex-col items-center justify-center text-zinc-500 space-y-3">
                         <Camera className="w-10 h-10 opacity-20" />

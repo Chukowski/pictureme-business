@@ -853,6 +853,7 @@ function CreatorStudioPageContent() {
                                 setPreviewItem={setPreviewItem}
                                 onReusePrompt={handleReusePrompt}
                                 onDownload={handleDownload}
+                                mode={mode}
                             />
                         </div>
                     </>

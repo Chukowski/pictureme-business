@@ -58,8 +58,8 @@ export function CreatorNavbar({ user }: CreatorNavbarProps) {
     const tokens = user?.tokens_remaining || 0;
 
     return (
-        <header className="fixed top-0 w-full z-50 bg-[#09090b]/80 backdrop-blur-xl">
-            <div className="w-full px-8 h-20 flex items-center justify-between">
+        <header className="fixed top-0 w-full z-50 bg-transparent">
+            <div className="w-full px-8 h-16 flex items-center justify-between">
 
                 {/* Logo & Navigation */}
                 <div className="flex items-center gap-8 z-50">
@@ -67,8 +67,9 @@ export function CreatorNavbar({ user }: CreatorNavbarProps) {
                         className="flex items-center gap-2 cursor-pointer group"
                         onClick={() => navigate('/creator/dashboard')}
                     >
-                        <div className="w-10 h-10 rounded-xl overflow-hidden bg-white shadow-lg shadow-black/20">
-                            <img src="/PicturemeIcon.svg" alt="Pictureme" className="w-full h-full object-cover" />
+                        <div className="w-10 h-10 rounded-[.4rem] overflow-hidden bg-white shadow-lg shadow-black/20 group-hover:bg-transparent transition-colors duration-300">
+                            <img src="/PicturemeIconv2.png" alt="Pictureme" className="w-full h-full object-cover group-hover:hidden" />
+                            <img src="/PicturemeIconv2white.png" alt="Pictureme" className="w-full h-full object-cover hidden group-hover:block" />
                         </div>
                     </div>
 
@@ -136,6 +137,18 @@ export function CreatorNavbar({ user }: CreatorNavbarProps) {
                                     <div className="flex flex-col">
                                         <span className="font-bold text-[13px] text-white">Photo Booth</span>
                                         <span className="text-[10px] text-zinc-500">Real-time AI sessions</span>
+                                    </div>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                    onClick={() => navigate('/creator/chat')}
+                                    className="flex items-center gap-3 py-3 rounded-xl cursor-pointer focus:bg-zinc-900 group"
+                                >
+                                    <div className="p-2 rounded-lg bg-pink-500/10 text-pink-500 group-hover:bg-pink-500/20 transition-colors">
+                                        <Sparkles className="w-4 h-4" />
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <span className="font-bold text-[13px] text-white">Assistant</span>
+                                        <span className="text-[10px] text-zinc-500">AI Creative Partner</span>
                                     </div>
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
