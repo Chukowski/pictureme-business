@@ -58,40 +58,84 @@ export function CreatorNavbar({ user }: CreatorNavbarProps) {
         <header className="sticky top-0 z-50 bg-black/50 backdrop-blur-md border-b border-white/5">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 h-20 flex items-center justify-between">
 
-                {/* Logo / Brand */}
-                <div className="flex items-center gap-6 z-50">
+                {/* Logo & Navigation */}
+                <div className="flex items-center gap-8 z-50">
                     <div
                         className="flex items-center gap-2 cursor-pointer group"
                         onClick={() => navigate('/creator/dashboard')}
                     >
-                        <span className="font-bold text-xl tracking-tight text-white group-hover:text-indigo-100 transition-colors drop-shadow-md">PictureMe</span>
+                        <div className="w-10 h-10 rounded-xl overflow-hidden bg-white shadow-lg shadow-black/20 group-hover:scale-105 transition-transform duration-300">
+                            <img src="/PicturemeIcon.png" alt="Pictureme" className="w-full h-full object-cover" />
+                        </div>
                     </div>
-                </div>
 
-                {/* Navigation Toggle (Central - Absolute Center) */}
-                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 hidden md:block z-40">
-                    <div className="bg-black/40 p-1 rounded-full border border-white/10 flex items-center backdrop-blur-xl shadow-xl">
+                    {/* Navigation Links */}
+                    <div className="hidden lg:flex items-center gap-6">
                         <button
                             onClick={() => navigate('/creator/dashboard')}
                             className={cn(
-                                "px-6 py-2 rounded-full text-sm font-medium transition-all duration-300",
+                                "text-sm font-bold transition-all duration-300",
                                 location.pathname === '/creator/dashboard'
-                                    ? "bg-zinc-800/90 text-white shadow-lg border border-white/5"
-                                    : "text-zinc-400 hover:text-white hover:bg-white/5"
+                                    ? "text-zinc-100"
+                                    : "text-zinc-500 hover:text-white"
                             )}
                         >
                             Explore
                         </button>
                         <button
-                            onClick={() => navigate('/creator/studio')}
+                            onClick={() => navigate('/creator/studio', { state: { view: 'create' } })}
                             className={cn(
-                                "px-6 py-2 rounded-full text-sm font-medium transition-all duration-300",
-                                location.pathname !== '/creator/dashboard'
-                                    ? "bg-zinc-800/90 text-white shadow-lg border border-white/5"
-                                    : "text-zinc-400 hover:text-white hover:bg-white/5"
+                                "text-sm font-bold transition-all duration-300",
+                                location.pathname === '/creator/studio' && (location.state as any)?.view === 'create'
+                                    ? "text-zinc-100"
+                                    : "text-zinc-500 hover:text-white"
                             )}
                         >
-                            My Studio
+                            Studio
+                        </button>
+                        <button
+                            onClick={() => navigate('/creator/studio', { state: { view: 'gallery' } })}
+                            className={cn(
+                                "text-sm font-bold transition-all duration-300",
+                                (location.state as any)?.view === 'gallery'
+                                    ? "text-zinc-100"
+                                    : "text-zinc-500 hover:text-white"
+                            )}
+                        >
+                            Gallery
+                        </button>
+                        <button
+                            onClick={() => navigate('/creator/studio', { state: { view: 'booths' } })}
+                            className={cn(
+                                "text-sm font-bold transition-all duration-300",
+                                (location.state as any)?.view === 'booths'
+                                    ? "text-zinc-100"
+                                    : "text-zinc-500 hover:text-white"
+                            )}
+                        >
+                            Booths
+                        </button>
+                        <button
+                            onClick={() => navigate('/creator/studio', { state: { view: 'templates' } })}
+                            className={cn(
+                                "text-sm font-bold transition-all duration-300",
+                                (location.state as any)?.view === 'templates'
+                                    ? "text-zinc-100"
+                                    : "text-zinc-500 hover:text-white"
+                            )}
+                        >
+                            Models
+                        </button>
+                        <button
+                            onClick={() => navigate('/creator/templates')}
+                            className={cn(
+                                "text-sm font-bold transition-all duration-300",
+                                location.pathname === '/creator/templates'
+                                    ? "text-zinc-100"
+                                    : "text-zinc-500 hover:text-white"
+                            )}
+                        >
+                            Marketplace
                         </button>
                     </div>
                 </div>
@@ -228,13 +272,13 @@ export function CreatorNavbar({ user }: CreatorNavbarProps) {
             <TopUpModal open={showTopUp} onClose={() => setShowTopUp(false)} />
             <UpgradePlanModal open={showUpgradeModal} onClose={() => setShowUpgradeModal(false)} />
 
-            {/* Mobile Navigation (Horizontal Scroll) - UPDATED FOR TOGGLE */}
-            <div className="md:hidden border-t border-white/5 p-2 flex justify-center">
-                <div className="bg-zinc-900/50 p-1 rounded-full border border-white/10 flex items-center">
+            {/* Mobile Navigation (Horizontal Scroll) */}
+            <div className="md:hidden border-t border-white/5 p-2 flex justify-center overflow-hidden">
+                <div className="bg-zinc-900/50 p-1 rounded-full border border-white/10 flex items-center overflow-x-auto no-scrollbar max-w-full">
                     <button
                         onClick={() => navigate('/creator/dashboard')}
                         className={cn(
-                            "px-6 py-1.5 rounded-full text-sm font-medium transition-all",
+                            "px-4 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap shrink-0",
                             location.pathname === '/creator/dashboard'
                                 ? "bg-zinc-800 text-white shadow-sm border border-white/5"
                                 : "text-zinc-500 hover:text-zinc-300"
@@ -243,15 +287,59 @@ export function CreatorNavbar({ user }: CreatorNavbarProps) {
                         Explore
                     </button>
                     <button
-                        onClick={() => navigate('/creator/studio')}
+                        onClick={() => navigate('/creator/studio', { state: { view: 'create' } })}
                         className={cn(
-                            "px-6 py-1.5 rounded-full text-sm font-medium transition-all",
-                            location.pathname !== '/creator/dashboard'
+                            "px-4 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap shrink-0",
+                            location.pathname === '/creator/studio' && (location.state as any)?.view === 'create'
                                 ? "bg-zinc-800 text-white shadow-sm border border-white/5"
                                 : "text-zinc-500 hover:text-zinc-300"
                         )}
                     >
-                        My Studio
+                        Studio
+                    </button>
+                    <button
+                        onClick={() => navigate('/creator/studio', { state: { view: 'gallery' } })}
+                        className={cn(
+                            "px-4 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap shrink-0",
+                            (location.state as any)?.view === 'gallery'
+                                ? "bg-zinc-800 text-white shadow-sm border border-white/5"
+                                : "text-zinc-500 hover:text-zinc-300"
+                        )}
+                    >
+                        Gallery
+                    </button>
+                    <button
+                        onClick={() => navigate('/creator/studio', { state: { view: 'booths' } })}
+                        className={cn(
+                            "px-4 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap shrink-0",
+                            (location.state as any)?.view === 'booths'
+                                ? "bg-zinc-800 text-white shadow-sm border border-white/5"
+                                : "text-zinc-500 hover:text-zinc-300"
+                        )}
+                    >
+                        Booths
+                    </button>
+                    <button
+                        onClick={() => navigate('/creator/studio', { state: { view: 'templates' } })}
+                        className={cn(
+                            "px-4 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap shrink-0",
+                            (location.state as any)?.view === 'templates'
+                                ? "bg-zinc-800 text-white shadow-sm border border-white/5"
+                                : "text-zinc-500 hover:text-zinc-300"
+                        )}
+                    >
+                        Models
+                    </button>
+                    <button
+                        onClick={() => navigate('/creator/templates')}
+                        className={cn(
+                            "px-4 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap shrink-0",
+                            location.pathname === '/creator/templates'
+                                ? "bg-zinc-800 text-white shadow-sm border border-white/5"
+                                : "text-zinc-500 hover:text-zinc-300"
+                        )}
+                    >
+                        Marketplace
                     </button>
                 </div>
             </div>

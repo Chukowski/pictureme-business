@@ -26,7 +26,6 @@ import {
     Image as ImageIcon,
     ChevronRight,
     ChevronLeft,
-    PanelLeftOpen,
     Settings,
     Wand2,
     Coins,
@@ -234,6 +233,7 @@ function CreatorStudioPageContent() {
         console.log("[CreatorStudioPage] Consuming remix state:", state);
 
         if (state.prompt) setPrompt(state.prompt);
+        if (state.mode) setMode(state.mode);
 
         // If we have a source image, set it as the main input
         if (state.sourceImageUrl) {
@@ -259,8 +259,8 @@ function CreatorStudioPageContent() {
         }
 
         // Set view mode if provided
-        if (state.view === 'create') {
-            // Intent to open in create mode/scroll to top etc.
+        if (state.view) {
+            setActiveView(state.view);
         }
 
         // Clear state to avoid re-triggering on refresh
@@ -287,7 +287,6 @@ function CreatorStudioPageContent() {
     const [history, setHistory] = useState<GalleryItem[]>([]);
     const [previewItem, setPreviewItem] = useState<GalleryItem | null>(null);
     const [showSaveTemplate, setShowSaveTemplate] = useState(false);
-    const [showRail, setShowRail] = useState(true);
     const [isPromptExpanded, setIsPromptExpanded] = useState(false);
 
     // Mobile Floating Rail State
@@ -787,25 +786,10 @@ function CreatorStudioPageContent() {
     return (
         <div className="min-h-dvh md:h-[calc(100vh-64px)] md:overflow-hidden flex flex-col md:flex-row bg-black text-white font-sans relative">
 
-            {/* --- COLUMN 1: APP RAIL (Desktop Only) --- */}
-            <div className="hidden md:block">
-                {showRail ? (
-                    <AppRail activeView={activeView} onViewChange={setActiveView} onToggle={() => setShowRail(false)} />
-                ) : (
-                    <div className="absolute left-2 top-4 z-50">
-                        <button
-                            onClick={() => setShowRail(true)}
-                            className="p-1.5 text-zinc-600 hover:text-white hover:bg-white/5 rounded-md transition-all"
-                            title="Expand Menu"
-                        >
-                            <PanelLeftOpen className="w-5 h-5" />
-                        </button>
-                    </div>
-                )}
-            </div>
+
 
             {/* MAIN CONTENT AREA */}
-            <div className={cn("flex-1 flex flex-col md:flex-row min-w-0 transition-all duration-300 pb-32 md:pb-0", !showRail && "md:pl-10")}>
+            <div className="flex-1 flex flex-col md:flex-row min-w-0 transition-all duration-300 pb-32 md:pb-0">
                 {activeView === "templates" ? (
                     <TemplatesView />
                 ) : activeView === "booths" ? (
