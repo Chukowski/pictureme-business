@@ -24,7 +24,7 @@ export type Gravity = 'no' | 'so' | 'ea' | 'we' | 'noea' | 'nowe' | 'soea' | 'so
 export type Format = 'png' | 'jpg' | 'webp' | 'avif' | 'gif' | 'best';
 export type Preset = 'feed' | 'thumbnail' | 'view' | 'free_download' | 'spark_download' | 'vibe_download' | 'studio_download' | 'watermark';
 
-export type QualityTier = 'free' | 'spark' | 'vibe' | 'studio' | 'original';
+export type QualityTier = 'free' | 'spark' | 'vibe' | 'studio' | 'business' | 'original';
 
 export interface ImgproxyOptions {
     // Resize options
@@ -72,7 +72,6 @@ export const TIER_CONFIG: Record<QualityTier, Partial<ImgproxyOptions>> = {
         quality: 75,
         format: 'webp',
         stripMetadata: true,
-        stripColorProfile: true,
         sharpen: 0.3,
     },
     spark: {
@@ -87,15 +86,19 @@ export const TIER_CONFIG: Record<QualityTier, Partial<ImgproxyOptions>> = {
         stripMetadata: false,
         sharpen: 0.5,
     },
-    studio: {
-        quality: 92,
+    studio: { // El tier "Pro" real
+        quality: 95, // Visualización muy alta calidad
         format: 'webp',
         stripMetadata: false,
-        keepCopyright: true,
+        sharpen: 0.5,
+    },
+    business: { // Igual que Studio para visualización
+        quality: 95,
+        format: 'webp',
+        stripMetadata: false,
         sharpen: 0.5,
     },
     original: {
-        // No compression, just serve optimized format
         quality: 100,
         format: 'webp',
         stripMetadata: false,
@@ -266,21 +269,25 @@ export function getImageByTier(
 /**
  * Get download URL - always highest quality for the tier using presets
  */
-export function getDownloadUrl(sourceUrl: string, tier: QualityTier = 'vibe'): string {
-    // If it's the original, we just want the best optimized version
+export function getDownloadUrl(sourceUrl: string, tier: QualityTier = 'free'): string {
+    // Si piden explícitamente original, damos la vista de máxima calidad
     if (tier === 'original') {
         return getImgproxyUrl(sourceUrl, { preset: 'view' });
     }
 
-    // Map quality tiers to specific download presets
     const presetMap: Record<string, Preset> = {
         'free': 'free_download',      // 1024px, q70
         'spark': 'spark_download',    // 2048px, q90
         'vibe': 'vibe_download',      // 4096px, q95
-        'studio': 'studio_download'   // 4096px, q100
+
+        // Studio y Business usan el mismo preset de máxima calidad
+        'studio': 'studio_download',  // 4096px, q100 (Full Res)
+        'business': 'studio_download' // 4096px, q100 (Full Res)
     };
 
-    const preset = presetMap[tier] || 'view';
+    // Fallback seguro: Si el tier no existe, damos calidad Spark (media/alta)
+    const preset = presetMap[tier] || 'spark_download';
+
     return getImgproxyUrl(sourceUrl, { preset });
 }
 

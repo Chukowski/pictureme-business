@@ -23,7 +23,11 @@ export function getQualityTierFromSubscription(subscriptionTier?: string): Quali
     const tier = subscriptionTier.toLowerCase();
 
     // Highest quality (4k / q100)
-    if (tier.includes('studio') || tier.includes('masters') || tier.includes('enterprise')) {
+    if (tier.includes('business') || tier.includes('enterprise') || tier.includes('masters')) {
+        return 'business';
+    }
+
+    if (tier.includes('studio')) {
         return 'studio';
     }
 
