@@ -70,6 +70,13 @@ Your capabilities:
 4. **Technical Expert**: Know everything about our models (Nano Banana, Seedream, Flux, etc.) and their token costs.
 
 Key platform features you should know about:
+- **Individual Plans**:
+  - **Free**: Basic access, limited tokens for testing and entry-level creation.
+  - **Spark** ($9/mo): 50 tokens/mo, Base Models (Nano), Standard Speed.
+  - **Vibe** ($19/mo): 100 tokens/mo, Custom Backgrounds, Priority Generation, No Watermark.
+  - **Studio** ($39/mo): 200 tokens/mo, Faceswap Models, Template Selling, API Access.
+
+Key platform features:
 - **Gallery**: The central place where all creations are stored.
 - **Token System**: Credits used for AI generations:
   - Image models: Nano Banana = 1 token, Seedream = 1 token, Nano Banana Pro = 15 tokens, Flux = 4 tokens
@@ -90,15 +97,15 @@ When helping with prompts, remember:
 
 You can show interactive UI components in the chat by using special markers. Use these when appropriate:
 
-### Plan Cards (use when user asks about upgrading, plans, or pricing):
-- To show Event Starter plan card: [[plan_card:starter]]
-- To show Event Pro plan card: [[plan_card:pro]]
-- To show Masters plan card: [[plan_card:masters]]
+### Plan Cards (use when user asks about individual plans):
+- To show Spark plan card: [[plan_card:spark]]
+- To show Vibe plan card: [[plan_card:vibe]]
+- To show Studio plan card: [[plan_card:studio]]
 
-Example: If user says "quiero actualizar mi plan" or "upgrade plan", respond with a brief explanation and include the relevant plan card(s).
+Example: If user says "quiero ver planes" or "upgrade my individual plan", respond with a brief explanation and include the relevant plan card(s).
 
-### Token Packages (use when user asks about buying tokens):
-- Format: [[token_package:tokens=5000|price=49.99|bonus=10]]
+### Token Packages (use when user asks about buying individual tokens):
+- Format: [[token_package:tokens=100|price=12.00|bonus=5]]
 
 ### Auth Cards (use when user needs to register or login - ONLY for guests/unauthenticated users):
 - To show registration card: [[auth:register]]
@@ -167,10 +174,10 @@ def _get_token_costs() -> str:
 
 def _get_plan_info(plan_name: Optional[str] = None) -> str:
     plans = {
-        "individual": "**Individual** - Free / Pay as you go\\n- Personal use, basic templates",
-        "starter": "**Event Starter** - $400/month\\n- 1,000 tokens/month\\n- 1 active event\\n- Basic analytics\\n- BYOH (Bring Your Own Hardware)\\n- Email support",
-        "pro": "**Event Pro** - $1,500/month\\n- 5,000 tokens/month\\n- Up to 2 active events\\n- Advanced analytics\\n- Lead capture & branded feeds\\n- Priority support",
-        "masters": "**Masters** - From $3,000/month\\n- 10,000 tokens/month\\n- Up to 3 active events\\n- Premium templates & LoRA models\\n- Revenue-share & hardware options\\n- Print module\\n- Dedicated account manager",
+        "free": "**Free** - Basic access\\n- Test our models, limited monthly use.",
+        "spark": "**Spark** - $9/month\\n- 50 tokens/month\\n- Base Models (Nano)\\n- Standard Speed\\n- Personal License",
+        "vibe": "**Vibe** - $19/month\\n- 100 tokens/month\\n- Custom Backgrounds\\n- Priority Generation\\n- No Watermark\\n- Commercial License",
+        "studio": "**Studio** - $39/month\\n- 200 tokens/month\\n- Faceswap Models\\n- Template Selling\\n- API Access\\n- Priority Support",
     }
     
     if plan_name:
@@ -178,7 +185,7 @@ def _get_plan_info(plan_name: Optional[str] = None) -> str:
             if key in plan_name.lower():
                 return info
     
-    return "**Plans:**\\n\\n" + "\\n\\n".join(plans.values())
+    return "**Individual Plans:**\\n\\n" + "\\n\\n".join(plans.values())
 
 
 def _enhance_prompt(current_prompt: str, style: Optional[str] = None) -> str:
@@ -223,10 +230,13 @@ The user is NOT logged in or is on the public landing page.
         
         if ctx.user_role:
             role_map = {
-                "individual": "They are on the free Individual plan.",
-                "business_starter": "They are on the Event Starter plan.",
-                "business_eventpro": "They are on the Event Pro plan.",
-                "business_masters": "They are on the Masters plan.",
+                "individual": "They are on the Free tier.",
+                "spark": "They are on the Spark plan.",
+                "vibe": "They are on the Vibe plan.",
+                "studio": "They are on the Studio plan.",
+                "business_starter": "They are a Business User (Event Starter).",
+                "business_eventpro": "They are a Business User (Event Pro).",
+                "business_masters": "They are a Business User (Masters).",
                 "superadmin": "They are a Super Admin.",
             }
             if ctx.user_role in role_map:
