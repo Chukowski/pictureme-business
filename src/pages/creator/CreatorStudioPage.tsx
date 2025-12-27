@@ -485,17 +485,41 @@ function CreatorStudioPageContent() {
         };
         loadHistory();
 
-        // POLL FOR UPDATES: Every 10 seconds if there are pending items
-        // This fixes the "vanishing indicator" glitch by ensuring the status is refreshed
+        // Initial load
+        loadHistory();
+
+        // 1. EVENT-BASED UPDATES (SSE)
+        const handleJobUpdate = (event: any) => {
+            const data = event.detail;
+            console.log("🔔 [Studio] Job update received:", data.job_id, data.status);
+
+            // Refresh history immediately when a job status changes
+            loadHistory();
+        };
+
+        const handleTokensUpdate = () => {
+            // Refresh token stats if needed (usually handled by dashboard but good for studio)
+            loadHistory();
+        };
+
+        window.addEventListener('job-updated', handleJobUpdate);
+        window.addEventListener('tokens-updated', handleTokensUpdate);
+
+        // 2. FALLBACK POLLING (Slower, only when pending)
         const interval = setInterval(() => {
             const hasPending = history.some(item => item.status !== 'completed' && item.status !== 'failed');
+            // If history is empty, we might be a new user or still loading
             if (hasPending || history.length === 0) {
                 loadHistory();
             }
-        }, 10000);
+        }, 30000); // 30s instead of 10s
 
-        return () => clearInterval(interval);
-    }, [currentUser?.id, navigate, history.length]); // Dependencies ensure we check when history items change status
+        return () => {
+            window.removeEventListener('job-updated', handleJobUpdate);
+            window.removeEventListener('tokens-updated', handleTokensUpdate);
+            clearInterval(interval);
+        };
+    }, [currentUser?.id, navigate, history.length]);
 
     // Handlers
     const handleDeleteHistory = async (id: string) => {

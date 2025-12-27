@@ -224,6 +224,64 @@ async function imageUrlToDataUri(url: string): Promise<string> {
     }
 }
 
+/**
+ * Check if a URL is already hosted on our platform (S3 or Imgproxy)
+ */
+function isInternalUrl(url: string): boolean {
+    if (!url) return false;
+    const internalDomains = [
+        "s3.amazonaws.com/pictureme.now",
+        "pictureme.now.s3.amazonaws.com",
+        "img.pictureme.now",
+        "v3b.fal.media",
+        "fal.media"
+    ];
+
+    // Also check local MinIO if configured
+    const apiUrl = ENV.API_URL || "";
+    if (apiUrl) {
+        const domain = apiUrl.replace(/^https?:\/\//, "").split("/")[0];
+        if (domain) internalDomains.push(domain);
+    }
+
+    const urlLower = url.toLowerCase();
+    return internalDomains.some(domain => urlLower.includes(domain.toLowerCase()));
+}
+
+/**
+ * Helper to ensure we have a usable URL for the backend.
+ * If already internal, return as-is.
+ * If base64/remote, upload to our temp storage.
+ */
+async function ensureBackendUrl(input: string, apiUrl: string): Promise<string> {
+    if (isInternalUrl(input)) {
+        console.log("♻️ [CreatorAI] Using existing internal URL:", input.substring(0, 50) + "...");
+        return input;
+    }
+
+    // Convert base64 or external URL to DataURI (with compression)
+    const dataUri = await imageUrlToDataUri(input);
+
+    // Upload to our temp storage
+    const blob = await (await fetch(dataUri)).blob();
+    const formData = new FormData();
+    formData.append('file', blob, 'image.jpg');
+
+    const uploadRes = await fetch(`${apiUrl}/api/generate/upload`, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            ...(localStorage.getItem('auth_token')
+                ? { 'Authorization': `Bearer ${localStorage.getItem('auth_token')}` }
+                : {})
+        }
+    });
+
+    if (!uploadRes.ok) throw new Error('Failed to upload image asset');
+    const data = await uploadRes.json();
+    return data.url;
+}
+
 
 /**
  * Process an image specifically for individual Creator Studio users.
@@ -261,27 +319,25 @@ export async function processCreatorImage(
     console.log("🖼️ Public Feed:", isPublic);
 
     try {
-        // 1. Prepare Image URLs
-        const imageUrls: string[] = [];
-        // Ensure the primary input is converted to Data URI if it is a URL (e.g. from remix)
-        const inputDataUri = await imageUrlToDataUri(userPhotoBase64);
-        imageUrls.push(inputDataUri); // Image 1: Input
+        // 1. Prepare Backend-Ready URLs
+        const rawApiUrl = ENV.API_URL || "http://localhost:3002";
+        const apiUrl = (rawApiUrl.startsWith('http://') && !rawApiUrl.includes('localhost'))
+            ? rawApiUrl.replace('http://', 'https://')
+            : rawApiUrl;
 
+        console.log("📤 [CreatorAI] Preparing assets...");
+        const uploadedUrls: string[] = [];
+
+        // Primary Input
+        const mainUrl = await ensureBackendUrl(userPhotoBase64, apiUrl);
+        uploadedUrls.push(mainUrl);
+
+        // Reference Images / Backgrounds
         const bgImages = backgroundImageUrls || (backgroundImageUrl ? [backgroundImageUrl] : []);
         for (const bgUrl of bgImages) {
-            const bgDataUri = await imageUrlToDataUri(bgUrl);
-            imageUrls.push(bgDataUri);
+            const resolvedBgUrl = await ensureBackendUrl(bgUrl, apiUrl);
+            uploadedUrls.push(resolvedBgUrl);
         }
-
-        // 2. Token Charging (Personal Context)
-        // We do this BEFORE generation to prevent abuse, though ideally backend does it.
-        // The existing aiProcessor.ts integrated this.
-        // We will optimistically charge them.
-        // Note: The backend generation endpoint MIGHT also charge tokens. 
-        // In the current architecture, `chargeTokensForGeneration` is a separate utility often called.
-        // However, the new backend endpoint `/api/generate/image` might handle it.
-        // Let's assume we don't need to manually charge if the backend handles it.
-        // BUT, checking user balance is good UX.
 
         // 3. Prompt Construction
         const isSeedream = modelToUse.includes("seedream");
@@ -305,44 +361,16 @@ export async function processCreatorImage(
             }
         }
 
-        // 4. Upload Assets (to get URLs for backend)
-        const rawApiUrl = ENV.API_URL || "http://localhost:3002";
-        const apiUrl = (rawApiUrl.startsWith('http://') && !rawApiUrl.includes('localhost'))
-            ? rawApiUrl.replace('http://', 'https://')
-            : rawApiUrl;
-
-        const uploadImage = async (base64Data: string): Promise<string> => {
-            const blob = await (await fetch(base64Data)).blob();
-            const formData = new FormData();
-            formData.append('file', blob, 'image.jpg');
-            const uploadRes = await fetch(`${apiUrl}/api/generate/upload`, {
-                method: 'POST',
-                body: formData,
-            });
-            if (!uploadRes.ok) throw new Error('Failed to upload image asset');
-            const data = await uploadRes.json();
-            return data.url;
-        };
-
-        console.log("📤 [CreatorAI] Uploading assets...");
-        const uploadedUrls: string[] = [];
-        for (const dataUri of imageUrls) {
-            const url = await uploadImage(dataUri);
-            uploadedUrls.push(url);
-        }
-
         // 5. Send Generation Request
         const payload = {
             prompt: finalPrompt,
             model_id: modelToUse,
             image_size: imageSize,
             num_images: 1,
-            // Go backend expects `image_url` (singular) currently, but we want to confirm if it supports multiple.
-            // For now, adhere to same pattern as aiProcessor.
             image_urls: uploadedUrls,
             image_url: uploadedUrls[0],
             visibility: isPublic ? 'public' : 'private',
-            billing_context: 'personal', // Explicitly personal for Creator Studio
+            billing_context: 'personal',
             parent_id: options.parent_id
         };
 

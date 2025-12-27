@@ -54,9 +54,9 @@ export const CreatorBottomNav = ({ onOpenCreate, onLibraryClick, onHomeClick, ac
         setActiveIndex(getActiveIndex());
     }, [activeTab, location.pathname, location.state]);
 
-    // Polling for generation status
+    // Polling as fallback and initial load, with SSE for real-time
     useEffect(() => {
-        const pollGenerations = async () => {
+        const fetchPendingStatus = async () => {
             const token = localStorage.getItem("auth_token");
             if (!token) return;
 
@@ -67,24 +67,50 @@ export const CreatorBottomNav = ({ onOpenCreate, onLibraryClick, onHomeClick, ac
                 if (res.ok) {
                     const data = await res.json();
                     const currentCount = (data.pending || []).length;
-
-                    setPendingCount(prev => {
-                        // If we had jobs and now we don't, show success
-                        if (prev > 0 && currentCount === 0) {
-                            setShowSuccess(true);
-                            setTimeout(() => setShowSuccess(false), 5000);
-                        }
-                        return currentCount;
-                    });
+                    setPendingCount(currentCount);
                 }
             } catch (err) {
-                console.error("Failed to poll generations", err);
+                console.error("Failed to fetch pending status", err);
             }
         };
 
-        pollGenerations();
-        const intervalId = setInterval(pollGenerations, 10000);
-        return () => clearInterval(intervalId);
+        // Handlers for SSE events (dispatched by useSSE in App.tsx)
+        const handleJobUpdate = (event: any) => {
+            const data = event.detail;
+            console.log("🔔 [Nav] Job update received:", data.job_id, data.status);
+
+            // Re-fetch count to be safe and accurate across tabs
+            fetchPendingStatus();
+
+            // Show success bubble if a job just finished
+            if (data.status === 'completed' || data.status === 'failed') {
+                if (data.status === 'completed') {
+                    setShowSuccess(true);
+                    setTimeout(() => setShowSuccess(false), 5000);
+                }
+            }
+        };
+
+        const handleTokensUpdate = () => {
+            // If tokens are updated, we might want to refresh user data if displayed, 
+            // but Nav doesn't show balance directly yet.
+        };
+
+        // Initial fetch
+        fetchPendingStatus();
+
+        // Listen for events
+        window.addEventListener('job-updated', handleJobUpdate);
+        window.addEventListener('tokens-updated', handleTokensUpdate);
+
+        // Slow fallback polling (60s instead of 10s)
+        const intervalId = setInterval(fetchPendingStatus, 60000);
+
+        return () => {
+            window.removeEventListener('job-updated', handleJobUpdate);
+            window.removeEventListener('tokens-updated', handleTokensUpdate);
+            clearInterval(intervalId);
+        };
     }, []);
 
     // Close profile on route change

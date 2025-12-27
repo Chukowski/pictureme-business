@@ -1,3 +1,4 @@
+import { useEffect, useRef, useCallback, useState } from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -144,22 +145,29 @@ const AppContent = () => {
   // Only active on authenticated routes and when user has auth token
   const hasAuthToken = typeof window !== 'undefined' && !!localStorage.getItem('auth_token');
 
+  // Memoize SSE handlers to prevent reconnection on every route change/re-render
+  const onTokenUpdate = useCallback((data: any) => {
+    console.log('🪙 Token balance updated via SSE:', data.new_balance);
+  }, []);
+
+  const onJobUpdate = useCallback((data: any) => {
+    console.log('📋 Job status updated via SSE:', data.job_id, data.status);
+  }, []);
+
+  const onConnected = useCallback(() => {
+    console.log('✅ SSE connected for real-time updates');
+  }, []);
+
+  const onDisconnected = useCallback(() => {
+    console.log('📡 SSE disconnected');
+  }, []);
+
   useSSE({
     enabled: isAuthenticatedRoute && hasAuthToken,
-    onTokenUpdate: (data) => {
-      console.log('🪙 Token balance updated via SSE:', data.new_balance);
-      // The hook already updates localStorage and dispatches 'tokens-updated' event
-    },
-    onJobUpdate: (data) => {
-      console.log('📋 Job status updated via SSE:', data.job_id, data.status);
-      // The hook dispatches 'job-updated' event for components to listen
-    },
-    onConnected: () => {
-      console.log('✅ SSE connected for real-time updates');
-    },
-    onDisconnected: () => {
-      console.log('📡 SSE disconnected');
-    },
+    onTokenUpdate,
+    onJobUpdate,
+    onConnected,
+    onDisconnected,
   });
 
   return (

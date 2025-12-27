@@ -35,7 +35,22 @@ export function CreatorLayout() {
         console.error("Failed to refresh token stats:", error);
       }
     };
+
+    const handleTokensUpdated = (event: any) => {
+      const { newBalance } = event.detail;
+      console.log("🪙 [Layout] Token update received:", newBalance);
+      setUser(prev => prev ? ({
+        ...prev,
+        tokens_remaining: newBalance
+      }) : null);
+    };
+
     loadUser();
+
+    window.addEventListener('tokens-updated', handleTokensUpdated);
+    return () => {
+      window.removeEventListener('tokens-updated', handleTokensUpdated);
+    };
   }, [navigate]);
 
 

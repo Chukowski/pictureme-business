@@ -122,15 +122,39 @@ export function useSSE(options: UseSSEOptions = {}): UseSSEReturn {
         onConnected?.();
       };
 
-      eventSource.onerror = (event) => {
+      eventSource.onerror = (event: any) => {
         console.error('❌ SSE: Connection error', event);
+
+        // CRITICAL: Close the local eventSource specifically to stop browser retries
+        // Using eventSource.close() directly is safer than eventSourceRef.current.close()
+        // because of potential race conditions during rapid reconnects.
+        eventSource.close();
+
         setIsConnected(false);
         setConnectionStatus('error');
         onError?.(event);
         onDisconnected?.();
 
+        // CIRCUIT BREAKER: If unauthorized, don't retry burst. 
+        // This prevents the 401 infinite loop when token is expired.
+        // Look for 401 status in the event or assume if auth token is present but we get error
+        // since browsers don't always expose the status code in EventSource error events,
+        // we can check if it looks like an auth issue.
+        const isUnauthorized = event?.status === 401 || (event?.target as any)?.readyState === 2;
+
+        if (isUnauthorized) {
+          console.warn('🛑 SSE: Circuit breaker triggered due to unauthorized error. Stopping retries.');
+          setConnectionStatus('error');
+          return; // Stop the retry logic
+        }
+
         // Attempt to reconnect with exponential backoff
         const attempts = reconnectAttempts.current;
+        if (attempts > 10) {
+          console.warn('🛑 SSE: Max reconnect attempts reached');
+          return;
+        }
+
         const delay = Math.min(1000 * Math.pow(2, attempts), 30000); // Max 30 seconds
 
         console.log(`🔌 SSE: Will retry in ${delay / 1000}s (attempt ${attempts + 1})`);

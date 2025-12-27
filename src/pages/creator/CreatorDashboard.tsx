@@ -283,6 +283,17 @@ export default function CreatorDashboard() {
 
   useEffect(() => {
     loadData();
+
+    const handleTokensUpdated = (event: any) => {
+      const { newBalance } = event.detail;
+      setUser(prev => prev ? ({
+        ...prev,
+        tokens_remaining: newBalance
+      }) : null);
+    };
+
+    window.addEventListener('tokens-updated', handleTokensUpdated);
+    return () => window.removeEventListener('tokens-updated', handleTokensUpdated);
   }, []);
 
   const loadData = async () => {
