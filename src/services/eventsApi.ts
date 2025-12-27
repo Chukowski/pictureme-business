@@ -562,7 +562,7 @@ export function logoutUser(): void {
   localStorage.removeItem('user'); // Better Auth user data
   localStorage.removeItem('better-auth.session_token');
 
-  // Dispatch storage event for same-tab listeners (like AkitoWidget)
+  // Dispatch storage event for same-tab listeners (like AssistantWidget)
   window.dispatchEvent(new StorageEvent('storage', {
     key: 'user',
     oldValue: null,

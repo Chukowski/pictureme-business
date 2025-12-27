@@ -1,7 +1,7 @@
 /**
- * Akito CopilotKit Actions
+ * Assistant CopilotKit Actions
  * 
- * Frontend actions that Akito can execute directly in the browser.
+ * Frontend actions that the Assistant can execute directly in the browser.
  * These complement the backend actions and provide immediate UI feedback.
  */
 
@@ -9,18 +9,18 @@ import { useCopilotAction, useCopilotReadable } from "@copilotkit/react-core";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 
-export function useAkitoActions() {
+export function useAssistantActions() {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
 
-  // Make current page readable to Akito
+  // Make current page readable to Assistant
   useCopilotReadable({
     description: "The current page URL the user is on",
     value: location.pathname,
   });
 
-  // Make user info readable to Akito
+  // Make user info readable to Assistant
   useCopilotReadable({
     description: "Information about the currently logged in user",
     value: (() => {
@@ -42,7 +42,7 @@ export function useAkitoActions() {
     })(),
   });
 
-  // Navigate action - allows Akito to navigate the user
+  // Navigate action - allows Assistant to navigate the user
   useCopilotAction({
     name: "navigateTo",
     description: "Navigate the user to a specific page in the application",
@@ -170,13 +170,12 @@ export function useAkitoActions() {
 }
 
 /**
- * Component that registers all Akito actions
+ * Component that registers all Assistant actions
  * Include this component once in your app (e.g., in App.tsx or a layout)
  */
-export function AkitoCopilotActions() {
-  useAkitoActions();
+export function AssistantCopilotActions() {
+  useAssistantActions();
   return null;
 }
 
-export default AkitoCopilotActions;
-
+export default AssistantCopilotActions;

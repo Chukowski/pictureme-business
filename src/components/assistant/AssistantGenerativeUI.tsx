@@ -1,7 +1,7 @@
 /**
- * Akito Generative UI Components
+ * Assistant Generative UI Components
  * 
- * Custom UI components that can be rendered inside Akito's chat.
+ * Custom UI components that can be rendered inside Assistant's chat.
  * These are triggered by specific patterns in the AI response.
  */
 
@@ -28,6 +28,7 @@ const planData = {
     description: "Perfecto para comenzar con eventos pequeños",
     icon: Zap,
     color: "from-blue-500 to-cyan-500",
+    popular: false,
     features: [
       "1,000 tokens/mes",
       "1 evento activo",
@@ -60,6 +61,7 @@ const planData = {
     description: "Para empresas y alto volumen",
     icon: Crown,
     color: "from-amber-500 to-orange-500",
+    popular: false,
     features: [
       "10,000 tokens/mes",
       "Hasta 3 eventos activos",
@@ -96,7 +98,7 @@ export function PlanCard({ plan, onSelect, className }: PlanCardProps) {
           </Badge>
         </div>
       )}
-      
+
       <CardHeader className="pb-2">
         <div className={cn(
           "w-10 h-10 rounded-lg flex items-center justify-center mb-2",
@@ -109,13 +111,13 @@ export function PlanCard({ plan, onSelect, className }: PlanCardProps) {
           {data.description}
         </CardDescription>
       </CardHeader>
-      
+
       <CardContent className="pb-2">
         <div className="flex items-baseline gap-1 mb-4">
           <span className="text-3xl font-bold text-white">{data.price}</span>
           <span className="text-zinc-500 text-sm">{data.period}</span>
         </div>
-        
+
         <ul className="space-y-2">
           {data.features.slice(0, 5).map((feature, idx) => (
             <li key={idx} className="flex items-center gap-2 text-sm text-zinc-300">
@@ -130,9 +132,9 @@ export function PlanCard({ plan, onSelect, className }: PlanCardProps) {
           )}
         </ul>
       </CardContent>
-      
+
       <CardFooter>
-        <Button 
+        <Button
           onClick={handleUpgrade}
           className={cn(
             "w-full",
@@ -157,7 +159,7 @@ interface TokenPackageCardProps {
 
 export function TokenPackageCard({ tokens, price, bonus, onPurchase }: TokenPackageCardProps) {
   const navigate = useNavigate();
-  
+
   const handlePurchase = () => {
     if (onPurchase) {
       onPurchase();
@@ -183,8 +185,8 @@ export function TokenPackageCard({ tokens, price, bonus, onPurchase }: TokenPack
             </div>
             <p className="text-zinc-500 text-sm">${price.toFixed(2)}</p>
           </div>
-          <Button 
-            size="sm" 
+          <Button
+            size="sm"
             onClick={handlePurchase}
             className="bg-indigo-600 hover:bg-indigo-700"
           >
@@ -208,7 +210,7 @@ export function NavigationCard({ title, description, path, icon }: NavigationCar
   const navigate = useNavigate();
 
   return (
-    <Card 
+    <Card
       className="border-white/10 bg-zinc-900/80 backdrop-blur cursor-pointer hover:bg-zinc-800/80 transition-colors"
       onClick={() => navigate(path)}
     >
@@ -247,17 +249,17 @@ export function AuthCard({ type }: AuthCardProps) {
             {type === "register" ? "Crea tu cuenta" : type === "login" ? "Inicia sesión" : "¡Comienza ahora!"}
           </h4>
           <p className="text-zinc-400 text-xs mt-1">
-            {type === "register" 
-              ? "Regístrate para acceder a todas las funciones" 
-              : type === "login" 
+            {type === "register"
+              ? "Regístrate para acceder a todas las funciones"
+              : type === "login"
                 ? "Accede a tu cuenta para continuar"
                 : "Regístrate o inicia sesión"}
           </p>
         </div>
-        
+
         <div className={cn("flex gap-2", type === "both" ? "flex-col" : "")}>
           {(type === "register" || type === "both") && (
-            <Button 
+            <Button
               onClick={() => navigate("/admin/register")}
               size="sm"
               className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white"
@@ -266,7 +268,7 @@ export function AuthCard({ type }: AuthCardProps) {
             </Button>
           )}
           {(type === "login" || type === "both") && (
-            <Button 
+            <Button
               onClick={() => navigate("/admin/auth")}
               size="sm"
               variant="outline"
@@ -329,18 +331,18 @@ export interface GenerativeUIComponent {
  */
 export function parseGenerativeUI(text: string): { text: string; components: GenerativeUIComponent[] } {
   const components: GenerativeUIComponent[] = [];
-  
+
   // Pattern: [[plan_card:starter]] or [[plan_card:pro]] or [[plan_card:masters]]
   const planPattern = /\[\[plan_card:(starter|pro|masters)\]\]/gi;
   let match;
-  
+
   while ((match = planPattern.exec(text)) !== null) {
     components.push({
       type: "plan_card",
       props: { plan: match[1].toLowerCase() }
     });
   }
-  
+
   // Pattern: [[token_package:tokens=5000|price=49.99|bonus=10]]
   const tokenPattern = /\[\[token_package:tokens=(\d+)\|price=([\d.]+)(?:\|bonus=(\d+))?\]\]/gi;
   while ((match = tokenPattern.exec(text)) !== null) {
@@ -353,7 +355,7 @@ export function parseGenerativeUI(text: string): { text: string; components: Gen
       }
     });
   }
-  
+
   // Pattern: [[navigate:path=/admin/events|title=Crear Evento|description=...]]
   const navPattern = /\[\[navigate:path=([^|]+)\|title=([^|]+)\|description=([^\]]+)\]\]/gi;
   while ((match = navPattern.exec(text)) !== null) {
@@ -366,7 +368,7 @@ export function parseGenerativeUI(text: string): { text: string; components: Gen
       }
     });
   }
-  
+
   // Pattern: [[auth:register]] or [[auth:login]] or [[auth:both]]
   const authPattern = /\[\[auth:(register|login|both)\]\]/gi;
   while ((match = authPattern.exec(text)) !== null) {
@@ -375,7 +377,7 @@ export function parseGenerativeUI(text: string): { text: string; components: Gen
       props: { type: match[1].toLowerCase() }
     });
   }
-  
+
   // Remove markers from text
   const cleanText = text
     .replace(planPattern, "")
@@ -383,7 +385,7 @@ export function parseGenerativeUI(text: string): { text: string; components: Gen
     .replace(navPattern, "")
     .replace(authPattern, "")
     .trim();
-  
+
   return { text: cleanText, components };
 }
 
@@ -404,4 +406,3 @@ export function RenderGenerativeUI({ component }: { component: GenerativeUICompo
       return null;
   }
 }
-

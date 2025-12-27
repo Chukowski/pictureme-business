@@ -1,5 +1,5 @@
 /**
- * Akito Widget - AI Assistant for PictureMe.Now
+ * Assistant Widget - AI Assistant for PictureMe.Now
  * 
  * A toggleable floating widget that provides AI-powered assistance:
  * - Navigation help
@@ -30,13 +30,13 @@ import {
 import { cn } from "@/lib/utils";
 import { ENV } from "@/config/env";
 
-// Akito components
-import { AkitoMarkdown } from "./akito/AkitoMarkdown";
-import { 
-  parseGenerativeUI, 
+// Assistant components
+import AssistantMarkdown from "./assistant/AssistantMarkdown";
+import {
+  parseGenerativeUI,
   RenderGenerativeUI,
-  type GenerativeUIComponent 
-} from "./akito/AkitoGenerativeUI";
+  type GenerativeUIComponent
+} from "./assistant/AssistantGenerativeUI";
 
 // CopilotKit hook for chat (optional - gracefully degrades if not available)
 let useCopilotChat: any = null;
@@ -57,7 +57,7 @@ interface Message {
   components?: GenerativeUIComponent[]; // Generative UI components
 }
 
-interface AkitoWidgetProps {
+interface AssistantWidgetProps {
   className?: string;
   defaultOpen?: boolean;
 }
@@ -67,11 +67,11 @@ const GUEST_MESSAGE_LIMIT = 5; // Max messages for unauthenticated users
 const WELCOME_MESSAGE: Message = {
   id: "welcome",
   role: "assistant",
-  content: "¡Hola! 👋 Soy Akito, tu asistente AI para PictureMe.Now. ¿En qué puedo ayudarte hoy?",
+  content: "¡Hola! 👋 Soy PictureMe Assist, tu asistente AI. ¿En qué puedo ayudarte hoy?",
   timestamp: new Date(),
 };
 
-export function AkitoWidget({ className, defaultOpen = false }: AkitoWidgetProps) {
+export function AssistantWidget({ className, defaultOpen = false }: AssistantWidgetProps) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
   const [isMinimized, setIsMinimized] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false); // Full-screen mode
@@ -83,7 +83,7 @@ export function AkitoWidget({ className, defaultOpen = false }: AkitoWidgetProps
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [guestMessageCount, setGuestMessageCount] = useState(0);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  
+
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
@@ -98,7 +98,7 @@ export function AkitoWidget({ className, defaultOpen = false }: AkitoWidgetProps
       // Check multiple sources for auth
       const userStr = localStorage.getItem("user");
       const authToken = localStorage.getItem("auth_token");
-      
+
       if (userStr && authToken) {
         const user = JSON.parse(userStr);
         // Validate user object has required fields
@@ -116,7 +116,7 @@ export function AkitoWidget({ className, defaultOpen = false }: AkitoWidgetProps
             // Fallback to email, extract name part
             displayName = user.email.split('@')[0];
           }
-          
+
           return {
             user_id: user.id?.toString(),
             user_role: user.role || "individual",
@@ -142,17 +142,17 @@ export function AkitoWidget({ className, defaultOpen = false }: AkitoWidgetProps
         firstName = userName.split('@')[0];
       }
     }
-    
-    const welcomeMsg = authenticated 
-      ? `¡Hola${firstName ? ` ${firstName}` : ''}! 👋 Soy Akito, tu asistente AI. ¿En qué puedo ayudarte hoy?`
-      : "¡Hola! 👋 Soy Akito. Puedo ayudarte a conocer PictureMe.Now y sus planes. ¿Qué te gustaría saber?";
-    
+
+    const welcomeMsg = authenticated
+      ? `¡Hola${firstName ? ` ${firstName}` : ''}! 👋 Soy PictureMe Assist, tu asistente AI. ¿En qué puedo ayudarte hoy?`
+      : "¡Hola! 👋 Soy PictureMe Assist. Puedo ayudarte a conocer PictureMe.Now y sus planes. ¿Qué te gustaría saber?";
+
     console.log("🔄 Resetting chat, authenticated:", authenticated);
-    setMessages([{ 
-      ...WELCOME_MESSAGE, 
-      id: `welcome-${Date.now()}`, 
+    setMessages([{
+      ...WELCOME_MESSAGE,
+      id: `welcome-${Date.now()}`,
       content: welcomeMsg,
-      timestamp: new Date() 
+      timestamp: new Date()
     }]);
     setSuggestions([]);
   }, []);
@@ -163,26 +163,26 @@ export function AkitoWidget({ className, defaultOpen = false }: AkitoWidgetProps
       const userInfo = getUserInfo();
       const newUserId = userInfo.user_id;
       const nowAuthenticated = userInfo.isValid;
-      
+
       // Detect auth state change
       const authChanged = isAuthenticated !== nowAuthenticated;
       const userChanged = currentUserId !== null && currentUserId !== newUserId;
-      
+
       if (authChanged || userChanged) {
-        console.log("🔄 Auth changed:", { 
-          wasAuthenticated: isAuthenticated, 
-          nowAuthenticated, 
-          oldUser: currentUserId, 
-          newUser: newUserId 
+        console.log("🔄 Auth changed:", {
+          wasAuthenticated: isAuthenticated,
+          nowAuthenticated,
+          oldUser: currentUserId,
+          newUser: newUserId
         });
-        
+
         // Update states
         setIsAuthenticated(nowAuthenticated);
         setCurrentUserId(newUserId);
-        
+
         // Reset chat with new auth state
         resetChatWithAuth(nowAuthenticated, userInfo.user_name);
-        
+
         // Reset guest message count when logging in
         if (nowAuthenticated) {
           setGuestMessageCount(0);
@@ -222,22 +222,14 @@ export function AkitoWidget({ className, defaultOpen = false }: AkitoWidgetProps
   const resetChat = useCallback(() => {
     const userInfo = getUserInfo();
     resetChatWithAuth(userInfo.isValid, userInfo.user_name);
-    
-    setMessages([{ 
-      ...WELCOME_MESSAGE, 
-      id: `welcome-${Date.now()}`, 
-      content: welcomeMsg,
-      timestamp: new Date() 
-    }]);
-    setSuggestions([]);
-  }, [isAuthenticated]);
+  }, [getUserInfo, resetChatWithAuth]);
 
   // Check if guest has reached message limit
   const isGuestLimitReached = !isAuthenticated && guestMessageCount >= GUEST_MESSAGE_LIMIT;
 
-  // Navigate function that Akito can trigger
+  // Navigate function triggered by assistant
   const handleNavigation = useCallback((path: string) => {
-    console.log("🧭 Akito navigating to:", path);
+    console.log("🧭 Assistant navigating to:", path);
     navigate(path);
   }, [navigate]);
 
@@ -262,7 +254,7 @@ export function AkitoWidget({ className, defaultOpen = false }: AkitoWidgetProps
         ]);
       }
     };
-    
+
     if (isOpen) {
       loadSuggestions();
     }
@@ -315,7 +307,7 @@ export function AkitoWidget({ className, defaultOpen = false }: AkitoWidgetProps
 
     try {
       let responseText = "";
-      
+
       // Try CopilotKit first if available
       if (copilotChat && copilotChat.appendMessage) {
         try {
@@ -327,10 +319,10 @@ export function AkitoWidget({ className, defaultOpen = false }: AkitoWidgetProps
           console.log("CopilotKit not fully initialized, using direct API");
         }
       }
-      
+
       // Get fresh user info
       const userInfo = getUserInfo();
-      
+
       const response = await fetch(`${API_URL}/api/akito/chat`, {
         method: "POST",
         headers: {
@@ -356,7 +348,7 @@ export function AkitoWidget({ className, defaultOpen = false }: AkitoWidgetProps
 
       const data = await response.json();
       responseText = data.response;
-      
+
       // Check for navigation commands in response
       const navigationMatch = responseText.match(/\[\[navigate_now:([^\]]+)\]\]/);
       if (navigationMatch) {
@@ -365,10 +357,10 @@ export function AkitoWidget({ className, defaultOpen = false }: AkitoWidgetProps
         // Navigate after a short delay to let the message appear
         setTimeout(() => handleNavigation(path), 500);
       }
-      
+
       // Parse for generative UI components
       const { text: cleanText, components } = parseGenerativeUI(responseText);
-      
+
       const assistantMessage: Message = {
         id: `assistant-${Date.now()}`,
         role: "assistant",
@@ -378,7 +370,7 @@ export function AkitoWidget({ className, defaultOpen = false }: AkitoWidgetProps
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
-      
+
       // Update suggestions if provided
       if (data.suggestions?.length > 0) {
         setSuggestions(data.suggestions);
@@ -386,7 +378,7 @@ export function AkitoWidget({ className, defaultOpen = false }: AkitoWidgetProps
 
       // Check for navigation commands in response
       handleNavigationCommands(cleanText);
-      
+
     } catch (error) {
       console.error("Error sending message:", error);
       const errorMessage: Message = {
@@ -442,7 +434,7 @@ export function AkitoWidget({ className, defaultOpen = false }: AkitoWidgetProps
         return;
       }
     }
-    
+
     // Otherwise send as message
     sendMessage(suggestion);
   };
@@ -474,9 +466,9 @@ export function AkitoWidget({ className, defaultOpen = false }: AkitoWidgetProps
           className
         )}
       >
-        <img 
-          src="/assets/akito-2d.png" 
-          alt="Akito" 
+        <img
+          src="/assets/akito-2d.png"
+          alt="Assistant"
           className="w-full h-full object-contain drop-shadow-xl"
         />
         {hasUnread && (
@@ -492,10 +484,10 @@ export function AkitoWidget({ className, defaultOpen = false }: AkitoWidgetProps
         "fixed z-50 shadow-2xl transition-all duration-300 rounded-xl overflow-hidden",
         "bg-zinc-900/95 backdrop-blur-lg border border-white/10",
         "flex flex-col",
-        isExpanded 
+        isExpanded
           ? "inset-4 sm:inset-8 md:inset-16 lg:inset-24" // Full screen with padding
-          : isMinimized 
-            ? "bottom-6 right-6 w-72 h-14" 
+          : isMinimized
+            ? "bottom-6 right-6 w-72 h-14"
             : "bottom-6 right-6 w-96 h-[32rem]",
         className
       )}
@@ -504,14 +496,14 @@ export function AkitoWidget({ className, defaultOpen = false }: AkitoWidgetProps
       <div className="p-3 border-b border-white/10 flex items-center justify-between flex-shrink-0">
         <div className="flex items-center gap-2">
           <div className="h-10 w-10 flex items-center justify-center">
-            <img 
-              src="/assets/akito-2d.png" 
-              alt="Akito" 
+            <img
+              src="/assets/akito-2d.png"
+              alt="Assistant"
               className="w-full h-full object-contain drop-shadow-md"
             />
           </div>
           <div>
-            <h3 className="text-sm font-semibold text-white">Akito</h3>
+            <h3 className="text-sm font-semibold text-white">Assist</h3>
             {!isMinimized && (
               <p className="text-xs text-zinc-400">Tu asistente AI</p>
             )}
@@ -576,7 +568,7 @@ export function AkitoWidget({ className, defaultOpen = false }: AkitoWidgetProps
       {!isMinimized && (
         <>
           {/* Messages Area */}
-          <div 
+          <div
             ref={scrollRef}
             className="flex-1 overflow-y-auto p-4 space-y-4"
           >
@@ -590,9 +582,9 @@ export function AkitoWidget({ className, defaultOpen = false }: AkitoWidgetProps
               >
                 {message.role === "assistant" && (
                   <div className="h-8 w-8 flex items-center justify-center flex-shrink-0 mt-1">
-                    <img 
-                      src="/assets/akito-2d.png" 
-                      alt="Akito" 
+                    <img
+                      src="/assets/akito-2d.png"
+                      alt="Assistant"
                       className="w-full h-full object-contain drop-shadow-sm"
                     />
                   </div>
@@ -608,12 +600,12 @@ export function AkitoWidget({ className, defaultOpen = false }: AkitoWidgetProps
                     )}
                   >
                     {message.role === "assistant" ? (
-                      <AkitoMarkdown content={message.content} />
+                      <AssistantMarkdown content={message.content} />
                     ) : (
                       message.content
                     )}
                   </div>
-                  
+
                   {/* Generative UI Components */}
                   {message.components && message.components.length > 0 && (
                     <div className="space-y-2 pl-0">
@@ -625,13 +617,13 @@ export function AkitoWidget({ className, defaultOpen = false }: AkitoWidgetProps
                 </div>
               </div>
             ))}
-            
+
             {isLoading && (
               <div className="flex gap-2 justify-start">
                 <div className="h-8 w-8 flex items-center justify-center flex-shrink-0 mt-1">
-                  <img 
-                    src="/assets/akito-2d.png" 
-                    alt="Akito" 
+                  <img
+                    src="/assets/akito-2d.png"
+                    alt="Assistant"
                     className="w-full h-full object-contain drop-shadow-sm"
                   />
                 </div>
@@ -692,4 +684,4 @@ export function AkitoWidget({ className, defaultOpen = false }: AkitoWidgetProps
   );
 }
 
-export default AkitoWidget;
+export default AssistantWidget;

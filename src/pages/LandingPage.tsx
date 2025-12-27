@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Check, Sparkles, Zap, Shield, Aperture, Wand2, Layers, Smartphone, Info, User, LogOut } from "lucide-react";
 import { logoutUser } from "@/services/eventsApi";
 
-const Akito3DScene = lazy(() => import("@/components/Akito3DScene"));
+const Assistant3DScene = lazy(() => import("@/components/Assistant3DScene"));
 import {
   Tooltip,
   TooltipContent,
@@ -124,7 +124,7 @@ export default function LandingPage() {
             <button onClick={() => scrollToSection("features")} className="hover:text-white transition-colors">Features</button>
             <button onClick={() => scrollToSection("showcase")} className="hover:text-white transition-colors">Showcase</button>
             <button onClick={() => scrollToSection("pricing")} className="hover:text-white transition-colors">Pricing</button>
-            <button onClick={() => scrollToSection("about-akita")} className="hover:text-white transition-colors text-indigo-400">About Akitá</button>
+            <button onClick={() => scrollToSection("about-assistant")} className="hover:text-white transition-colors text-indigo-400">About Assist</button>
           </div>
           <div className="flex items-center gap-4">
             {currentUser ? (
@@ -446,12 +446,12 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* About Akitá Section */}
-      <section id="about-akita" className="py-24 bg-zinc-900/30 relative overflow-hidden border-t border-white/5">
+      {/* About Assistant Section */}
+      <section id="about-assistant" className="py-24 bg-zinc-900/30 relative overflow-hidden border-t border-white/5">
         <div className="container mx-auto px-6">
           <div className="flex flex-col md:flex-row items-center gap-16">
             <div className="flex-1 relative order-2 md:order-1">
-              {/* 3D Akito Model */}
+              {/* 3D Assistant Model */}
               <div className="relative z-10 w-full max-w-md mx-auto group h-[400px] md:h-[500px]">
                 <div className="absolute inset-0 bg-indigo-500/20 blur-[100px] rounded-full -z-10" />
                 <Suspense fallback={
@@ -459,7 +459,7 @@ export default function LandingPage() {
                     <div className="w-16 h-16 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
                   </div>
                 }>
-                  <Akito3DScene />
+                  <Assistant3DScene />
                 </Suspense>
               </div>
             </div>
@@ -490,9 +490,9 @@ export default function LandingPage() {
                     <Sparkles className="w-7 h-7 text-white" />
                   </div>
                   <div>
-                    <h4 className="text-xl font-bold text-white mb-2">Meet Akito</h4>
+                    <h4 className="text-xl font-bold text-white mb-2">PictureMe Assist</h4>
                     <p className="text-zinc-400 leading-relaxed">
-                      More than just a mascot, Akito is the AI soul of our platform. He guides users, optimizes workflows, and brings a friendly face to advanced technology.
+                      More than just a mascot, our AI Assistant is the soul of our platform. It guides users, optimizes workflows, and brings a friendly face to advanced technology.
                     </p>
                   </div>
                 </div>

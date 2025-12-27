@@ -1,7 +1,7 @@
 """
-Akito API Router
+Assistant API Router
 
-Provides endpoints for the Akito AI assistant and CopilotKit integration.
+Provides endpoints for the AI assistant and CopilotKit integration.
 """
 
 from fastapi import APIRouter, HTTPException, Request
@@ -10,7 +10,7 @@ from typing import Optional, List, Any
 
 router = APIRouter(
     prefix="/api/akito",
-    tags=["Akito Assistant"],
+    tags=["Assistant"],
 )
 
 
@@ -34,7 +34,7 @@ class ChatRequest(BaseModel):
 
 
 class ChatResponse(BaseModel):
-    """Response from Akito"""
+    """Response from Assistant"""
     response: str
     suggestions: List[str] = Field(default_factory=list)
 
@@ -49,11 +49,11 @@ class ActionRequest(BaseModel):
 
 
 @router.post("/chat", response_model=ChatResponse)
-async def chat_with_akito_endpoint(request: Request):
+async def chat_with_assistant_endpoint(request: Request):
     """
-    Chat with Akito, the AI assistant.
+    Chat with the AI assistant.
     
-    Akito can help with:
+    The assistant can help with:
     - Navigation suggestions
     - Prompt creation and enhancement
     - Feature explanations
@@ -61,11 +61,9 @@ async def chat_with_akito_endpoint(request: Request):
     - Troubleshooting
     """
     try:
-        from agents.akito_agent import chat_with_akito
-        
         # Parse raw body for debugging
         body = await request.json()
-        print(f"🤖 Akito received: {body}")
+        print(f"🤖 Assistant received: {body}")
         
         # Validate manually
         message = body.get("message", "").strip()
@@ -77,10 +75,11 @@ async def chat_with_akito_endpoint(request: Request):
         current_page = body.get("current_page")
         user_name = body.get("user_name")
         is_authenticated = body.get("is_authenticated", False)
+        agent_tier = body.get("agent_tier", "standard")
         raw_history = body.get("message_history", [])
         
-        # Log auth status
-        print(f"   🔐 Auth status: {'Authenticated' if is_authenticated else 'Guest'} | User: {user_id} | Role: {user_role}")
+        # Log status
+        print(f"   🔐 Auth status: {'Authenticated' if is_authenticated else 'Guest'} | Agent: {agent_tier} | User: {user_id} | Role: {user_role}")
         
         # Convert message history to the format expected by the agent
         history = None
@@ -90,31 +89,44 @@ async def chat_with_akito_endpoint(request: Request):
                 if isinstance(msg, dict):
                     history.append({"role": msg.get("role", "user"), "content": msg.get("content", "")})
         
-        response = await chat_with_akito(
-            message=message,
-            user_id=user_id,
-            user_role=user_role,
-            current_page=current_page,
-            user_name=user_name,
-            message_history=history,
-            is_authenticated=is_authenticated
-        )
+        # Select agent based on tier
+        if agent_tier == "business":
+            from agents.business_agent import chat_with_business_agent
+            response = await chat_with_business_agent(
+                message=message,
+                user_id=user_id,
+                user_role=user_role,
+                current_page=current_page,
+                user_name=user_name,
+                message_history=history
+            )
+        else:
+            from agents.creator_agent import chat_with_creator_agent
+            response = await chat_with_creator_agent(
+                message=message,
+                user_id=user_id,
+                user_role=user_role,
+                current_page=current_page,
+                user_name=user_name,
+                message_history=history,
+                is_authenticated=is_authenticated
+            )
         
         # Generate contextual suggestions based on auth status
         suggestions = _generate_suggestions(message, current_page, is_authenticated)
         
         return ChatResponse(response=response, suggestions=suggestions)
     except Exception as e:
-        print(f"❌ Error in Akito chat: {e}")
+        print(f"❌ Error in Assistant chat: {e}")
         import traceback
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"Failed to chat with Akito: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to chat with Assistant: {str(e)}")
 
 
 @router.post("/action")
 async def execute_action(request: ActionRequest):
     """
-    Execute a specific Akito action.
+    Execute a specific Assistant action.
     
     Actions:
     - navigate: Get navigation path
@@ -122,9 +134,9 @@ async def execute_action(request: ActionRequest):
     - explain_feature: Get feature explanation
     """
     try:
-        from agents.akito_agent import akito_agent, AkitoContext
+        from agents.creator_agent import creator_agent, AssistantContext
         
-        context = AkitoContext(
+        context = AssistantContext(
             user_id=request.user_id,
             user_role=request.user_role,
             current_page=request.current_page
@@ -132,7 +144,7 @@ async def execute_action(request: ActionRequest):
         
         if request.action == "navigate":
             intent = request.parameters.get("intent", "")
-            result = await akito_agent.run(
+            result = await creator_agent.run(
                 f"Help me navigate to: {intent}",
                 deps=context
             )
@@ -141,7 +153,7 @@ async def execute_action(request: ActionRequest):
         elif request.action == "enhance_prompt":
             prompt = request.parameters.get("prompt", "")
             style = request.parameters.get("style")
-            result = await akito_agent.run(
+            result = await creator_agent.run(
                 f"Enhance this prompt for AI image generation: {prompt}" + (f" Style: {style}" if style else ""),
                 deps=context
             )
@@ -149,7 +161,7 @@ async def execute_action(request: ActionRequest):
         
         elif request.action == "explain_feature":
             feature = request.parameters.get("feature", "")
-            result = await akito_agent.run(
+            result = await creator_agent.run(
                 f"Explain the feature: {feature}",
                 deps=context
             )
@@ -161,7 +173,7 @@ async def execute_action(request: ActionRequest):
     except HTTPException:
         raise
     except Exception as e:
-        print(f"❌ Error executing Akito action: {e}")
+        print(f"❌ Error executing Assistant action: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to execute action: {str(e)}")
 
 
@@ -174,8 +186,8 @@ async def get_contextual_suggestions(current_page: Optional[str] = None):
 
 @router.get("/health")
 async def health_check():
-    """Check if Akito is available."""
-    return {"status": "ok", "agent": "akito", "version": "1.0.0"}
+    """Check if Assistant is available."""
+    return {"status": "ok", "agent": "assistant", "version": "1.0.0"}
 
 
 def _generate_suggestions(message: str, current_page: Optional[str], is_authenticated: bool = False) -> List[str]:
@@ -244,4 +256,3 @@ def _generate_suggestions(message: str, current_page: Optional[str], is_authenti
         ]
     
     return suggestions
-

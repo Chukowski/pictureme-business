@@ -61,9 +61,10 @@ import { CreatorOnly } from "./components/routing/CreatorOnly";
 
 // CopilotKit imports (self-hosted, no cloud required)
 import { CopilotKit } from "@copilotkit/react-core";
-import { AkitoCopilotActions } from "./components/AkitoCopilotActions";
+import { AssistantCopilotActions } from "./components/AssistantCopilotActions";
 
 import ChatPage from "./pages/ChatPage";
+import AdminChatPage from "./pages/AdminChatPage";
 
 const queryClient = new QueryClient();
 
@@ -177,7 +178,7 @@ const AppContent = () => {
           runtimeUrl={`${apiUrl}/copilotkit/`}
           properties={getUserProperties()}
         >
-          <AkitoCopilotActions />
+          <AssistantCopilotActions />
         </CopilotKit>
       )}
       <TopNavbar />
@@ -305,7 +306,7 @@ const AppContent = () => {
           <BusinessOnly>
             <div className="min-h-screen bg-black pt-24 px-4 pb-4">
               <div className="max-w-7xl mx-auto">
-                <ChatPage />
+                <AdminChatPage />
               </div>
             </div>
           </BusinessOnly>

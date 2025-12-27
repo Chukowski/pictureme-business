@@ -16,12 +16,12 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ENV } from "@/config/env";
-import { AkitoMarkdown } from "@/components/akito/AkitoMarkdown";
+import AssistantMarkdown from "@/components/assistant/AssistantMarkdown";
 import {
   parseGenerativeUI,
   RenderGenerativeUI,
   type GenerativeUIComponent
-} from "@/components/akito/AkitoGenerativeUI";
+} from "@/components/assistant/AssistantGenerativeUI";
 
 // CopilotKit hook for chat (optional - gracefully degrades if not available)
 let useCopilotChat: any = null;
@@ -313,7 +313,7 @@ export default function ChatPage() {
                     <p className="whitespace-pre-wrap font-medium">{message.content}</p>
                   ) : (
                     <div className="prose prose-invert max-w-none prose-p:text-zinc-300 prose-headings:text-white prose-strong:text-white prose-code:text-[#D1F349]">
-                      <AkitoMarkdown content={message.content} />
+                      <AssistantMarkdown content={message.content} />
 
                       {message.components && message.components.length > 0 && (
                         <div className="mt-4 space-y-2">
