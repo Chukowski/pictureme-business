@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Sparkles, Loader2, Wand2, Download, History, BookOpen, ImageIcon, Video, CheckCircle2, Maximize2, LayoutGrid, List, Clock, Mic2 } from 'lucide-react';
+import { Sparkles, Loader2, Wand2, Download, History, BookOpen, ImageIcon, Video, CheckCircle2, Maximize2, LayoutGrid, List, Clock } from 'lucide-react';
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { GalleryItem } from '@/components/creator/CreationDetailView';
@@ -31,7 +31,7 @@ export const TimelineView = ({
     mode = 'image'
 }: TimelineViewProps) => {
     const [activeTab, setActiveTab] = useState<'history' | 'guide'>('history');
-    const [zoomLevel, setZoomLevel] = useState([4]); // 3 columns by default
+    const [zoomLevel, setZoomLevel] = useState([5]); // 3 columns by default
     const [listSplitRatio, setListSplitRatio] = useState([400]); // Width of info panel in px
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
     const [fitToScreen, setFitToScreen] = useState(false);
@@ -344,92 +344,97 @@ export const TimelineView = ({
                                 ) : viewMode === 'list' ? (
                                     /* --- LIST VIEW LAYOUT --- */
                                     <div className="flex flex-col gap-6 pb-20">
-                                        {history.map(item => (
-                                            <div
-                                                key={item.id}
-                                                onClick={() => item.status === 'completed' && setPreviewItem(item)}
-                                                className="group flex flex-col md:flex-row h-[500px] w-full bg-[#0d0d0d] rounded-[2rem] border border-white/5 overflow-hidden hover:border-white/10 transition-all cursor-pointer"
-                                            >
-                                                {/* LEFT COLUMN: MEDIA */}
-                                                <div className="flex-1 relative bg-black flex items-center justify-center overflow-hidden">
-                                                    {item.status === 'completed' ? (
-                                                        item.type === 'image' ? (
-                                                            <img
-                                                                src={getThumbnailUrl(item.url, 1200)}
-                                                                className="w-full h-full object-contain"
-                                                                loading="lazy"
-                                                                alt={item.prompt}
-                                                            />
-                                                        ) : (
-                                                            <video src={item.url} className="w-full h-full object-contain" controls />
-                                                        )
-                                                    ) : (
-                                                        <div className="flex flex-col items-center gap-3 text-zinc-600">
-                                                            <Loader2 className="animate-spin w-8 h-8" />
-                                                            <span className="text-xs font-mono uppercase">Processing</span>
-                                                        </div>
-                                                    )}
-                                                </div>
-
-                                                {/* RIGHT COLUMN: INFO */}
+                                        {history.map((item, index) => {
+                                            const isHero = (item as any).is_hero || false;
+                                            return (
                                                 <div
-                                                    className="bg-[#141414] p-8 flex flex-col relative border-l border-white/5 shrink-0 transition-all duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)]"
-                                                    style={{ width: listSplitRatio[0] }}
+                                                    key={item.id}
+                                                    onClick={() => item.status === 'completed' && setPreviewItem(item)}
+                                                    className="group flex flex-col md:flex-row h-[500px] w-full bg-[#0d0d0d] rounded-[2rem] border border-white/5 overflow-hidden hover:border-white/10 transition-all cursor-pointer"
                                                 >
-                                                    {/* Model Badge */}
-                                                    <div className="flex items-start mb-6">
-                                                        <div className="flex items-center gap-2 px-3 py-1.5 bg-white/5 rounded-full border border-white/10">
-                                                            <Sparkles className="w-3.5 h-3.5 text-white" />
-                                                            <span className="text-[11px] font-bold text-white">
-                                                                {resolveModelName(item.model)}
-                                                            </span>
-                                                        </div>
-                                                    </div>
-
-                                                    {/* Prompt */}
-                                                    <div className="flex-1 overflow-hidden mb-6">
-                                                        <p className="text-[15px] font-medium text-zinc-300 leading-relaxed line-clamp-6">
-                                                            {item.prompt || "No prompt available"}
-                                                        </p>
-                                                    </div>
-
-                                                    {/* Style/Input Preview (Mock for now or if item has input image) */}
-                                                    <div className="mb-8">
-                                                        {item.previewUrl && (
-                                                            <div className="w-16 h-16 rounded-2xl bg-indigo-900/20 border border-white/10 flex items-center justify-center overflow-hidden">
-                                                                <img src={getThumbnailUrl(item.previewUrl, 200)} className="w-full h-full object-cover" />
+                                                    {/* LEFT COLUMN: MEDIA */}
+                                                    <div className="flex-1 relative bg-black flex items-center justify-center overflow-hidden">
+                                                        {item.status === 'completed' ? (
+                                                            item.type === 'image' ? (
+                                                                <img
+                                                                    src={getThumbnailUrl(item.url, 1200)}
+                                                                    className="w-full h-full object-contain"
+                                                                    loading={isHero ? "eager" : "lazy"}
+                                                                    fetchPriority={isHero ? "high" : "auto"}
+                                                                    decoding="async"
+                                                                    alt={item.prompt}
+                                                                />
+                                                            ) : (
+                                                                <video src={item.url} className="w-full h-full object-contain" controls />
+                                                            )
+                                                        ) : (
+                                                            <div className="flex flex-col items-center gap-3 text-zinc-600">
+                                                                <Loader2 className="animate-spin w-8 h-8" />
+                                                                <span className="text-xs font-mono uppercase">Processing</span>
                                                             </div>
                                                         )}
                                                     </div>
 
-                                                    {/* Metadata Grid */}
-                                                    <div className="grid grid-cols-3 gap-2 mb-8">
-                                                        <div className="flex items-center gap-2 px-3 py-2 bg-black/40 rounded-lg border border-white/5 text-zinc-400">
-                                                            <div className="w-2 h-2 rotate-45 border border-current" />
-                                                            <span className="text-[10px] font-bold">1080p</span>
+                                                    {/* RIGHT COLUMN: INFO */}
+                                                    <div
+                                                        className="bg-[#141414] p-8 flex flex-col relative border-l border-white/5 shrink-0 transition-all duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)]"
+                                                        style={{ width: listSplitRatio[0] }}
+                                                    >
+                                                        {/* Model Badge */}
+                                                        <div className="flex items-start mb-6">
+                                                            <div className="flex items-center gap-2 px-3 py-1.5 bg-white/5 rounded-full border border-white/10">
+                                                                <Sparkles className="w-3.5 h-3.5 text-white" />
+                                                                <span className="text-[11px] font-bold text-white">
+                                                                    {resolveModelName(item.model)}
+                                                                </span>
+                                                            </div>
                                                         </div>
-                                                        {item.type === 'video' && (
+
+                                                        {/* Prompt */}
+                                                        <div className="flex-1 overflow-hidden mb-6">
+                                                            <p className="text-[15px] font-medium text-zinc-300 leading-relaxed line-clamp-6">
+                                                                {item.prompt || "No prompt available"}
+                                                            </p>
+                                                        </div>
+
+                                                        {/* Style/Input Preview (Mock for now or if item has input image) */}
+                                                        <div className="mb-8">
+                                                            {item.previewUrl && (
+                                                                <div className="w-16 h-16 rounded-2xl bg-indigo-900/20 border border-white/10 flex items-center justify-center overflow-hidden">
+                                                                    <img src={getThumbnailUrl(item.previewUrl, 200)} className="w-full h-full object-cover" />
+                                                                </div>
+                                                            )}
+                                                        </div>
+
+                                                        {/* Metadata Grid */}
+                                                        <div className="grid grid-cols-3 gap-2 mb-8">
                                                             <div className="flex items-center gap-2 px-3 py-2 bg-black/40 rounded-lg border border-white/5 text-zinc-400">
-                                                                <Clock className="w-3.5 h-3.5" />
-                                                                <span className="text-[10px] font-bold">{item.duration ? `${item.duration}s` : 'N/A'}</span>
+                                                                <div className="w-2 h-2 rotate-45 border border-current" />
+                                                                <span className="text-[10px] font-bold">1080p</span>
                                                             </div>
-                                                        )}
-                                                        <div className="flex items-center gap-2 px-3 py-2 bg-black/40 rounded-lg border border-white/5 text-zinc-400">
-                                                            <div className="w-2.5 h-3.5 border border-current rounded-[1px]" />
-                                                            <span className="text-[10px] font-bold">{item.ratio || '9:16'}</span>
+                                                            {item.type === 'video' && (
+                                                                <div className="flex items-center gap-2 px-3 py-2 bg-black/40 rounded-lg border border-white/5 text-zinc-400">
+                                                                    <Clock className="w-3.5 h-3.5" />
+                                                                    <span className="text-[10px] font-bold">{item.duration ? `${item.duration}s` : 'N/A'}</span>
+                                                                </div>
+                                                            )}
+                                                            <div className="flex items-center gap-2 px-3 py-2 bg-black/40 rounded-lg border border-white/5 text-zinc-400">
+                                                                <div className="w-2.5 h-3.5 border border-current rounded-[1px]" />
+                                                                <span className="text-[10px] font-bold">{item.ratio || '9:16'}</span>
+                                                            </div>
+                                                            <div className="flex items-center gap-2 px-3 py-2 bg-black/40 rounded-lg border border-white/5 text-zinc-400 col-span-2">
+                                                                <span className="text-[10px] font-bold">Seed: {(item as any).meta?.seed || (item as any).seed || 'N/A'}</span>
+                                                            </div>
                                                         </div>
-                                                        <div className="flex items-center gap-2 px-3 py-2 bg-black/40 rounded-lg border border-white/5 text-zinc-400 col-span-2">
-                                                            <span className="text-[10px] font-bold">Seed: {(item as any).meta?.seed || (item as any).seed || 'N/A'}</span>
-                                                        </div>
-                                                    </div>
 
-                                                    {/* Footer Date */}
-                                                    <div className="mt-auto pt-6 border-t border-white/5 text-zinc-500 text-xs font-medium">
-                                                        {formatDate(item.timestamp)}
+                                                        {/* Footer Date */}
+                                                        <div className="mt-auto pt-6 border-t border-white/5 text-zinc-500 text-xs font-medium">
+                                                            {formatDate(item.timestamp)}
+                                                        </div>
                                                     </div>
                                                 </div>
-                                            </div>
-                                        ))}
+                                            );
+                                        })}
                                     </div>
                                 ) : (
                                     /* --- GRID VIEW LAYOUT (Default) --- */
@@ -448,53 +453,58 @@ export const TimelineView = ({
                                             </div>
                                         )}
 
-                                        {history.map(item => (
-                                            <div
-                                                key={item.id}
-                                                onClick={() => item.status === 'completed' && setPreviewItem(item)}
-                                                className="group relative aspect-[3/4] bg-[#121212] rounded-xl overflow-hidden cursor-pointer hover:ring-2 ring-[#D1F349]/50 transition-all shadow-xl group"
-                                            >
-                                                {item.status === 'completed' ? (
-                                                    item.type === 'image' ? (
-                                                        <img
-                                                            src={getThumbnailUrl(item.url, 800)}
-                                                            className={cn("w-full h-full transition-transform duration-700 group-hover:scale-105", fitToScreen ? "object-contain bg-black" : "object-cover")}
-                                                            loading="lazy"
-                                                            alt={item.prompt}
-                                                        />
+                                        {history.map((item, index) => {
+                                            const isHero = (item as any).is_hero || false;
+                                            return (
+                                                <div
+                                                    key={item.id}
+                                                    onClick={() => item.status === 'completed' && setPreviewItem(item)}
+                                                    className="group relative aspect-[3/4] bg-[#121212] rounded-xl overflow-hidden cursor-pointer hover:ring-2 ring-[#D1F349]/50 transition-all shadow-xl group"
+                                                >
+                                                    {item.status === 'completed' ? (
+                                                        item.type === 'image' ? (
+                                                            <img
+                                                                src={getThumbnailUrl(item.url, 800)}
+                                                                className={cn("w-full h-full transition-transform duration-700 group-hover:scale-105", fitToScreen ? "object-contain bg-black" : "object-cover")}
+                                                                loading={isHero ? "eager" : "lazy"}
+                                                                fetchPriority={isHero ? "high" : "auto"}
+                                                                decoding="async"
+                                                                alt={item.prompt}
+                                                            />
+                                                        ) : (
+                                                            <video src={item.url} className={cn("w-full h-full", fitToScreen ? "object-contain bg-black" : "object-cover")} />
+                                                        )
                                                     ) : (
-                                                        <video src={item.url} className={cn("w-full h-full", fitToScreen ? "object-contain bg-black" : "object-cover")} />
-                                                    )
-                                                ) : (
-                                                    <div className="w-full h-full flex flex-col items-center justify-center bg-zinc-900/50 text-zinc-700 gap-3">
-                                                        <Loader2 className="animate-spin w-8 h-8" />
-                                                        <span className="text-[10px] font-black uppercase tracking-tighter">{item.status}</span>
-                                                    </div>
-                                                )}
-
-                                                {item.status === 'completed' && (
-                                                    <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col justify-end p-6">
-                                                        <div className="flex items-center gap-2 mb-4 translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
-                                                            <button
-                                                                onClick={(e) => { e.stopPropagation(); onReusePrompt(item); }}
-                                                                className="w-10 h-10 rounded-2xl bg-[#D1F349] text-black flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-lg"
-                                                                title="Remix"
-                                                            >
-                                                                <Wand2 className="w-5 h-5" />
-                                                            </button>
-                                                            <button
-                                                                onClick={(e) => { e.stopPropagation(); onDownload(item); }}
-                                                                className="w-10 h-10 rounded-2xl bg-white/10 backdrop-blur-xl text-white flex items-center justify-center hover:bg-white/20 hover:scale-105 active:scale-95 transition-all border border-white/10 shadow-lg"
-                                                                title="Download"
-                                                            >
-                                                                <Download className="w-5 h-5" />
-                                                            </button>
+                                                        <div className="w-full h-full flex flex-col items-center justify-center bg-zinc-900/50 text-zinc-700 gap-3">
+                                                            <Loader2 className="animate-spin w-8 h-8" />
+                                                            <span className="text-[10px] font-black uppercase tracking-tighter">{item.status}</span>
                                                         </div>
-                                                        <p className="text-[11px] text-white/60 line-clamp-2 font-bold uppercase tracking-tight leading-tight mb-1">{item.prompt}</p>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        ))}
+                                                    )}
+
+                                                    {item.status === 'completed' && (
+                                                        <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col justify-end p-6">
+                                                            <div className="flex items-center gap-2 mb-4 translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
+                                                                <button
+                                                                    onClick={(e) => { e.stopPropagation(); onReusePrompt(item); }}
+                                                                    className="w-10 h-10 rounded-2xl bg-[#D1F349] text-black flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-lg"
+                                                                    title="Remix"
+                                                                >
+                                                                    <Wand2 className="w-5 h-5" />
+                                                                </button>
+                                                                <button
+                                                                    onClick={(e) => { e.stopPropagation(); onDownload(item); }}
+                                                                    className="w-10 h-10 rounded-2xl bg-white/10 backdrop-blur-xl text-white flex items-center justify-center hover:bg-white/20 hover:scale-105 active:scale-95 transition-all border border-white/10 shadow-lg"
+                                                                    title="Download"
+                                                                >
+                                                                    <Download className="w-5 h-5" />
+                                                                </button>
+                                                            </div>
+                                                            <p className="text-[11px] text-white/60 line-clamp-2 font-bold uppercase tracking-tight leading-tight mb-1">{item.prompt}</p>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
                                     </div>
                                 )}
                             </div>

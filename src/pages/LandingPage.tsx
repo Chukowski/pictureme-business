@@ -1,4 +1,6 @@
 import { useState, useEffect, Suspense, lazy } from "react";
+import { SEO } from "@/components/SEO";
+import { getImgproxyUrl } from "@/services/imgproxy";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -107,6 +109,10 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen bg-black text-white selection:bg-indigo-500 selection:text-white font-sans">
+      <SEO
+        title="Imagine. Describe. Create."
+        description="The ultimate AI creative studio for creators and businesses. Generate professional photos, videos, and identities in seconds."
+      />
       {/* Navigation */}
       <nav className="fixed top-0 w-full z-50 bg-black/80 backdrop-blur-xl border-b border-white/5">
         <div className="container mx-auto px-6 h-20 flex items-center justify-between">
@@ -225,17 +231,36 @@ export default function LandingPage() {
           {/* Hero Visuals - Floating Cards Effect */}
           <div className="mt-24 relative max-w-5xl mx-auto h-[400px] hidden md:block">
             <div className="absolute left-0 top-10 w-64 h-80 bg-zinc-900 rounded-2xl border border-white/10 overflow-hidden shadow-2xl rotate-[-6deg] hover:rotate-0 transition-all duration-500 z-10">
-              <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800&q=80" alt="Portrait" className="w-full h-full object-cover opacity-80 hover:opacity-100 transition-opacity" />
+              <img
+                src={getImgproxyUrl("https://images.unsplash.com/photo-1534528741775-53994a69daeb", { width: 400, quality: 80 })}
+                alt="AI-enhanced portrait demonstration showing cinematic lighting"
+                className="w-full h-full object-cover opacity-80 hover:opacity-100 transition-opacity"
+                loading="lazy"
+                decoding="async"
+              />
             </div>
             <div className="absolute right-0 top-10 w-64 h-80 bg-zinc-900 rounded-2xl border border-white/10 overflow-hidden shadow-2xl rotate-[6deg] hover:rotate-0 transition-all duration-500 z-10">
-              <img src="https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=800&q=80" alt="Portrait" className="w-full h-full object-cover opacity-80 hover:opacity-100 transition-opacity" />
+              <img
+                src={getImgproxyUrl("https://images.unsplash.com/photo-1531746020798-e6953c6e8e04", { width: 400, quality: 80 })}
+                alt="High-fashion AI style transformation example"
+                className="w-full h-full object-cover opacity-80 hover:opacity-100 transition-opacity"
+                loading="lazy"
+                decoding="async"
+              />
             </div>
             <div className="absolute left-1/2 -translate-x-1/2 top-0 w-[500px] h-[350px] bg-zinc-900 rounded-2xl border border-white/10 overflow-hidden shadow-2xl z-20 hover:scale-105 transition-transform duration-500">
-              <img src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1200&q=80" alt="Abstract" className="w-full h-full object-cover" />
+              <img
+                src={getImgproxyUrl("https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe", { width: 800, quality: 90 })}
+                alt="Surreal abstract AI-generated background"
+                className="w-full h-full object-cover"
+                loading="eager"
+                fetchPriority="high"
+                decoding="async"
+              />
               <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/90 to-transparent">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full border-2 border-white/20 overflow-hidden">
-                    <img src="https://github.com/shadcn.png" alt="User" />
+                    <img src="https://github.com/shadcn.png" alt="Collaborator avatar" />
                   </div>
                   <div>
                     <p className="text-sm font-medium text-white">AI Processing</p>

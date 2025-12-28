@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { SEO } from "@/components/SEO";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -190,6 +191,11 @@ export default function PublicProfile() {
 
   return (
     <>
+      <SEO
+        title={profile?.username ? `@${profile.username}` : "Public Profile"}
+        description={`Check out ${profile?.username || 'this user'}'s AI-generated creations on PictureMe.Now.`}
+        image={profile?.avatar_url || undefined}
+      />
       <div className="min-h-screen bg-black text-white">
         {/* Back Button */}
         <div className="fixed top-4 left-4 z-50">
@@ -417,56 +423,62 @@ function CreationsGrid({ creations, isOwnProfile, onLike, onItemClick }: {
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-      {creations.map((creation, index) => (
-        <div
-          key={creation.id}
-          onClick={() => onItemClick(index)}
-          className="relative aspect-square rounded-xl overflow-hidden bg-zinc-900 group cursor-pointer"
-        >
-          {creation.type === 'video' ? (
-            <>
-              <video
-                src={creation.url}
-                className="w-full h-full object-cover"
-                muted
-                loop
-                onMouseEnter={(e) => e.currentTarget.play()}
-                onMouseLeave={(e) => {
-                  e.currentTarget.pause();
-                  e.currentTarget.currentTime = 0;
-                }}
-              />
-              <div className="absolute top-2 right-2 p-1.5 rounded-full bg-black/50 backdrop-blur-sm">
-                <Play className="w-3 h-3 text-white" fill="white" />
-              </div>
-            </>
-          ) : (
-            <img
-              src={getThumbnailUrl(creation.thumbnail_url || creation.url, 400)}
-              alt=""
-              className="w-full h-full object-cover transition-transform group-hover:scale-105"
-            />
-          )}
-
-          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-3">
-            <div className="flex items-center gap-4 text-sm w-full">
-              <button
-                className="flex items-center gap-1 hover:scale-105 transition-transform"
-                onClick={(e) => onLike(creation, e)}
-              >
-                <Heart
-                  className={`w-4 h-4 ${creation.is_liked ? "fill-red-500 text-red-500" : "text-white"}`}
+      {creations.map((creation, index) => {
+        const isHero = (creation as any).is_hero || false;
+        return (
+          <div
+            key={creation.id}
+            onClick={() => onItemClick(index)}
+            className="relative aspect-square rounded-xl overflow-hidden bg-zinc-900 group cursor-pointer"
+          >
+            {creation.type === 'video' ? (
+              <>
+                <video
+                  src={creation.url}
+                  className="w-full h-full object-cover"
+                  muted
+                  loop
+                  onMouseEnter={(e) => e.currentTarget.play()}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.pause();
+                    e.currentTarget.currentTime = 0;
+                  }}
                 />
-                <span className="text-white font-medium">{creation.likes}</span>
-              </button>
-              <span className="flex items-center gap-1 text-white/80">
-                <Eye className="w-4 h-4" />
-                {creation.views}
-              </span>
+                <div className="absolute top-2 right-2 p-1.5 rounded-full bg-black/50 backdrop-blur-sm">
+                  <Play className="w-3 h-3 text-white" fill="white" />
+                </div>
+              </>
+            ) : (
+              <img
+                src={getThumbnailUrl(creation.thumbnail_url || creation.url, 400)}
+                alt=""
+                className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                loading={isHero ? "eager" : "lazy"}
+                fetchPriority={isHero ? "high" : "auto"}
+                decoding="async"
+              />
+            )}
+
+            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-3">
+              <div className="flex items-center gap-4 text-sm w-full">
+                <button
+                  className="flex items-center gap-1 hover:scale-105 transition-transform"
+                  onClick={(e) => onLike(creation, e)}
+                >
+                  <Heart
+                    className={`w-4 h-4 ${creation.is_liked ? "fill-red-500 text-red-500" : "text-white"}`}
+                  />
+                  <span className="text-white font-medium">{creation.likes}</span>
+                </button>
+                <span className="flex items-center gap-1 text-white/80">
+                  <Eye className="w-4 h-4" />
+                  {creation.views}
+                </span>
+              </div>
             </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

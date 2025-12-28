@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from "react";
+import { SEO } from "@/components/SEO";
 import { useNavigate } from "react-router-dom";
 import { getCurrentUser, getUserEvents, EventConfig, User, getTokenStats, toggleLike } from "@/services/eventsApi";
 import { Card, CardContent } from "@/components/ui/card";
@@ -20,6 +21,7 @@ import { toast } from "sonner";
 import { CreationDetailView, GalleryItem } from "@/components/creator/CreationDetailView";
 import { getFeedImageUrl, getAvatarUrl, getThumbnailUrl, getProcessingUrl, getDownloadUrl, getProxyDownloadUrl } from "@/services/imgproxy";
 import { useUserTier } from "@/services/userTier";
+import { Slider } from "@/components/ui/slider";
 
 
 // ... existing types ...
@@ -157,10 +159,11 @@ function MarketplaceFeedCard({ creation, onImageClick, onRemixClick }: { creatio
 // =======================
 // MARKETPLACE FEED (Remix Engine)
 // =======================
-function CreatorsGallerySection({ creations, onImageClick, onRemixClick }: {
+function CreatorsGallerySection({ creations, onImageClick, onRemixClick, columnsCount = 3 }: {
   creations: any[];
   onImageClick: (creation: any, index: number) => void;
   onRemixClick: (creation: any) => void;
+  columnsCount?: number;
 }) {
   if (!creations || creations.length === 0) {
     return (
@@ -170,14 +173,19 @@ function CreatorsGallerySection({ creations, onImageClick, onRemixClick }: {
     );
   }
 
-  // Custom stable masonry layout
-  const columns: any[][] = [[], [], []];
+  // Custom stable masonry layout based on columnsCount
+  const columns: any[][] = Array.from({ length: columnsCount }, () => []);
   creations.forEach((item, i) => {
-    columns[i % 3].push(item);
+    columns[i % columnsCount].push(item);
   });
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pb-4">
+    <div
+      className="grid gap-4 pb-4"
+      style={{
+        gridTemplateColumns: `repeat(${columnsCount}, minmax(0, 1fr))`
+      }}
+    >
       {columns.map((colItems, colIndex) => (
         <div key={colIndex} className="flex flex-col gap-4">
           {colItems.map((creation) => (
@@ -279,6 +287,7 @@ export default function CreatorDashboard() {
   const [isFeedLoading, setIsFeedLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [feedOffset, setFeedOffset] = useState(0);
+  const [feedZoom, setFeedZoom] = useState([3]);
   const FEED_LIMIT = 12;
 
   // Community Feed Preview State
@@ -413,6 +422,10 @@ export default function CreatorDashboard() {
 
   return (
     <>
+      <SEO
+        title="Creator Dashboard"
+        description="Manage your AI creative assets, browse templates, and create stunning new identities."
+      />
       <div className="space-y-8 animate-in fade-in duration-500 p-4 md:p-12 pt-24 pb-32">
 
         {/* ========================= */}
@@ -470,9 +483,30 @@ export default function CreatorDashboard() {
         {/* THE MARKETPLACE FEED */}
         {/* ========================= */}
         <div className="mt-10">
-          <h2 className="text-xl font-bold text-white mb-6 tracking-tight">Feed</h2>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-bold text-white tracking-tight">Feed</h2>
+
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-zinc-900/50 rounded-xl border border-white/5">
+                <Layout className="w-3.5 h-3.5 text-zinc-500" />
+                <div className="w-24">
+                  <Slider
+                    value={feedZoom}
+                    onValueChange={setFeedZoom}
+                    min={2}
+                    max={6}
+                    step={1}
+                    className="[&_.bg-primary]:bg-[#D1F349] [&_.border-primary]:border-[#D1F349]"
+                  />
+                </div>
+                <span className="text-[10px] font-bold text-zinc-500 w-4">{feedZoom[0]}</span>
+              </div>
+            </div>
+          </div>
+
           <CreatorsGallerySection
             creations={publicCreations}
+            columnsCount={feedZoom[0]}
             onImageClick={(creation, index) => {
               setPreviewIndex(index);
               setPreviewOpen(true);

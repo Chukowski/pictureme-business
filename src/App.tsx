@@ -1,4 +1,5 @@
-import { useEffect, useRef, useCallback, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useCallback, useState } from 'react';
+import { SEO } from "./components/SEO";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -9,62 +10,64 @@ import { SidebarProvider, SidebarTrigger, useSidebar } from "@/components/ui/sid
 import { AppSidebar } from "@/components/AppSidebar";
 import Index from "./pages/Index";
 import LandingPage from "./pages/LandingPage";
-import { SharePage } from "./pages/SharePage";
-import { PhotoBoothPage } from "./pages/PhotoBoothPage";
-import { EventFeedPage } from "./pages/EventFeedPage";
-import NotFound from "./pages/NotFound";
-import AdminAuth from "./pages/AdminAuth";
-import AdminRegister from "./pages/AdminRegister";
-import ApplyPage from "./pages/ApplyPage";
-import AdminDashboard from "./pages/AdminDashboard";
-import AdminEvents from "./pages/AdminEvents";
-import AdminEventForm from "./pages/AdminEventForm";
-import AdminEventPhotos from "./pages/AdminEventPhotos";
-import SuperAdminContent from "./components/super-admin/SuperAdminContent";
-import SuperAdminLayout from "./components/super-admin/SuperAdminLayout";
-import SuperAdminOverview from "./components/super-admin/SuperAdminOverview";
-import SuperAdminUsers from "./components/super-admin/SuperAdminUsers";
-import SuperAdminTiers from "./components/super-admin/SuperAdminTiers";
-import SuperAdminApplications from "./components/super-admin/SuperAdminApplications";
-import SuperAdminBilling from "./components/super-admin/SuperAdminBilling";
-import SuperAdminEvents from "./components/super-admin/SuperAdminEvents";
-import SuperAdminAIModels from "./components/super-admin/SuperAdminAIModels";
-import SuperAdminMarketplace from "./components/super-admin/SuperAdminMarketplace";
-import SuperAdminAnalytics from "./components/super-admin/SuperAdminAnalytics";
-import SuperAdminSettings from "./components/super-admin/SuperAdminSettings";
-import SuperAdminDevTools from "./components/super-admin/SuperAdminDevTools";
+import CreatorDashboard from "./pages/creator/CreatorDashboard";
 import PublicProfile from "./pages/PublicProfile";
-import AlbumFeedPage from "./pages/AlbumFeedPage";
-import StaffDashboard from "./pages/StaffDashboard";
-import ViewerDisplayPage from "./pages/ViewerDisplayPage";
-import OrganizationSettingsPage from "./pages/OrganizationSettingsPage";
-import BusinessSettingsPage from "./pages/BusinessSettingsPage";
-import ViewerStationPage from "./pages/ViewerStationPage";
-import BigScreenPage from "./pages/BigScreenPage";
-import { TermsPage } from "./pages/TermsPage";
-import { PrivacyPage } from "./pages/PrivacyPage";
-import ShortUrlEventPage from "./pages/ShortUrlEventPage";
+
+// Lazy-loaded routes
+const SharePage = lazy(() => import("./pages/SharePage").then(module => ({ default: module.SharePage })));
+const PhotoBoothPage = lazy(() => import("./pages/PhotoBoothPage").then(module => ({ default: module.PhotoBoothPage })));
+const EventFeedPage = lazy(() => import("./pages/EventFeedPage").then(module => ({ default: module.EventFeedPage })));
+const NotFound = lazy(() => import("./pages/NotFound"));
+const AdminAuth = lazy(() => import("./pages/AdminAuth"));
+const AdminRegister = lazy(() => import("./pages/AdminRegister"));
+const ApplyPage = lazy(() => import("./pages/ApplyPage"));
+const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
+const AdminEvents = lazy(() => import("./pages/AdminEvents"));
+const AdminEventForm = lazy(() => import("./pages/AdminEventForm"));
+const AdminEventPhotos = lazy(() => import("./pages/AdminEventPhotos"));
+const SuperAdminContent = lazy(() => import("./components/super-admin/SuperAdminContent"));
+const SuperAdminLayout = lazy(() => import("./components/super-admin/SuperAdminLayout"));
+const SuperAdminOverview = lazy(() => import("./components/super-admin/SuperAdminOverview"));
+const SuperAdminUsers = lazy(() => import("./components/super-admin/SuperAdminUsers"));
+const SuperAdminTiers = lazy(() => import("./components/super-admin/SuperAdminTiers"));
+const SuperAdminApplications = lazy(() => import("./components/super-admin/SuperAdminApplications"));
+const SuperAdminBilling = lazy(() => import("./components/super-admin/SuperAdminBilling"));
+const SuperAdminEvents = lazy(() => import("./components/super-admin/SuperAdminEvents"));
+const SuperAdminAIModels = lazy(() => import("./components/super-admin/SuperAdminAIModels"));
+const SuperAdminMarketplace = lazy(() => import("./components/super-admin/SuperAdminMarketplace"));
+const SuperAdminAnalytics = lazy(() => import("./components/super-admin/SuperAdminAnalytics"));
+const SuperAdminSettings = lazy(() => import("./components/super-admin/SuperAdminSettings"));
+const SuperAdminDevTools = lazy(() => import("./components/super-admin/SuperAdminDevTools"));
+const AlbumFeedPage = lazy(() => import("./pages/AlbumFeedPage"));
+const StaffDashboard = lazy(() => import("./pages/StaffDashboard"));
+const ViewerDisplayPage = lazy(() => import("./pages/ViewerDisplayPage"));
+const OrganizationSettingsPage = lazy(() => import("./pages/OrganizationSettingsPage"));
+const BusinessSettingsPage = lazy(() => import("./pages/BusinessSettingsPage"));
+const ViewerStationPage = lazy(() => import("./pages/ViewerStationPage"));
+const BigScreenPage = lazy(() => import("./pages/BigScreenPage"));
+const TermsPage = lazy(() => import("./pages/TermsPage").then(module => ({ default: module.TermsPage })));
+const PrivacyPage = lazy(() => import("./pages/PrivacyPage").then(module => ({ default: module.PrivacyPage })));
+const ShortUrlEventPage = lazy(() => import("./pages/ShortUrlEventPage"));
 
 // Creator Imports
 import { CreatorLayout } from "./components/creator/CreatorLayout";
-import CreatorDashboard from "./pages/creator/CreatorDashboard";
-import CreatorPlaceholder from "./pages/creator/CreatorPlaceholder";
-import CreatorCreatePage from "./pages/creator/CreatorCreatePage";
-import BoothDashboard from "./pages/creator/BoothDashboard";
-import CreatorBoothPage from "./pages/creator/CreatorBoothPage";
-import CreatorBoothEditor from "./pages/creator/CreatorBoothEditor";
-import CreatorStudioPage from "./pages/creator/CreatorStudioPage";
-import CreatorTemplatesPage from "./pages/creator/CreatorTemplatesPage";
-import CreatorBillingPage from "./pages/creator/CreatorBillingPage";
-import CreatorSupportPage from "./pages/creator/CreatorSupportPage";
+const CreatorPlaceholder = lazy(() => import("./pages/creator/CreatorPlaceholder"));
+const CreatorCreatePage = lazy(() => import("./pages/creator/CreatorCreatePage"));
+const BoothDashboard = lazy(() => import("./pages/creator/BoothDashboard"));
+const CreatorBoothPage = lazy(() => import("./pages/creator/CreatorBoothPage"));
+const CreatorBoothEditor = lazy(() => import("./pages/creator/CreatorBoothEditor"));
+const CreatorStudioPage = lazy(() => import("./pages/creator/CreatorStudioPage"));
+const CreatorTemplatesPage = lazy(() => import("./pages/creator/CreatorTemplatesPage"));
+const CreatorBillingPage = lazy(() => import("./pages/creator/CreatorBillingPage"));
+const CreatorSupportPage = lazy(() => import("./pages/creator/CreatorSupportPage"));
 import { CreatorOnly } from "./components/routing/CreatorOnly";
 
 // CopilotKit imports (self-hosted, no cloud required)
 import { CopilotKit } from "@copilotkit/react-core";
 import { AssistantCopilotActions } from "./components/AssistantCopilotActions";
 
-import ChatPage from "./pages/ChatPage";
-import AdminChatPage from "./pages/AdminChatPage";
+const ChatPage = lazy(() => import("./pages/ChatPage"));
+const AdminChatPage = lazy(() => import("./pages/AdminChatPage"));
 
 const queryClient = new QueryClient();
 
@@ -173,6 +176,7 @@ const AppContent = () => {
 
   return (
     <>
+      <SEO />
       {shouldInitCopilot && apiUrl && (
         <CopilotKit
           runtimeUrl={`${apiUrl}/copilotkit/`}
@@ -182,188 +186,199 @@ const AppContent = () => {
         </CopilotKit>
       )}
       <TopNavbar />
-      <Routes>
-        {/* Root shows Landing Page */}
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/terms" element={<TermsPage />} />
-        <Route path="/privacy" element={<PrivacyPage />} />
-
-        {/* Share page - no sidebar, clean display */}
-        <Route path="/share/:shareCode" element={<SharePage />} />
-
-        {/* Short URL event routes - /e/:eventId/:eventSlug */}
-        <Route path="/e/:eventId/:eventSlug" element={<ShortUrlEventPage />} />
-        <Route path="/e/:eventId/:eventSlug/*" element={<ShortUrlEventPage />} />
-
-        {/* Admin routes - no sidebar */}
-        <Route path="/apply" element={<ApplyPage />} />
-
-        {/* Super Admin Routes */}
-        <Route path="/super-admin" element={<SuperAdminLayout />}>
-          <Route index element={<SuperAdminOverview />} />
-          <Route path="users" element={<SuperAdminUsers />} />
-          <Route path="tiers" element={<SuperAdminTiers />} />
-          <Route path="applications" element={<SuperAdminApplications />} />
-          <Route path="billing" element={<SuperAdminBilling />} />
-          <Route path="events" element={<SuperAdminEvents />} />
-          <Route path="models" element={<SuperAdminAIModels />} />
-          <Route path="marketplace" element={<SuperAdminMarketplace />} />
-          <Route path="content" element={<SuperAdminContent />} />
-          <Route path="analytics" element={<SuperAdminAnalytics />} />
-          <Route path="settings" element={<SuperAdminSettings />} />
-          <Route path="devtools" element={<SuperAdminDevTools />} />
-          <Route path="*" element={<SuperAdminOverview />} />
-        </Route>
-
-        {/* CREATOR ROUTES (INDIVIDUAL) */}
-        <Route path="/creator" element={
-          <CreatorOnly>
-            <CreatorLayout />
-          </CreatorOnly>
-        }>
-          <Route index element={<Navigate to="/creator/dashboard" replace />} />
-          <Route path="dashboard" element={<CreatorDashboard />} />
-          <Route path="chat" element={<ChatPage />} />
-          <Route path="create" element={<Navigate to="/creator/studio" replace />} />
-          <Route path="booth" element={<BoothDashboard />} />
-          <Route path="booth/:eventId" element={<CreatorBoothPage />} />
-          <Route path="booth/:eventId/edit" element={<CreatorBoothEditor />} />
-          <Route path="studio" element={<CreatorStudioPage />} />
-          <Route path="templates" element={<CreatorTemplatesPage />} />
-          <Route path="billing" element={<CreatorBillingPage />} />
-          <Route path="support" element={<CreatorSupportPage />} />
-          <Route path="settings" element={<CreatorSettingsPage />} />
-          <Route path="*" element={<CreatorPlaceholder />} />
-        </Route>
-
-        {/* ADMIN ROUTES (BUSINESS) */}
-        <Route path="/admin/auth" element={<AdminAuth />} />
-        <Route path="/admin/register" element={<AdminRegister />} />
-
-        {/* Main Admin Redirect */}
-        <Route path="/admin" element={
-          // If business, go to home. If creator, go to creator dashboard.
-          // We can use a component to check this or just rely on guards.
-          // For now, redirect to home, and let HomeDashboard redirect creator if needed, 
-          // OR explicit check here.
-          <Navigate to="/admin/home" replace />
-        } />
-
-        <Route path="/admin/home" element={
-          <BusinessOnly>
-            <HomeDashboard />
-          </BusinessOnly>
-        } />
-
-        <Route path="/admin/events" element={
-          <BusinessOnly>
-            <AdminDashboard />
-          </BusinessOnly>
-        } />
-        <Route path="/admin/events/create" element={
-          <BusinessOnly>
-            <AdminEventForm />
-          </BusinessOnly>
-        } />
-        <Route path="/admin/events/edit/:eventId" element={
-          <BusinessOnly>
-            <AdminEventForm />
-          </BusinessOnly>
-        } />
-        <Route path="/admin/events/:eventId/photos" element={
-          <BusinessOnly>
-            <AdminEventPhotos />
-          </BusinessOnly>
-        } />
-        <Route path="/admin/events/:eventId/live" element={
-          <BusinessOnly>
-            <LiveEventPage />
-          </BusinessOnly>
-        } />
-
-        <Route path="/admin/settings" element={<SettingsRedirect />} />
-        {/* Removed CreatorSettingsPage from here, moved to /creator/settings */}
-        {/* But keep it here temporarily for transition if needed, but safer to force separate paths */}
-        <Route path="/admin/settings/creator" element={<Navigate to="/creator/settings" replace />} />
-
-        <Route
-          path="/admin/settings/business"
-          element={
-            <BusinessOnly>
-              <BusinessSettingsPage />
-            </BusinessOnly>
-          }
-        />
-        {/* Billing and Tokens now redirect to Business Settings */}
-        <Route path="/admin/billing" element={<Navigate to="/admin/settings/business" replace />} />
-        <Route path="/admin/tokens" element={<Navigate to="/admin/settings/business" replace />} />
-        <Route path="/admin/marketplace" element={
-          <BusinessOnly>
-            <AdminDashboard />
-          </BusinessOnly>
-        } />
-        <Route path="/admin/chat" element={
-          <BusinessOnly>
-            <div className="min-h-screen bg-black pt-24 px-4 pb-4">
-              <div className="max-w-7xl mx-auto">
-                <AdminChatPage />
-              </div>
+      <Suspense fallback={
+        <div className="min-h-[60vh] flex items-center justify-center">
+          <div className="flex flex-col items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center animate-pulse">
+              <div className="w-6 h-6 border-2 border-[#D1F349] border-t-transparent rounded-full animate-spin" />
             </div>
-          </BusinessOnly>
-        } />
-        <Route path="/admin/playground" element={
-          <BusinessOnly>
-            <PlaygroundPage />
-          </BusinessOnly>
-        } />
-        <Route path="/admin/analytics" element={
-          <BusinessOnly>
-            <AdminDashboard />
-          </BusinessOnly>
-        } />
-        <Route path="/admin/studio" element={
-          <BusinessOnly>
-            <AdminDashboard />
-          </BusinessOnly>
-        } />
-        <Route path="/admin/albums" element={
-          <BusinessOnly>
-            <AdminDashboard />
-          </BusinessOnly>
-        } />
-        <Route path="/admin/organization" element={
-          <BusinessOnly>
-            <OrganizationSettingsPage />
-          </BusinessOnly>
-        } />
-        <Route path="/admin/business" element={<Navigate to="/admin/settings/business" replace />} />
-        <Route path="/admin/staff/:eventId" element={<StaffDashboard />} />
-        {/* Catch-all for unknown admin routes - show 404 */}
-        <Route path="/admin/*" element={<NotFound />} />
+            <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500 animate-pulse">Loading experience...</p>
+          </div>
+        </div>
+      }>
+        <Routes>
+          {/* Root shows Landing Page */}
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/terms" element={<TermsPage />} />
+          <Route path="/privacy" element={<PrivacyPage />} />
 
-        {/* Public Profile */}
-        <Route path="/profile/:username" element={<PublicProfile />} />
+          {/* Share page - no sidebar, clean display */}
+          <Route path="/share/:shareCode" element={<SharePage />} />
 
-        {/* Dynamic event routes - no sidebar */}
-        <Route path="/:userSlug/:eventSlug" element={<PhotoBoothPage />} />
-        <Route path="/:userSlug/:eventSlug/feed" element={<EventFeedPage />} />
-        <Route path="/:userSlug/:eventSlug/album/:albumId" element={<AlbumFeedPage />} />
-        <Route path="/:userSlug/:eventSlug/staff" element={<StaffDashboard />} />
-        <Route path="/:userSlug/:eventSlug/display" element={<Navigate to="../bigscreen" replace />} />
+          {/* Short URL event routes - /e/:eventId/:eventSlug */}
+          <Route path="/e/:eventId/:eventSlug" element={<ShortUrlEventPage />} />
+          <Route path="/e/:eventId/:eventSlug/*" element={<ShortUrlEventPage />} />
 
-        {/* Station-specific routes for multi-station flow */}
-        <Route path="/:userSlug/:eventSlug/registration" element={<PhotoBoothPage />} />
-        <Route path="/:userSlug/:eventSlug/booth" element={<PhotoBoothPage />} />
-        <Route path="/:userSlug/:eventSlug/playground" element={<PhotoBoothPage />} />
-        <Route path="/:userSlug/:eventSlug/viewer" element={<ViewerStationPage />} />
-        <Route path="/:userSlug/:eventSlug/bigscreen" element={<BigScreenPage />} />
+          {/* Admin routes - no sidebar */}
+          <Route path="/apply" element={<ApplyPage />} />
 
-        {/* Legacy Index page (if needed) */}
-        <Route path="/legacy" element={<Index />} />
+          {/* Super Admin Routes */}
+          <Route path="/super-admin" element={<SuperAdminLayout />}>
+            <Route index element={<SuperAdminOverview />} />
+            <Route path="users" element={<SuperAdminUsers />} />
+            <Route path="tiers" element={<SuperAdminTiers />} />
+            <Route path="applications" element={<SuperAdminApplications />} />
+            <Route path="billing" element={<SuperAdminBilling />} />
+            <Route path="events" element={<SuperAdminEvents />} />
+            <Route path="models" element={<SuperAdminAIModels />} />
+            <Route path="marketplace" element={<SuperAdminMarketplace />} />
+            <Route path="content" element={<SuperAdminContent />} />
+            <Route path="analytics" element={<SuperAdminAnalytics />} />
+            <Route path="settings" element={<SuperAdminSettings />} />
+            <Route path="devtools" element={<SuperAdminDevTools />} />
+            <Route path="*" element={<SuperAdminOverview />} />
+          </Route>
 
-        {/* 404 */}
-        <Route path="*" element={<NotFound />} />
-      </Routes >
+          {/* CREATOR ROUTES (INDIVIDUAL) */}
+          <Route path="/creator" element={
+            <CreatorOnly>
+              <CreatorLayout />
+            </CreatorOnly>
+          }>
+            <Route index element={<Navigate to="/creator/dashboard" replace />} />
+            <Route path="dashboard" element={<CreatorDashboard />} />
+            <Route path="chat" element={<ChatPage />} />
+            <Route path="create" element={<Navigate to="/creator/studio" replace />} />
+            <Route path="booth" element={<BoothDashboard />} />
+            <Route path="booth/:eventId" element={<CreatorBoothPage />} />
+            <Route path="booth/:eventId/edit" element={<CreatorBoothEditor />} />
+            <Route path="studio" element={<CreatorStudioPage />} />
+            <Route path="templates" element={<CreatorTemplatesPage />} />
+            <Route path="billing" element={<CreatorBillingPage />} />
+            <Route path="support" element={<CreatorSupportPage />} />
+            <Route path="settings" element={<CreatorSettingsPage />} />
+            <Route path="*" element={<CreatorPlaceholder />} />
+          </Route>
+
+          {/* ADMIN ROUTES (BUSINESS) */}
+          <Route path="/admin/auth" element={<AdminAuth />} />
+          <Route path="/admin/register" element={<AdminRegister />} />
+
+          {/* Main Admin Redirect */}
+          <Route path="/admin" element={
+            // If business, go to home. If creator, go to creator dashboard.
+            // We can use a component to check this or just rely on guards.
+            // For now, redirect to home, and let HomeDashboard redirect creator if needed, 
+            // OR explicit check here.
+            <Navigate to="/admin/home" replace />
+          } />
+
+          <Route path="/admin/home" element={
+            <BusinessOnly>
+              <HomeDashboard />
+            </BusinessOnly>
+          } />
+
+          <Route path="/admin/events" element={
+            <BusinessOnly>
+              <AdminDashboard />
+            </BusinessOnly>
+          } />
+          <Route path="/admin/events/create" element={
+            <BusinessOnly>
+              <AdminEventForm />
+            </BusinessOnly>
+          } />
+          <Route path="/admin/events/edit/:eventId" element={
+            <BusinessOnly>
+              <AdminEventForm />
+            </BusinessOnly>
+          } />
+          <Route path="/admin/events/:eventId/photos" element={
+            <BusinessOnly>
+              <AdminEventPhotos />
+            </BusinessOnly>
+          } />
+          <Route path="/admin/events/:eventId/live" element={
+            <BusinessOnly>
+              <LiveEventPage />
+            </BusinessOnly>
+          } />
+
+          <Route path="/admin/settings" element={<SettingsRedirect />} />
+          {/* Removed CreatorSettingsPage from here, moved to /creator/settings */}
+          {/* But keep it here temporarily for transition if needed, but safer to force separate paths */}
+          <Route path="/admin/settings/creator" element={<Navigate to="/creator/settings" replace />} />
+
+          <Route
+            path="/admin/settings/business"
+            element={
+              <BusinessOnly>
+                <BusinessSettingsPage />
+              </BusinessOnly>
+            }
+          />
+          {/* Billing and Tokens now redirect to Business Settings */}
+          <Route path="/admin/billing" element={<Navigate to="/admin/settings/business" replace />} />
+          <Route path="/admin/tokens" element={<Navigate to="/admin/settings/business" replace />} />
+          <Route path="/admin/marketplace" element={
+            <BusinessOnly>
+              <AdminDashboard />
+            </BusinessOnly>
+          } />
+          <Route path="/admin/chat" element={
+            <BusinessOnly>
+              <div className="min-h-screen bg-black pt-24 px-4 pb-4">
+                <div className="max-w-7xl mx-auto">
+                  <AdminChatPage />
+                </div>
+              </div>
+            </BusinessOnly>
+          } />
+          <Route path="/admin/playground" element={
+            <BusinessOnly>
+              <PlaygroundPage />
+            </BusinessOnly>
+          } />
+          <Route path="/admin/analytics" element={
+            <BusinessOnly>
+              <AdminDashboard />
+            </BusinessOnly>
+          } />
+          <Route path="/admin/studio" element={
+            <BusinessOnly>
+              <AdminDashboard />
+            </BusinessOnly>
+          } />
+          <Route path="/admin/albums" element={
+            <BusinessOnly>
+              <AdminDashboard />
+            </BusinessOnly>
+          } />
+          <Route path="/admin/organization" element={
+            <BusinessOnly>
+              <OrganizationSettingsPage />
+            </BusinessOnly>
+          } />
+          <Route path="/admin/business" element={<Navigate to="/admin/settings/business" replace />} />
+          <Route path="/admin/staff/:eventId" element={<StaffDashboard />} />
+          {/* Catch-all for unknown admin routes - show 404 */}
+          <Route path="/admin/*" element={<NotFound />} />
+
+          {/* Public Profile */}
+          <Route path="/profile/:username" element={<PublicProfile />} />
+
+          {/* Dynamic event routes - no sidebar */}
+          <Route path="/:userSlug/:eventSlug" element={<PhotoBoothPage />} />
+          <Route path="/:userSlug/:eventSlug/feed" element={<EventFeedPage />} />
+          <Route path="/:userSlug/:eventSlug/album/:albumId" element={<AlbumFeedPage />} />
+          <Route path="/:userSlug/:eventSlug/staff" element={<StaffDashboard />} />
+          <Route path="/:userSlug/:eventSlug/display" element={<Navigate to="../bigscreen" replace />} />
+
+          {/* Station-specific routes for multi-station flow */}
+          <Route path="/:userSlug/:eventSlug/registration" element={<PhotoBoothPage />} />
+          <Route path="/:userSlug/:eventSlug/booth" element={<PhotoBoothPage />} />
+          <Route path="/:userSlug/:eventSlug/playground" element={<PhotoBoothPage />} />
+          <Route path="/:userSlug/:eventSlug/viewer" element={<ViewerStationPage />} />
+          <Route path="/:userSlug/:eventSlug/bigscreen" element={<BigScreenPage />} />
+
+          {/* Legacy Index page (if needed) */}
+          <Route path="/legacy" element={<Index />} />
+
+          {/* 404 */}
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </Suspense>
     </>
   );
 };
