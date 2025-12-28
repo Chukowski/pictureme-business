@@ -132,43 +132,69 @@ function CreatorStudioPageContent({ defaultView }: CreatorStudioPageProps) {
         fetchProfile();
     }, []);
 
-    // View State - initialize from query param, then state, then default
+    // View State - initialize from query param, then state, then default (Fallback to "create")
     const [activeView, setActiveView] = useState<MainView>(() => {
-        if (defaultView) return defaultView;
         const viewParam = searchParams.get("view") as MainView;
         const validViews: MainView[] = ["create", "templates", "booths", "gallery"];
+
+        if (defaultView) return defaultView;
         if (viewParam && validViews.includes(viewParam)) return viewParam;
-        return (location.state as any)?.view || "create";
+
+        const locationView = (location.state as any)?.view;
+        if (locationView && validViews.includes(locationView)) return locationView;
+
+        return "create";
     });
 
-    // Sync activeView from URL search parameters (two-way sync)
+    // View Synchronization Ref - prevents infinite loops between state and URL
+    const isInternalTransition = useRef(false);
+
+    // Effect 1: Sync URL param -> State
     useEffect(() => {
         const viewParam = searchParams.get("view") as MainView;
         const validViews: MainView[] = ["create", "templates", "booths", "gallery"];
-        if (viewParam && validViews.includes(viewParam) && viewParam !== activeView) {
-            setActiveView(viewParam);
-        }
-    }, [searchParams, activeView]);
 
-    // Update URL when view changes to persist state on refresh
+        if (viewParam && validViews.includes(viewParam)) {
+            if (viewParam !== activeView) {
+                isInternalTransition.current = true;
+                setActiveView(viewParam);
+            }
+        } else if (defaultView && activeView !== defaultView) {
+            isInternalTransition.current = true;
+            setActiveView(defaultView);
+        }
+    }, [searchParams, defaultView, activeView]);
+
+    // Effect 2: Sync State -> URL param
     useEffect(() => {
-        if (activeView) {
+        if (isInternalTransition.current) {
+            isInternalTransition.current = false;
+            return;
+        }
+
+        const currentParam = searchParams.get("view");
+        if (activeView && currentParam !== activeView) {
             setSearchParams(prev => {
                 const next = new URLSearchParams(prev);
-                if (next.get("view") !== activeView) {
-                    next.set("view", activeView);
-                }
+                next.set("view", activeView);
                 return next;
             }, { replace: true });
         }
-    }, [activeView, setSearchParams]);
+    }, [activeView, searchParams, setSearchParams]);
 
-    // Update view if location state changes (e.g. navigation from bottom nav)
+    // Effect 3: Handle External Transitions (defaultView Prop or Location State)
     useEffect(() => {
-        if ((location.state as any)?.view) {
-            setActiveView((location.state as any).view);
+        if (defaultView && activeView !== defaultView) {
+            setActiveView(defaultView);
         }
-    }, [location.state]);
+    }, [defaultView, activeView]);
+
+    useEffect(() => {
+        const stateView = (location.state as any)?.view;
+        if (stateView && stateView !== activeView) {
+            setActiveView(stateView);
+        }
+    }, [location.state, activeView]);
     const [availableModels, setAvailableModels] = useState<any[]>([]);
 
     useEffect(() => {

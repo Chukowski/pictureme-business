@@ -129,6 +129,14 @@ const getApiUrl = (): string => {
   if (!url && import.meta.env.DEV) {
     return "http://localhost:3002";
   }
+
+  // Use the same enforceHttps logic from env.ts to be absolutely sure
+  if (url && !url.includes('localhost') && !url.includes('127.0.0.1')) {
+    if (url.startsWith('http://')) {
+      return url.replace('http://', 'https://');
+    }
+  }
+
   return url;
 };
 
