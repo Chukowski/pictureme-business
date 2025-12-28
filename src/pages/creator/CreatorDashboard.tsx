@@ -109,7 +109,7 @@ function MarketplaceFeedCard({ creation, onImageClick, onRemixClick }: { creatio
       <div className="absolute bottom-0 left-0 right-0 p-4 flex items-end justify-between z-20">
         {/* Creator Info */}
         <div
-          className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity max-w-[65%]"
+          className="flex items-center gap-1.5 cursor-pointer hover:opacity-80 transition-opacity flex-1 min-w-0"
           onClick={onImageClick}
         >
           <div className="w-6 h-6 shrink-0 rounded-full bg-zinc-700 flex items-center justify-center overflow-hidden border border-white/20">
@@ -136,16 +136,16 @@ function MarketplaceFeedCard({ creation, onImageClick, onRemixClick }: { creatio
         {/* Remix Button */}
         <button
           className="
-            flex items-center gap-1.5 px-3 py-1.5
+            flex items-center gap-1 px-2 py-1.5
             bg-white/10 hover:bg-white/20 backdrop-blur-md
             border border-white/20 rounded-full
-            text-white text-[10px] font-bold uppercase tracking-wider
+            text-white text-[10px] font-bold uppercase tracking-tight
             transition-all duration-300 hover:scale-105 group-hover:bg-white/25
-            shrink-0
+            shrink-0 ml-1.5
          "
           onClick={onRemixClick}
         >
-          Remix <Zap className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+          Remix <Zap className="w-2.5 h-2.5 fill-yellow-400 text-yellow-400" />
         </button>
       </div>
     </div>
@@ -287,7 +287,7 @@ export default function CreatorDashboard() {
   const [isFeedLoading, setIsFeedLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [feedOffset, setFeedOffset] = useState(0);
-  const [feedZoom, setFeedZoom] = useState([3]);
+  const [feedZoom, setFeedZoom] = useState([2]);
   const FEED_LIMIT = 12;
 
   // Community Feed Preview State
