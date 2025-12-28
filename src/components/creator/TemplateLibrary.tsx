@@ -100,9 +100,9 @@ export function TemplateLibrary({
     };
 
     return (
-        <div className="flex flex-col h-full bg-[#121212] text-white relative z-50">
+        <div className="flex flex-col h-full bg-card text-white relative z-50">
             {/* --- HEADER SECTION --- */}
-            <div className="flex-shrink-0 border-b border-white/5 bg-[#121212] p-4 space-y-4">
+            <div className="flex-shrink-0 border-b border-white/5 bg-card p-4 space-y-4">
 
                 {/* 1. Top Bar: Model Filters & Search */}
                 <div className="flex items-center justify-between gap-4">

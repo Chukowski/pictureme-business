@@ -14,16 +14,41 @@ from copilotkit import CopilotKitRemoteEndpoint, Action
 from copilotkit.integrations.fastapi import add_fastapi_endpoint
 import os
 
-# Import Akito agent functions
-from agents.akito_agent import (
-    chat_with_akito,
-    _get_navigation_path,
+# Import Creator agent functions
+from agents.creator_agent import (
+    chat_with_creator_agent as chat_with_akito,
     _get_token_costs,
     _get_plan_info,
     _enhance_prompt,
-    AKITO_SYSTEM_PROMPT,
+    ASSISTANT_SYSTEM_PROMPT as AKITO_SYSTEM_PROMPT,
     OPENAI_API_KEY,
 )
+
+def _get_navigation_path(intent: str) -> str:
+    """Helper to get navigation paths for common intents."""
+    nav_map = {
+        "dashboard": "/creator/dashboard",
+        "home": "/creator/dashboard",
+        "studio": "/creator/studio",
+        "create": "/creator/studio",
+        "gallery": "/creator/gallery",
+        "booth": "/creator/booth",
+        "billing": "/creator/billing",
+        "plans": "/creator/billing",
+        "tokens": "/creator/billing",
+        "support": "/creator/support",
+        "settings": "/creator/settings",
+        "chat": "/creator/chat",
+        "templates": "/creator/templates",
+        "models": "/creator/templates",
+    }
+    
+    intent_lower = intent.lower()
+    for key, path in nav_map.items():
+        if key in intent_lower:
+            return path
+            
+    return "/creator/dashboard"  # Default fallback
 
 router = APIRouter()
 

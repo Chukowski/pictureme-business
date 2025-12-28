@@ -901,8 +901,25 @@ function CreatorStudioPageContent({ defaultView }: CreatorStudioPageProps) {
                             />
                         </div>
 
-                        {/* COLUMN 3: CANVAS / TIMELINE */}
-                        <div className="flex-1 md:pl-[360px]">
+                        {/* COLUMN 3: CANVAS / TIMELINE AREA */}
+                        <div className="flex-1 md:pl-[360px] relative h-full">
+                            {showTemplateLibrary && (
+                                <div className={cn(
+                                    "z-[60] bg-[#101112] flex flex-col animate-in duration-300 shadow-2xl",
+                                    "fixed inset-0",
+                                    "md:top-[80px] md:left-[355px] md:right-3 md:bottom-0 md:rounded-t-2xl md:rounded-b-0 md:border md:border-white/5 md:overflow-hidden",
+                                    "slide-in-from-bottom-5 md:slide-in-from-right-5"
+                                )}>
+                                    <TemplateLibrary
+                                        onClose={() => setShowTemplateLibrary(false)}
+                                        onSelect={applyTemplate}
+                                        marketplaceTemplates={marketplaceTemplates}
+                                        myLibraryTemplates={myLibraryTemplates}
+                                        selectedTemplateId={selectedTemplate?.id}
+                                    />
+                                </div>
+                            )}
+
                             <TimelineView
                                 history={history}
                                 isProcessing={isProcessing}
@@ -922,20 +939,6 @@ function CreatorStudioPageContent({ defaultView }: CreatorStudioPageProps) {
 
             {/* --- OVERLAYS & MOBILE NAV --- */}
 
-            {/* Template Library Overlay (Full Screen) */}
-            {
-                showTemplateLibrary && (
-                    <div className="fixed inset-0 z-[60] bg-[#121212] flex flex-col animate-in slide-in-from-bottom-5 duration-300">
-                        <TemplateLibrary
-                            onClose={() => setShowTemplateLibrary(false)}
-                            onSelect={applyTemplate}
-                            marketplaceTemplates={marketplaceTemplates}
-                            myLibraryTemplates={myLibraryTemplates}
-                            selectedTemplateId={selectedTemplate?.id}
-                        />
-                    </div>
-                )
-            }
 
             {/* Mobile Create Mode Header */}
             {/* Mobile Bottom Navigation (Hidden in Create Mode) */}

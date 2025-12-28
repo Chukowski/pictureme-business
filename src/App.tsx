@@ -203,7 +203,7 @@ const AppContent = () => {
       <SEO />
       {shouldInitCopilot && apiUrl && copilotReady && (
         <CopilotKit
-          runtimeUrl={`${apiUrl}/copilotkit/`}
+          runtimeUrl={`${apiUrl}/copilotkit`}
           properties={getUserProperties()}
         >
           <AssistantCopilotActions />
