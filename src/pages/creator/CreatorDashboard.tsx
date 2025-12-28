@@ -29,6 +29,8 @@ import { useUserTier } from "@/services/userTier";
 // MARKETPLACE FEED CARD (Private Component)
 // =======================
 function MarketplaceFeedCard({ creation, onImageClick, onRemixClick }: { creation: any, onImageClick: (e: React.MouseEvent) => void, onRemixClick: (e: React.MouseEvent) => void }) {
+  const isHero = creation.is_hero || false;
+
   const [likes, setLikes] = useState(creation.likes || 0);
   const [isLiked, setIsLiked] = useState(creation.is_liked || false);
   const [isLiking, setIsLiking] = useState(false);
@@ -73,7 +75,9 @@ function MarketplaceFeedCard({ creation, onImageClick, onRemixClick }: { creatio
         src={getFeedImageUrl(creation.image_url || creation.url, 600)}
         alt={creation.template_name || creation.prompt || ''}
         className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-500"
-        loading="lazy"
+        loading={isHero ? "eager" : "lazy"}
+        fetchPriority={isHero ? "high" : "auto"}
+        decoding="async"
       />
 
       {/* Gradient Overlay */}
@@ -130,9 +134,9 @@ function MarketplaceFeedCard({ creation, onImageClick, onRemixClick }: { creatio
         {/* Remix Button */}
         <button
           className="
-            flex items-center gap-1.5 px-3 py-1.5 
-            bg-white/10 hover:bg-white/20 backdrop-blur-md 
-            border border-white/20 rounded-full 
+            flex items-center gap-1.5 px-3 py-1.5
+            bg-white/10 hover:bg-white/20 backdrop-blur-md
+            border border-white/20 rounded-full
             text-white text-[10px] font-bold uppercase tracking-wider
             transition-all duration-300 hover:scale-105 group-hover:bg-white/25
             shrink-0
@@ -409,7 +413,7 @@ export default function CreatorDashboard() {
 
   return (
     <>
-      <div className="space-y-8 animate-in fade-in duration-500 p-4 md:p-8 pb-32">
+      <div className="space-y-8 animate-in fade-in duration-500 p-4 md:p-12 pt-24 pb-32">
 
         {/* ========================= */}
         {/* HERO SECTION (Spotlight Carousel) */}
@@ -604,16 +608,16 @@ function HeroSection({ user, homeState, creations, navigate, pendingJobs = [] }:
             {creations.length > 0 ? (
               creations.slice(0, 4).map((c, i) => (
                 <div key={i} className="h-full relative overflow-hidden transition-transform duration-700 group-hover:scale-110">
-                  <img src={c.url} className="w-full h-full object-cover" />
+                  <img src={getFeedImageUrl(c.url, 800)} className="w-full h-full object-cover" loading="eager" fetchPriority="high" decoding="async" />
                 </div>
               ))
             ) : (
               // Curated "Visual Proof" for new users
               <>
-                <div className="h-full relative overflow-hidden"><img src="https://images.unsplash.com/photo-1620641788421-7f6c368615b8?q=80&w=800&auto=format&fit=crop" className="w-full h-full object-cover" /></div>
-                <div className="h-full relative overflow-hidden"><img src="https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?q=80&w=800&auto=format&fit=crop" className="w-full h-full object-cover" /></div>
-                <div className="h-full relative overflow-hidden"><img src="https://images.unsplash.com/photo-1635322966219-b75ed3a93227?q=80&w=800&auto=format&fit=crop" className="w-full h-full object-cover" /></div>
-                <div className="hidden md:block h-full relative overflow-hidden"><img src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=800&auto=format&fit=crop" className="w-full h-full object-cover" /></div>
+                <div className="h-full relative overflow-hidden"><img src={getFeedImageUrl("https://images.unsplash.com/photo-1620641788421-7f6c368615b8?q=80&w=800&auto=format&fit=crop", 800)} className="w-full h-full object-cover" /></div>
+                <div className="h-full relative overflow-hidden"><img src={getFeedImageUrl("https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?q=80&w=800&auto=format&fit=crop", 800)} className="w-full h-full object-cover" /></div>
+                <div className="h-full relative overflow-hidden"><img src={getFeedImageUrl("https://images.unsplash.com/photo-1635322966219-b75ed3a93227?q=80&w=800&auto=format&fit=crop", 800)} className="w-full h-full object-cover" /></div>
+                <div className="hidden md:block h-full relative overflow-hidden"><img src={getFeedImageUrl("https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=800&auto=format&fit=crop", 800)} className="w-full h-full object-cover" /></div>
               </>
             )}
           </div>

@@ -136,17 +136,28 @@ export default function ChatPage() {
     navigate(path);
   }, [navigate]);
 
-  useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollIntoView({ behavior: "smooth" });
-    }
-  }, [messages, isLoading]);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
 
+  // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
-    if (inputRef.current) {
-      setTimeout(() => inputRef.current?.focus(), 100);
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
     }
-  }, []);
+  }, [messages.length, isLoading]);
+
+  // Aggressively maintain input focus
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (inputRef.current &&
+        document.activeElement !== inputRef.current &&
+        document.activeElement?.tagName !== 'BUTTON' &&
+        !isLoading) {
+        inputRef.current.focus();
+      }
+    }, 100);
+
+    return () => clearInterval(interval);
+  }, [isLoading]);
 
   const sendMessage = async (text: string) => {
     if (!text.trim() || isLoading) return;
@@ -263,7 +274,7 @@ export default function ChatPage() {
     <div className="flex flex-col h-[calc(100vh-64px)] bg-black text-white relative font-sans overflow-hidden">
 
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto scroll-smooth w-full pb-32 scrollbar-hide">
+      <div ref={messagesContainerRef} className="flex-1 overflow-y-auto scroll-smooth w-full pb-32 scrollbar-hide">
         {messages.length <= 1 ? (
           /* HERO SECTION (Empty State) */
           <div className="h-full flex flex-col items-center justify-center p-4 text-center space-y-6 -mt-20">
@@ -364,6 +375,14 @@ export default function ChatPage() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
+                onBlur={(e) => {
+                  // Refocus if blur wasn't intentional (e.g., clicking send button)
+                  setTimeout(() => {
+                    if (document.activeElement?.tagName !== 'BUTTON') {
+                      inputRef.current?.focus();
+                    }
+                  }, 0);
+                }}
                 placeholder={messages.length <= 1 ? "Describe what you need help with..." : "Ask a follow-up..."}
                 className="flex-1 bg-transparent border-none outline-none text-white placeholder:text-zinc-500 h-12 focus:ring-0 text-[16px] px-2"
                 disabled={isLoading}

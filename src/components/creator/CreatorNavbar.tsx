@@ -58,7 +58,7 @@ export function CreatorNavbar({ user }: CreatorNavbarProps) {
     const tokens = user?.tokens_remaining || 0;
 
     return (
-        <header className="fixed top-0 w-full z-50 bg-transparent">
+        <header className="fixed top-0 w-full z-50 bg-black/30 backdrop-blur-xl border-b border-white/5">
             <div className="w-full px-8 h-16 flex items-center justify-between">
 
                 {/* Logo & Navigation */}

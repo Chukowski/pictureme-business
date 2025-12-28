@@ -109,17 +109,28 @@ export default function AdminChatPage() {
         navigate(path);
     }, [navigate]);
 
-    useEffect(() => {
-        if (scrollRef.current) {
-            scrollRef.current.scrollIntoView({ behavior: "smooth" });
-        }
-    }, [messages, isLoading]);
+    const messagesContainerRef = useRef<HTMLDivElement>(null);
 
+    // Auto-scroll to bottom when new messages arrive
     useEffect(() => {
-        if (inputRef.current) {
-            setTimeout(() => inputRef.current?.focus(), 100);
+        if (messagesContainerRef.current) {
+            messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
         }
-    }, []);
+    }, [messages.length, isLoading]);
+
+    // Aggressively maintain input focus
+    useEffect(() => {
+        const interval = setInterval(() => {
+            if (inputRef.current &&
+                document.activeElement !== inputRef.current &&
+                document.activeElement?.tagName !== 'BUTTON' &&
+                !isLoading) {
+                inputRef.current.focus();
+            }
+        }, 100);
+
+        return () => clearInterval(interval);
+    }, [isLoading]);
 
     const sendMessage = async (text: string) => {
         if (!text.trim() || isLoading) return;
@@ -220,10 +231,10 @@ export default function AdminChatPage() {
     };
 
     return (
-        <div className="flex flex-col h-[calc(100vh-160px)] bg-black text-white relative font-sans overflow-hidden rounded-3xl border border-white/5 shadow-2xl">
+        <div className="flex flex-col h-[calc(100vh-160px)] bg-black text-white relative font-sans overflow-hidden rounded-3xl shadow-2xl">
 
             {/* Messages Area */}
-            <div className="flex-1 overflow-y-auto scroll-smooth w-full pb-32 scrollbar-hide">
+            <div ref={messagesContainerRef} className="flex-1 overflow-y-auto scroll-smooth w-full pb-32 scrollbar-hide">
                 {messages.length <= 1 ? (
                     /* HERO SECTION (Empty State) */
                     <div className="h-full flex flex-col items-center justify-center p-4 text-center space-y-6">
@@ -258,7 +269,7 @@ export default function AdminChatPage() {
                                 )}
                             >
                                 {message.role === "assistant" && (
-                                    <div className="h-8 w-8 flex items-center justify-center flex-shrink-0 mt-1 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                                    <div className="h-8 w-8 flex items-center justify-center flex-shrink-0 mt-1 rounded-full bg-blue-500/10 text-blue-400">
                                         <Building2 className="w-4 h-4" />
                                     </div>
                                 )}
@@ -324,6 +335,14 @@ export default function AdminChatPage() {
                                 value={input}
                                 onChange={(e) => setInput(e.target.value)}
                                 onKeyDown={handleKeyDown}
+                                onBlur={(e) => {
+                                    // Refocus if blur wasn't intentional (e.g., clicking send button)
+                                    setTimeout(() => {
+                                        if (document.activeElement?.tagName !== 'BUTTON') {
+                                            inputRef.current?.focus();
+                                        }
+                                    }, 0);
+                                }}
                                 placeholder={messages.length <= 1 ? "How can I help with your business today?" : "Ask a follow-up..."}
                                 className="flex-1 bg-transparent border-none outline-none text-white placeholder:text-zinc-500 h-12 focus:ring-0 text-[16px] px-2"
                                 disabled={isLoading}

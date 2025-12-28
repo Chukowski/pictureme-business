@@ -169,12 +169,13 @@ function buildProcessingOptions(options: ImgproxyOptions): string {
     }
 
     // DPR (Device Pixel Ratio)
-    if (options.dpr && options.dpr > 1) {
-        parts.push(`dpr:${options.dpr}`);
+    const dpr = options.dpr || (typeof window !== 'undefined' ? window.devicePixelRatio : 1);
+    if (dpr > 1) {
+        parts.push(`dpr:${Math.min(dpr, 3).toFixed(1)}`);
     }
 
     // Strip metadata
-    if (options.stripMetadata) {
+    if (options.stripMetadata !== false) { // Default to true for performance
         parts.push('sm:t');
     }
 
@@ -203,10 +204,10 @@ function buildProcessingOptions(options: ImgproxyOptions): string {
         parts.push(`bg:${options.background}`);
     }
 
-    // Format (always last before URL)
-    if (options.format) {
-        parts.push(`format:${options.format}`);
-    }
+    // Format negotiation: Prefer AVIF > WebP > Auto
+    // If format is not specified, we use 'best' or 'webp'
+    const format = options.format || 'webp';
+    parts.push(`format:${format}`);
 
     return parts.join('/');
 }
@@ -227,9 +228,12 @@ export function getImgproxyUrl(sourceUrl: string, options: ImgproxyOptions = {})
         return sourceUrl;
     }
 
-    // Don't double-process imgproxy URLs that already have a preset
-    if (sourceUrl.startsWith(IMGPROXY_BASE_URL) && sourceUrl.includes('/preset:')) {
-        return sourceUrl;
+    // If it's already an imgproxy URL from our instance, don't double process
+    if (sourceUrl.startsWith(IMGPROXY_BASE_URL)) {
+        // Only return if it already has a preset or complex options
+        if (sourceUrl.includes('/preset:') || sourceUrl.includes('/insecure/')) {
+            return sourceUrl;
+        }
     }
 
     // Build the URL
@@ -237,13 +241,13 @@ export function getImgproxyUrl(sourceUrl: string, options: ImgproxyOptions = {})
     const encodedUrl = encodeSourceUrl(sourceUrl);
     if (!encodedUrl) return sourceUrl;
 
-    // URL structure: /{processing}}/{base64_encoded_url}
-    // Path structure: /preset:name/encoded_url OR /insecure/options/encoded_url
+    // Use /insecure/ for development, in production this should be signed
+    const prefix = "/insecure";
+
     let path = "";
     if (options.preset) {
         path = `/preset:${options.preset}/${encodedUrl}`;
     } else {
-        const prefix = USE_SIGNATURE ? "/signature" : "/insecure";
         path = processingOptions
             ? `${prefix}/${processingOptions}/${encodedUrl}`
             : `${prefix}/${encodedUrl}`;
