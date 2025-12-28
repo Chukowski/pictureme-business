@@ -867,7 +867,7 @@ function CreatorStudioPageContent({ defaultView }: CreatorStudioPageProps) {
     };
 
     return (
-        <div className="min-h-dvh h-screen overflow-hidden pt-20 flex flex-col md:flex-row bg-[#101112] text-white font-sans relative">
+        <div className="min-h-screen md:h-screen md:overflow-hidden pt-20 flex flex-col md:flex-row bg-[#101112] text-white font-sans relative">
 
 
 

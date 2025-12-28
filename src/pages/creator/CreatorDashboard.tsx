@@ -286,7 +286,11 @@ export default function CreatorDashboard() {
   const [isFeedLoading, setIsFeedLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [feedOffset, setFeedOffset] = useState(0);
-  const [feedZoom, setFeedZoom] = useState([3]);
+  const [feedZoom, setFeedZoom] = useState(() => {
+    // Default to 2 columns on mobile, 3 on desktop
+    if (typeof window !== 'undefined' && window.innerWidth < 768) return [2];
+    return [3];
+  });
   const FEED_LIMIT = 12;
 
   // Community Feed Preview State
