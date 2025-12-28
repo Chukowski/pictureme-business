@@ -133,7 +133,7 @@ export function TemplateLibrary({
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
                             <Input
                                 placeholder="Search"
-                                className="pl-9 h-9 bg-zinc-900 border-zinc-800 text-sm focus:border-white/20 rounded-full text-white"
+                                className="pl-9 h-9 bg-card border-zinc-800 text-sm focus:border-white/20 rounded-full text-white"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                             />
@@ -169,7 +169,7 @@ export function TemplateLibrary({
                     </div>
 
                     {/* Library/Marketplace Toggle */}
-                    <div className="flex bg-zinc-900 rounded-lg p-0.5 border border-white/5 shrink-0 hidden md:flex">
+                    <div className="flex bg-card rounded-lg p-0.5 border border-white/5 shrink-0 hidden md:flex">
                         <button
                             onClick={() => setActiveTab("marketplace")}
                             className={cn(
@@ -200,7 +200,7 @@ export function TemplateLibrary({
                             key={t.id}
                             onClick={() => handleCardClick(t)}
                             className={cn(
-                                "group relative aspect-[3/4] rounded-xl overflow-hidden cursor-pointer bg-zinc-900 border transition-all",
+                                "group relative aspect-[3/4] rounded-xl overflow-hidden cursor-pointer bg-card border transition-all",
                                 selectedId === t.id ? "border-[#D1F349] ring-2 ring-[#D1F349]" : "border-transparent ring-0 hover:ring-2 hover:ring-white/20"
                             )}
                         >
@@ -215,7 +215,7 @@ export function TemplateLibrary({
                             />
 
                             {/* Gradient Overlay */}
-                            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent opacity-60 group-hover:opacity-80 transition-opacity" />
+                            <div className="absolute inset-0 bg-gradient-to-t from-[#101112] via-[#101112]/20 to-transparent opacity-60 group-hover:opacity-80 transition-opacity" />
 
                             {/* Content */}
                             <div className="absolute inset-x-0 bottom-0 p-4">
@@ -225,7 +225,7 @@ export function TemplateLibrary({
                             {/* Selection Indicator */}
                             {selectedId === t.id && (
                                 <div className="absolute top-3 right-3 w-4 h-4 rounded-full bg-[#D1F349] shadow-[0_0_8px_rgba(209,243,73,0.8)] flex items-center justify-center">
-                                    <div className="w-2 h-2 rounded-full bg-black" />
+                                    <div className="w-2 h-2 rounded-full bg-[#101112]" />
                                 </div>
                             )}
                         </div>
@@ -241,7 +241,7 @@ export function TemplateLibrary({
             </ScrollArea>
 
             {/* Sticky Footer for Mobile Next Action */}
-            <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black to-transparent z-50 pointer-events-none flex justify-center pb-8 md:pb-4">
+            <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-[#101112] to-transparent z-50 pointer-events-none flex justify-center pb-8 md:pb-4">
                 <Button
                     onClick={handleConfirm}
                     disabled={!selectedId}

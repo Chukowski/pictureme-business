@@ -317,7 +317,7 @@ export default function AdminEventPhotos() {
   };
 
   return (
-    <div className="min-h-screen bg-black p-4 md:p-6 lg:p-8">
+    <div className="min-h-screen bg-[#101112] p-4 md:p-6 lg:p-8">
       <div className="max-w-[1600px] mx-auto">
         {/* Header & Toolbar */}
         <div className="flex flex-col gap-6 mb-8">
@@ -340,7 +340,7 @@ export default function AdminEventPhotos() {
 
             {!isLoading && photos.length > 0 && (
               <div className="flex items-center gap-3">
-                <Badge variant="outline" className="px-3 py-1 bg-zinc-900/50 border-white/10 text-zinc-300">
+                <Badge variant="outline" className="px-3 py-1 bg-card/50 border-white/10 text-zinc-300">
                   {photos.length} Photos
                 </Badge>
               </div>
@@ -349,7 +349,7 @@ export default function AdminEventPhotos() {
 
           {/* Action Toolbar */}
           {!isLoading && photos.length > 0 && (
-            <div className="sticky top-4 z-10 flex flex-wrap items-center justify-between gap-4 p-3 rounded-xl bg-zinc-900/80 backdrop-blur-md border border-white/10 shadow-xl">
+            <div className="sticky top-4 z-10 flex flex-wrap items-center justify-between gap-4 p-3 rounded-xl bg-card/80 backdrop-blur-md border border-white/10 shadow-xl">
               {/* Left: Selection Controls */}
               <div className="flex items-center gap-3">
                 <Button
@@ -410,12 +410,12 @@ export default function AdminEventPhotos() {
 
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className="border-white/10 bg-black/20 text-zinc-300 hover:text-white hover:bg-white/5">
+                    <Button variant="outline" size="sm" className="border-white/10 bg-[#101112]/20 text-zinc-300 hover:text-white hover:bg-white/5">
                       <ArrowUpDown className="w-4 h-4 mr-2" />
                       Sort: {sortOrder === "newest" ? "Newest" : "Oldest"}
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="bg-zinc-900 border-white/10 text-zinc-200">
+                  <DropdownMenuContent align="end" className="bg-card border-white/10 text-zinc-200">
                     <DropdownMenuItem onClick={() => setSortOrder("newest")} className="focus:bg-white/10 cursor-pointer">
                       Newest First
                       {sortOrder === "newest" && <Check className="w-4 h-4 ml-auto" />}
@@ -435,13 +435,13 @@ export default function AdminEventPhotos() {
         {isLoading ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
             {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((i) => (
-              <div key={i} className="aspect-[3/4] rounded-xl bg-zinc-900/50 border border-white/5 overflow-hidden">
+              <div key={i} className="aspect-[3/4] rounded-xl bg-card/50 border border-white/5 overflow-hidden">
                 <Skeleton className="w-full h-full bg-zinc-800" />
               </div>
             ))}
           </div>
         ) : photos.length === 0 ? (
-          <div className="rounded-3xl bg-zinc-900/50 border border-white/5 p-12 text-center">
+          <div className="rounded-3xl bg-card/50 border border-white/5 p-12 text-center">
             <div className="flex flex-col items-center gap-6 max-w-md mx-auto">
               <div className="w-20 h-20 rounded-full bg-zinc-800/50 flex items-center justify-center border border-white/5">
                 <ImageIcon className="w-10 h-10 text-zinc-500" />
@@ -463,7 +463,7 @@ export default function AdminEventPhotos() {
                   key={photo.id || photo._id}
                   onClick={() => toggleSelection(photo.id || photo._id || "")}
                   className={`
-                    group relative flex flex-col rounded-xl overflow-hidden cursor-pointer transition-all duration-200 bg-zinc-900/50 border border-white/10
+                    group relative flex flex-col rounded-xl overflow-hidden cursor-pointer transition-all duration-200 bg-card/50 border border-white/10
                     ${isSelected
                       ? "ring-2 ring-indigo-500 ring-offset-2 ring-offset-black scale-[0.98]"
                       : "hover:border-indigo-500/50 hover:shadow-lg hover:shadow-indigo-500/10"
@@ -471,7 +471,7 @@ export default function AdminEventPhotos() {
                   `}
                 >
                   {/* Image Container - Aspect Ratio Fixed but Image Contained */}
-                  <div className="relative aspect-[3/4] bg-black/40 w-full overflow-hidden">
+                  <div className="relative aspect-[3/4] bg-[#101112]/40 w-full overflow-hidden">
                     <img
                       src={photo.processed_image_url || photo.original_image_url}
                       alt={photo.background_name || "Event photo"}
@@ -482,7 +482,7 @@ export default function AdminEventPhotos() {
                     {/* Selection Overlay */}
                     <div className={`
                       absolute inset-0 transition-colors duration-200 pointer-events-none
-                      ${isSelected ? "bg-indigo-500/20" : "group-hover:bg-black/10"}
+                      ${isSelected ? "bg-indigo-500/20" : "group-hover:bg-[#101112]/10"}
                     `} />
 
                     {/* Checkbox Indicator */}
@@ -494,7 +494,7 @@ export default function AdminEventPhotos() {
                         w-6 h-6 rounded-full flex items-center justify-center border shadow-sm
                         ${isSelected
                           ? "bg-indigo-500 border-indigo-500 text-white"
-                          : "bg-black/50 border-white/30 text-transparent hover:bg-black/70 hover:border-white/50"
+                          : "bg-[#101112]/50 border-white/30 text-transparent hover:bg-[#101112]/70 hover:border-white/50"
                         }
                       `}>
                         <Check className="w-3.5 h-3.5" />
@@ -506,7 +506,7 @@ export default function AdminEventPhotos() {
                       <Button
                         size="icon"
                         variant="ghost"
-                        className="h-8 w-8 rounded-full bg-black/60 hover:bg-black/80 text-white backdrop-blur-sm border border-white/10"
+                        className="h-8 w-8 rounded-full bg-[#101112]/60 hover:bg-[#101112]/80 text-white backdrop-blur-sm border border-white/10"
                         onClick={(e) => {
                           e.stopPropagation();
                           setPreviewPhoto(photo);
@@ -519,7 +519,7 @@ export default function AdminEventPhotos() {
                       <Button
                         size="icon"
                         variant="ghost"
-                        className="h-8 w-8 rounded-full bg-black/60 hover:bg-black/80 text-white backdrop-blur-sm border border-white/10"
+                        className="h-8 w-8 rounded-full bg-[#101112]/60 hover:bg-[#101112]/80 text-white backdrop-blur-sm border border-white/10"
                         onClick={(e) => {
                           e.stopPropagation();
                           handlePrint(photo);
@@ -531,7 +531,7 @@ export default function AdminEventPhotos() {
                       <Button
                         size="icon"
                         variant="ghost"
-                        className="h-8 w-8 rounded-full bg-black/60 hover:bg-black/80 text-white backdrop-blur-sm border border-white/10"
+                        className="h-8 w-8 rounded-full bg-[#101112]/60 hover:bg-[#101112]/80 text-white backdrop-blur-sm border border-white/10"
                         onClick={(e) => {
                           e.stopPropagation();
                           handleDownload(photo);
@@ -553,7 +553,7 @@ export default function AdminEventPhotos() {
                   </div>
 
                   {/* Info Footer - Always Visible */}
-                  <div className="p-3 bg-zinc-900/90 border-t border-white/5 mt-auto">
+                  <div className="p-3 bg-card/90 border-t border-white/5 mt-auto">
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-xs font-mono text-indigo-400 bg-indigo-500/10 px-1.5 py-0.5 rounded border border-indigo-500/20">
                         {photo.share_code}
@@ -578,8 +578,8 @@ export default function AdminEventPhotos() {
 
       {/* Preview Modal */}
       <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
-        <DialogContent className="max-w-4xl w-full bg-zinc-950/95 border-white/10 text-white p-0 overflow-hidden">
-          <div className="relative w-full h-[80vh] flex items-center justify-center bg-black/50">
+        <DialogContent className="max-w-4xl w-full bg-card/95 border-white/10 text-white p-0 overflow-hidden">
+          <div className="relative w-full h-[80vh] flex items-center justify-center bg-[#101112]/50">
             {previewPhoto && (
               <img
                 src={previewPhoto.processed_image_url || previewPhoto.original_image_url}
@@ -589,7 +589,7 @@ export default function AdminEventPhotos() {
             )}
           </div>
           {previewPhoto && (
-            <div className="p-4 bg-zinc-900 border-t border-white/10 flex items-center justify-between">
+            <div className="p-4 bg-card border-t border-white/10 flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-white">Photo {previewPhoto.share_code}</p>
                 <p className="text-xs text-zinc-400">
@@ -632,7 +632,7 @@ export default function AdminEventPhotos() {
 
       {/* Single Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent className="bg-zinc-900 border-white/10 text-white">
+        <AlertDialogContent className="bg-card border-white/10 text-white">
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Photo?</AlertDialogTitle>
             <AlertDialogDescription className="text-zinc-400">

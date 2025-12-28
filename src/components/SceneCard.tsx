@@ -38,7 +38,7 @@ export const SceneCard = ({
       />
       
       {/* Gradient overlay */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent opacity-60 md:group-hover:opacity-80 transition-opacity" />
+      <div className="absolute inset-0 bg-gradient-to-t from-[#101112] via-[#101112]/40 to-transparent opacity-60 md:group-hover:opacity-80 transition-opacity" />
       
       {/* Custom Prompt Badge */}
       {isCustomPrompt && (

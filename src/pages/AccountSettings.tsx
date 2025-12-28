@@ -237,7 +237,7 @@ export default function AccountSettings() {
     : '/creator/dashboard';
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-[#101112] text-white">
       {/* Header with Cover Image */}
       <div className="relative">
         {/* Cover Image */}
@@ -249,7 +249,7 @@ export default function AccountSettings() {
               className="w-full h-full object-cover"
             />
           )}
-          <label className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40 cursor-pointer">
+          <label className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-[#101112]/40 cursor-pointer">
             <div className="flex items-center gap-2 px-4 py-2 bg-white/90 rounded-lg text-black text-sm font-medium hover:bg-white transition-colors">
               <Upload className="w-4 h-4" />
               Change Cover
@@ -268,7 +268,7 @@ export default function AccountSettings() {
           variant="ghost"
           size="icon"
           onClick={() => navigate(backDestination)}
-          className="absolute top-4 left-4 bg-black/50 hover:bg-black/70 backdrop-blur-sm"
+          className="absolute top-4 left-4 bg-[#101112]/50 hover:bg-[#101112]/70 backdrop-blur-sm"
         >
           <ArrowLeft className="w-5 h-5" />
         </Button>
@@ -311,7 +311,7 @@ export default function AccountSettings() {
       {/* Tabs */}
       <div className="max-w-4xl mx-auto px-4 pb-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="bg-zinc-900 border border-zinc-800 w-full justify-start">
+          <TabsList className="bg-card border border-zinc-800 w-full justify-start">
             <TabsTrigger value="profile" className="data-[state=active]:bg-indigo-500">
               <User className="w-4 h-4 mr-2" />
               Profile
@@ -333,7 +333,7 @@ export default function AccountSettings() {
           {/* Profile Tab */}
           <TabsContent value="profile" className="space-y-6">
             {/* Basic Info */}
-            <Card className="bg-zinc-900/50 border-white/10">
+            <Card className="bg-card/50 border-white/10">
               <CardHeader>
                 <CardTitle className="text-white text-lg">Personal Information</CardTitle>
                 <CardDescription className="text-zinc-400">
@@ -347,7 +347,7 @@ export default function AccountSettings() {
                     <Input
                       value={formData.username}
                       disabled
-                      className="bg-black/50 border-white/10"
+                      className="bg-[#101112]/50 border-white/10"
                     />
                   </div>
                   <div className="space-y-2">
@@ -355,7 +355,7 @@ export default function AccountSettings() {
                     <Input
                       value={formData.email}
                       disabled
-                      className="bg-black/50 border-white/10"
+                      className="bg-[#101112]/50 border-white/10"
                     />
                   </div>
                 </div>
@@ -364,7 +364,7 @@ export default function AccountSettings() {
                   <Input
                     value={formData.full_name}
                     onChange={(e) => setFormData(prev => ({ ...prev, full_name: e.target.value }))}
-                    className="bg-black/50 border-white/10"
+                    className="bg-[#101112]/50 border-white/10"
                     placeholder="Your full name"
                   />
                 </div>
@@ -373,7 +373,7 @@ export default function AccountSettings() {
                   <Textarea
                     value={formData.bio}
                     onChange={(e) => setFormData(prev => ({ ...prev, bio: e.target.value }))}
-                    className="bg-black/50 border-white/10 min-h-[100px] resize-none"
+                    className="bg-[#101112]/50 border-white/10 min-h-[100px] resize-none"
                     placeholder="Tell us about yourself..."
                   />
                 </div>
@@ -383,14 +383,14 @@ export default function AccountSettings() {
                     type="date"
                     value={formData.birth_date}
                     onChange={(e) => setFormData(prev => ({ ...prev, birth_date: e.target.value }))}
-                    className="bg-black/50 border-white/10"
+                    className="bg-[#101112]/50 border-white/10"
                   />
                 </div>
               </CardContent>
             </Card>
 
             {/* Social Links */}
-            <Card className="bg-zinc-900/50 border-white/10">
+            <Card className="bg-card/50 border-white/10">
               <CardHeader>
                 <CardTitle className="text-white text-lg flex items-center gap-2">
                   <LinkIcon className="w-5 h-5" />
@@ -414,7 +414,7 @@ export default function AccountSettings() {
                           ...prev, 
                           social_links: { ...prev.social_links, x: e.target.value }
                         }))}
-                        className="bg-black/50 border-white/10 rounded-l-none"
+                        className="bg-[#101112]/50 border-white/10 rounded-l-none"
                         placeholder="username"
                       />
                     </div>
@@ -431,7 +431,7 @@ export default function AccountSettings() {
                           ...prev, 
                           social_links: { ...prev.social_links, instagram: e.target.value }
                         }))}
-                        className="bg-black/50 border-white/10 rounded-l-none"
+                        className="bg-[#101112]/50 border-white/10 rounded-l-none"
                         placeholder="username"
                       />
                     </div>
@@ -448,7 +448,7 @@ export default function AccountSettings() {
                           ...prev, 
                           social_links: { ...prev.social_links, youtube: e.target.value }
                         }))}
-                        className="bg-black/50 border-white/10 rounded-l-none"
+                        className="bg-[#101112]/50 border-white/10 rounded-l-none"
                         placeholder="channel"
                       />
                     </div>
@@ -465,7 +465,7 @@ export default function AccountSettings() {
                           ...prev, 
                           social_links: { ...prev.social_links, tiktok: e.target.value }
                         }))}
-                        className="bg-black/50 border-white/10 rounded-l-none"
+                        className="bg-[#101112]/50 border-white/10 rounded-l-none"
                         placeholder="username"
                       />
                     </div>
@@ -487,7 +487,7 @@ export default function AccountSettings() {
           {/* Privacy Tab */}
           <TabsContent value="privacy" className="space-y-6">
             {/* Public Profile */}
-            <Card className="bg-zinc-900/50 border-white/10">
+            <Card className="bg-card/50 border-white/10">
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
@@ -514,7 +514,7 @@ export default function AccountSettings() {
             </Card>
 
             {/* Publish to Explore */}
-            <Card className="bg-zinc-900/50 border-white/10">
+            <Card className="bg-card/50 border-white/10">
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
@@ -552,7 +552,7 @@ export default function AccountSettings() {
 
           {/* Business URL Tab */}
           <TabsContent value="business" className="space-y-6">
-            <Card className="bg-zinc-900/50 border-white/10">
+            <Card className="bg-card/50 border-white/10">
               <CardHeader>
                 <CardTitle className="text-white text-lg flex items-center gap-2">
                   <Building2 className="w-5 h-5 text-indigo-400" />
@@ -576,7 +576,7 @@ export default function AccountSettings() {
                         organization_slug: generateSlug(name)
                       }));
                     }}
-                    className="bg-black/50 border-white/10"
+                    className="bg-[#101112]/50 border-white/10"
                     placeholder="e.g., Acme Corp, My Photo Studio"
                   />
                 </div>
@@ -589,7 +589,7 @@ export default function AccountSettings() {
                     <Input
                       value={formData.organization_slug}
                       onChange={(e) => setFormData(prev => ({ ...prev, organization_slug: e.target.value }))}
-                      className="bg-black/50 border-white/10 rounded-l-none"
+                      className="bg-[#101112]/50 border-white/10 rounded-l-none"
                       placeholder="acme-corp"
                     />
                   </div>
@@ -602,7 +602,7 @@ export default function AccountSettings() {
                 {formData.organization_slug && (
                   <div className="p-4 rounded-lg bg-indigo-500/10 border border-indigo-500/20">
                     <p className="text-sm text-zinc-400 mb-2">Your event URLs will look like:</p>
-                    <code className="text-indigo-400 bg-black/30 px-2 py-1 rounded">
+                    <code className="text-indigo-400 bg-[#101112]/30 px-2 py-1 rounded">
                       pictureme.now/{formData.organization_slug}/your-event
                     </code>
                   </div>
@@ -623,7 +623,7 @@ export default function AccountSettings() {
           {/* Security Tab */}
           <TabsContent value="security" className="space-y-6">
             {/* Change Password */}
-            <Card className="bg-zinc-900/50 border-white/10">
+            <Card className="bg-card/50 border-white/10">
               <CardHeader>
                 <CardTitle className="text-white text-lg">Change Password</CardTitle>
                 <CardDescription className="text-zinc-400">
@@ -638,7 +638,7 @@ export default function AccountSettings() {
                       type={showPassword ? "text" : "password"}
                       value={formData.password}
                       onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
-                      className="bg-black/50 border-white/10 pr-10"
+                      className="bg-[#101112]/50 border-white/10 pr-10"
                       placeholder="Enter new password"
                     />
                     <button
@@ -656,7 +656,7 @@ export default function AccountSettings() {
                     type={showPassword ? "text" : "password"}
                     value={formData.confirmPassword}
                     onChange={(e) => setFormData(prev => ({ ...prev, confirmPassword: e.target.value }))}
-                    className="bg-black/50 border-white/10"
+                    className="bg-[#101112]/50 border-white/10"
                     placeholder="Confirm new password"
                   />
                 </div>
@@ -694,7 +694,7 @@ export default function AccountSettings() {
                         Delete account
                       </Button>
                     </AlertDialogTrigger>
-                    <AlertDialogContent className="bg-zinc-900 border-white/10 text-white">
+                    <AlertDialogContent className="bg-card border-white/10 text-white">
                       <AlertDialogHeader>
                         <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                         <AlertDialogDescription className="text-zinc-400">

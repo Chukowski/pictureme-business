@@ -62,16 +62,16 @@ export default function SuperAdminLayout() {
     if (!currentUser) return null;
 
     return (
-        <div className="min-h-screen w-full flex bg-black font-sans">
+        <div className="min-h-screen w-full flex bg-[#101112] font-sans">
             {/* Sidebar */}
             <aside
                 className={`
-          fixed inset-y-0 left-0 z-50 w-64 bg-zinc-950 border-r border-white/10 flex flex-col shrink-0 transform transition-transform duration-300 ease-in-out
+          fixed inset-y-0 left-0 z-50 w-64 bg-card border-r border-white/10 flex flex-col shrink-0 transform transition-transform duration-300 ease-in-out
           ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"}
           md:relative md:translate-x-0
         `}
             >
-                <div className="h-14 flex items-center justify-between px-4 border-b border-white/10 bg-zinc-950 shrink-0">
+                <div className="h-14 flex items-center justify-between px-4 border-b border-white/10 bg-card shrink-0">
                     <div className="flex items-center gap-2">
                         <div className="w-6 h-6 rounded bg-indigo-600/20 border border-indigo-600/30 flex items-center justify-center">
                             <Settings className="w-3.5 h-3.5 text-indigo-400" />
@@ -116,9 +116,9 @@ export default function SuperAdminLayout() {
                     </nav>
                 </div>
 
-                <div className="p-4 border-t border-white/10 bg-zinc-950">
+                <div className="p-4 border-t border-white/10 bg-card">
                     <div className="flex items-center gap-3 mb-4 px-2">
-                        <div className="w-8 h-8 rounded-full bg-zinc-900 border border-white/10 flex items-center justify-center">
+                        <div className="w-8 h-8 rounded-full bg-card border border-white/10 flex items-center justify-center">
                             <span className="text-xs font-bold text-zinc-400">SA</span>
                         </div>
                         <div className="flex-1 overflow-hidden">
@@ -128,7 +128,7 @@ export default function SuperAdminLayout() {
                     </div>
                     <Button
                         variant="ghost"
-                        className="w-full h-8 bg-zinc-900 border border-white/5 text-zinc-400 hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/20 text-xs transition-all justify-start px-3"
+                        className="w-full h-8 bg-card border border-white/5 text-zinc-400 hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/20 text-xs transition-all justify-start px-3"
                         onClick={handleLogout}
                     >
                         <LogOut className="w-3.5 h-3.5 mr-2" />
@@ -138,9 +138,9 @@ export default function SuperAdminLayout() {
             </aside>
 
             {/* Main Content */}
-            <main className="flex-1 flex flex-col min-w-0 bg-zinc-900 overflow-hidden">
+            <main className="flex-1 flex flex-col min-w-0 bg-card overflow-hidden">
                 {/* Mobile Header */}
-                <header className="md:hidden flex items-center justify-between h-14 px-4 border-b border-white/10 bg-zinc-950 shrink-0">
+                <header className="md:hidden flex items-center justify-between h-14 px-4 border-b border-white/10 bg-card shrink-0">
                     <span className="font-bold text-sm tracking-wide text-zinc-200">SUPER ADMIN</span>
                     <button onClick={() => setIsMobileMenuOpen(true)}>
                         <Menu className="w-5 h-5 text-zinc-400" />

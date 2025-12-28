@@ -204,7 +204,7 @@ export function PlaygroundBadgeTest({ events, currentUser, onReloadEvents }: Pla
       </div>
 
       {/* 1. Configuration Section */}
-      <Card className="bg-zinc-900/50 border-white/10 overflow-hidden shadow-lg">
+      <Card className="bg-card/50 border-white/10 overflow-hidden shadow-lg">
         <div className="px-6 py-4 border-b border-white/5 bg-white/[0.02] flex items-center gap-3">
           <div className="w-6 h-6 rounded-full bg-cyan-500/20 flex items-center justify-center text-cyan-400 text-xs font-bold">1</div>
           <span className="text-base font-medium text-zinc-200">Configuration</span>
@@ -236,7 +236,7 @@ export function PlaygroundBadgeTest({ events, currentUser, onReloadEvents }: Pla
       </Card>
 
       {/* 2. Visitor Info */}
-      <Card className="bg-zinc-900/50 border-white/10 overflow-hidden shadow-lg">
+      <Card className="bg-card/50 border-white/10 overflow-hidden shadow-lg">
         <div className="px-6 py-4 border-b border-white/5 bg-white/[0.02] flex items-center gap-3">
           <div className="w-6 h-6 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400 text-xs font-bold">2</div>
           <span className="text-base font-medium text-zinc-200">Visitor Data</span>
@@ -264,7 +264,7 @@ export function PlaygroundBadgeTest({ events, currentUser, onReloadEvents }: Pla
       </Card>
 
       {/* 3. Photo Source */}
-      <Card className="bg-zinc-900/50 border-white/10 overflow-hidden shadow-lg">
+      <Card className="bg-card/50 border-white/10 overflow-hidden shadow-lg">
         <div className="px-6 py-4 border-b border-white/5 bg-white/[0.02] flex items-center gap-3">
           <div className="w-6 h-6 rounded-full bg-pink-500/20 flex items-center justify-center text-pink-400 text-xs font-bold">3</div>
           <span className="text-base font-medium text-zinc-200">Photo</span>
@@ -313,7 +313,7 @@ export function PlaygroundBadgeTest({ events, currentUser, onReloadEvents }: Pla
   // --- Canvas Overlay Controls ---
   const CanvasOverlay = isVisualEditorMode ? (
     <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 pointer-events-auto">
-      <Card className="bg-zinc-950/90 backdrop-blur-xl border-white/10 shadow-2xl w-[400px]">
+      <Card className="bg-card/90 backdrop-blur-xl border-white/10 shadow-2xl w-[400px]">
          <div className="p-3 space-y-3">
            <div className="flex items-center justify-between border-b border-white/5 pb-2">
               <div className="flex items-center gap-2">
@@ -342,17 +342,17 @@ export function PlaygroundBadgeTest({ events, currentUser, onReloadEvents }: Pla
            </div>
 
            <div className="grid grid-cols-2 gap-2">
-              <div className="flex items-center gap-2 bg-black/30 p-1.5 rounded border border-white/5">
+              <div className="flex items-center gap-2 bg-[#101112]/30 p-1.5 rounded border border-white/5">
                  <Type className="w-3 h-3 text-zinc-500" />
                  <span className="text-[10px] text-zinc-400 w-12">Name</span>
                  <input type="color" value={textStyles.nameColor} onChange={e => setTextStyles(p => ({...p, nameColor: e.target.value}))} className="w-4 h-4 rounded border-0 bg-transparent cursor-pointer flex-1"/>
               </div>
-              <div className="flex items-center gap-2 bg-black/30 p-1.5 rounded border border-white/5">
+              <div className="flex items-center gap-2 bg-[#101112]/30 p-1.5 rounded border border-white/5">
                  <Calendar className="w-3 h-3 text-zinc-500" />
                  <span className="text-[10px] text-zinc-400 w-12">Date</span>
                  <input type="color" value={textStyles.dateTimeColor} onChange={e => setTextStyles(p => ({...p, dateTimeColor: e.target.value}))} className="w-4 h-4 rounded border-0 bg-transparent cursor-pointer flex-1"/>
               </div>
-              <div className="flex items-center gap-2 bg-black/30 p-1.5 rounded border border-white/5 col-span-2">
+              <div className="flex items-center gap-2 bg-[#101112]/30 p-1.5 rounded border border-white/5 col-span-2">
                  <Palette className="w-3 h-3 text-zinc-500" />
                  <span className="text-[10px] text-zinc-400 w-12">Event</span>
                  <input type="color" value={textStyles.eventNameColor} onChange={e => setTextStyles(p => ({...p, eventNameColor: e.target.value}))} className="w-4 h-4 rounded border-0 bg-transparent cursor-pointer flex-1"/>
@@ -381,7 +381,7 @@ export function PlaygroundBadgeTest({ events, currentUser, onReloadEvents }: Pla
   // --- Right Panel Content (Badge Preview) ---
   const PreviewPanel = (
     <div 
-      className="h-full flex flex-col items-center justify-center bg-zinc-900/50 relative overflow-hidden"
+      className="h-full flex flex-col items-center justify-center bg-card/50 relative overflow-hidden"
       onMouseMove={isVisualEditorMode ? handleMouseMove : undefined}
       onMouseUp={isVisualEditorMode ? handleMouseUp : undefined}
     >

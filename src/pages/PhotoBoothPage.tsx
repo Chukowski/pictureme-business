@@ -517,7 +517,7 @@ export const PhotoBoothPage = ({ configOverride, userSlugOverride, eventSlugOver
   };
 
   return (
-    <div className="min-h-screen bg-zinc-950 relative">
+    <div className="min-h-screen bg-card relative">
       {/* QR Scanner Modal - Restored */}
       {showQRScanner && (
         <ScanAlbumQR
@@ -566,7 +566,7 @@ export const PhotoBoothPage = ({ configOverride, userSlugOverride, eventSlugOver
         />
       ) : state === 'registration' && !config.postgres_event_id ? (
         <div className="flex items-center justify-center min-h-screen p-4">
-          <Card className="max-w-md bg-zinc-900/90 border-white/10">
+          <Card className="max-w-md bg-card/90 border-white/10">
             <CardContent className="p-6 text-center space-y-4">
               <AlertTriangle className="w-12 h-12 text-amber-500 mx-auto" />
               <h2 className="text-xl font-semibold text-white">Registration Not Available</h2>

@@ -263,7 +263,7 @@ export function ViewerStationPage() {
   // Loading state
   if (configLoading) {
     return (
-      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
+      <div className="min-h-screen bg-card flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
       </div>
     );
@@ -272,8 +272,8 @@ export function ViewerStationPage() {
   // Error state
   if (configError || !config) {
     return (
-      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
-        <Card className="bg-zinc-900 border-zinc-800 max-w-md">
+      <div className="min-h-screen bg-card flex items-center justify-center">
+        <Card className="bg-card border-zinc-800 max-w-md">
           <CardContent className="pt-6 text-center">
             <p className="text-red-400">Event not found</p>
             <Button
@@ -337,9 +337,9 @@ export function ViewerStationPage() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-950">
+    <div className="min-h-screen bg-card">
       {/* Header - only shown when viewing album */}
-      <header className="border-b border-zinc-800 bg-zinc-900/50 backdrop-blur-sm">
+      <header className="border-b border-zinc-800 bg-card/50 backdrop-blur-sm">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div
@@ -375,7 +375,7 @@ export function ViewerStationPage() {
         {state === 'viewing' && album && (
           <div className="max-w-4xl mx-auto space-y-6">
             {/* Album Header */}
-            <Card className="bg-zinc-900 border-zinc-800">
+            <Card className="bg-card border-zinc-800">
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
@@ -505,8 +505,8 @@ export function ViewerStationPage() {
                   
                   {/* Hover overlay with expand icon */}
                   {!isLocked && !downloadsBlocked && (
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                      <div className="bg-black/50 backdrop-blur-sm rounded-full p-2 sm:p-3">
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#101112]/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <div className="bg-[#101112]/50 backdrop-blur-sm rounded-full p-2 sm:p-3">
                         <Eye className="w-4 h-4 sm:w-6 sm:h-6 text-white" />
                       </div>
                     </div>
@@ -514,7 +514,7 @@ export function ViewerStationPage() {
                   
                   {/* Lock overlay - only shown when fully locked (not free preview) */}
                   {isLocked && (
-                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                    <div className="absolute inset-0 bg-[#101112]/50 flex items-center justify-center">
                       <Lock className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                     </div>
                   )}
@@ -523,7 +523,7 @@ export function ViewerStationPage() {
             </div>
 
             {photos.length === 0 && (
-              <Card className="bg-zinc-900 border-zinc-800">
+              <Card className="bg-card border-zinc-800">
                 <CardContent className="py-16 text-center">
                   <Camera className="w-12 h-12 mx-auto mb-4 text-zinc-600" />
                   <p className="text-zinc-400">No photos in this album yet</p>
@@ -536,7 +536,7 @@ export function ViewerStationPage() {
         {/* Photo Lightbox */}
         {selectedPhoto && (
           <div
-            className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4"
+            className="fixed inset-0 z-50 bg-[#101112]/90 flex items-center justify-center p-4"
             onClick={() => setSelectedPhoto(null)}
           >
             <img

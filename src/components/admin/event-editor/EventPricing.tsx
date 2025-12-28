@@ -162,7 +162,7 @@ export function EventPricing({ formData, setFormData }: EditorSectionProps) {
 
         {/* Quick Templates */}
         {formData.eventMode === 'pay_per_album' && (
-          <Card className="bg-zinc-900/50 border-white/10 backdrop-blur-sm">
+          <Card className="bg-card/50 border-white/10 backdrop-blur-sm">
             <CardHeader>
               <CardTitle className="text-white text-base flex items-center gap-2">
                 <Package className="w-4 h-4 text-purple-400" />
@@ -179,7 +179,7 @@ export function EventPricing({ formData, setFormData }: EditorSectionProps) {
                     key={template.id}
                     type="button"
                     onClick={() => applyTemplate(template.id)}
-                    className="p-4 rounded-xl border border-white/10 bg-black/20 hover:bg-white/5 hover:border-purple-500/50 transition-all text-left group"
+                    className="p-4 rounded-xl border border-white/10 bg-[#101112]/20 hover:bg-white/5 hover:border-purple-500/50 transition-all text-left group"
                   >
                     <div className="flex items-center gap-2 mb-2">
                       {template.id === 'digital-only' && <Image className="w-5 h-5 text-blue-400" />}
@@ -197,7 +197,7 @@ export function EventPricing({ formData, setFormData }: EditorSectionProps) {
         )}
 
         {/* Currency & Tax Settings */}
-        <Card className="bg-zinc-900/50 border-white/10 backdrop-blur-sm">
+        <Card className="bg-card/50 border-white/10 backdrop-blur-sm">
           <CardHeader>
             <CardTitle className="text-white text-base flex items-center gap-2">
               <Receipt className="w-4 h-4 text-zinc-400" />
@@ -212,10 +212,10 @@ export function EventPricing({ formData, setFormData }: EditorSectionProps) {
                   value={pricing.currency} 
                   onValueChange={(value) => updatePricing({ currency: value })}
                 >
-                  <SelectTrigger className="bg-black/40 border-white/10 text-white">
+                  <SelectTrigger className="bg-[#101112]/40 border-white/10 text-white">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="bg-zinc-900 border-white/10">
+                  <SelectContent className="bg-card border-white/10">
                     {CURRENCIES.map(curr => (
                       <SelectItem key={curr.value} value={curr.value} className="text-white">
                         {curr.label}
@@ -236,7 +236,7 @@ export function EventPricing({ formData, setFormData }: EditorSectionProps) {
                     placeholder="0"
                     value={(pricing.taxRate || 0) * 100}
                     onChange={(e) => updatePricing({ taxRate: parseFloat(e.target.value) / 100 || 0 })}
-                    className="bg-black/40 border-white/10 text-white pr-8"
+                    className="bg-[#101112]/40 border-white/10 text-white pr-8"
                   />
                   <Percent className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
                 </div>
@@ -248,7 +248,7 @@ export function EventPricing({ formData, setFormData }: EditorSectionProps) {
                   placeholder="e.g., IVU, VAT, Sales Tax"
                   value={pricing.taxName || ""}
                   onChange={(e) => updatePricing({ taxName: e.target.value })}
-                  className="bg-black/40 border-white/10 text-white"
+                  className="bg-[#101112]/40 border-white/10 text-white"
                 />
               </div>
             </div>
@@ -257,7 +257,7 @@ export function EventPricing({ formData, setFormData }: EditorSectionProps) {
 
         {/* Pay Per Album - Packages */}
         {formData.eventMode === 'pay_per_album' && (
-          <Card className="bg-zinc-900/50 border-white/10 backdrop-blur-sm">
+          <Card className="bg-card/50 border-white/10 backdrop-blur-sm">
             <CardHeader>
               <CardTitle className="text-white text-base flex items-center gap-2">
                 <Package className="w-4 h-4 text-purple-400" />
@@ -276,7 +276,7 @@ export function EventPricing({ formData, setFormData }: EditorSectionProps) {
                     className={`p-4 rounded-xl border transition-all ${
                       pkg.isDefault 
                         ? 'border-purple-500/50 bg-purple-500/10' 
-                        : 'border-white/10 bg-black/20'
+                        : 'border-white/10 bg-[#101112]/20'
                     }`}
                   >
                     <div className="flex items-start justify-between gap-4">
@@ -285,7 +285,7 @@ export function EventPricing({ formData, setFormData }: EditorSectionProps) {
                           <Input
                             value={pkg.name}
                             onChange={(e) => updateAlbumPackage(pkg.id, { name: e.target.value })}
-                            className="bg-black/40 border-white/10 text-white font-medium max-w-xs"
+                            className="bg-[#101112]/40 border-white/10 text-white font-medium max-w-xs"
                             placeholder="Package name"
                           />
                           {pkg.isDefault && (
@@ -298,7 +298,7 @@ export function EventPricing({ formData, setFormData }: EditorSectionProps) {
                         <Input
                           value={pkg.description || ""}
                           onChange={(e) => updateAlbumPackage(pkg.id, { description: e.target.value })}
-                          className="bg-black/40 border-white/10 text-white text-sm"
+                          className="bg-[#101112]/40 border-white/10 text-white text-sm"
                           placeholder="Package description (optional)"
                         />
                         
@@ -315,7 +315,7 @@ export function EventPricing({ formData, setFormData }: EditorSectionProps) {
                                 min="0"
                                 value={pkg.price}
                                 onChange={(e) => updateAlbumPackage(pkg.id, { price: parseFloat(e.target.value) || 0 })}
-                                className="bg-black/40 border-white/10 text-white pl-7"
+                                className="bg-[#101112]/40 border-white/10 text-white pl-7"
                               />
                             </div>
                           </div>
@@ -342,7 +342,7 @@ export function EventPricing({ formData, setFormData }: EditorSectionProps) {
                               min="0"
                               value={pkg.printQuantity || 0}
                               onChange={(e) => updateAlbumPackage(pkg.id, { printQuantity: parseInt(e.target.value) || 0 })}
-                              className="bg-black/40 border-white/10 text-white w-16 text-center"
+                              className="bg-[#101112]/40 border-white/10 text-white w-16 text-center"
                             />
                           </div>
                         </div>
@@ -381,7 +381,7 @@ export function EventPricing({ formData, setFormData }: EditorSectionProps) {
                   value={newPackageName}
                   onChange={(e) => setNewPackageName(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && addPackage()}
-                  className="bg-black/40 border-white/10 text-white"
+                  className="bg-[#101112]/40 border-white/10 text-white"
                 />
                 <Button 
                   onClick={addPackage}
@@ -398,7 +398,7 @@ export function EventPricing({ formData, setFormData }: EditorSectionProps) {
 
         {/* Pay Per Photo - Simple Pricing */}
         {formData.eventMode === 'pay_per_photo' && (
-          <Card className="bg-zinc-900/50 border-white/10 backdrop-blur-sm">
+          <Card className="bg-card/50 border-white/10 backdrop-blur-sm">
             <CardHeader>
               <CardTitle className="text-white text-base flex items-center gap-2">
                 <Image className="w-4 h-4 text-amber-400" />
@@ -410,7 +410,7 @@ export function EventPricing({ formData, setFormData }: EditorSectionProps) {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="p-4 rounded-xl border border-white/10 bg-black/20">
+                <div className="p-4 rounded-xl border border-white/10 bg-[#101112]/20">
                   <div className="flex items-center gap-3 mb-3">
                     <div className="p-2 rounded-lg bg-blue-500/10">
                       <Image className="w-5 h-5 text-blue-400" />
@@ -435,12 +435,12 @@ export function EventPricing({ formData, setFormData }: EditorSectionProps) {
                           digitalPrice: parseFloat(e.target.value) || 0
                         }
                       })}
-                      className="bg-black/40 border-white/10 text-white text-lg pl-7"
+                      className="bg-[#101112]/40 border-white/10 text-white text-lg pl-7"
                     />
                   </div>
                 </div>
                 
-                <div className="p-4 rounded-xl border border-white/10 bg-black/20">
+                <div className="p-4 rounded-xl border border-white/10 bg-[#101112]/20">
                   <div className="flex items-center gap-3 mb-3">
                     <div className="p-2 rounded-lg bg-orange-500/10">
                       <Printer className="w-5 h-5 text-orange-400" />
@@ -465,7 +465,7 @@ export function EventPricing({ formData, setFormData }: EditorSectionProps) {
                           printPrice: parseFloat(e.target.value) || 0
                         }
                       })}
-                      className="bg-black/40 border-white/10 text-white text-lg pl-7"
+                      className="bg-[#101112]/40 border-white/10 text-white text-lg pl-7"
                     />
                   </div>
                 </div>
@@ -475,7 +475,7 @@ export function EventPricing({ formData, setFormData }: EditorSectionProps) {
         )}
 
         {/* Business Info for Invoices */}
-        <Card className="bg-zinc-900/50 border-white/10 backdrop-blur-sm">
+        <Card className="bg-card/50 border-white/10 backdrop-blur-sm">
           <CardHeader>
             <CardTitle className="text-white text-base flex items-center gap-2">
               <Building2 className="w-4 h-4 text-zinc-400" />
@@ -495,7 +495,7 @@ export function EventPricing({ formData, setFormData }: EditorSectionProps) {
                   onChange={(e) => updatePricing({
                     businessInfo: { ...pricing.businessInfo!, name: e.target.value }
                   })}
-                  className="bg-black/40 border-white/10 text-white"
+                  className="bg-[#101112]/40 border-white/10 text-white"
                 />
               </div>
               
@@ -507,7 +507,7 @@ export function EventPricing({ formData, setFormData }: EditorSectionProps) {
                   onChange={(e) => updatePricing({
                     businessInfo: { ...pricing.businessInfo!, taxId: e.target.value }
                   })}
-                  className="bg-black/40 border-white/10 text-white"
+                  className="bg-[#101112]/40 border-white/10 text-white"
                 />
               </div>
               
@@ -519,7 +519,7 @@ export function EventPricing({ formData, setFormData }: EditorSectionProps) {
                   onChange={(e) => updatePricing({
                     businessInfo: { ...pricing.businessInfo!, address: e.target.value }
                   })}
-                  className="bg-black/40 border-white/10 text-white"
+                  className="bg-[#101112]/40 border-white/10 text-white"
                 />
               </div>
               
@@ -531,7 +531,7 @@ export function EventPricing({ formData, setFormData }: EditorSectionProps) {
                   onChange={(e) => updatePricing({
                     businessInfo: { ...pricing.businessInfo!, phone: e.target.value }
                   })}
-                  className="bg-black/40 border-white/10 text-white"
+                  className="bg-[#101112]/40 border-white/10 text-white"
                 />
               </div>
               
@@ -544,7 +544,7 @@ export function EventPricing({ formData, setFormData }: EditorSectionProps) {
                   onChange={(e) => updatePricing({
                     businessInfo: { ...pricing.businessInfo!, email: e.target.value }
                   })}
-                  className="bg-black/40 border-white/10 text-white"
+                  className="bg-[#101112]/40 border-white/10 text-white"
                 />
               </div>
             </div>
@@ -552,7 +552,7 @@ export function EventPricing({ formData, setFormData }: EditorSectionProps) {
         </Card>
 
         {/* Online Payments (Stripe) - Future */}
-        <Card className="bg-zinc-900/50 border-white/10 backdrop-blur-sm opacity-60">
+        <Card className="bg-card/50 border-white/10 backdrop-blur-sm opacity-60">
           <CardHeader>
             <CardTitle className="text-white text-base flex items-center gap-2">
               <CreditCard className="w-4 h-4 text-zinc-400" />

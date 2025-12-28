@@ -171,7 +171,7 @@ export default function ViewerDisplayPage() {
   
   if (loading) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
+      <div className="min-h-screen bg-[#101112] flex items-center justify-center">
         <Loader2 className="w-16 h-16 animate-spin" style={{ color: primaryColor }} />
       </div>
     );
@@ -183,7 +183,7 @@ export default function ViewerDisplayPage() {
     
     return (
       <div 
-        className="min-h-screen bg-black flex flex-col items-center justify-center p-8 relative overflow-hidden"
+        className="min-h-screen bg-[#101112] flex flex-col items-center justify-center p-8 relative overflow-hidden"
         style={{
           background: `radial-gradient(ellipse at center, ${primaryColor}15 0%, black 70%)`,
         }}
@@ -264,7 +264,7 @@ export default function ViewerDisplayPage() {
   
   return (
     <div 
-      className="min-h-screen bg-black flex flex-col relative overflow-hidden"
+      className="min-h-screen bg-[#101112] flex flex-col relative overflow-hidden"
       onContextMenu={(e) => e.preventDefault()} // Prevent right-click
     >
       {/* Photo Display */}
@@ -283,7 +283,7 @@ export default function ViewerDisplayPage() {
         </div>
         
         {/* Gradient overlay at bottom */}
-        <div className="absolute bottom-0 left-0 right-0 h-48 bg-gradient-to-t from-black/90 to-transparent" />
+        <div className="absolute bottom-0 left-0 right-0 h-48 bg-gradient-to-t from-[#101112]/90 to-transparent" />
       </div>
       
       {/* Info Bar */}

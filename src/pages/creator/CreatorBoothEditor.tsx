@@ -176,7 +176,7 @@ export default function CreatorBoothEditor() {
 
     if (isLoading) {
         return (
-            <div className="flex items-center justify-center h-screen bg-black">
+            <div className="flex items-center justify-center h-screen bg-[#101112]">
                 <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-indigo-500"></div>
             </div>
         );
@@ -187,7 +187,7 @@ export default function CreatorBoothEditor() {
             case 'setup':
                 return (
                     <div className="h-full p-6 space-y-6 overflow-hidden">
-                        <Card className="bg-zinc-900 border-white/10">
+                        <Card className="bg-card border-white/10">
                             <CardHeader>
                                 <CardTitle className="text-white">Booth Details</CardTitle>
                                 <CardDescription className="text-zinc-400">
@@ -200,7 +200,7 @@ export default function CreatorBoothEditor() {
                                     <Input
                                         value={formData.title}
                                         onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                                        className="bg-zinc-950 border-white/10 text-white"
+                                        className="bg-card border-white/10 text-white"
                                         placeholder="e.g. My Awesome Party"
                                     />
                                 </div>
@@ -211,7 +211,7 @@ export default function CreatorBoothEditor() {
                                         <Input
                                             value={formData.slug}
                                             onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
-                                            className="bg-zinc-950 border-white/10 text-white flex-1 font-mono"
+                                            className="bg-card border-white/10 text-white flex-1 font-mono"
                                             placeholder="my-party"
                                         />
                                     </div>
@@ -221,7 +221,7 @@ export default function CreatorBoothEditor() {
                                     <Textarea
                                         value={formData.description}
                                         onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                        className="bg-zinc-950 border-white/10 text-white min-h-[100px]"
+                                        className="bg-card border-white/10 text-white min-h-[100px]"
                                         placeholder="Describe what this booth is for..."
                                     />
                                 </div>
@@ -229,7 +229,7 @@ export default function CreatorBoothEditor() {
                         </Card>
 
                         {/* Monetization */}
-                        <Card className="bg-zinc-900 border-white/10">
+                        <Card className="bg-card border-white/10">
                             <CardHeader>
                                 <div className="flex items-center gap-2">
                                     <DollarSign className="w-5 h-5 text-green-400" />
@@ -246,10 +246,10 @@ export default function CreatorBoothEditor() {
                                         value={formData.eventMode || "free"}
                                         onValueChange={(value) => setFormData({ ...formData, eventMode: value as any })}
                                     >
-                                        <SelectTrigger className="bg-zinc-950 border-white/10 text-white">
+                                        <SelectTrigger className="bg-card border-white/10 text-white">
                                             <SelectValue />
                                         </SelectTrigger>
-                                        <SelectContent className="bg-zinc-900 border-white/10">
+                                        <SelectContent className="bg-card border-white/10">
                                             <SelectItem value="free">Free - No restrictions</SelectItem>
                                             <SelectItem value="pay_per_photo">Pay Per Photo - Charge via Stripe</SelectItem>
                                         </SelectContent>
@@ -264,7 +264,7 @@ export default function CreatorBoothEditor() {
                                             min="0"
                                             step="0.01"
                                             placeholder="e.g. 2.99"
-                                            className="bg-zinc-950 border-white/10 text-white"
+                                            className="bg-card border-white/10 text-white"
                                         />
                                         <p className="text-xs text-zinc-500">
                                             Users will pay via Stripe before generating photos
@@ -275,7 +275,7 @@ export default function CreatorBoothEditor() {
                         </Card>
 
                         {/* Privacy */}
-                        <Card className="bg-zinc-900 border-white/10">
+                        <Card className="bg-card border-white/10">
                             <CardHeader>
                                 <div className="flex items-center gap-2">
                                     <Lock className="w-5 h-5 text-amber-400" />
@@ -317,7 +317,7 @@ export default function CreatorBoothEditor() {
             case 'design':
                 return (
                     <div className="h-full p-6 space-y-6 overflow-hidden">
-                        <Card className="bg-zinc-900 border-white/10">
+                        <Card className="bg-card border-white/10">
                             <CardHeader>
                                 <div className="flex items-center gap-2">
                                     <Palette className="w-5 h-5 text-purple-400" />
@@ -336,7 +336,7 @@ export default function CreatorBoothEditor() {
                                             ...formData,
                                             branding: { ...formData.branding, logoPath: e.target.value }
                                         })}
-                                        className="bg-zinc-950 border-white/10 text-white"
+                                        className="bg-card border-white/10 text-white"
                                         placeholder="https://..."
                                     />
                                 </div>
@@ -383,7 +383,7 @@ export default function CreatorBoothEditor() {
             case 'workflow':
                 return (
                     <div className="h-full p-6 space-y-6 overflow-hidden">
-                        <Card className="bg-zinc-900 border-white/10">
+                        <Card className="bg-card border-white/10">
                             <CardHeader>
                                 <CardTitle className="text-white">Sharing Options</CardTitle>
                             </CardHeader>
@@ -417,7 +417,7 @@ export default function CreatorBoothEditor() {
             case 'settings':
                 return (
                     <div className="h-full p-6 space-y-6 overflow-hidden">
-                        <Card className="bg-zinc-900 border-white/10">
+                        <Card className="bg-card border-white/10">
                             <CardHeader>
                                 <CardTitle className="text-white">AI Settings</CardTitle>
                             </CardHeader>
@@ -430,7 +430,7 @@ export default function CreatorBoothEditor() {
                                             ...formData,
                                             settings: { ...formData.settings, aiModel: e.target.value }
                                         })}
-                                        className="w-full bg-zinc-950 border border-white/10 rounded-md p-2 text-white"
+                                        className="w-full bg-card border border-white/10 rounded-md p-2 text-white"
                                     >
                                         <option value="nano-banana">Nano Banana [Standard - 1 token]</option>
                                         <option value="nano-banana-pro">Nano Banana Pro [Premium - 15 tokens]</option>

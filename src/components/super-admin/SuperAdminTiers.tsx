@@ -231,7 +231,7 @@ export default function SuperAdminTiers() {
                 </Button>
             </div>
 
-            <Card className="bg-zinc-950 border-white/5 shadow-sm">
+            <Card className="bg-card border-white/5 shadow-sm">
                 <CardContent className="p-0">
                     <Table>
                         <TableHeader>
@@ -285,14 +285,14 @@ export default function SuperAdminTiers() {
                                             )}
                                         </TableCell>
                                         <TableCell>
-                                            <Badge variant="outline" className="border-zinc-800 bg-zinc-900/50 text-zinc-400 text-[10px] font-mono px-2 py-0 h-5">
+                                            <Badge variant="outline" className="border-zinc-800 bg-card/50 text-zinc-400 text-[10px] font-mono px-2 py-0 h-5">
                                                 {tier.token_limit.toLocaleString()}
                                             </Badge>
                                         </TableCell>
                                         <TableCell>
                                             <div className="flex flex-wrap gap-1 max-w-xs">
                                                 {Array.isArray(tier.features) && tier.features.slice(0, 3).map((f, i) => (
-                                                    <span key={i} className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-900 text-zinc-500 border border-zinc-800">
+                                                    <span key={i} className="text-[10px] px-1.5 py-0.5 rounded bg-card text-zinc-500 border border-zinc-800">
                                                         {f}
                                                     </span>
                                                 ))}
@@ -323,7 +323,7 @@ export default function SuperAdminTiers() {
                                                         <MoreHorizontal className="h-4 w-4" />
                                                     </Button>
                                                 </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end" className="bg-zinc-950 border-white/10 text-zinc-300 w-32">
+                                                <DropdownMenuContent align="end" className="bg-card border-white/10 text-zinc-300 w-32">
                                                     <DropdownMenuItem
                                                         onClick={() => handleEdit(tier)}
                                                         className="cursor-pointer text-xs focus:bg-white/5 focus:text-white my-0.5"
@@ -349,8 +349,8 @@ export default function SuperAdminTiers() {
             </Card>
 
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogContent className="bg-zinc-950 border-zinc-800 text-white sm:max-w-[450px] p-0 overflow-hidden gap-0">
-                    <DialogHeader className="px-6 py-4 border-b border-white/5 bg-zinc-900/50">
+                <DialogContent className="bg-card border-zinc-800 text-white sm:max-w-[450px] p-0 overflow-hidden gap-0">
+                    <DialogHeader className="px-6 py-4 border-b border-white/5 bg-card/50">
                         <DialogTitle className="text-base font-semibold">{editingTier ? "Edit Tier" : "Create New Tier"}</DialogTitle>
                         <DialogDescription className="text-xs text-zinc-500 mt-1">
                             Configure the pricing, limits, and features for this subscription tier.
@@ -366,7 +366,7 @@ export default function SuperAdminTiers() {
                                     placeholder="e.g. Gold Plan"
                                     value={form.name}
                                     onChange={(e) => setForm({ ...form, name: e.target.value })}
-                                    className="bg-black border-zinc-800 h-9 text-sm focus-visible:ring-indigo-500/50"
+                                    className="bg-[#101112] border-zinc-800 h-9 text-sm focus-visible:ring-indigo-500/50"
                                 />
                             </div>
                             <div className="space-y-1.5">
@@ -376,7 +376,7 @@ export default function SuperAdminTiers() {
                                     placeholder="e.g. gold_plan"
                                     value={form.code}
                                     onChange={(e) => setForm({ ...form, code: e.target.value })}
-                                    className="bg-black border-zinc-800 h-9 text-sm focus-visible:ring-indigo-500/50"
+                                    className="bg-[#101112] border-zinc-800 h-9 text-sm focus-visible:ring-indigo-500/50"
                                     disabled={!!editingTier} // Codes should be immutable usually
                                 />
                             </div>
@@ -392,7 +392,7 @@ export default function SuperAdminTiers() {
                                     step="0.01"
                                     value={form.price}
                                     onChange={(e) => setForm({ ...form, price: parseFloat(e.target.value) })}
-                                    className="bg-black border-zinc-800 h-9 text-sm focus-visible:ring-indigo-500/50"
+                                    className="bg-[#101112] border-zinc-800 h-9 text-sm focus-visible:ring-indigo-500/50"
                                 />
                             </div>
                             <div className="space-y-1.5">
@@ -403,7 +403,7 @@ export default function SuperAdminTiers() {
                                     min="0"
                                     value={form.tokenLimit}
                                     onChange={(e) => setForm({ ...form, tokenLimit: parseInt(e.target.value) })}
-                                    className="bg-black border-zinc-800 h-9 text-sm focus-visible:ring-indigo-500/50"
+                                    className="bg-[#101112] border-zinc-800 h-9 text-sm focus-visible:ring-indigo-500/50"
                                 />
                             </div>
                         </div>
@@ -415,10 +415,10 @@ export default function SuperAdminTiers() {
                                     value={form.category}
                                     onValueChange={(val) => setForm({ ...form, category: val })}
                                 >
-                                    <SelectTrigger className="bg-black border-zinc-800 h-9 text-sm focus:ring-indigo-500/50">
+                                    <SelectTrigger className="bg-[#101112] border-zinc-800 h-9 text-sm focus:ring-indigo-500/50">
                                         <SelectValue placeholder="Select category" />
                                     </SelectTrigger>
-                                    <SelectContent className="bg-zinc-900 border-zinc-800 text-zinc-300">
+                                    <SelectContent className="bg-card border-zinc-800 text-zinc-300">
                                         <SelectItem value="individual">Individual</SelectItem>
                                         <SelectItem value="business">Business</SelectItem>
                                     </SelectContent>
@@ -431,7 +431,7 @@ export default function SuperAdminTiers() {
                                     placeholder="e.g. Most Popular"
                                     value={form.highlight}
                                     onChange={(e) => setForm({ ...form, highlight: e.target.value })}
-                                    className="bg-black border-zinc-800 h-9 text-sm focus-visible:ring-indigo-500/50"
+                                    className="bg-[#101112] border-zinc-800 h-9 text-sm focus-visible:ring-indigo-500/50"
                                 />
                             </div>
                         </div>
@@ -443,11 +443,11 @@ export default function SuperAdminTiers() {
                                 placeholder="Feature 1&#10;Feature 2&#10;Feature 3"
                                 value={form.featuresText}
                                 onChange={(e) => setForm({ ...form, featuresText: e.target.value })}
-                                className="bg-black border-zinc-800 min-h-[100px] text-sm focus-visible:ring-indigo-500/50 resize-none p-3"
+                                className="bg-[#101112] border-zinc-800 min-h-[100px] text-sm focus-visible:ring-indigo-500/50 resize-none p-3"
                             />
                         </div>
 
-                        <div className="flex items-center justify-between p-3 rounded-lg bg-zinc-900/50 border border-white/5">
+                        <div className="flex items-center justify-between p-3 rounded-lg bg-card/50 border border-white/5">
                             <div className="space-y-0.5">
                                 <Label className="text-sm font-medium text-zinc-300">Active Status</Label>
                                 <p className="text-[10px] text-zinc-500">
@@ -461,7 +461,7 @@ export default function SuperAdminTiers() {
                         </div>
                     </div>
 
-                    <DialogFooter className="px-6 py-4 border-t border-white/5 bg-zinc-900/50 sm:justify-between items-center">
+                    <DialogFooter className="px-6 py-4 border-t border-white/5 bg-card/50 sm:justify-between items-center">
                         <Button
                             variant="ghost"
                             onClick={() => setIsDialogOpen(false)}

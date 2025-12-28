@@ -11,7 +11,7 @@ const NotFound = () => {
   }, [location.pathname]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-950 p-6 overflow-hidden relative">
+    <div className="flex min-h-screen items-center justify-center bg-card p-6 overflow-hidden relative">
       {/* Animated background */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute -top-1/2 -left-1/2 w-full h-full bg-gradient-to-br from-indigo-600/20 via-transparent to-transparent rounded-full blur-3xl animate-pulse" />
@@ -50,7 +50,7 @@ const NotFound = () => {
         </div>
 
         {/* Path info */}
-        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-zinc-900/50 border border-zinc-800 text-zinc-500 text-sm">
+        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-card/50 border border-zinc-800 text-zinc-500 text-sm">
           <Search className="h-4 w-4" />
           <code className="font-mono">{location.pathname}</code>
         </div>

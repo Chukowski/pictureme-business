@@ -45,7 +45,7 @@ export default function SuperAdminContent() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="bg-zinc-900 border border-white/10">
+        <TabsList className="bg-card border border-white/10">
           <TabsTrigger value="announcements" className="data-[state=active]:bg-zinc-800 data-[state=active]:text-white">
             <Megaphone className="w-4 h-4 mr-2" />
             Announcements
@@ -77,7 +77,7 @@ export default function SuperAdminContent() {
         </TabsContent>
 
         <TabsContent value="creations" className="space-y-4">
-          <Card className="bg-zinc-900 border-white/10">
+          <Card className="bg-card border-white/10">
             <CardHeader>
               <CardTitle>Community Creations</CardTitle>
               <CardDescription>Moderate and feature user creations</CardDescription>
@@ -216,12 +216,12 @@ function AnnouncementsManager() {
         {isLoading ? (
           <div className="flex justify-center p-8"><Loader2 className="w-8 h-8 animate-spin text-zinc-500" /></div>
         ) : announcements.length === 0 ? (
-          <Card className="bg-zinc-900 border-white/10 p-8 text-center text-zinc-500">
+          <Card className="bg-card border-white/10 p-8 text-center text-zinc-500">
             No announcements found. Create one to get started.
           </Card>
         ) : (
           announcements.map(announcement => (
-            <Card key={announcement.id} className="bg-zinc-900 border-white/10 overflow-hidden">
+            <Card key={announcement.id} className="bg-card border-white/10 overflow-hidden">
               <div className="p-4 flex items-center justify-between">
                 <div className="flex items-center gap-4">
                   <Badge variant={announcement.published ? "default" : "secondary"} className={announcement.published ? "bg-emerald-500/20 text-emerald-400" : "bg-zinc-800 text-zinc-400"}>
@@ -253,7 +253,7 @@ function AnnouncementsManager() {
       </div>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="bg-zinc-950 border-white/10 text-white sm:max-w-[600px]">
+        <DialogContent className="bg-card border-white/10 text-white sm:max-w-[600px]">
           <DialogHeader>
             <DialogTitle>{editingId ? "Edit Announcement" : "New Announcement"}</DialogTitle>
           </DialogHeader>
@@ -266,10 +266,10 @@ function AnnouncementsManager() {
                   value={formData.type} 
                   onValueChange={(val: any) => setFormData({...formData, type: val})}
                 >
-                  <SelectTrigger className="bg-zinc-900 border-white/10">
+                  <SelectTrigger className="bg-card border-white/10">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="bg-zinc-900 border-white/10 text-white">
+                  <SelectContent className="bg-card border-white/10 text-white">
                     <SelectItem value="new_feature">New Feature 🚀</SelectItem>
                     <SelectItem value="update">Update 📦</SelectItem>
                     <SelectItem value="maintenance">Maintenance 🔧</SelectItem>
@@ -284,10 +284,10 @@ function AnnouncementsManager() {
                   value={formData.visibility} 
                   onValueChange={(val: any) => setFormData({...formData, visibility: val})}
                 >
-                  <SelectTrigger className="bg-zinc-900 border-white/10">
+                  <SelectTrigger className="bg-card border-white/10">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="bg-zinc-900 border-white/10 text-white">
+                  <SelectContent className="bg-card border-white/10 text-white">
                     <SelectItem value="global">Global</SelectItem>
                     <SelectItem value="business_only">Business Only</SelectItem>
                     <SelectItem value="personal_only">Personal Only</SelectItem>
@@ -301,7 +301,7 @@ function AnnouncementsManager() {
               <Input 
                 value={formData.title} 
                 onChange={e => setFormData({...formData, title: e.target.value})}
-                className="bg-zinc-900 border-white/10"
+                className="bg-card border-white/10"
                 placeholder="e.g., Live Mode is here!"
               />
             </div>
@@ -311,7 +311,7 @@ function AnnouncementsManager() {
               <Textarea 
                 value={formData.content} 
                 onChange={e => setFormData({...formData, content: e.target.value})}
-                className="bg-zinc-900 border-white/10 min-h-[100px]"
+                className="bg-card border-white/10 min-h-[100px]"
                 placeholder="Brief description..."
               />
             </div>
@@ -322,7 +322,7 @@ function AnnouncementsManager() {
                 <Input 
                   value={formData.cta_label} 
                   onChange={e => setFormData({...formData, cta_label: e.target.value})}
-                  className="bg-zinc-900 border-white/10"
+                  className="bg-card border-white/10"
                   placeholder="Try Now"
                 />
               </div>
@@ -331,7 +331,7 @@ function AnnouncementsManager() {
                 <Input 
                   value={formData.cta_url} 
                   onChange={e => setFormData({...formData, cta_url: e.target.value})}
-                  className="bg-zinc-900 border-white/10"
+                  className="bg-card border-white/10"
                   placeholder="/admin/playground"
                 />
               </div>
@@ -407,7 +407,7 @@ function FeaturedTemplatesManager() {
 
   return (
     <div className="space-y-6">
-      <Card className="bg-zinc-900 border-white/10">
+      <Card className="bg-card border-white/10">
         <CardHeader>
           <CardTitle>Featured Templates</CardTitle>
           <CardDescription>Manage templates shown in the Home Dashboard</CardDescription>
@@ -418,7 +418,7 @@ function FeaturedTemplatesManager() {
               placeholder="Enter Template ID (e.g. evt-123-abc)" 
               value={newTemplateId}
               onChange={e => setNewTemplateId(e.target.value)}
-              className="bg-zinc-950 border-white/10 max-w-md"
+              className="bg-card border-white/10 max-w-md"
             />
             <Button onClick={handleAdd} disabled={!newTemplateId || isAdding} className="bg-indigo-600">
               {isAdding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4 mr-2" />}
@@ -428,7 +428,7 @@ function FeaturedTemplatesManager() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
             {featured.map((item, index) => (
-              <div key={item.id} className="flex items-center justify-between p-3 rounded-lg bg-zinc-950 border border-white/10">
+              <div key={item.id} className="flex items-center justify-between p-3 rounded-lg bg-card border border-white/10">
                 <div className="flex items-center gap-3">
                   <div className="w-6 h-6 rounded-full bg-zinc-800 flex items-center justify-center text-xs font-bold text-zinc-400">
                     {index + 1}
@@ -469,7 +469,7 @@ function TrendingManager() {
   };
 
   return (
-    <Card className="bg-zinc-900 border-white/10">
+    <Card className="bg-card border-white/10">
       <CardHeader>
         <CardTitle>Trending Logic</CardTitle>
         <CardDescription>Algorithms update automatically every 24h. You can force an update here.</CardDescription>

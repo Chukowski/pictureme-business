@@ -19,7 +19,7 @@ export default function IndividualDashboard({ currentUser }: IndividualDashboard
             {/* Tabs Navigation */}
             <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
                 <div className="shrink-0 mb-6">
-                    <TabsList className="inline-flex h-auto p-1 bg-zinc-900/50 backdrop-blur-xl border border-white/10 rounded-2xl overflow-x-auto max-w-full">
+                    <TabsList className="inline-flex h-auto p-1 bg-card/50 backdrop-blur-xl border border-white/10 rounded-2xl overflow-x-auto max-w-full">
                         <TabsTrigger
                             value="overview"
                             className="flex items-center gap-2 px-4 py-2 sm:px-6 sm:py-3 rounded-xl data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-zinc-400 transition-all"
@@ -74,7 +74,7 @@ export default function IndividualDashboard({ currentUser }: IndividualDashboard
                 <TabsContent value="overview" className="flex-1 min-h-0 overflow-y-auto focus-visible:outline-none mt-0 space-y-6 data-[state=inactive]:hidden">
                     {/* Stats Cards */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <Card className="bg-zinc-900/50 border-white/10 backdrop-blur-sm">
+                        <Card className="bg-card/50 border-white/10 backdrop-blur-sm">
                             <CardHeader className="pb-2">
                                 <CardTitle className="text-sm font-medium text-zinc-400">Available Tokens</CardTitle>
                             </CardHeader>
@@ -89,7 +89,7 @@ export default function IndividualDashboard({ currentUser }: IndividualDashboard
                             </CardContent>
                         </Card>
 
-                        <Card className="bg-zinc-900/50 border-white/10 backdrop-blur-sm">
+                        <Card className="bg-card/50 border-white/10 backdrop-blur-sm">
                             <CardHeader className="pb-2">
                                 <CardTitle className="text-sm font-medium text-zinc-400">Photos This Month</CardTitle>
                             </CardHeader>
@@ -99,7 +99,7 @@ export default function IndividualDashboard({ currentUser }: IndividualDashboard
                             </CardContent>
                         </Card>
 
-                        <Card className="bg-zinc-900/50 border-white/10 backdrop-blur-sm">
+                        <Card className="bg-card/50 border-white/10 backdrop-blur-sm">
                             <CardHeader className="pb-2">
                                 <CardTitle className="text-sm font-medium text-zinc-400">Top Template</CardTitle>
                             </CardHeader>
@@ -125,7 +125,7 @@ export default function IndividualDashboard({ currentUser }: IndividualDashboard
 
                     {/* Shortcuts */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <Button variant="outline" className="h-auto py-4 border-white/10 bg-zinc-900/30 hover:bg-zinc-800 hover:text-white justify-start">
+                        <Button variant="outline" className="h-auto py-4 border-white/10 bg-card/30 hover:bg-zinc-800 hover:text-white justify-start">
                             <div className="p-2 rounded-lg bg-indigo-500/10 mr-4">
                                 <Camera className="w-6 h-6 text-indigo-400" />
                             </div>
@@ -134,7 +134,7 @@ export default function IndividualDashboard({ currentUser }: IndividualDashboard
                                 <div className="text-xs text-zinc-500">Launch your personal photo booth</div>
                             </div>
                         </Button>
-                        <Button variant="outline" className="h-auto py-4 border-white/10 bg-zinc-900/30 hover:bg-zinc-800 hover:text-white justify-start">
+                        <Button variant="outline" className="h-auto py-4 border-white/10 bg-card/30 hover:bg-zinc-800 hover:text-white justify-start">
                             <div className="p-2 rounded-lg bg-purple-500/10 mr-4">
                                 <ImageIcon className="w-6 h-6 text-purple-400" />
                             </div>
@@ -148,7 +148,7 @@ export default function IndividualDashboard({ currentUser }: IndividualDashboard
 
                 {/* My Booth Tab */}
                 <TabsContent value="my-booth" className="focus-visible:outline-none">
-                    <div className="text-center py-12 bg-zinc-900/30 rounded-3xl border border-white/5 border-dashed">
+                    <div className="text-center py-12 bg-card/30 rounded-3xl border border-white/5 border-dashed">
                         <Camera className="w-12 h-12 text-zinc-600 mx-auto mb-4" />
                         <h3 className="text-xl font-semibold text-white mb-2">My Personal Booth</h3>
                         <p className="text-zinc-400 max-w-md mx-auto mb-6">
@@ -170,7 +170,7 @@ export default function IndividualDashboard({ currentUser }: IndividualDashboard
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                         {[1, 2, 3].map((i) => (
-                            <Card key={i} className="bg-zinc-900/50 border-white/10 overflow-hidden">
+                            <Card key={i} className="bg-card/50 border-white/10 overflow-hidden">
                                 <div className="aspect-video bg-zinc-800 w-full" />
                                 <CardContent className="p-4">
                                     <h4 className="font-semibold text-white">Template {i}</h4>

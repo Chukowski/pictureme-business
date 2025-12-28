@@ -48,7 +48,7 @@ export function WhatsNewBlock({ content }: WhatsNewBlockProps) {
   const alerts = content?.announcements?.filter(a => a.type === 'alert' || a.type === 'maintenance') || [];
 
   return (
-    <Card className="bg-zinc-900/30 border-white/10 h-full flex flex-col">
+    <Card className="bg-card/30 border-white/10 h-full flex flex-col">
       <CardHeader className="pb-2">
         <CardTitle className="text-sm font-medium text-zinc-300 flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -64,7 +64,7 @@ export function WhatsNewBlock({ content }: WhatsNewBlockProps) {
       </CardHeader>
       <CardContent className="flex-1 flex flex-col">
         <Tabs defaultValue="features" className="flex-1 flex flex-col" onValueChange={setActiveTab}>
-          <TabsList className="w-full bg-zinc-900/50 border border-white/5 p-0.5 h-8 mb-4">
+          <TabsList className="w-full bg-card/50 border border-white/5 p-0.5 h-8 mb-4">
             <TabsTrigger value="features" className="flex-1 text-[10px] h-7 data-[state=active]:bg-zinc-800 data-[state=active]:text-white text-zinc-500">Features</TabsTrigger>
             <TabsTrigger value="templates" className="flex-1 text-[10px] h-7 data-[state=active]:bg-zinc-800 data-[state=active]:text-white text-zinc-500">Templates</TabsTrigger>
             <TabsTrigger value="tips" className="flex-1 text-[10px] h-7 data-[state=active]:bg-zinc-800 data-[state=active]:text-white text-zinc-500">Pro Tips</TabsTrigger>
@@ -90,7 +90,7 @@ export function WhatsNewBlock({ content }: WhatsNewBlockProps) {
                       {t.thumbnail_url && (
                         <img src={t.thumbnail_url} alt={t.template_name} className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity" />
                       )}
-                      <div className="absolute inset-0 flex items-end p-2 bg-gradient-to-t from-black/80 to-transparent">
+                      <div className="absolute inset-0 flex items-end p-2 bg-gradient-to-t from-[#101112]/80 to-transparent">
                         <span className="text-[10px] font-medium text-white truncate w-full">{t.template_name || 'Template'}</span>
                       </div>
                     </div>

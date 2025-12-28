@@ -186,7 +186,7 @@ export default function SuperAdminEvents() {
                         <Search className="absolute left-2 top-2.5 h-4 w-4 text-zinc-500" />
                         <Input
                             placeholder="Search events..."
-                            className="pl-8 bg-zinc-900/50 border-white/10"
+                            className="pl-8 bg-card/50 border-white/10"
                             value={searchTerm}
                             onChange={(e) => handleSearch(e.target.value)}
                         />
@@ -199,7 +199,7 @@ export default function SuperAdminEvents() {
                     <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
                 </div>
             ) : (
-                <div className="rounded-xl border border-white/10 bg-zinc-900/50 backdrop-blur-sm overflow-hidden">
+                <div className="rounded-xl border border-white/10 bg-card/50 backdrop-blur-sm overflow-hidden">
                     <Table>
                         <TableHeader className="bg-white/5">
                             <TableRow className="border-white/10 hover:bg-transparent">
@@ -316,23 +316,23 @@ export default function SuperAdminEvents() {
 
             {/* Summary Stats */}
             <div className="grid grid-cols-4 gap-4">
-                <div className="p-4 rounded-lg bg-zinc-900/50 border border-white/10">
+                <div className="p-4 rounded-lg bg-card/50 border border-white/10">
                     <p className="text-xs text-zinc-500 uppercase tracking-wider">Total Events</p>
                     <p className="text-2xl font-bold text-white">{total}</p>
                 </div>
-                <div className="p-4 rounded-lg bg-zinc-900/50 border border-white/10">
+                <div className="p-4 rounded-lg bg-card/50 border border-white/10">
                     <p className="text-xs text-zinc-500 uppercase tracking-wider">Active Events</p>
                     <p className="text-2xl font-bold text-emerald-400">
                         {events.filter(e => e.status === 'Active').length}
                     </p>
                 </div>
-                <div className="p-4 rounded-lg bg-zinc-900/50 border border-white/10">
+                <div className="p-4 rounded-lg bg-card/50 border border-white/10">
                     <p className="text-xs text-zinc-500 uppercase tracking-wider">Total Photos</p>
                     <p className="text-2xl font-bold text-blue-400">
                         {events.reduce((sum, e) => sum + e.photos, 0).toLocaleString()}
                     </p>
                 </div>
-                <div className="p-4 rounded-lg bg-zinc-900/50 border border-white/10">
+                <div className="p-4 rounded-lg bg-card/50 border border-white/10">
                     <p className="text-xs text-zinc-500 uppercase tracking-wider">Tokens Used</p>
                     <p className="text-2xl font-bold text-yellow-400">
                         {events.reduce((sum, e) => sum + e.tokens, 0).toLocaleString()}

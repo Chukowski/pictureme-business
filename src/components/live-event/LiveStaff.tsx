@@ -42,7 +42,7 @@ export function LiveStaff({ event }: LiveStaffProps) {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      <Card className="bg-zinc-900/50 border-white/10 col-span-full lg:col-span-2">
+      <Card className="bg-card/50 border-white/10 col-span-full lg:col-span-2">
         <CardHeader>
            <CardTitle className="text-white text-base">Staff Quick Actions</CardTitle>
         </CardHeader>
@@ -93,12 +93,12 @@ export function LiveStaff({ event }: LiveStaffProps) {
         </CardContent>
       </Card>
 
-      <Card className="bg-zinc-900/50 border-white/10">
+      <Card className="bg-card/50 border-white/10">
         <CardHeader>
           <CardTitle className="text-white text-base">Access Credentials</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-           <div className="p-3 rounded-lg bg-black/30 border border-white/5">
+           <div className="p-3 rounded-lg bg-[#101112]/30 border border-white/5">
               <p className="text-xs text-zinc-500 mb-1">Staff PIN Code</p>
               <div className="flex items-center justify-between">
                 <code className="text-xl font-mono font-bold text-white tracking-widest">

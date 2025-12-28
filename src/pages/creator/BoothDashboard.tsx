@@ -113,7 +113,7 @@ export default function BoothDashboard() {
                             New Booth
                         </Button>
                     </DialogTrigger>
-                    <DialogContent className="bg-zinc-900 border-white/10 text-white sm:max-w-[425px]">
+                    <DialogContent className="bg-card border-white/10 text-white sm:max-w-[425px]">
                         <DialogHeader>
                             <DialogTitle>Create New Booth</DialogTitle>
                             <DialogDescription className="text-zinc-400">
@@ -164,7 +164,7 @@ export default function BoothDashboard() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {booths.length > 0 ? (
                     booths.map(booth => (
-                        <Card key={booth._id} className="bg-zinc-900 border-white/10 hover:border-indigo-500/30 transition-all group overflow-hidden">
+                        <Card key={booth._id} className="bg-card border-white/10 hover:border-indigo-500/30 transition-all group overflow-hidden">
                             <CardHeader className="pb-3">
                                 <div className="flex items-start justify-between">
                                     <CardTitle className="text-xl font-semibold text-white truncate pr-4">
@@ -183,7 +183,7 @@ export default function BoothDashboard() {
                                     ) : (
                                         <Camera className="w-10 h-10 text-zinc-700" />
                                     )}
-                                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                                    <div className="absolute inset-0 bg-[#101112]/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                                         <Button className="bg-white text-black hover:bg-zinc-200" onClick={() => navigate(`/${user?.slug || user?.username || 'user'}/${booth.slug}`)}>
                                             <Play className="w-4 h-4 mr-2" /> Launch
                                         </Button>
@@ -201,7 +201,7 @@ export default function BoothDashboard() {
                         </Card>
                     ))
                 ) : (
-                    <div className="col-span-full py-16 text-center bg-zinc-900/30 rounded-2xl border border-white/5 border-dashed">
+                    <div className="col-span-full py-16 text-center bg-card/30 rounded-2xl border border-white/5 border-dashed">
                         <Camera className="w-12 h-12 text-zinc-700 mx-auto mb-4" />
                         <h3 className="text-lg font-medium text-white mb-2">No booths yet</h3>
                         <p className="text-zinc-500 max-w-sm mx-auto mb-6">Create your first AI photo booth to start creating magic.</p>

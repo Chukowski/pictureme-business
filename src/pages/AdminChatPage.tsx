@@ -231,7 +231,7 @@ export default function AdminChatPage() {
     };
 
     return (
-        <div className="flex flex-col h-[calc(100vh-160px)] bg-black text-white relative font-sans overflow-hidden rounded-3xl shadow-2xl">
+        <div className="flex flex-col h-[calc(100vh-160px)] bg-[#101112] text-white relative font-sans overflow-hidden rounded-3xl shadow-2xl">
 
             {/* Messages Area */}
             <div ref={messagesContainerRef} className="flex-1 overflow-y-auto scroll-smooth w-full pb-32 scrollbar-hide">
@@ -304,7 +304,7 @@ export default function AdminChatPage() {
                                 <div className="h-8 w-8 flex items-center justify-center flex-shrink-0 mt-1 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">
                                     <Building2 className="w-4 h-4 animate-pulse" />
                                 </div>
-                                <div className="flex items-center space-x-1.5 h-8 bg-zinc-900/50 px-4 rounded-full border border-white/5">
+                                <div className="flex items-center space-x-1.5 h-8 bg-card/50 px-4 rounded-full border border-white/5">
                                     <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
                                     <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
                                     <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce"></div>
@@ -318,7 +318,7 @@ export default function AdminChatPage() {
             </div>
 
             {/* Input Area (Pinned to bottom of container) */}
-            <div className="absolute bottom-4 left-0 right-0 p-4 md:pb-8 flex justify-center z-50 bg-gradient-to-t from-black via-black/90 to-transparent backdrop-blur-[2px]">
+            <div className="absolute bottom-4 left-0 right-0 p-4 md:pb-8 flex justify-center z-50 bg-gradient-to-t from-[#101112] via-[#101112]/90 to-transparent backdrop-blur-[2px]">
                 <div className="w-full max-w-3xl">
                     <div className="bg-[#18181b] rounded-[2rem] border border-white/10 shadow-[0_0_50px_-12px_rgba(0,0,0,0.5)] p-3 relative group focus-within:border-white/20 transition-all duration-300">
 
@@ -373,7 +373,7 @@ export default function AdminChatPage() {
 
                         {/* Bottom Tools Row */}
                         <div className="flex items-center gap-2 mt-2 pl-14 overflow-x-auto no-scrollbar pb-1">
-                            <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-zinc-900 border border-white/5 text-xs font-medium text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors whitespace-nowrap">
+                            <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-card border border-white/5 text-xs font-medium text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors whitespace-nowrap">
                                 <div className="w-3 h-3 rounded-full bg-blue-500" />
                                 Business Agent V1
                                 <ChevronRight className="w-3 h-3 opacity-50" />
@@ -381,13 +381,13 @@ export default function AdminChatPage() {
 
                             <div className="w-px h-4 bg-white/10 mx-1" />
 
-                            <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-zinc-900 border border-white/5 text-xs font-medium text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors whitespace-nowrap">
+                            <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-card border border-white/5 text-xs font-medium text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors whitespace-nowrap">
                                 <Ratio className="w-3 h-3" />
                                 Auto-detect
                                 <Plus className="w-3 h-3 opacity-50" />
                             </button>
 
-                            <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-zinc-900 border border-white/5 text-xs font-medium text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors whitespace-nowrap">
+                            <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-card border border-white/5 text-xs font-medium text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors whitespace-nowrap">
                                 <Pencil className="w-3 h-3" />
                                 Draw Context
                             </button>

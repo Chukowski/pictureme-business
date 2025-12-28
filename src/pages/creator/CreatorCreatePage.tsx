@@ -31,7 +31,7 @@ export default function CreatorCreatePage() {
       </div>
 
       {/* Main Content - Reuse StudioTab */}
-      <Card className="bg-zinc-900 border-white/10 overflow-hidden">
+      <Card className="bg-card border-white/10 overflow-hidden">
         <CardContent className="p-0">
              <StudioTab currentUser={currentUser} />
         </CardContent>

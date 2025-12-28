@@ -95,7 +95,7 @@ export const SharePage = () => {
     <div className="min-h-screen bg-gradient-dark flex items-center justify-center p-4">
       <div className="w-full max-w-2xl space-y-6 animate-fade-in">
         {/* Photo Display */}
-        <div className="relative rounded-3xl shadow-elegant glow-primary overflow-hidden bg-black">
+        <div className="relative rounded-3xl shadow-elegant glow-primary overflow-hidden bg-[#101112]">
           <img
             src={imageUrl}
             alt="Shared photo"

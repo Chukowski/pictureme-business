@@ -110,10 +110,10 @@ export const ResultDisplay = ({ imageUrl, shareCode, onReset }: ResultDisplayPro
   };
 
   return (
-    <div className="min-h-screen bg-zinc-950 p-4 md:p-8 flex items-center justify-center">
+    <div className="min-h-screen bg-card p-4 md:p-8 flex items-center justify-center">
       <div className="w-full max-w-3xl mx-auto space-y-6">
         {/* Result Image */}
-        <div className="relative rounded-3xl shadow-elegant glow-primary animate-fade-in bg-black overflow-hidden">
+        <div className="relative rounded-3xl shadow-elegant glow-primary animate-fade-in bg-[#101112] overflow-hidden">
           <img
             src={imageUrl}
             alt="Processed photo"
@@ -124,7 +124,7 @@ export const ResultDisplay = ({ imageUrl, shareCode, onReset }: ResultDisplayPro
         {/* QR Code & Email Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* QR Code Card */}
-          <div className="bg-zinc-900/50 border border-white/10 backdrop-blur-xl rounded-3xl p-6 shadow-2xl space-y-4">
+          <div className="bg-card/50 border border-white/10 backdrop-blur-xl rounded-3xl p-6 shadow-2xl space-y-4">
             <div className="flex items-center gap-3 mb-2">
               <div className="w-10 h-10 rounded-full gradient-primary flex items-center justify-center">
                 <Share2 className="w-5 h-5 text-primary-foreground" />
@@ -157,7 +157,7 @@ export const ResultDisplay = ({ imageUrl, shareCode, onReset }: ResultDisplayPro
               onClick={handleCopyLink}
               variant="outline"
               size="lg"
-              className="w-full rounded-xl bg-zinc-900/50 border-white/10 text-white hover:bg-zinc-800/50 hover:text-white backdrop-blur-xl"
+              className="w-full rounded-xl bg-card/50 border-white/10 text-white hover:bg-zinc-800/50 hover:text-white backdrop-blur-xl"
             >
               <Copy className="w-4 h-4 mr-2" />
               Copy Image Link
@@ -165,7 +165,7 @@ export const ResultDisplay = ({ imageUrl, shareCode, onReset }: ResultDisplayPro
           </div>
 
           {/* Email Card */}
-          <div className="bg-zinc-900/50 border border-white/10 backdrop-blur-xl rounded-3xl p-6 shadow-2xl space-y-4">
+          <div className="bg-card/50 border border-white/10 backdrop-blur-xl rounded-3xl p-6 shadow-2xl space-y-4">
             <div className="flex items-center gap-3 mb-2">
               <div className={`w-10 h-10 rounded-full flex items-center justify-center ${emailSent ? 'bg-green-600' : 'gradient-secondary glow-secondary'}`}>
                 {emailSent ? (
@@ -196,7 +196,7 @@ export const ResultDisplay = ({ imageUrl, shareCode, onReset }: ResultDisplayPro
                   setEmail(e.target.value);
                   if (emailSent) setEmailSent(false);
                 }}
-                className="h-12 rounded-xl text-base bg-zinc-950/50 border-white/10 text-white placeholder:text-zinc-600"
+                className="h-12 rounded-xl text-base bg-card/50 border-white/10 text-white placeholder:text-zinc-600"
               />
               <Button
                 onClick={handleEmailSend}
@@ -236,7 +236,7 @@ export const ResultDisplay = ({ imageUrl, shareCode, onReset }: ResultDisplayPro
             onClick={() => toast.info("Share feature coming soon!")}
             size="lg"
             variant="outline"
-            className="rounded-2xl h-14 bg-zinc-900/50 border-white/10 text-white hover:bg-zinc-800/50 backdrop-blur-xl"
+            className="rounded-2xl h-14 bg-card/50 border-white/10 text-white hover:bg-zinc-800/50 backdrop-blur-xl"
           >
             <Share2 className="w-5 h-5 md:mr-2" />
             <span className="ml-2">Share</span>
@@ -245,7 +245,7 @@ export const ResultDisplay = ({ imageUrl, shareCode, onReset }: ResultDisplayPro
             onClick={onReset}
             variant="outline"
             size="lg"
-            className="rounded-2xl h-14 bg-zinc-900/50 border-white/10 text-white hover:bg-zinc-800/50 backdrop-blur-xl"
+            className="rounded-2xl h-14 bg-card/50 border-white/10 text-white hover:bg-zinc-800/50 backdrop-blur-xl"
           >
             <RotateCcw className="w-5 h-5 md:mr-2" />
             <span className="ml-2">Take Another</span>

@@ -102,7 +102,7 @@ export function StationLinksCard({
   }
 
   return (
-    <Card className="bg-zinc-900/50 border-white/10 backdrop-blur-sm">
+    <Card className="bg-card/50 border-white/10 backdrop-blur-sm">
       <CardHeader>
         <CardTitle className="text-white flex items-center gap-2">
           <Link2 className="w-5 h-5 text-indigo-400" />
@@ -144,7 +144,7 @@ export function StationLinksCard({
               <Input
                 value={url}
                 readOnly
-                className="flex-1 bg-zinc-900 border-zinc-700 text-zinc-400 text-sm font-mono"
+                className="flex-1 bg-card border-zinc-700 text-zinc-400 text-sm font-mono"
               />
               
               {/* Actions */}
@@ -192,7 +192,7 @@ export function StationLinksCard({
             <Input
               value={bigScreenUrl}
               readOnly
-              className="flex-1 bg-zinc-900 border-zinc-700 text-zinc-400 text-sm font-mono"
+              className="flex-1 bg-card border-zinc-700 text-zinc-400 text-sm font-mono"
             />
             
             <div className="flex gap-1">

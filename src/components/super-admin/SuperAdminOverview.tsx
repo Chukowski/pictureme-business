@@ -158,7 +158,7 @@ export default function SuperAdminOverview() {
                         size="sm"
                         onClick={fetchStats}
                         disabled={isLoading}
-                        className="border-white/10 bg-zinc-900/50"
+                        className="border-white/10 bg-card/50"
                     >
                         {isLoading ? (
                             <Loader2 className="w-4 h-4 animate-spin" />
@@ -177,7 +177,7 @@ export default function SuperAdminOverview() {
             ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     {kpis.map((kpi, index) => (
-                        <Card key={index} className="bg-zinc-900/50 border-white/10 backdrop-blur-sm hover:bg-zinc-900/80 transition-colors">
+                        <Card key={index} className="bg-card/50 border-white/10 backdrop-blur-sm hover:bg-card/80 transition-colors">
                             <CardContent className="p-6">
                                 <div className="flex items-center justify-between mb-4">
                                     <div className={`p-3 rounded-xl ${kpi.bg}`}>
@@ -197,7 +197,7 @@ export default function SuperAdminOverview() {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* System Health */}
-                <Card className="bg-zinc-900/50 border-white/10">
+                <Card className="bg-card/50 border-white/10">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                             <Activity className="w-5 h-5 text-emerald-400" />
@@ -249,7 +249,7 @@ export default function SuperAdminOverview() {
                 </Card>
 
                 {/* Quick Actions */}
-                <Card className="bg-zinc-900/50 border-white/10">
+                <Card className="bg-card/50 border-white/10">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                             <Zap className="w-5 h-5 text-indigo-400" />
@@ -307,7 +307,7 @@ export default function SuperAdminOverview() {
             </div>
 
             {stats?.eventsSummary && stats.eventsSummary.length > 0 && (
-                <Card className="bg-zinc-900/50 border-white/10">
+                <Card className="bg-card/50 border-white/10">
                     <CardHeader>
                         <CardTitle className="flex items-center justify-between">
                             <span>Event Analytics</span>

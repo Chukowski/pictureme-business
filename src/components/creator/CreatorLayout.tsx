@@ -56,7 +56,7 @@ export function CreatorLayout() {
 
 
   return (
-    <div className="min-h-screen bg-black text-white flex flex-col">
+    <div className="min-h-screen bg-[#101112] text-white flex flex-col">
       {/* Desktop Navigation Bar - Hidden on mobile */}
       <div className="hidden md:block">
         <CreatorNavbar user={user} />

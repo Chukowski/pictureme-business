@@ -108,13 +108,13 @@ export default function LandingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white selection:bg-indigo-500 selection:text-white font-sans">
+    <div className="min-h-screen bg-[#101112] text-white selection:bg-indigo-500 selection:text-white font-sans">
       <SEO
         title="Imagine. Describe. Create."
         description="The ultimate AI creative studio for creators and businesses. Generate professional photos, videos, and identities in seconds."
       />
       {/* Navigation */}
-      <nav className="fixed top-0 w-full z-50 bg-black/80 backdrop-blur-xl border-b border-white/5">
+      <nav className="fixed top-0 w-full z-50 bg-[#101112]/80 backdrop-blur-xl border-b border-white/5">
         <div className="container mx-auto px-6 h-20 flex items-center justify-between">
           <div
             className="flex items-center gap-3 cursor-pointer group"
@@ -146,7 +146,7 @@ export default function LandingPage() {
                     <span className="hidden sm:inline">{currentUser.full_name || currentUser.name || currentUser.username || currentUser.email?.split('@')[0]}</span>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56 bg-zinc-900 border-white/10">
+                <DropdownMenuContent align="end" className="w-56 bg-card border-white/10">
                   <DropdownMenuLabel className="text-zinc-400 flex flex-col">
                     <span className="text-white font-medium">{currentUser.full_name || currentUser.name || currentUser.username || 'User'}</span>
                     {currentUser.email && <span className="text-xs text-zinc-500 font-normal">{currentUser.email}</span>}
@@ -230,7 +230,7 @@ export default function LandingPage() {
 
           {/* Hero Visuals - Floating Cards Effect */}
           <div className="mt-24 relative max-w-5xl mx-auto h-[400px] hidden md:block">
-            <div className="absolute left-0 top-10 w-64 h-80 bg-zinc-900 rounded-2xl border border-white/10 overflow-hidden shadow-2xl rotate-[-6deg] hover:rotate-0 transition-all duration-500 z-10">
+            <div className="absolute left-0 top-10 w-64 h-80 bg-card rounded-2xl border border-white/10 overflow-hidden shadow-2xl rotate-[-6deg] hover:rotate-0 transition-all duration-500 z-10">
               <img
                 src={getImgproxyUrl("https://images.unsplash.com/photo-1534528741775-53994a69daeb", { width: 400, quality: 80 })}
                 alt="AI-enhanced portrait demonstration showing cinematic lighting"
@@ -239,7 +239,7 @@ export default function LandingPage() {
                 decoding="async"
               />
             </div>
-            <div className="absolute right-0 top-10 w-64 h-80 bg-zinc-900 rounded-2xl border border-white/10 overflow-hidden shadow-2xl rotate-[6deg] hover:rotate-0 transition-all duration-500 z-10">
+            <div className="absolute right-0 top-10 w-64 h-80 bg-card rounded-2xl border border-white/10 overflow-hidden shadow-2xl rotate-[6deg] hover:rotate-0 transition-all duration-500 z-10">
               <img
                 src={getImgproxyUrl("https://images.unsplash.com/photo-1531746020798-e6953c6e8e04", { width: 400, quality: 80 })}
                 alt="High-fashion AI style transformation example"
@@ -248,7 +248,7 @@ export default function LandingPage() {
                 decoding="async"
               />
             </div>
-            <div className="absolute left-1/2 -translate-x-1/2 top-0 w-[500px] h-[350px] bg-zinc-900 rounded-2xl border border-white/10 overflow-hidden shadow-2xl z-20 hover:scale-105 transition-transform duration-500">
+            <div className="absolute left-1/2 -translate-x-1/2 top-0 w-[500px] h-[350px] bg-card rounded-2xl border border-white/10 overflow-hidden shadow-2xl z-20 hover:scale-105 transition-transform duration-500">
               <img
                 src={getImgproxyUrl("https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe", { width: 800, quality: 90 })}
                 alt="Surreal abstract AI-generated background"
@@ -257,7 +257,7 @@ export default function LandingPage() {
                 fetchPriority="high"
                 decoding="async"
               />
-              <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/90 to-transparent">
+              <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-[#101112]/90 to-transparent">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full border-2 border-white/20 overflow-hidden">
                     <img src="https://github.com/shadcn.png" alt="Collaborator avatar" />
@@ -274,7 +274,7 @@ export default function LandingPage() {
       </section>
 
       {/* Bento Grid Section */}
-      <section id="features" className="py-32 bg-zinc-950/50">
+      <section id="features" className="py-32 bg-card/50">
         <div className="container mx-auto px-6">
           <div className="flex flex-col md:flex-row justify-between items-end mb-16">
             <div className="max-w-2xl">
@@ -288,7 +288,7 @@ export default function LandingPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Large Card */}
-            <div className="md:col-span-2 h-[400px] rounded-3xl bg-zinc-900 border border-white/5 overflow-hidden relative group">
+            <div className="md:col-span-2 h-[400px] rounded-3xl bg-card border border-white/5 overflow-hidden relative group">
               <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/20 to-purple-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
               <img src="https://images.unsplash.com/photo-1621609764180-2ca554a9d6f2?w=1200&q=80" alt="AI Art" className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform duration-700" />
               <div className="absolute bottom-0 left-0 p-8">
@@ -301,8 +301,8 @@ export default function LandingPage() {
             </div>
 
             {/* Tall Card */}
-            <div className="md:row-span-2 h-[400px] md:h-auto rounded-3xl bg-zinc-900 border border-white/5 overflow-hidden relative group">
-              <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/80 z-10" />
+            <div className="md:row-span-2 h-[400px] md:h-auto rounded-3xl bg-card border border-white/5 overflow-hidden relative group">
+              <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[#101112]/80 z-10" />
               <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=800&q=80" alt="Portrait" className="absolute inset-0 w-full h-full object-cover opacity-70 group-hover:scale-105 transition-transform duration-700" />
               <div className="absolute bottom-0 left-0 p-8 z-20">
                 <div className="w-12 h-12 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center mb-4 border border-white/10">
@@ -314,7 +314,7 @@ export default function LandingPage() {
             </div>
 
             {/* Small Card 1 */}
-            <div className="h-[300px] rounded-3xl bg-zinc-900 border border-white/5 p-8 relative overflow-hidden group hover:border-white/10 transition-colors">
+            <div className="h-[300px] rounded-3xl bg-card border border-white/5 p-8 relative overflow-hidden group hover:border-white/10 transition-colors">
               <div className="absolute top-0 right-0 w-32 h-32 bg-pink-500/20 blur-[50px] rounded-full -mr-10 -mt-10" />
               <Layers className="w-10 h-10 text-pink-400 mb-6" />
               <h3 className="text-xl font-bold mb-2">Brand Overlay</h3>
@@ -322,7 +322,7 @@ export default function LandingPage() {
             </div>
 
             {/* Small Card 2 */}
-            <div className="h-[300px] rounded-3xl bg-zinc-900 border border-white/5 p-8 relative overflow-hidden group hover:border-white/10 transition-colors">
+            <div className="h-[300px] rounded-3xl bg-card border border-white/5 p-8 relative overflow-hidden group hover:border-white/10 transition-colors">
               <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/20 blur-[50px] rounded-full -mr-10 -mt-10" />
               <Zap className="w-10 h-10 text-emerald-400 mb-6" />
               <h3 className="text-xl font-bold mb-2">Lightning Fast</h3>
@@ -342,7 +342,7 @@ export default function LandingPage() {
             <p className="text-xl text-zinc-400 mb-8">Scale your creativity with higher limits and priority access.</p>
 
             {/* Toggle */}
-            <div className="inline-flex items-center p-1 rounded-full bg-zinc-900 border border-white/10 relative">
+            <div className="inline-flex items-center p-1 rounded-full bg-card border border-white/10 relative">
               <button
                 onClick={() => setPricingTab('individual')}
                 className={`relative z-10 px-6 py-2 rounded-full text-sm font-medium transition-all duration-300 ${pricingTab === 'individual' ? 'text-white' : 'text-zinc-400 hover:text-zinc-200'}`}
@@ -376,7 +376,7 @@ export default function LandingPage() {
                       const isPopular = tier.highlight?.includes("POPULAR");
                       const isPremium = tier.highlight?.includes("PREMIUM");
                       // Custom styling based on highlight or code
-                      let cardClasses = "rounded-3xl bg-zinc-950 border p-8 flex flex-col transition-all relative";
+                      let cardClasses = "rounded-3xl bg-card border p-8 flex flex-col transition-all relative";
                       if (isPopular) {
                         cardClasses += " border-indigo-500/50 shadow-2xl shadow-indigo-500/10 hover:border-indigo-500 scale-[1.02] md:scale-105 z-10";
                       } else if (isPremium) {
@@ -455,7 +455,7 @@ export default function LandingPage() {
                 </div>
 
                 {pricingTab === 'individual' && (
-                  <div className="mt-12 rounded-2xl bg-zinc-950 border border-white/10 p-8 flex flex-col md:flex-row items-center justify-between gap-6 max-w-3xl mx-auto shadow-2xl animate-fade-in">
+                  <div className="mt-12 rounded-2xl bg-card border border-white/10 p-8 flex flex-col md:flex-row items-center justify-between gap-6 max-w-3xl mx-auto shadow-2xl animate-fade-in">
                     <span className="text-lg text-white font-medium">Ready to start your own business?</span>
                     <Button
                       onClick={() => setPricingTab('business')}
@@ -472,7 +472,7 @@ export default function LandingPage() {
       </section>
 
       {/* About Assistant Section */}
-      <section id="about-assistant" className="py-24 bg-zinc-900/30 relative overflow-hidden border-t border-white/5">
+      <section id="about-assistant" className="py-24 bg-card/30 relative overflow-hidden border-t border-white/5">
         <div className="container mx-auto px-6">
           <div className="flex flex-col md:flex-row items-center gap-16">
             <div className="flex-1 relative order-2 md:order-1">
@@ -544,7 +544,7 @@ export default function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="py-12 border-t border-white/5 bg-black text-zinc-500 text-sm">
+      <footer className="py-12 border-t border-white/5 bg-[#101112] text-zinc-500 text-sm">
         <div className="container mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-3 group">

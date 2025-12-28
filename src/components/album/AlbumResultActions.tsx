@@ -215,7 +215,7 @@ export function AlbumResultActions({
       
       {/* Staff Options Dialog */}
       <Dialog open={showStaffDialog} onOpenChange={handleCloseDialog}>
-        <DialogContent className="bg-zinc-900 border-white/10 max-w-sm">
+        <DialogContent className="bg-card border-white/10 max-w-sm">
           <DialogHeader>
             <DialogTitle className="text-white flex items-center gap-2">
               <Settings className="w-5 h-5 text-amber-400" />

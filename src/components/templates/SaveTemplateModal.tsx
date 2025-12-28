@@ -64,7 +64,7 @@ export const SaveTemplateModal = ({
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
-      <DialogContent className="bg-zinc-950 border-white/10">
+      <DialogContent className="bg-card border-white/10">
         <DialogHeader>
           <DialogTitle className="text-white">Save as template</DialogTitle>
         </DialogHeader>
@@ -75,7 +75,7 @@ export const SaveTemplateModal = ({
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="My cinematic portrait"
-              className="bg-black/40 border-white/10 text-white"
+              className="bg-[#101112]/40 border-white/10 text-white"
             />
           </div>
           <div className="space-y-2">
@@ -84,7 +84,7 @@ export const SaveTemplateModal = ({
               value={tagsInput}
               onChange={(e) => setTagsInput(e.target.value)}
               placeholder="portrait, warm, filmic"
-              className="bg-black/40 border-white/10 text-white"
+              className="bg-[#101112]/40 border-white/10 text-white"
               rows={2}
             />
           </div>

@@ -12,9 +12,9 @@ export const TermsPage = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-black text-white font-sans selection:bg-purple-500/30">
+    <div className="min-h-screen bg-[#101112] text-white font-sans selection:bg-purple-500/30">
       {/* Navigation */}
-      <nav className="fixed w-full z-50 bg-black/50 backdrop-blur-lg border-b border-white/10">
+      <nav className="fixed w-full z-50 bg-[#101112]/50 backdrop-blur-lg border-b border-white/10">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
             <img 
@@ -55,7 +55,7 @@ export const TermsPage = () => {
           </div>
 
           {/* Introduction */}
-          <div className="bg-zinc-900/50 border border-white/10 rounded-2xl p-8 backdrop-blur-sm">
+          <div className="bg-card/50 border border-white/10 rounded-2xl p-8 backdrop-blur-sm">
             <p className="text-gray-300 leading-relaxed">
               Welcome to PictureMe.now, a hybrid platform that combines AI-powered visual creation tools with advanced commercial photobooth features for creators, photographers, event planners, and businesses.
               <br /><br />

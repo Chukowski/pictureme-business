@@ -774,7 +774,7 @@ export default function StaffDashboard() {
 
   if (loading || isLoading) {
     return (
-      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
+      <div className="min-h-screen bg-card flex items-center justify-center">
         <div className="text-center space-y-4">
           <Loader2 className="w-12 h-12 animate-spin mx-auto text-cyan-400" />
           <p className="text-white text-lg">Loading staff dashboard...</p>
@@ -795,8 +795,8 @@ export default function StaffDashboard() {
   // Check if album tracking is enabled
   if (!config.albumTracking?.enabled) {
     return (
-      <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-6">
-        <Card className="bg-zinc-900/50 border-white/10 max-w-md">
+      <div className="min-h-screen bg-card flex items-center justify-center p-6">
+        <Card className="bg-card/50 border-white/10 max-w-md">
           <CardContent className="pt-6 text-center">
             <BookOpen className="w-16 h-16 mx-auto mb-4 text-zinc-600" />
             <h2 className="text-xl font-semibold text-white mb-2">Album Tracking Not Enabled</h2>
@@ -830,8 +830,8 @@ export default function StaffDashboard() {
     };
 
     return (
-      <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-4">
-        <Card className="w-full max-w-sm bg-zinc-900 border-zinc-800">
+      <div className="min-h-screen bg-card flex items-center justify-center p-4">
+        <Card className="w-full max-w-sm bg-card border-zinc-800">
           <CardHeader>
             <CardTitle className="text-white">Staff Access</CardTitle>
             <CardDescription>Enter event PIN to continue</CardDescription>
@@ -883,9 +883,9 @@ export default function StaffDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-950">
+    <div className="min-h-screen bg-card">
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-zinc-950/80 backdrop-blur-lg border-b border-white/10">
+      <header className="sticky top-0 z-40 bg-card/80 backdrop-blur-lg border-b border-white/10">
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Button
@@ -934,7 +934,7 @@ export default function StaffDashboard() {
                     </span>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-80 bg-zinc-900 border-white/10">
+                <DropdownMenuContent align="end" className="w-80 bg-card border-white/10">
                   <div className="px-3 py-2 border-b border-white/10">
                     <p className="font-semibold text-amber-400 flex items-center gap-2">
                       <Bell className="w-4 h-4" />
@@ -1006,7 +1006,7 @@ export default function StaffDashboard() {
                     </span>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-80 bg-zinc-900 border-white/10">
+                <DropdownMenuContent align="end" className="w-80 bg-card border-white/10">
                   <div className="px-3 py-2 border-b border-white/10">
                     <p className="font-semibold text-cyan-400 flex items-center gap-2">
                       <MonitorUp className="w-4 h-4" />
@@ -1107,35 +1107,35 @@ export default function StaffDashboard() {
       <div className="max-w-7xl mx-auto px-4 py-6">
         {/* Stats Cards */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
-          <Card className="bg-zinc-900/50 border-white/10">
+          <Card className="bg-card/50 border-white/10">
             <CardContent className="p-4 text-center">
               <Users className="w-6 h-6 mx-auto mb-2 text-cyan-400" />
               <p className="text-2xl font-bold text-white">{stats.totalAlbums}</p>
               <p className="text-xs text-zinc-500">Total Albums</p>
             </CardContent>
           </Card>
-          <Card className="bg-zinc-900/50 border-white/10">
+          <Card className="bg-card/50 border-white/10">
             <CardContent className="p-4 text-center">
               <CheckCircle2 className="w-6 h-6 mx-auto mb-2 text-green-400" />
               <p className="text-2xl font-bold text-white">{stats.completedAlbums}</p>
               <p className="text-xs text-zinc-500">Completed</p>
             </CardContent>
           </Card>
-          <Card className="bg-zinc-900/50 border-white/10">
+          <Card className="bg-card/50 border-white/10">
             <CardContent className="p-4 text-center">
               <Clock className="w-6 h-6 mx-auto mb-2 text-amber-400" />
               <p className="text-2xl font-bold text-white">{stats.activeVisitors}</p>
               <p className="text-xs text-zinc-500">In Progress</p>
             </CardContent>
           </Card>
-          <Card className="bg-zinc-900/50 border-white/10">
+          <Card className="bg-card/50 border-white/10">
             <CardContent className="p-4 text-center">
               <Camera className="w-6 h-6 mx-auto mb-2 text-purple-400" />
               <p className="text-2xl font-bold text-white">{stats.totalPhotos}</p>
               <p className="text-xs text-zinc-500">Photos</p>
             </CardContent>
           </Card>
-          <Card className="bg-zinc-900/50 border-white/10">
+          <Card className="bg-card/50 border-white/10">
             <CardContent className="p-4 text-center">
               <XCircle className="w-6 h-6 mx-auto mb-2 text-red-400" />
               <p className="text-2xl font-bold text-white">{stats.pendingApproval}</p>
@@ -1146,7 +1146,7 @@ export default function StaffDashboard() {
 
         {/* Main Content */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="bg-zinc-900/50 border border-white/10">
+          <TabsList className="bg-card/50 border border-white/10">
             <TabsTrigger
               value="overview"
               className="text-zinc-400 data-[state=active]:bg-white/10 data-[state=active]:text-white"
@@ -1189,7 +1189,7 @@ export default function StaffDashboard() {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search by album ID, name, or number..."
-                  className="pl-10 bg-zinc-900/50 border-white/10 text-white"
+                  className="pl-10 bg-card/50 border-white/10 text-white"
                 />
               </div>
               <Button className="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white border border-zinc-700">
@@ -1203,7 +1203,7 @@ export default function StaffDashboard() {
               {filteredAlbums.map(album => (
                 <Card
                   key={album.id}
-                  className="bg-zinc-900/50 border-white/10 hover:border-white/20 transition-colors cursor-pointer"
+                  className="bg-card/50 border-white/10 hover:border-white/20 transition-colors cursor-pointer"
                   onClick={() => navigate(`/${effectiveUserSlug}/${effectiveEventSlug}/album/${album.id}`)}
                 >
                   <CardContent className="p-4">
@@ -1225,7 +1225,7 @@ export default function StaffDashboard() {
                             <MoreVertical className="w-4 h-4" />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="bg-zinc-900 border-white/10">
+                        <DropdownMenuContent align="end" className="bg-card border-white/10">
                           <DropdownMenuItem
                             className="text-zinc-300"
                             onClick={(e) => {
@@ -1389,7 +1389,7 @@ export default function StaffDashboard() {
           <TabsContent value="stations">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {/* Registration Station */}
-              <Card className="bg-zinc-900/50 border-white/10">
+              <Card className="bg-card/50 border-white/10">
                 <CardHeader>
                   <CardTitle className="text-white flex items-center gap-2">
                     <Users className="w-5 h-5 text-purple-400" />
@@ -1400,7 +1400,7 @@ export default function StaffDashboard() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  <div className="p-3 rounded-lg bg-black/30 border border-white/5">
+                  <div className="p-3 rounded-lg bg-[#101112]/30 border border-white/5">
                     <p className="text-xs text-zinc-500 mb-1 font-mono break-all">
                       {config?.postgres_event_id
                         ? `${window.location.origin}/e/${config.postgres_event_id}/${effectiveEventSlug}/registration`
@@ -1440,7 +1440,7 @@ export default function StaffDashboard() {
               </Card>
 
               {/* Photo Booth Station */}
-              <Card className="bg-zinc-900/50 border-white/10">
+              <Card className="bg-card/50 border-white/10">
                 <CardHeader>
                   <CardTitle className="text-white flex items-center gap-2">
                     <Camera className="w-5 h-5 text-cyan-400" />
@@ -1451,7 +1451,7 @@ export default function StaffDashboard() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  <div className="p-3 rounded-lg bg-black/30 border border-white/5">
+                  <div className="p-3 rounded-lg bg-[#101112]/30 border border-white/5">
                     <p className="text-xs text-zinc-500 mb-1 font-mono break-all">
                       {config?.postgres_event_id
                         ? `${window.location.origin}/e/${config.postgres_event_id}/${effectiveEventSlug}/booth`
@@ -1491,7 +1491,7 @@ export default function StaffDashboard() {
               </Card>
 
               {/* Viewer/Gallery Station */}
-              <Card className="bg-zinc-900/50 border-white/10">
+              <Card className="bg-card/50 border-white/10">
                 <CardHeader>
                   <CardTitle className="text-white flex items-center gap-2">
                     <Eye className="w-5 h-5 text-emerald-400" />
@@ -1502,7 +1502,7 @@ export default function StaffDashboard() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  <div className="p-3 rounded-lg bg-black/30 border border-white/5">
+                  <div className="p-3 rounded-lg bg-[#101112]/30 border border-white/5">
                     <p className="text-xs text-zinc-500 mb-1 font-mono break-all">
                       {config?.postgres_event_id
                         ? `${window.location.origin}/e/${config.postgres_event_id}/${effectiveEventSlug}/viewer`
@@ -1542,7 +1542,7 @@ export default function StaffDashboard() {
               </Card>
 
               {/* Event Feed */}
-              <Card className="bg-zinc-900/50 border-white/10">
+              <Card className="bg-card/50 border-white/10">
                 <CardHeader>
                   <CardTitle className="text-white flex items-center gap-2">
                     <BookOpen className="w-5 h-5 text-pink-400" />
@@ -1553,7 +1553,7 @@ export default function StaffDashboard() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  <div className="p-3 rounded-lg bg-black/30 border border-white/5">
+                  <div className="p-3 rounded-lg bg-[#101112]/30 border border-white/5">
                     <p className="text-xs text-zinc-500 mb-1 font-mono break-all">
                       {config?.postgres_event_id
                         ? `${window.location.origin}/e/${config.postgres_event_id}/${effectiveEventSlug}/feed`
@@ -1593,7 +1593,7 @@ export default function StaffDashboard() {
               </Card>
 
               {/* Staff Dashboard */}
-              <Card className="bg-zinc-900/50 border-white/10">
+              <Card className="bg-card/50 border-white/10">
                 <CardHeader>
                   <CardTitle className="text-white flex items-center gap-2">
                     <Users className="w-5 h-5 text-[#D1F349]" />
@@ -1604,7 +1604,7 @@ export default function StaffDashboard() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  <div className="p-3 rounded-lg bg-black/30 border border-white/5">
+                  <div className="p-3 rounded-lg bg-[#101112]/30 border border-white/5">
                     <p className="text-xs text-zinc-500 mb-1 font-mono break-all">
                       {config?.postgres_event_id
                         ? `${window.location.origin}/e/${config.postgres_event_id}/${effectiveEventSlug}/staff`
@@ -1655,7 +1655,7 @@ export default function StaffDashboard() {
 
           {/* Display Tab */}
           <TabsContent value="display">
-            <Card className="bg-zinc-900/50 border-white/10">
+            <Card className="bg-card/50 border-white/10">
               <CardHeader>
                 <CardTitle className="text-white">Big Screen Display</CardTitle>
                 <CardDescription className="text-zinc-400">
@@ -1663,7 +1663,7 @@ export default function StaffDashboard() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="flex items-center justify-between p-4 rounded-lg bg-black/30 border border-white/5">
+                <div className="flex items-center justify-between p-4 rounded-lg bg-[#101112]/30 border border-white/5">
                   <div className="flex items-center gap-3">
                     <MonitorPlay
                       className="w-8 h-8"
@@ -1688,7 +1688,7 @@ export default function StaffDashboard() {
                     <div className="grid grid-cols-2 gap-4">
                       <Button
                         variant="outline"
-                        className="h-auto py-4 flex-col gap-2 bg-zinc-900/50 border-white/10 hover:bg-cyan-500/20 hover:border-cyan-500/30 text-zinc-300 hover:text-white"
+                        className="h-auto py-4 flex-col gap-2 bg-card/50 border-white/10 hover:bg-cyan-500/20 hover:border-cyan-500/30 text-zinc-300 hover:text-white"
                         onClick={() => {
                           // Build URL - prefer short URL format if we have postgres_event_id
                           let displayUrl: string;
@@ -1709,7 +1709,7 @@ export default function StaffDashboard() {
                       </Button>
                       <Button
                         variant="outline"
-                        className="h-auto py-4 flex-col gap-2 bg-zinc-900/50 border-white/10 hover:bg-purple-500/20 hover:border-purple-500/30 text-zinc-300 hover:text-white"
+                        className="h-auto py-4 flex-col gap-2 bg-card/50 border-white/10 hover:bg-purple-500/20 hover:border-purple-500/30 text-zinc-300 hover:text-white"
                         onClick={() => {
                           const registrationUrl = `${window.location.origin}/${effectiveUserSlug}/${effectiveEventSlug}/registration`;
                           navigator.clipboard.writeText(registrationUrl);
@@ -1722,7 +1722,7 @@ export default function StaffDashboard() {
                     </div>
 
                     {/* Send Album to Display */}
-                    <div className="p-4 rounded-lg bg-black/30 border border-white/5">
+                    <div className="p-4 rounded-lg bg-[#101112]/30 border border-white/5">
                       <p className="text-sm text-zinc-400 mb-3">Send an album to the big screen:</p>
                       <div className="flex gap-2">
                         <input
@@ -1798,7 +1798,7 @@ export default function StaffDashboard() {
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteConfirm.open} onOpenChange={(open) => setDeleteConfirm({ open, album: open ? deleteConfirm.album : null })}>
-        <AlertDialogContent className="bg-zinc-900 border-white/10">
+        <AlertDialogContent className="bg-card border-white/10">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-white flex items-center gap-2">
               <Trash2 className="w-5 h-5 text-red-400" />

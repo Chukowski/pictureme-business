@@ -104,10 +104,10 @@ export default function AdminDashboard() {
   // Pending Business Application View
   if (userRole === 'business_pending') {
     return (
-      <div className="min-h-screen bg-black text-white flex items-center justify-center p-4 relative overflow-hidden">
+      <div className="min-h-screen bg-[#101112] text-white flex items-center justify-center p-4 relative overflow-hidden">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-indigo-900/20 rounded-full blur-[100px] -z-10" />
 
-        <div className="max-w-md w-full bg-zinc-900/50 backdrop-blur-xl border border-white/10 rounded-3xl p-8 text-center shadow-2xl">
+        <div className="max-w-md w-full bg-card/50 backdrop-blur-xl border border-white/10 rounded-3xl p-8 text-center shadow-2xl">
           <div className="w-20 h-20 bg-yellow-500/10 rounded-full flex items-center justify-center mx-auto mb-6">
             <Clock className="w-10 h-10 text-yellow-400" />
           </div>
@@ -131,10 +131,10 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="h-screen bg-black text-white relative overflow-hidden flex flex-col">
+    <div className="h-screen bg-[#101112] text-white relative overflow-hidden flex flex-col">
       {/* Background Effects */}
       <div className="fixed top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[600px] bg-indigo-900/20 rounded-full blur-[120px] -z-10 pointer-events-none" />
-      <div className="fixed top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-white/5 via-black/0 to-black/0 -z-10 pointer-events-none" />
+      <div className="fixed top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-white/5 via-[#101112]/0 to-[#101112]/0 -z-10 pointer-events-none" />
 
       <div className="w-full max-w-[1600px] mx-auto p-4 md:p-6 flex-1 min-h-0 flex flex-col relative z-10">
         {/* Header */}

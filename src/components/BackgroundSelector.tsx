@@ -102,7 +102,7 @@ export const BackgroundSelector = ({ onSelectBackground, templates }: Background
                 className="w-full h-full object-cover"
               />
               {/* Gradient overlay */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#101112]/80 via-[#101112]/40 to-transparent" />
 
               {/* Floating particles effect */}
               <div className="absolute inset-0 opacity-20">

@@ -651,8 +651,8 @@ export function RegistrationBadgeFlow({
 
   // Render based on state
   return (
-    <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-4">
-      <Card className="w-full max-w-lg bg-zinc-900 border-zinc-800">
+    <div className="min-h-screen bg-card flex items-center justify-center p-4">
+      <Card className="w-full max-w-lg bg-card border-zinc-800">
         {/* Mode Selection State */}
         {state === 'mode-select' && (
           <>
@@ -841,7 +841,7 @@ export function RegistrationBadgeFlow({
                     <Camera className="w-4 h-4 mr-2" />
                     <SelectValue placeholder="Select camera" />
                   </SelectTrigger>
-                  <SelectContent className="bg-zinc-900 border-white/10">
+                  <SelectContent className="bg-card border-white/10">
                     {availableCameras.map((camera, index) => (
                       <SelectItem 
                         key={camera.deviceId} 
@@ -855,7 +855,7 @@ export function RegistrationBadgeFlow({
                 </Select>
               )}
               
-              <div className="relative aspect-[3/4] bg-black rounded-xl overflow-hidden">
+              <div className="relative aspect-[3/4] bg-[#101112] rounded-xl overflow-hidden">
                 <video
                   ref={videoRef}
                   autoPlay
@@ -873,7 +873,7 @@ export function RegistrationBadgeFlow({
                 
                 {/* Loading overlay - shown until video is playing */}
                 {!isCameraReady && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/80">
+                  <div className="absolute inset-0 flex items-center justify-center bg-[#101112]/80">
                     <div className="text-center">
                       <Loader2 className="w-8 h-8 animate-spin text-white mx-auto mb-2" />
                       <p className="text-sm text-zinc-400">Starting camera...</p>
@@ -923,7 +923,7 @@ export function RegistrationBadgeFlow({
                 </div>
               )}
               
-              <div className="relative aspect-[3/4] bg-black rounded-xl overflow-hidden">
+              <div className="relative aspect-[3/4] bg-[#101112] rounded-xl overflow-hidden">
                 <img
                   src={capturedPhoto}
                   alt="Captured"

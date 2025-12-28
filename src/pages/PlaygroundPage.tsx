@@ -39,7 +39,7 @@ export default function PlaygroundPage() {
 
   if (isUserLoading || isEventsLoading) {
     return (
-      <div className="h-screen w-full bg-black flex items-center justify-center">
+      <div className="h-screen w-full bg-[#101112] flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-purple-500" />
       </div>
     );

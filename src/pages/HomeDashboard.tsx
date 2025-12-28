@@ -75,18 +75,18 @@ export default function HomeDashboard() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
+      <div className="min-h-screen bg-[#101112] flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-indigo-500"></div>
       </div>
     );
   }
 
   return (
-    <div className="relative min-h-screen bg-black text-white p-6 md:p-8 pt-24 md:pt-28 overflow-hidden">
+    <div className="relative min-h-screen bg-[#101112] text-white p-6 md:p-8 pt-24 md:pt-28 overflow-hidden">
       {/* Background Layers */}
-      <div className="absolute inset-0 bg-black -z-20" />
-      <div className="absolute top-0 left-0 w-full h-[520px] bg-gradient-to-b from-indigo-900/25 via-black/50 to-black pointer-events-none -z-10" />
-      <div className="absolute bottom-0 left-0 w-full h-[320px] bg-gradient-to-t from-black via-black/70 to-transparent pointer-events-none -z-10" />
+      <div className="absolute inset-0 bg-[#101112] -z-20" />
+      <div className="absolute top-0 left-0 w-full h-[520px] bg-gradient-to-b from-indigo-900/25 via-[#101112]/50 to-[#101112] pointer-events-none -z-10" />
+      <div className="absolute bottom-0 left-0 w-full h-[320px] bg-gradient-to-t from-[#101112] via-[#101112]/70 to-transparent pointer-events-none -z-10" />
 
       <div className="max-w-7xl mx-auto space-y-8 relative z-10">
 
@@ -150,8 +150,8 @@ export default function HomeDashboard() {
 
       {/* Payment Activation Modal (Force for new business users) */}
       {isBusinessUser && user?.subscription_status !== 'active' && user?.subscription_status !== 'trialing' && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-          <div className="bg-zinc-900 border border-indigo-500/30 rounded-2xl max-w-md w-full p-6 shadow-2xl relative overflow-hidden">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#101112]/80 backdrop-blur-sm">
+          <div className="bg-card border border-indigo-500/30 rounded-2xl max-w-md w-full p-6 shadow-2xl relative overflow-hidden">
             <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/20 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none" />
 
             <div className="text-center space-y-4 relative z-10">

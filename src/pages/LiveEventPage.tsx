@@ -381,7 +381,7 @@ export default function LiveEventPage() {
 
   if (isLoading) {
     return (
-      <div className="h-screen bg-black flex items-center justify-center">
+      <div className="h-screen bg-[#101112] flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-indigo-500"></div>
       </div>
     );
@@ -400,8 +400,8 @@ export default function LiveEventPage() {
       rightSidebar={
         <div className="space-y-4 flex flex-col h-full">
           {/* Notifications Panel */}
-          <Card className="bg-zinc-900 border-zinc-800 flex-1 overflow-hidden flex flex-col min-h-[200px]">
-            <CardHeader className="py-3 px-4 border-b border-zinc-800 bg-zinc-900/50">
+          <Card className="bg-card border-zinc-800 flex-1 overflow-hidden flex flex-col min-h-[200px]">
+            <CardHeader className="py-3 px-4 border-b border-zinc-800 bg-card/50">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-sm font-medium text-zinc-300 flex items-center gap-2">
                   <Bell className="w-4 h-4 text-indigo-400" />
@@ -425,7 +425,7 @@ export default function LiveEventPage() {
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="p-0 overflow-y-auto flex-1 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-zinc-900 [&::-webkit-scrollbar-thumb]:bg-zinc-700 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-zinc-600">
+            <CardContent className="p-0 overflow-y-auto flex-1 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-card [&::-webkit-scrollbar-thumb]:bg-zinc-700 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-zinc-600">
               {bigScreenRequests.length === 0 && paymentRequests.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-32 text-zinc-500 text-xs p-4 text-center">
                   <Bell className="w-6 h-6 mb-2 opacity-20" />
@@ -517,7 +517,7 @@ export default function LiveEventPage() {
               )}
             </CardContent>
             {/* Clear BigScreen Button at bottom of Notifications panel */}
-            <div className="p-3 border-t border-zinc-800 bg-zinc-900/50">
+            <div className="p-3 border-t border-zinc-800 bg-card/50">
               <Button
                 variant="ghost"
                 size="sm"
@@ -579,7 +579,7 @@ export default function LiveEventPage() {
 
       {/* Settings Sheet */}
       <Sheet open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
-        <SheetContent side="right" className="w-[400px] sm:w-[540px] bg-zinc-950 border-l border-white/10 overflow-y-auto">
+        <SheetContent side="right" className="w-[400px] sm:w-[540px] bg-card border-l border-white/10 overflow-y-auto">
           <SheetHeader>
             <SheetTitle className="text-white">Live Settings</SheetTitle>
             <SheetDescription className="text-zinc-400">Adjust rules on the fly.</SheetDescription>
@@ -587,7 +587,7 @@ export default function LiveEventPage() {
           <div className="mt-6">
             <p className="text-sm text-zinc-500 mb-4">Quick Toggles</p>
             <div className="space-y-4">
-              <div className="p-4 rounded-lg bg-zinc-900 border border-white/10">
+              <div className="p-4 rounded-lg bg-card border border-white/10">
                 <h4 className="text-sm font-medium text-white mb-2">Watermark</h4>
                 {/* Placeholder */}
               </div>

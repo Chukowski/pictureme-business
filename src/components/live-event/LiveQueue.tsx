@@ -67,16 +67,16 @@ export function LiveQueue({ albums, onAction, maxPhotosPerAlbum = 5 }: LiveQueue
             <Search className="absolute left-2 top-2.5 w-4 h-4 text-zinc-500" />
             <Input
               placeholder="Search name or code..."
-              className="pl-8 bg-zinc-900/50 border-white/10 text-white focus:bg-zinc-900 h-9 text-sm"
+              className="pl-8 bg-card/50 border-white/10 text-white focus:bg-card h-9 text-sm"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-[130px] bg-zinc-900/50 border-white/10 text-white focus:bg-zinc-900 h-9 text-sm">
+            <SelectTrigger className="w-[130px] bg-card/50 border-white/10 text-white focus:bg-card h-9 text-sm">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
-            <SelectContent className="bg-zinc-900 border-white/10 text-white">
+            <SelectContent className="bg-card border-white/10 text-white">
               <SelectItem value="all" className="text-white hover:bg-zinc-800">All Status</SelectItem>
               <SelectItem value="in_progress" className="text-amber-400 hover:bg-zinc-800">In Progress</SelectItem>
               <SelectItem value="completed" className="text-emerald-400 hover:bg-zinc-800">Completed</SelectItem>
@@ -88,7 +88,7 @@ export function LiveQueue({ albums, onAction, maxPhotosPerAlbum = 5 }: LiveQueue
 
       <div className="space-y-3">
         {filteredAlbums.length === 0 ? (
-          <div className="text-center py-12 bg-zinc-900/30 rounded-xl border border-white/5 border-dashed">
+          <div className="text-center py-12 bg-card/30 rounded-xl border border-white/5 border-dashed">
             <p className="text-zinc-500">No active albums found</p>
             <p className="text-xs text-zinc-600 mt-1">Waiting for first visitor...</p>
           </div>
@@ -98,7 +98,7 @@ export function LiveQueue({ albums, onAction, maxPhotosPerAlbum = 5 }: LiveQueue
               key={album.id}
               open={expandedAlbums.includes(album.id)}
               onOpenChange={() => toggleExpand(album.id)}
-              className="bg-zinc-900 border border-white/10 hover:border-white/20 transition-all group rounded-xl overflow-hidden"
+              className="bg-card border border-white/10 hover:border-white/20 transition-all group rounded-xl overflow-hidden"
             >
               <div className="p-4 flex items-center gap-4">
                 {/* Status Bar */}
@@ -111,7 +111,7 @@ export function LiveQueue({ albums, onAction, maxPhotosPerAlbum = 5 }: LiveQueue
                   <div className="col-span-1">
                     <div className="flex items-center gap-2 mb-1">
                       <h3 className="font-bold text-white truncate text-sm">{album.owner_name || 'Guest User'}</h3>
-                      <Badge variant="outline" className="text-[10px] h-5 border-white/10 text-zinc-400 font-mono bg-zinc-950/50">
+                      <Badge variant="outline" className="text-[10px] h-5 border-white/10 text-zinc-400 font-mono bg-card/50">
                         {album.code}
                       </Badge>
                     </div>
@@ -168,7 +168,7 @@ export function LiveQueue({ albums, onAction, maxPhotosPerAlbum = 5 }: LiveQueue
               </div>
 
               {/* Expanded Details */}
-              <CollapsibleContent className="border-t border-white/5 bg-zinc-950/30">
+              <CollapsibleContent className="border-t border-white/5 bg-card/30">
                 <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <p className="text-xs font-medium text-zinc-400 uppercase">Details</p>
@@ -182,10 +182,10 @@ export function LiveQueue({ albums, onAction, maxPhotosPerAlbum = 5 }: LiveQueue
                   <div className="space-y-2">
                     <p className="text-xs font-medium text-zinc-400 uppercase">Actions</p>
                     <div className="flex flex-wrap gap-2">
-                      <Button size="sm" variant="outline" className="h-7 text-xs border-white/10 bg-zinc-900 text-zinc-300 hover:bg-white/10" onClick={() => onAction('view', album)}>
+                      <Button size="sm" variant="outline" className="h-7 text-xs border-white/10 bg-card text-zinc-300 hover:bg-white/10" onClick={() => onAction('view', album)}>
                         <Eye className="w-3 h-3 mr-2" /> View Album
                       </Button>
-                      <Button size="sm" variant="outline" className="h-7 text-xs border-white/10 bg-zinc-900 text-zinc-300 hover:bg-white/10" onClick={() => onAction('share', album)}>
+                      <Button size="sm" variant="outline" className="h-7 text-xs border-white/10 bg-card text-zinc-300 hover:bg-white/10" onClick={() => onAction('share', album)}>
                         <Share2 className="w-3 h-3 mr-2" /> Share
                       </Button>
 
@@ -196,7 +196,7 @@ export function LiveQueue({ albums, onAction, maxPhotosPerAlbum = 5 }: LiveQueue
                             <MoreHorizontal className="w-4 h-4 mr-1" /> More
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="bg-zinc-900 border-white/10 text-zinc-300 w-56">
+                        <DropdownMenuContent align="end" className="bg-card border-white/10 text-zinc-300 w-56">
                           <DropdownMenuItem onClick={() => onAction('view', album)}>
                             <Eye className="w-4 h-4 mr-2" /> View Album
                           </DropdownMenuItem>

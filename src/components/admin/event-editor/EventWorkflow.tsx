@@ -104,7 +104,7 @@ export function EventWorkflow({ formData, setFormData }: EditorSectionProps) {
           <div className="space-y-6 mt-6">
             {/* Core Configuration */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card className="bg-zinc-900/50 border-white/10 backdrop-blur-sm">
+              <Card className="bg-card/50 border-white/10 backdrop-blur-sm">
                 <CardHeader>
                   <CardTitle className="text-white text-base flex items-center gap-2">
                     <Users className="w-5 h-5 text-indigo-400" />
@@ -118,10 +118,10 @@ export function EventWorkflow({ formData, setFormData }: EditorSectionProps) {
                       value={formData.albumTracking.albumType}
                       onValueChange={(v: any) => updateTracking({ albumType: v })}
                     >
-                      <SelectTrigger className="bg-black/40 border-white/10 text-white">
+                      <SelectTrigger className="bg-[#101112]/40 border-white/10 text-white">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent className="bg-zinc-900 border-zinc-800 text-white">
+                      <SelectContent className="bg-card border-zinc-800 text-white">
                         <SelectItem value="individual">Individual (One QR per person)</SelectItem>
                         <SelectItem value="group">Group (Shared QR code)</SelectItem>
                       </SelectContent>
@@ -137,13 +137,13 @@ export function EventWorkflow({ formData, setFormData }: EditorSectionProps) {
                       type="number"
                       value={formData.albumTracking.rules.maxPhotosPerAlbum}
                       onChange={(e) => updateRules({ maxPhotosPerAlbum: parseInt(e.target.value) || 0 })}
-                      className="bg-black/40 border-white/10 text-white"
+                      className="bg-[#101112]/40 border-white/10 text-white"
                     />
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="bg-zinc-900/50 border-white/10 backdrop-blur-sm">
+              <Card className="bg-card/50 border-white/10 backdrop-blur-sm">
                 <CardHeader>
                   <CardTitle className="text-white text-base flex items-center gap-2">
                     <UserCheck className="w-5 h-5 text-emerald-400" />
@@ -151,7 +151,7 @@ export function EventWorkflow({ formData, setFormData }: EditorSectionProps) {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between p-3 rounded-lg bg-black/30 border border-white/5">
+                  <div className="flex items-center justify-between p-3 rounded-lg bg-[#101112]/30 border border-white/5">
                     <div>
                       <Label className="text-zinc-300 font-medium">Require Staff Approval</Label>
                       <p className="text-xs text-zinc-500">Photos must be approved before appearing in album</p>
@@ -163,7 +163,7 @@ export function EventWorkflow({ formData, setFormData }: EditorSectionProps) {
                     />
                   </div>
 
-                  <div className="flex items-center justify-between p-3 rounded-lg bg-black/30 border border-white/5">
+                  <div className="flex items-center justify-between p-3 rounded-lg bg-[#101112]/30 border border-white/5">
                     <div>
                       <Label className="text-zinc-300 font-medium">Allow Re-Entry</Label>
                       <p className="text-xs text-zinc-500">Scan same QR code multiple times</p>
@@ -175,7 +175,7 @@ export function EventWorkflow({ formData, setFormData }: EditorSectionProps) {
                     />
                   </div>
 
-                  <div className="flex items-center justify-between p-3 rounded-lg bg-black/30 border border-white/5">
+                  <div className="flex items-center justify-between p-3 rounded-lg bg-[#101112]/30 border border-white/5">
                     <div>
                       <Label className="text-zinc-300 font-medium">Print Ready Mode</Label>
                       <p className="text-xs text-zinc-500">Optimize workflow for onsite printing</p>
@@ -191,7 +191,7 @@ export function EventWorkflow({ formData, setFormData }: EditorSectionProps) {
             </div>
 
             {/* Badge Integration - Simplified for Workflow */}
-            <Card className="bg-zinc-900/50 border-white/10 backdrop-blur-sm">
+            <Card className="bg-card/50 border-white/10 backdrop-blur-sm">
               <CardHeader>
                 <CardTitle className="text-white text-base flex items-center gap-2">
                   <BadgeCheck className="w-5 h-5 text-purple-400" />
@@ -202,7 +202,7 @@ export function EventWorkflow({ formData, setFormData }: EditorSectionProps) {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="flex items-center justify-between p-3 rounded-lg bg-black/30 border border-white/5">
+                <div className="flex items-center justify-between p-3 rounded-lg bg-[#101112]/30 border border-white/5">
                   <div>
                     <Label className="text-zinc-300 font-medium">Auto-Generate Badges</Label>
                     <p className="text-xs text-zinc-500">Create a badge immediately upon registration</p>
@@ -224,7 +224,7 @@ export function EventWorkflow({ formData, setFormData }: EditorSectionProps) {
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between p-3 rounded-lg bg-black/30 border border-white/5">
+                    <div className="flex items-center justify-between p-3 rounded-lg bg-[#101112]/30 border border-white/5">
                       <div>
                         <Label className="text-zinc-300 font-medium">Save Badge Photo to Album</Label>
                         <p className="text-xs text-zinc-500">Include the AI-generated badge photo in the visitor's album gallery</p>
@@ -241,7 +241,7 @@ export function EventWorkflow({ formData, setFormData }: EditorSectionProps) {
             </Card>
 
             {/* Station Configuration */}
-            <Card className="bg-zinc-900/50 border-white/10 backdrop-blur-sm">
+            <Card className="bg-card/50 border-white/10 backdrop-blur-sm">
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-white text-base flex items-center gap-2">
@@ -268,7 +268,7 @@ export function EventWorkflow({ formData, setFormData }: EditorSectionProps) {
                 ) : (
                   <div className="space-y-4">
                     {formData.albumTracking.stations.map((station, index) => (
-                      <div key={station.id} className="flex flex-col gap-4 p-4 rounded-xl bg-black/30 border border-white/5">
+                      <div key={station.id} className="flex flex-col gap-4 p-4 rounded-xl bg-[#101112]/30 border border-white/5">
                         <div className="flex items-center gap-4">
                           <div className="flex items-center justify-center w-8 h-8 rounded-full bg-zinc-800 text-zinc-400 font-mono text-sm shrink-0">
                             {index + 1}
@@ -288,10 +288,10 @@ export function EventWorkflow({ formData, setFormData }: EditorSectionProps) {
                                 value={station.type}
                                 onValueChange={(v: any) => updateStation(index, { type: v })}
                               >
-                                <SelectTrigger className="bg-zinc-900 border-white/10 text-white h-9">
+                                <SelectTrigger className="bg-card border-white/10 text-white h-9">
                                   <SelectValue />
                                 </SelectTrigger>
-                                <SelectContent className="bg-zinc-900 border-zinc-800 text-white">
+                                <SelectContent className="bg-card border-zinc-800 text-white">
                                   <SelectItem value="registration">Registration</SelectItem>
                                   <SelectItem value="booth">Photo Booth</SelectItem>
                                   <SelectItem value="playground">Playground</SelectItem>
@@ -300,7 +300,7 @@ export function EventWorkflow({ formData, setFormData }: EditorSectionProps) {
                               </Select>
 
                               {station.type !== 'registration' && (
-                                <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-zinc-900 border border-white/5 ml-auto md:ml-0">
+                                <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-card border border-white/5 ml-auto md:ml-0">
                                   <QrCode className={`w-4 h-4 ${station.requiresScanner ? 'text-emerald-400' : 'text-zinc-600'}`} />
                                   <Switch
                                     checked={station.requiresScanner}
@@ -351,7 +351,7 @@ export function EventWorkflow({ formData, setFormData }: EditorSectionProps) {
             </Card>
           </div>
         ) : (
-          <div className="mt-8 p-8 border border-white/10 rounded-2xl bg-zinc-900/30 flex flex-col items-center text-center">
+          <div className="mt-8 p-8 border border-white/10 rounded-2xl bg-card/30 flex flex-col items-center text-center">
             <div className="w-16 h-16 rounded-full bg-zinc-800 flex items-center justify-center mb-4">
               <QrCode className="w-8 h-8 text-zinc-600" />
             </div>

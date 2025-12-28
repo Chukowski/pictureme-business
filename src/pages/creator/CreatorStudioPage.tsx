@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo, useRef } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import BoothDashboard from "./BoothDashboard";
 import {
     LayoutTemplate,
@@ -106,9 +106,14 @@ import { LOCAL_IMAGE_MODELS, LOCAL_VIDEO_MODELS } from "@/services/aiProcessor";
 
 // Error Boundary Component
 
-function CreatorStudioPageContent() {
+interface CreatorStudioPageProps {
+    defaultView?: MainView;
+}
+
+function CreatorStudioPageContent({ defaultView }: CreatorStudioPageProps) {
     const navigate = useNavigate();
     const location = useLocation();
+    const [searchParams, setSearchParams] = useSearchParams();
     // Initial user from local storage
     const initialUser = getCurrentUser();
     const [currentUser, setCurrentUser] = useState<User | null>(initialUser);
@@ -127,10 +132,38 @@ function CreatorStudioPageContent() {
         fetchProfile();
     }, []);
 
-    // View State
-    const [activeView, setActiveView] = useState<MainView>((location.state as any)?.view || "create");
+    // View State - initialize from query param, then state, then default
+    const [activeView, setActiveView] = useState<MainView>(() => {
+        if (defaultView) return defaultView;
+        const viewParam = searchParams.get("view") as MainView;
+        const validViews: MainView[] = ["create", "templates", "booths", "gallery"];
+        if (viewParam && validViews.includes(viewParam)) return viewParam;
+        return (location.state as any)?.view || "create";
+    });
 
-    // Update view if location state changes (e.g. navigation from bottom nav while on same page?)
+    // Sync activeView from URL search parameters (two-way sync)
+    useEffect(() => {
+        const viewParam = searchParams.get("view") as MainView;
+        const validViews: MainView[] = ["create", "templates", "booths", "gallery"];
+        if (viewParam && validViews.includes(viewParam) && viewParam !== activeView) {
+            setActiveView(viewParam);
+        }
+    }, [searchParams, activeView]);
+
+    // Update URL when view changes to persist state on refresh
+    useEffect(() => {
+        if (activeView) {
+            setSearchParams(prev => {
+                const next = new URLSearchParams(prev);
+                if (next.get("view") !== activeView) {
+                    next.set("view", activeView);
+                }
+                return next;
+            }, { replace: true });
+        }
+    }, [activeView, setSearchParams]);
+
+    // Update view if location state changes (e.g. navigation from bottom nav)
     useEffect(() => {
         if ((location.state as any)?.view) {
             setActiveView((location.state as any).view);
@@ -808,7 +841,7 @@ function CreatorStudioPageContent() {
     };
 
     return (
-        <div className="min-h-dvh h-screen overflow-hidden pt-20 flex flex-col md:flex-row bg-black text-white font-sans relative">
+        <div className="min-h-dvh h-screen overflow-hidden pt-20 flex flex-col md:flex-row bg-[#101112] text-white font-sans relative">
 
 
 
@@ -817,7 +850,7 @@ function CreatorStudioPageContent() {
                 {activeView === "templates" ? (
                     <TemplatesView />
                 ) : activeView === "booths" ? (
-                    <div className="flex-1 bg-black md:overflow-y-auto overflow-visible w-full"><BoothDashboard /></div>
+                    <div className="flex-1 bg-[#101112] md:overflow-y-auto overflow-visible w-full"><BoothDashboard /></div>
                 ) : (activeView === "gallery" || activeView === "home") ? (
                     <GalleryView
                         history={history}
@@ -952,7 +985,7 @@ function CreatorStudioPageContent() {
                     className="fixed right-0 top-1/2 -translate-y-1/2 z-[90] flex items-center md:hidden animate-in fade-in slide-in-from-right-4 duration-1000"
                     onClick={() => setIsMobileRailOpen(true)}
                 >
-                    <div className="bg-black/40 backdrop-blur-md border border-white/10 rounded-l-2xl py-6 px-2 flex flex-col items-center gap-3 shadow-2xl animate-pulse">
+                    <div className="bg-[#101112]/40 backdrop-blur-md border border-white/10 rounded-l-2xl py-6 px-2 flex flex-col items-center gap-3 shadow-2xl animate-pulse">
                         <ChevronLeft className="w-5 h-5 text-white animate-bounce-horizontal" />
                         <span className="text-[10px] font-bold text-white tracking-[0.2em] uppercase" style={{ writingMode: 'vertical-lr' }}>
                             Slide
@@ -971,10 +1004,10 @@ function CreatorStudioPageContent() {
     );
 }
 
-export default function CreatorStudioPage() {
+export default function CreatorStudioPage(props: CreatorStudioPageProps) {
     return (
         <ErrorBoundary>
-            <CreatorStudioPageContent />
+            <CreatorStudioPageContent {...props} />
         </ErrorBoundary>
     );
 }

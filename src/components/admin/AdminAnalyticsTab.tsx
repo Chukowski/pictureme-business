@@ -170,10 +170,10 @@ export default function AdminAnalyticsTab({ currentUser }: AdminAnalyticsTabProp
         <div className="flex items-center gap-3">
           <span className="text-sm text-zinc-400">Range</span>
           <Select value={String(rangeDays)} onValueChange={(v) => setRangeDays(Number(v))}>
-            <SelectTrigger className="w-32 bg-zinc-900 border-white/10 text-white">
+            <SelectTrigger className="w-32 bg-card border-white/10 text-white">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent className="bg-zinc-900 border-white/10 text-white">
+            <SelectContent className="bg-card border-white/10 text-white">
               <SelectItem value="7">Last 7 days</SelectItem>
               <SelectItem value="30">Last 30 days</SelectItem>
               <SelectItem value="90">Last 90 days</SelectItem>
@@ -185,7 +185,7 @@ export default function AdminAnalyticsTab({ currentUser }: AdminAnalyticsTabProp
       {/* Album Stats - Real Data */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {/* Total Albums */}
-        <Card className="bg-zinc-900/50 border-white/10 backdrop-blur-sm">
+        <Card className="bg-card/50 border-white/10 backdrop-blur-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-zinc-400">Total Albums</CardTitle>
             <div className="p-2 rounded-lg bg-indigo-500/10">
@@ -209,7 +209,7 @@ export default function AdminAnalyticsTab({ currentUser }: AdminAnalyticsTabProp
         </Card>
 
         {/* Completed Albums */}
-        <Card className="bg-zinc-900/50 border-white/10 backdrop-blur-sm">
+        <Card className="bg-card/50 border-white/10 backdrop-blur-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-zinc-400">Completed Albums</CardTitle>
             <div className="p-2 rounded-lg bg-emerald-500/10">
@@ -233,7 +233,7 @@ export default function AdminAnalyticsTab({ currentUser }: AdminAnalyticsTabProp
         </Card>
 
         {/* Paid Albums */}
-        <Card className="bg-zinc-900/50 border-white/10 backdrop-blur-sm">
+        <Card className="bg-card/50 border-white/10 backdrop-blur-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-zinc-400">Paid Albums</CardTitle>
             <div className="p-2 rounded-lg bg-purple-500/10">
@@ -266,7 +266,7 @@ export default function AdminAnalyticsTab({ currentUser }: AdminAnalyticsTabProp
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {/* Total Downloads */}
-            <Card className="bg-zinc-900/50 border-white/10 backdrop-blur-sm">
+            <Card className="bg-card/50 border-white/10 backdrop-blur-sm">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium text-zinc-400">Total Downloads</CardTitle>
                 <div className="p-2 rounded-lg bg-orange-500/10">
@@ -284,7 +284,7 @@ export default function AdminAnalyticsTab({ currentUser }: AdminAnalyticsTabProp
             </Card>
 
             {/* Photos Downloaded */}
-            <Card className="bg-zinc-900/50 border-white/10 backdrop-blur-sm">
+            <Card className="bg-card/50 border-white/10 backdrop-blur-sm">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium text-zinc-400">Photos Downloaded</CardTitle>
                 <div className="p-2 rounded-lg bg-amber-500/10">
@@ -302,7 +302,7 @@ export default function AdminAnalyticsTab({ currentUser }: AdminAnalyticsTabProp
             </Card>
 
             {/* Unique Albums */}
-            <Card className="bg-zinc-900/50 border-white/10 backdrop-blur-sm">
+            <Card className="bg-card/50 border-white/10 backdrop-blur-sm">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium text-zinc-400">Unique Albums</CardTitle>
                 <div className="p-2 rounded-lg bg-yellow-500/10">
@@ -320,7 +320,7 @@ export default function AdminAnalyticsTab({ currentUser }: AdminAnalyticsTabProp
             </Card>
 
             {/* Download Types */}
-            <Card className="bg-zinc-900/50 border-white/10 backdrop-blur-sm">
+            <Card className="bg-card/50 border-white/10 backdrop-blur-sm">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium text-zinc-400">By Type</CardTitle>
                 <div className="p-2 rounded-lg bg-lime-500/10">
@@ -354,7 +354,7 @@ export default function AdminAnalyticsTab({ currentUser }: AdminAnalyticsTabProp
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {stationStats.map((station) => (
-              <Card key={station.station_type} className="bg-zinc-900/50 border-white/10">
+              <Card key={station.station_type} className="bg-card/50 border-white/10">
                 <CardContent className="pt-6">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm font-medium text-white capitalize">
@@ -376,7 +376,7 @@ export default function AdminAnalyticsTab({ currentUser }: AdminAnalyticsTabProp
 
       {/* Event Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="bg-zinc-900/50 border-white/10 backdrop-blur-sm">
+        <Card className="bg-card/50 border-white/10 backdrop-blur-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-zinc-400">Event Photos</CardTitle>
             <div className="p-2 rounded-lg bg-indigo-500/10">
@@ -397,7 +397,7 @@ export default function AdminAnalyticsTab({ currentUser }: AdminAnalyticsTabProp
           </CardContent>
         </Card>
 
-        <Card className="bg-zinc-900/50 border-white/10 backdrop-blur-sm">
+        <Card className="bg-card/50 border-white/10 backdrop-blur-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-zinc-400">Total Views</CardTitle>
             <div className="p-2 rounded-lg bg-purple-500/10">
@@ -418,7 +418,7 @@ export default function AdminAnalyticsTab({ currentUser }: AdminAnalyticsTabProp
           </CardContent>
         </Card>
 
-        <Card className="bg-zinc-900/50 border-white/10 backdrop-blur-sm">
+        <Card className="bg-card/50 border-white/10 backdrop-blur-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-zinc-400">Last 24 Hours</CardTitle>
             <div className="p-2 rounded-lg bg-emerald-500/10">
@@ -441,7 +441,7 @@ export default function AdminAnalyticsTab({ currentUser }: AdminAnalyticsTabProp
           </CardContent>
         </Card>
 
-        <Card className="bg-zinc-900/50 border-white/10 backdrop-blur-sm">
+        <Card className="bg-card/50 border-white/10 backdrop-blur-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-zinc-400">Active Events</CardTitle>
             <div className="p-2 rounded-lg bg-amber-500/10">
@@ -475,11 +475,11 @@ export default function AdminAnalyticsTab({ currentUser }: AdminAnalyticsTabProp
         {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="rounded-3xl bg-zinc-900/50 border border-white/5 p-6 h-[200px] animate-pulse" />
+              <div key={i} className="rounded-3xl bg-card/50 border border-white/5 p-6 h-[200px] animate-pulse" />
             ))}
           </div>
         ) : analytics.length === 0 ? (
-          <div className="rounded-3xl bg-zinc-900/50 border border-white/5 p-12 text-center">
+          <div className="rounded-3xl bg-card/50 border border-white/5 p-12 text-center">
             <div className="flex flex-col items-center gap-6 max-w-md mx-auto">
               <div className="w-20 h-20 rounded-full bg-zinc-800/50 flex items-center justify-center border border-white/5">
                 <BarChart3 className="w-10 h-10 text-zinc-500" />
@@ -495,7 +495,7 @@ export default function AdminAnalyticsTab({ currentUser }: AdminAnalyticsTabProp
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {analytics.map((eventAnalytics) => (
-              <Card key={eventAnalytics.event_id} className="bg-zinc-900/50 border-white/10 hover:border-indigo-500/30 transition-all group">
+              <Card key={eventAnalytics.event_id} className="bg-card/50 border-white/10 hover:border-indigo-500/30 transition-all group">
                 <CardHeader>
                   <div className="flex items-start justify-between mb-2">
                     <CardTitle className="text-lg text-white truncate pr-4" title={eventAnalytics.event_title}>

@@ -566,7 +566,7 @@ export default function AdminEvents() {
                                   />
                                 ))}
                                 {template.images.length > 4 && (
-                                  <div className="absolute bottom-1 right-1 bg-black/60 text-white text-xs px-2 py-1 rounded">
+                                  <div className="absolute bottom-1 right-1 bg-[#101112]/60 text-white text-xs px-2 py-1 rounded">
                                     +{template.images.length - 4} more
                                   </div>
                                 )}

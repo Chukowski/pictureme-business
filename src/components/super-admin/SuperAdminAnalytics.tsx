@@ -104,7 +104,7 @@ export default function SuperAdminAnalytics() {
                 <>
                     {/* Key Metrics Cards */}
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                        <Card className="bg-zinc-900/50 border-white/10">
+                        <Card className="bg-card/50 border-white/10">
                             <CardContent className="p-6">
                                 <div className="flex items-center justify-between">
                                     <div>
@@ -124,7 +124,7 @@ export default function SuperAdminAnalytics() {
                             </CardContent>
                         </Card>
 
-                        <Card className="bg-zinc-900/50 border-white/10">
+                        <Card className="bg-card/50 border-white/10">
                             <CardContent className="p-6">
                                 <div className="flex items-center justify-between">
                                     <div>
@@ -144,7 +144,7 @@ export default function SuperAdminAnalytics() {
                             </CardContent>
                         </Card>
 
-                        <Card className="bg-zinc-900/50 border-white/10">
+                        <Card className="bg-card/50 border-white/10">
                             <CardContent className="p-6">
                                 <div className="flex items-center justify-between">
                                     <div>
@@ -164,7 +164,7 @@ export default function SuperAdminAnalytics() {
                             </CardContent>
                         </Card>
 
-                        <Card className="bg-zinc-900/50 border-white/10">
+                        <Card className="bg-card/50 border-white/10">
                             <CardContent className="p-6">
                                 <div className="flex items-center justify-between">
                                     <div>
@@ -188,7 +188,7 @@ export default function SuperAdminAnalytics() {
                     {/* Charts Grid */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {/* Token Usage Breakdown */}
-                        <Card className="bg-zinc-900/50 border-white/10">
+                        <Card className="bg-card/50 border-white/10">
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2">
                                     <TrendingUp className="w-5 h-5 text-emerald-400" />
@@ -236,7 +236,7 @@ export default function SuperAdminAnalytics() {
                         </Card>
 
                         {/* Albums Stats */}
-                        <Card className="bg-zinc-900/50 border-white/10">
+                        <Card className="bg-card/50 border-white/10">
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2">
                                     <BarChart3 className="w-5 h-5 text-purple-400" />
@@ -272,7 +272,7 @@ export default function SuperAdminAnalytics() {
 
                     {/* Top Events by Token Usage */}
                     {topEvents.length > 0 && (
-                        <Card className="bg-zinc-900/50 border-white/10">
+                        <Card className="bg-card/50 border-white/10">
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2">
                                     <TrendingUp className="w-5 h-5 text-indigo-400" />

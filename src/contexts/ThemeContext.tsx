@@ -25,7 +25,7 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
     theme: "akita",
     brandName: "Akitá",
     tagline: "Experiencias fotográficas impulsadas por AI",
-    mode: "light",
+    mode: "dark",
   });
 
   useEffect(() => {
@@ -40,7 +40,7 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
           tagline: current.tagline || prev.tagline,
           primaryColor: current.primaryColor || prev.primaryColor,
           secondaryColor: current.secondaryColor || prev.secondaryColor,
-          mode: current.themeMode || prev.mode || "light",
+          mode: current.themeMode || prev.mode || "dark",
         }));
       }
     } catch (_) {
@@ -49,7 +49,7 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   useEffect(() => {
-    const mode = brandConfig.mode || "light";
+    const mode = brandConfig.mode || "dark";
 
     // Apply theme to document root
     document.documentElement.setAttribute("data-theme", brandConfig.theme);
@@ -59,7 +59,7 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
     } else {
       document.documentElement.classList.remove("dark");
     }
-    
+
     // Apply custom colors if provided
     if (brandConfig.primaryColor) {
       document.documentElement.style.setProperty("--brand-primary", brandConfig.primaryColor);

@@ -36,8 +36,8 @@ export const CreatorBottomNav = ({ onOpenCreate, onLibraryClick, onHomeClick, ac
 
         const path = location.pathname;
         if (path === '/creator/dashboard' || path === '/creator') return 0;
-        if (path.includes('/creator/studio') && location.state?.view === 'gallery') return 1;
-        if (path.includes('/creator/studio') && location.state?.view === 'create') return 2;
+        if (path.includes('/creator/studio') && (location.state?.view === 'gallery' || new URLSearchParams(location.search).get('view') === 'gallery')) return 1;
+        if (path.includes('/creator/studio') && (location.state?.view === 'create' || new URLSearchParams(location.search).get('view') === 'create' || !new URLSearchParams(location.search).get('view'))) return 2;
         if (path.includes('/creator/booth')) return 3;
         if (path.includes('/creator/profile') || path.includes('/creator/settings')) return 4;
 
@@ -138,10 +138,10 @@ export const CreatorBottomNav = ({ onOpenCreate, onLibraryClick, onHomeClick, ac
             else navigate('/creator/dashboard');
         } else if (index === 1) { // Library
             if (onLibraryClick) onLibraryClick();
-            else navigate('/creator/studio', { state: { view: 'gallery' } });
+            else navigate('/creator/studio?view=gallery');
         } else if (index === 2) { // Create
             if (onOpenCreate) onOpenCreate();
-            else navigate('/creator/studio', { state: { view: 'create' } });
+            else navigate('/creator/studio?view=create');
         } else if (index === 3) { // Booths
             navigate('/creator/booth');
         }
@@ -155,7 +155,7 @@ export const CreatorBottomNav = ({ onOpenCreate, onLibraryClick, onHomeClick, ac
     };
 
     return (
-        <div className="fixed bottom-0 left-0 right-0 z-[100] bg-black/95 backdrop-blur-xl border-t border-white/10 md:hidden pb-[env(safe-area-inset-bottom,20px)] pt-2">
+        <div className="fixed bottom-0 left-0 right-0 z-[100] bg-[#101112]/95 backdrop-blur-xl border-t border-white/10 md:hidden pb-[env(safe-area-inset-bottom,20px)] pt-2">
             <nav className="flex items-center justify-around px-4 w-full h-full max-w-lg mx-auto">
                 {items.map((item, index) => {
                     const isActive = index === activeIndex;
@@ -170,7 +170,7 @@ export const CreatorBottomNav = ({ onOpenCreate, onLibraryClick, onHomeClick, ac
                                 {showSuccess && (
                                     <div
                                         onClick={() => {
-                                            navigate('/creator/studio', { state: { view: 'gallery' } });
+                                            navigate('/creator/studio?view=gallery');
                                             setShowSuccess(false);
                                         }}
                                         className="absolute -top-12 left-1/2 -translate-x-1/2 bg-[#D1F349] text-black text-[10px] font-bold px-3 py-1.5 rounded-full shadow-[0_0_20px_rgba(209,243,73,0.4)] animate-in fade-in slide-in-from-bottom-2 duration-300 flex items-center gap-1.5 whitespace-nowrap z-50 cursor-pointer active:scale-95 transition-transform"
@@ -272,7 +272,7 @@ export const CreatorBottomNav = ({ onOpenCreate, onLibraryClick, onHomeClick, ac
                                         <div className="space-y-3 w-full">
                                             <Button
                                                 variant="outline"
-                                                className="w-full justify-start h-14 bg-zinc-900/50 border-white/10 hover:bg-zinc-900 hover:text-white rounded-xl text-base font-medium transition-all"
+                                                className="w-full justify-start h-14 bg-card/50 border-white/10 hover:bg-card hover:text-white rounded-xl text-base font-medium transition-all"
                                                 onClick={() => {
                                                     navigate('/creator/chat');
                                                 }}
@@ -286,7 +286,7 @@ export const CreatorBottomNav = ({ onOpenCreate, onLibraryClick, onHomeClick, ac
 
                                             <Button
                                                 variant="outline"
-                                                className="w-full justify-start h-14 bg-zinc-900/50 border-white/10 hover:bg-zinc-900 hover:text-white rounded-xl text-base font-medium transition-all"
+                                                className="w-full justify-start h-14 bg-card/50 border-white/10 hover:bg-card hover:text-white rounded-xl text-base font-medium transition-all"
                                                 onClick={() => {
                                                     navigate('/creator/settings');
                                                 }}
@@ -300,7 +300,7 @@ export const CreatorBottomNav = ({ onOpenCreate, onLibraryClick, onHomeClick, ac
 
                                             <Button
                                                 variant="outline"
-                                                className="w-full justify-start h-14 bg-zinc-900/50 border-white/10 hover:bg-zinc-900 hover:text-white rounded-xl text-base font-medium transition-all"
+                                                className="w-full justify-start h-14 bg-card/50 border-white/10 hover:bg-card hover:text-white rounded-xl text-base font-medium transition-all"
                                                 onClick={() => {
                                                     navigate('/creator/billing');
                                                 }}

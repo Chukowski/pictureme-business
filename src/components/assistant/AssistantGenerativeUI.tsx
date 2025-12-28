@@ -87,7 +87,7 @@ export function PlanCard({ plan, onSelect, className }: PlanCardProps) {
 
   return (
     <Card className={cn(
-      "relative overflow-hidden border-white/10 bg-zinc-900/80 backdrop-blur",
+      "relative overflow-hidden border-white/10 bg-card/80 backdrop-blur",
       data.popular && "ring-2 ring-purple-500",
       className
     )}>
@@ -168,7 +168,7 @@ export function TokenPackageCard({ tokens, price, bonus, onPurchase }: TokenPack
   };
 
   return (
-    <Card className="border-white/10 bg-zinc-900/80 backdrop-blur">
+    <Card className="border-white/10 bg-card/80 backdrop-blur">
       <CardContent className="p-4">
         <div className="flex items-center justify-between">
           <div>
@@ -211,7 +211,7 @@ export function NavigationCard({ title, description, path, icon }: NavigationCar
 
   return (
     <Card
-      className="border-white/10 bg-zinc-900/80 backdrop-blur cursor-pointer hover:bg-zinc-800/80 transition-colors"
+      className="border-white/10 bg-card/80 backdrop-blur cursor-pointer hover:bg-zinc-800/80 transition-colors"
       onClick={() => navigate(path)}
     >
       <CardContent className="p-4 flex items-center gap-3">
@@ -239,7 +239,7 @@ export function AuthCard({ type }: AuthCardProps) {
   const navigate = useNavigate();
 
   return (
-    <Card className="border-indigo-500/30 bg-zinc-900/90 backdrop-blur overflow-hidden">
+    <Card className="border-indigo-500/30 bg-card/90 backdrop-blur overflow-hidden">
       <CardContent className="p-4">
         <div className="text-center mb-4">
           <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center mx-auto mb-2">
@@ -292,7 +292,7 @@ interface FeatureCardProps {
 
 export function FeatureCard({ feature, description, tips }: FeatureCardProps) {
   return (
-    <Card className="border-white/10 bg-zinc-900/80 backdrop-blur">
+    <Card className="border-white/10 bg-card/80 backdrop-blur">
       <CardHeader className="pb-2">
         <CardTitle className="text-white text-base flex items-center gap-2">
           <Sparkles className="h-4 w-4 text-purple-400" />

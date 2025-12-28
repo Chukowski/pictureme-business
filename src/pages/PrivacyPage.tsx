@@ -12,9 +12,9 @@ export const PrivacyPage = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-black text-white font-sans selection:bg-purple-500/30">
+    <div className="min-h-screen bg-[#101112] text-white font-sans selection:bg-purple-500/30">
       {/* Navigation */}
-      <nav className="fixed w-full z-50 bg-black/50 backdrop-blur-lg border-b border-white/10">
+      <nav className="fixed w-full z-50 bg-[#101112]/50 backdrop-blur-lg border-b border-white/10">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
             <img 
@@ -55,7 +55,7 @@ export const PrivacyPage = () => {
           </div>
 
           {/* Introduction */}
-          <div className="bg-zinc-900/50 border border-white/10 rounded-2xl p-8 backdrop-blur-sm">
+          <div className="bg-card/50 border border-white/10 rounded-2xl p-8 backdrop-blur-sm">
             <p className="text-gray-300 leading-relaxed">
               Your privacy is important to us. This Privacy Policy explains how PictureMe.now ("we", "our", "Akitá LLC") collects, uses, stores, and protects your information when you use our AI generative platform and photobooth services.
             </p>
@@ -186,7 +186,7 @@ export const PrivacyPage = () => {
 
             <Section number="11" title="Contact">
               <p>If you have privacy questions, requests, or concerns, you can contact us at:</p>
-              <div className="bg-zinc-900/50 border border-white/10 rounded-xl p-6 mt-4 backdrop-blur-sm">
+              <div className="bg-card/50 border border-white/10 rounded-xl p-6 mt-4 backdrop-blur-sm">
                 <h3 className="text-white font-bold text-lg mb-2">Akitá LLC</h3>
                 <p className="text-gray-300">Email: <a href="mailto:hello@akitapr.com" className="text-purple-400 hover:text-purple-300 transition-colors">hello@akitapr.com</a></p>
                 <p className="text-gray-300">Location: Puerto Rico</p>

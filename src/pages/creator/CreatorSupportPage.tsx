@@ -47,7 +47,7 @@ export default function CreatorSupportPage() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* Contact Form */}
-          <Card className="bg-zinc-900/50 border-white/10">
+          <Card className="bg-card/50 border-white/10">
             <CardHeader>
               <CardTitle className="text-white flex items-center gap-2">
                 <Mail className="w-5 h-5 text-indigo-400" />
@@ -65,7 +65,7 @@ export default function CreatorSupportPage() {
                     value={subject}
                     onChange={(e) => setSubject(e.target.value)}
                     placeholder="Brief description of the issue"
-                    className="bg-black/50 border-white/10 text-white"
+                    className="bg-[#101112]/50 border-white/10 text-white"
                   />
                 </div>
                 <div className="space-y-2">
@@ -74,7 +74,7 @@ export default function CreatorSupportPage() {
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
                     placeholder="Describe your issue in detail..."
-                    className="bg-black/50 border-white/10 text-white min-h-[150px]"
+                    className="bg-[#101112]/50 border-white/10 text-white min-h-[150px]"
                   />
                 </div>
                 <Button 
@@ -94,7 +94,7 @@ export default function CreatorSupportPage() {
 
           {/* Resources */}
           <div className="space-y-6">
-            <Card className="bg-zinc-900/50 border-white/10 hover:border-indigo-500/30 transition-colors cursor-pointer" onClick={() => window.open('https://discord.gg/pictureme', '_blank')}>
+            <Card className="bg-card/50 border-white/10 hover:border-indigo-500/30 transition-colors cursor-pointer" onClick={() => window.open('https://discord.gg/pictureme', '_blank')}>
               <CardContent className="p-6 flex items-center gap-4">
                 <div className="p-3 rounded-xl bg-indigo-500/10 text-indigo-400">
                   <MessageSquare className="w-6 h-6" />
@@ -107,7 +107,7 @@ export default function CreatorSupportPage() {
               </CardContent>
             </Card>
 
-            <Card className="bg-zinc-900/50 border-white/10 hover:border-emerald-500/30 transition-colors cursor-pointer">
+            <Card className="bg-card/50 border-white/10 hover:border-emerald-500/30 transition-colors cursor-pointer">
               <CardContent className="p-6 flex items-center gap-4">
                 <div className="p-3 rounded-xl bg-emerald-500/10 text-emerald-400">
                   <Book className="w-6 h-6" />
@@ -120,7 +120,7 @@ export default function CreatorSupportPage() {
               </CardContent>
             </Card>
 
-            <Card className="bg-zinc-900/50 border-white/10 hover:border-amber-500/30 transition-colors cursor-pointer">
+            <Card className="bg-card/50 border-white/10 hover:border-amber-500/30 transition-colors cursor-pointer">
               <CardContent className="p-6 flex items-center gap-4">
                 <div className="p-3 rounded-xl bg-amber-500/10 text-amber-400">
                   <HelpCircle className="w-6 h-6" />

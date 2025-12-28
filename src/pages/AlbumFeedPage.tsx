@@ -586,7 +586,7 @@ export default function AlbumFeedPage({ albumIdOverride }: AlbumFeedPageProps = 
 
   if (loading || isLoading) {
     return (
-      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
+      <div className="min-h-screen bg-card flex items-center justify-center">
         <div className="text-center space-y-4">
           <Loader2 className="w-12 h-12 animate-spin mx-auto text-cyan-400" />
           <p className="text-white text-lg">Loading album...</p>
@@ -609,8 +609,8 @@ export default function AlbumFeedPage({ albumIdOverride }: AlbumFeedPageProps = 
   // Completely locked album - show only lock screen (no photos visible at all)
   if (albumIsLocked && albumInfo) {
     return (
-      <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md bg-zinc-900/80 border-white/10 backdrop-blur-lg">
+      <div className="min-h-screen bg-card flex items-center justify-center p-4">
+        <Card className="w-full max-w-md bg-card/80 border-white/10 backdrop-blur-lg">
           <CardContent className="pt-8 pb-8 text-center">
             {/* Event Logo or Lock Icon */}
             {config.branding?.logoPath ? (
@@ -667,7 +667,7 @@ export default function AlbumFeedPage({ albumIdOverride }: AlbumFeedPageProps = 
             {/* Album Code for reference */}
             <div className="text-center">
               <p className="text-xs text-zinc-500 mb-1">Your Album Code</p>
-              <code className="px-4 py-2 bg-black/40 rounded-lg text-cyan-400 font-mono text-lg tracking-widest">
+              <code className="px-4 py-2 bg-[#101112]/40 rounded-lg text-cyan-400 font-mono text-lg tracking-widest">
                 {albumInfo.id}
               </code>
               <p className="text-xs text-zinc-600 mt-2">
@@ -688,7 +688,7 @@ export default function AlbumFeedPage({ albumIdOverride }: AlbumFeedPageProps = 
   }
 
   return (
-    <div className="min-h-screen bg-zinc-950">
+    <div className="min-h-screen bg-card">
       {/* Header - Different for Staff vs Visitor */}
       <header 
         className="sticky top-0 z-40 border-b border-white/10 backdrop-blur-xl"
@@ -814,12 +814,12 @@ export default function AlbumFeedPage({ albumIdOverride }: AlbumFeedPageProps = 
                         onDragStart={(e) => e.preventDefault()}
                       />
                       {/* Heavy blur overlay */}
-                      <div className="absolute inset-0 backdrop-blur-xl bg-black/30" />
+                      <div className="absolute inset-0 backdrop-blur-xl bg-[#101112]/30" />
                     </div>
                   ))}
                   
                   {/* Status Overlay */}
-                  <div className="relative z-10 text-center p-8 rounded-2xl bg-black/60 backdrop-blur-md border border-white/20">
+                  <div className="relative z-10 text-center p-8 rounded-2xl bg-[#101112]/60 backdrop-blur-md border border-white/20">
                     {/* Different UI based on what's blocking */}
                     {requiresStaffApproval ? (
                       // Waiting for Staff Approval
@@ -991,7 +991,7 @@ export default function AlbumFeedPage({ albumIdOverride }: AlbumFeedPageProps = 
                     )}
                     
                     {/* Overlay with actions */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#101112]/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
                       <div className="absolute bottom-0 left-0 right-0 p-3">
                         <p className="text-white text-sm font-medium">{photo.templateName}</p>
                         <p className="text-zinc-400 text-xs">{photo.stationName}</p>
@@ -999,7 +999,7 @@ export default function AlbumFeedPage({ albumIdOverride }: AlbumFeedPageProps = 
                       {/* Click to view indicator for visitors */}
                       {!isStaff && (
                         <div className="absolute inset-0 flex items-center justify-center">
-                          <div className="bg-black/50 backdrop-blur-sm rounded-full p-3">
+                          <div className="bg-[#101112]/50 backdrop-blur-sm rounded-full p-3">
                             <ExternalLink className="w-6 h-6 text-white" />
                           </div>
                         </div>
@@ -1130,7 +1130,7 @@ export default function AlbumFeedPage({ albumIdOverride }: AlbumFeedPageProps = 
           {/* Sidebar - Staff Tools */}
           {isStaff && showStaffTools && (
             <div className="lg:col-span-1 space-y-4">
-              <Card className="bg-zinc-900/80 border-white/10 backdrop-blur-sm">
+              <Card className="bg-card/80 border-white/10 backdrop-blur-sm">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-white text-lg font-bold">Staff Tools</CardTitle>
                 </CardHeader>
@@ -1292,7 +1292,7 @@ export default function AlbumFeedPage({ albumIdOverride }: AlbumFeedPageProps = 
               </Card>
 
               {/* QR Code - Links to the shared album view */}
-              <Card className="bg-zinc-900/80 border-white/10 backdrop-blur-sm">
+              <Card className="bg-card/80 border-white/10 backdrop-blur-sm">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-white text-sm flex items-center gap-2 font-bold">
                     <QrCode className="w-4 h-4 text-[#D1F349]" />
@@ -1353,7 +1353,7 @@ export default function AlbumFeedPage({ albumIdOverride }: AlbumFeedPageProps = 
 
       {/* Fixed Footer for visitors - branding */}
       {!isStaff && (
-        <footer className="fixed bottom-0 left-0 right-0 border-t border-white/10 bg-zinc-950/90 backdrop-blur-lg py-3 z-30">
+        <footer className="fixed bottom-0 left-0 right-0 border-t border-white/10 bg-card/90 backdrop-blur-lg py-3 z-30">
           <div className="max-w-7xl mx-auto px-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
               {config.branding?.logoPath && (
@@ -1397,14 +1397,14 @@ export default function AlbumFeedPage({ albumIdOverride }: AlbumFeedPageProps = 
 
       {/* Photo Preview Modal */}
       <Dialog open={!!previewPhoto} onOpenChange={() => setPreviewPhoto(null)}>
-        <DialogContent className="max-w-4xl w-full bg-zinc-950/95 backdrop-blur-xl border-white/10 p-0 overflow-hidden">
+        <DialogContent className="max-w-4xl w-full bg-card/95 backdrop-blur-xl border-white/10 p-0 overflow-hidden">
           <DialogTitle className="sr-only">Photo Preview</DialogTitle>
           {previewPhoto && (
             <div className="relative">
               {/* Close button */}
               <button
                 onClick={() => setPreviewPhoto(null)}
-                className="absolute top-4 right-4 z-10 p-2 rounded-full bg-black/50 hover:bg-black/70 text-white transition-colors"
+                className="absolute top-4 right-4 z-10 p-2 rounded-full bg-[#101112]/50 hover:bg-[#101112]/70 text-white transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -1416,7 +1416,7 @@ export default function AlbumFeedPage({ albumIdOverride }: AlbumFeedPageProps = 
                   <img
                     src={previewPhoto.url}
                     alt={previewPhoto.templateName}
-                    className="w-full max-h-[70vh] object-contain bg-black blur-xl opacity-30"
+                    className="w-full max-h-[70vh] object-contain bg-[#101112] blur-xl opacity-30"
                   />
                   
                   {/* Payment overlay */}
@@ -1489,7 +1489,7 @@ export default function AlbumFeedPage({ albumIdOverride }: AlbumFeedPageProps = 
                   {currentPhotoIndex > 0 && (
                     <button
                       onClick={goToPrevPhoto}
-                      className="absolute left-4 top-1/2 -translate-y-1/2 z-10 p-2 rounded-full bg-black/50 hover:bg-black/70 text-white transition-colors"
+                      className="absolute left-4 top-1/2 -translate-y-1/2 z-10 p-2 rounded-full bg-[#101112]/50 hover:bg-[#101112]/70 text-white transition-colors"
                     >
                       <ChevronLeft className="w-6 h-6" />
                     </button>
@@ -1497,7 +1497,7 @@ export default function AlbumFeedPage({ albumIdOverride }: AlbumFeedPageProps = 
                   {currentPhotoIndex < photos.length - 1 && (
                     <button
                       onClick={goToNextPhoto}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 z-10 p-2 rounded-full bg-black/50 hover:bg-black/70 text-white transition-colors"
+                      className="absolute right-4 top-1/2 -translate-y-1/2 z-10 p-2 rounded-full bg-[#101112]/50 hover:bg-[#101112]/70 text-white transition-colors"
                     >
                       <ChevronRight className="w-6 h-6" />
                     </button>
@@ -1507,11 +1507,11 @@ export default function AlbumFeedPage({ albumIdOverride }: AlbumFeedPageProps = 
                   <img
                     src={previewPhoto.url}
                     alt={previewPhoto.templateName}
-                    className="w-full max-h-[70vh] object-contain bg-black"
+                    className="w-full max-h-[70vh] object-contain bg-[#101112]"
                   />
 
                   {/* Bottom bar with actions */}
-                  <div className="p-4 bg-zinc-900/90 border-t border-white/10">
+                  <div className="p-4 bg-card/90 border-t border-white/10">
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-white font-medium">{previewPhoto.templateName}</p>
@@ -1551,7 +1551,7 @@ export default function AlbumFeedPage({ albumIdOverride }: AlbumFeedPageProps = 
 
       {/* Share Menu Modal */}
       <Dialog open={showShareMenu} onOpenChange={setShowShareMenu}>
-        <DialogContent className="max-w-sm bg-zinc-900 border-white/10">
+        <DialogContent className="max-w-sm bg-card border-white/10">
           <DialogTitle className="text-white text-lg font-bold mb-4">
             Share {shareTarget === 'album' ? 'Album' : 'Photo'}
           </DialogTitle>
@@ -1585,7 +1585,7 @@ export default function AlbumFeedPage({ albumIdOverride }: AlbumFeedPageProps = 
               </Button>
               <Button
                 onClick={shareToTwitter}
-                className="bg-black hover:bg-zinc-800 text-white border border-white/20"
+                className="bg-[#101112] hover:bg-zinc-800 text-white border border-white/20"
               >
                 <Twitter className="w-4 h-4 mr-2" />
                 X / Twitter

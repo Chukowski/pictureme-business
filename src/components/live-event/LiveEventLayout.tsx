@@ -43,13 +43,13 @@ export function LiveEventLayout({
   ];
 
   return (
-    <div className="h-screen bg-black flex flex-col overflow-hidden relative selection:bg-indigo-500/30">
+    <div className="h-screen bg-[#101112] flex flex-col overflow-hidden relative selection:bg-indigo-500/30">
        {/* Background Layers - Consistent with Home Dashboard */}
-       <div className="absolute inset-0 bg-black -z-20" />
-       <div className="absolute top-0 left-0 w-full h-[500px] bg-gradient-to-b from-indigo-950/20 via-black/50 to-black pointer-events-none -z-10" />
+       <div className="absolute inset-0 bg-[#101112] -z-20" />
+       <div className="absolute top-0 left-0 w-full h-[500px] bg-gradient-to-b from-indigo-950/20 via-[#101112]/50 to-[#101112] pointer-events-none -z-10" />
       
       {/* Sticky Header */}
-      <header className="shrink-0 h-16 border-b border-white/10 bg-black/80 backdrop-blur-md flex items-center justify-between px-4 lg:px-6 z-50">
+      <header className="shrink-0 h-16 border-b border-white/10 bg-[#101112]/80 backdrop-blur-md flex items-center justify-between px-4 lg:px-6 z-50">
           <div className="flex items-center gap-4">
             <Button 
               variant="ghost" 
@@ -75,7 +75,7 @@ export function LiveEventLayout({
 
           <div className="flex items-center gap-3">
              {/* Navigation Tabs (Desktop) */}
-             <div className="hidden lg:flex items-center bg-zinc-900/50 p-1 rounded-full border border-white/5 mr-4">
+             <div className="hidden lg:flex items-center bg-card/50 p-1 rounded-full border border-white/5 mr-4">
                {TABS.map(tab => (
                  <button
                     key={tab.id}
@@ -122,7 +122,7 @@ export function LiveEventLayout({
                     <Menu className="w-4 h-4" />
                  </Button>
                </SheetTrigger>
-               <SheetContent side="left" className="w-[300px] bg-zinc-950 border-white/10 p-0">
+               <SheetContent side="left" className="w-[300px] bg-card border-white/10 p-0">
                   <div className="p-4 border-b border-white/10">
                      <h2 className="text-lg font-bold text-white">Stations</h2>
                   </div>
@@ -138,7 +138,7 @@ export function LiveEventLayout({
       <div className="flex-1 flex overflow-hidden">
         {/* Left Sidebar (Stations) - Desktop */}
         {leftSidebar && (
-          <aside className="hidden lg:block w-[280px] border-r border-white/10 bg-black/40 flex-shrink-0 overflow-y-auto p-4 custom-scrollbar">
+          <aside className="hidden lg:block w-[280px] border-r border-white/10 bg-[#101112]/40 flex-shrink-0 overflow-y-auto p-4 custom-scrollbar">
              {leftSidebar}
           </aside>
         )}
@@ -152,7 +152,7 @@ export function LiveEventLayout({
 
         {/* Right Sidebar (Health) - Desktop */}
         {rightSidebar && (
-          <aside className="hidden xl:block w-[280px] border-l border-white/10 bg-black/40 flex-shrink-0 overflow-y-auto p-4 custom-scrollbar">
+          <aside className="hidden xl:block w-[280px] border-l border-white/10 bg-[#101112]/40 flex-shrink-0 overflow-y-auto p-4 custom-scrollbar">
              {rightSidebar}
           </aside>
         )}

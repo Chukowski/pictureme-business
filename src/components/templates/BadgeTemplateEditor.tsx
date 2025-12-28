@@ -444,7 +444,7 @@ export function BadgeTemplateEditor({
 
       {config.enabled && (
         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-          <TabsList className="grid w-full grid-cols-3 bg-zinc-900/50 border border-white/10 rounded-lg p-1">
+          <TabsList className="grid w-full grid-cols-3 bg-card/50 border border-white/10 rounded-lg p-1">
             <TabsTrigger 
               value="design" 
               className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-zinc-400 rounded-md text-xs"
@@ -530,7 +530,7 @@ export function BadgeTemplateEditor({
                       alt="Badge background"
                       className="w-full h-full object-cover"
                     />
-                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="absolute inset-0 bg-[#101112]/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                       <Button
                         type="button"
                         variant="destructive"
@@ -568,14 +568,14 @@ export function BadgeTemplateEditor({
                       value={config.backgroundColor || '#1e293b'}
                       onChange={(e) => updateConfig({ backgroundColor: e.target.value })}
                       disabled={disabled}
-                      className="w-10 h-10 p-1 bg-black/40 border-white/10"
+                      className="w-10 h-10 p-1 bg-[#101112]/40 border-white/10"
                     />
                     <Input
                       type="text"
                       value={config.backgroundColor || '#1e293b'}
                       onChange={(e) => updateConfig({ backgroundColor: e.target.value })}
                       disabled={disabled}
-                      className="flex-1 bg-black/40 border-white/10 text-white font-mono text-xs"
+                      className="flex-1 bg-[#101112]/40 border-white/10 text-white font-mono text-xs"
                     />
                   </div>
                 </div>
@@ -595,7 +595,7 @@ export function BadgeTemplateEditor({
                     value={config.photoPlacement.position}
                     onValueChange={(position: any) => updatePhotoPlacement({ position })}
                   >
-                    <SelectTrigger className="h-8 text-xs bg-black/40 border-white/10 text-white">
+                    <SelectTrigger className="h-8 text-xs bg-[#101112]/40 border-white/10 text-white">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -611,7 +611,7 @@ export function BadgeTemplateEditor({
                     value={config.photoPlacement.shape}
                     onValueChange={(shape: any) => updatePhotoPlacement({ shape })}
                   >
-                    <SelectTrigger className="h-8 text-xs bg-black/40 border-white/10 text-white">
+                    <SelectTrigger className="h-8 text-xs bg-[#101112]/40 border-white/10 text-white">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -627,7 +627,7 @@ export function BadgeTemplateEditor({
                     value={config.photoPlacement.size || 'medium'}
                     onValueChange={(size: any) => updatePhotoPlacement({ size })}
                   >
-                    <SelectTrigger className="h-8 text-xs bg-black/40 border-white/10 text-white">
+                    <SelectTrigger className="h-8 text-xs bg-[#101112]/40 border-white/10 text-white">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -674,7 +674,7 @@ export function BadgeTemplateEditor({
                       value={config.fields.customField1}
                       onChange={(e) => updateFields({ customField1: e.target.value })}
                       placeholder="e.g. Company"
-                      className="h-8 text-xs bg-black/40 border-white/10 text-white"
+                      className="h-8 text-xs bg-[#101112]/40 border-white/10 text-white"
                     />
                   </div>
                   <div className="space-y-1.5">
@@ -683,7 +683,7 @@ export function BadgeTemplateEditor({
                       value={config.fields.customField2}
                       onChange={(e) => updateFields({ customField2: e.target.value })}
                       placeholder="e.g. Role"
-                      className="h-8 text-xs bg-black/40 border-white/10 text-white"
+                      className="h-8 text-xs bg-[#101112]/40 border-white/10 text-white"
                     />
                   </div>
                 </div>
@@ -711,7 +711,7 @@ export function BadgeTemplateEditor({
                       value={config.qrCode.position}
                       onValueChange={(position: any) => updateQrCode({ position })}
                     >
-                      <SelectTrigger className="h-8 text-xs bg-black/40 border-white/10 text-white">
+                      <SelectTrigger className="h-8 text-xs bg-[#101112]/40 border-white/10 text-white">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -727,7 +727,7 @@ export function BadgeTemplateEditor({
                       value={config.qrCode.size}
                       onValueChange={(size: any) => updateQrCode({ size })}
                     >
-                      <SelectTrigger className="h-8 text-xs bg-black/40 border-white/10 text-white">
+                      <SelectTrigger className="h-8 text-xs bg-[#101112]/40 border-white/10 text-white">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -768,7 +768,7 @@ export function BadgeTemplateEditor({
                         value={config.aiPipeline.model}
                         onValueChange={(model) => updateAiPipeline({ model })}
                       >
-                        <SelectTrigger className="h-8 text-xs bg-black/40 border-white/10 text-white">
+                        <SelectTrigger className="h-8 text-xs bg-[#101112]/40 border-white/10 text-white">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -784,7 +784,7 @@ export function BadgeTemplateEditor({
                         value={config.aiPipeline.outputRatio || '1:1'}
                         onValueChange={(ratio: any) => updateAiPipeline({ outputRatio: ratio })}
                       >
-                        <SelectTrigger className="h-8 text-xs bg-black/40 border-white/10 text-white">
+                        <SelectTrigger className="h-8 text-xs bg-[#101112]/40 border-white/10 text-white">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -803,7 +803,7 @@ export function BadgeTemplateEditor({
                       value={config.aiPipeline.prompt}
                       onChange={(e) => updateAiPipeline({ prompt: e.target.value })}
                       placeholder="Describe the style..."
-                      className="min-h-[80px] text-xs bg-black/40 border-white/10 text-white"
+                      className="min-h-[80px] text-xs bg-[#101112]/40 border-white/10 text-white"
                     />
                   </div>
                 </div>

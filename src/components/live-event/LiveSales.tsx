@@ -106,12 +106,12 @@ export function LiveSales({ eventId, eventConfig }: LiveSalesProps) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       {/* Transactions List */}
-      <Card className="bg-zinc-900/50 border-white/10 lg:col-span-2">
+      <Card className="bg-card/50 border-white/10 lg:col-span-2">
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-white text-base">Recent Transactions</CardTitle>
           <div className="flex items-center gap-2">
             {/* Filter buttons */}
-            <div className="flex items-center gap-1 bg-black/30 rounded-lg p-1">
+            <div className="flex items-center gap-1 bg-[#101112]/30 rounded-lg p-1">
               {(['today', 'week', 'all'] as const).map((f) => (
                 <button
                   key={f}
@@ -203,7 +203,7 @@ export function LiveSales({ eventId, eventConfig }: LiveSalesProps) {
       {/* Summary & Actions */}
       <div className="space-y-4">
         {/* Today's Revenue */}
-        <Card className="bg-zinc-900/50 border-white/10">
+        <Card className="bg-card/50 border-white/10">
           <CardContent className="p-4">
             <p className="text-sm text-zinc-400 mb-1">Today's Revenue</p>
             <h3 className="text-3xl font-bold text-white">
@@ -217,7 +217,7 @@ export function LiveSales({ eventId, eventConfig }: LiveSalesProps) {
         </Card>
 
         {/* Total Revenue */}
-        <Card className="bg-zinc-900/50 border-white/10">
+        <Card className="bg-card/50 border-white/10">
           <CardContent className="p-4">
             <p className="text-sm text-zinc-400 mb-1">Total Revenue</p>
             <h3 className="text-2xl font-bold text-white">
@@ -256,7 +256,7 @@ export function LiveSales({ eventId, eventConfig }: LiveSalesProps) {
         </div>
 
         {/* Stats Card */}
-        <Card className="bg-zinc-900/50 border-white/10">
+        <Card className="bg-card/50 border-white/10">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>

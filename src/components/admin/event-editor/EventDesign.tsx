@@ -79,7 +79,7 @@ export function EventDesign({ formData, setFormData }: EditorSectionProps) {
         <p className="text-zinc-400 mb-6">Customize the look and feel of your photo booth.</p>
         
         {/* Theme Presets */}
-        <Card className="bg-zinc-900/50 border-white/10 backdrop-blur-sm mb-6">
+        <Card className="bg-card/50 border-white/10 backdrop-blur-sm mb-6">
           <CardHeader>
             <CardTitle className="text-white text-base flex items-center gap-2">
               <Palette className="w-5 h-5 text-purple-400" />
@@ -106,7 +106,7 @@ export function EventDesign({ formData, setFormData }: EditorSectionProps) {
                   className={`p-4 rounded-xl border text-center transition-all group ${
                     formData.theme.preset === theme.id
                       ? 'border-indigo-500 bg-indigo-500/10 ring-1 ring-indigo-500'
-                      : 'border-white/10 bg-black/20 hover:border-white/20'
+                      : 'border-white/10 bg-[#101112]/20 hover:border-white/20'
                   }`}
                 >
                   <div className={`w-full aspect-video rounded-lg mb-3 flex items-center justify-center transition-colors ${
@@ -125,7 +125,7 @@ export function EventDesign({ formData, setFormData }: EditorSectionProps) {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
            {/* Brand Colors */}
-           <Card className="bg-zinc-900/50 border-white/10 backdrop-blur-sm h-full">
+           <Card className="bg-card/50 border-white/10 backdrop-blur-sm h-full">
             <CardHeader>
               <CardTitle className="text-white text-base flex items-center gap-2">
                 <Palette className="w-5 h-5 text-indigo-400" />
@@ -145,7 +145,7 @@ export function EventDesign({ formData, setFormData }: EditorSectionProps) {
                   <Input
                     value={formData.theme.primaryColor}
                     onChange={(e) => updateTheme({ primaryColor: e.target.value, preset: 'custom' })}
-                    className="bg-black/40 border-white/10 text-white font-mono"
+                    className="bg-[#101112]/40 border-white/10 text-white font-mono"
                   />
                 </div>
               </div>
@@ -162,7 +162,7 @@ export function EventDesign({ formData, setFormData }: EditorSectionProps) {
                   <Input
                     value={formData.theme.secondaryColor || '#F59E0B'}
                     onChange={(e) => updateTheme({ secondaryColor: e.target.value, preset: 'custom' })}
-                    className="bg-black/40 border-white/10 text-white font-mono"
+                    className="bg-[#101112]/40 border-white/10 text-white font-mono"
                   />
                 </div>
               </div>
@@ -179,7 +179,7 @@ export function EventDesign({ formData, setFormData }: EditorSectionProps) {
                   <Input
                     value={formData.theme.accentColor || '#10B981'}
                     onChange={(e) => updateTheme({ accentColor: e.target.value, preset: 'custom' })}
-                    className="bg-black/40 border-white/10 text-white font-mono"
+                    className="bg-[#101112]/40 border-white/10 text-white font-mono"
                   />
                 </div>
               </div>
@@ -187,7 +187,7 @@ export function EventDesign({ formData, setFormData }: EditorSectionProps) {
           </Card>
 
           {/* Theme Options */}
-          <Card className="bg-zinc-900/50 border-white/10 backdrop-blur-sm h-full">
+          <Card className="bg-card/50 border-white/10 backdrop-blur-sm h-full">
             <CardHeader>
               <CardTitle className="text-white text-base flex items-center gap-2">
                 <Layers className="w-5 h-5 text-blue-400" />
@@ -201,14 +201,14 @@ export function EventDesign({ formData, setFormData }: EditorSectionProps) {
                   value={formData.theme.tagline || ''}
                   onChange={(e) => updateTheme({ tagline: e.target.value })}
                   placeholder="AI-powered photo experiences"
-                  className="bg-black/40 border-white/10 text-white"
+                  className="bg-[#101112]/40 border-white/10 text-white"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label className="text-zinc-300">Color Mode</Label>
-                   <div className="flex gap-1 p-1 rounded-lg bg-black/40 border border-white/10">
+                   <div className="flex gap-1 p-1 rounded-lg bg-[#101112]/40 border border-white/10">
                     <button
                       type="button"
                       onClick={() => updateTheme({ mode: 'light' })}
@@ -242,10 +242,10 @@ export function EventDesign({ formData, setFormData }: EditorSectionProps) {
                     value={formData.theme.cardRadius || 'xl'}
                     onValueChange={(v: any) => updateTheme({ cardRadius: v })}
                   >
-                    <SelectTrigger className="bg-black/40 border-white/10 text-white">
+                    <SelectTrigger className="bg-[#101112]/40 border-white/10 text-white">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="bg-zinc-900 border-zinc-800 text-white">
+                    <SelectContent className="bg-card border-zinc-800 text-white">
                       <SelectItem value="none">Square</SelectItem>
                       <SelectItem value="sm">Small</SelectItem>
                       <SelectItem value="md">Medium</SelectItem>
@@ -262,10 +262,10 @@ export function EventDesign({ formData, setFormData }: EditorSectionProps) {
                     value={formData.theme.buttonStyle || 'solid'}
                     onValueChange={(v: any) => updateTheme({ buttonStyle: v })}
                   >
-                    <SelectTrigger className="bg-black/40 border-white/10 text-white">
+                    <SelectTrigger className="bg-[#101112]/40 border-white/10 text-white">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="bg-zinc-900 border-zinc-800 text-white">
+                    <SelectContent className="bg-card border-zinc-800 text-white">
                       <SelectItem value="solid">Solid</SelectItem>
                       <SelectItem value="outline">Outline</SelectItem>
                       <SelectItem value="ghost">Ghost</SelectItem>
@@ -278,7 +278,7 @@ export function EventDesign({ formData, setFormData }: EditorSectionProps) {
         </div>
 
         {/* Logos & Assets */}
-        <Card className="bg-zinc-900/50 border-white/10 backdrop-blur-sm mb-6">
+        <Card className="bg-card/50 border-white/10 backdrop-blur-sm mb-6">
           <CardHeader>
             <CardTitle className="text-white text-base flex items-center gap-2">
               <ImageIcon className="w-5 h-5 text-amber-400" />
@@ -389,7 +389,7 @@ export function EventDesign({ formData, setFormData }: EditorSectionProps) {
                     value={formData.theme.brandName}
                     onChange={(e) => updateTheme({ brandName: e.target.value })}
                     placeholder="e.g. Acme Corp"
-                    className="bg-black/40 border-white/10 text-white"
+                    className="bg-[#101112]/40 border-white/10 text-white"
                   />
                 </div>
                 
@@ -428,7 +428,7 @@ export function EventDesign({ formData, setFormData }: EditorSectionProps) {
         </Card>
 
         {/* Watermark Configuration */}
-        <Card className="bg-zinc-900/50 border-white/10 backdrop-blur-sm">
+        <Card className="bg-card/50 border-white/10 backdrop-blur-sm">
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle className="text-white text-base flex items-center gap-2">
@@ -485,7 +485,7 @@ export function EventDesign({ formData, setFormData }: EditorSectionProps) {
                         value={formData.branding.watermark?.text || ''}
                         onChange={(e) => updateWatermark({ text: e.target.value })}
                         placeholder="© My Event 2024"
-                        className="bg-black/40 border-white/10 text-white"
+                        className="bg-[#101112]/40 border-white/10 text-white"
                       />
                     </div>
                   ) : (
@@ -527,10 +527,10 @@ export function EventDesign({ formData, setFormData }: EditorSectionProps) {
                       value={formData.branding.watermark?.pattern || 'corner'}
                       onValueChange={(v: any) => updateWatermark({ pattern: v })}
                     >
-                      <SelectTrigger className="bg-black/40 border-white/10 text-white">
+                      <SelectTrigger className="bg-[#101112]/40 border-white/10 text-white">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent className="bg-zinc-900 border-zinc-800 text-white">
+                      <SelectContent className="bg-card border-zinc-800 text-white">
                         <SelectItem value="corner">Single Corner</SelectItem>
                         <SelectItem value="strip_bottom">Bottom Strip</SelectItem>
                         <SelectItem value="step_repeat">Step & Repeat (Background)</SelectItem>

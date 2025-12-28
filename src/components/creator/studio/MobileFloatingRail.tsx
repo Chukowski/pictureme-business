@@ -41,7 +41,7 @@ export const MobileFloatingRail = ({
             {/* Backdrop */}
             {isOpen && (
                 <div
-                    className="fixed inset-0 z-[100] bg-black/20 backdrop-blur-[2px] md:hidden"
+                    className="fixed inset-0 z-[100] bg-[#101112]/20 backdrop-blur-[2px] md:hidden"
                     onClick={onClose}
                 />
             )}

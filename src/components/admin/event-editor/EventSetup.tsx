@@ -36,7 +36,7 @@ export function EventSetup({ formData, setFormData, currentUser, isEdit }: Edito
           <p className="text-zinc-400">Configure the core details and access mode for your event.</p>
         </div>
 
-        <Card className="bg-zinc-900/50 border-white/10 backdrop-blur-sm">
+        <Card className="bg-card/50 border-white/10 backdrop-blur-sm">
           <CardHeader>
             <CardTitle className="text-white text-base">Basic Details</CardTitle>
           </CardHeader>
@@ -55,12 +55,12 @@ export function EventSetup({ formData, setFormData, currentUser, isEdit }: Edito
                   }
                   required
                   disabled={isEdit}
-                  className="bg-black/40 border-white/10 text-white placeholder:text-zinc-600 focus:border-indigo-500"
+                  className="bg-[#101112]/40 border-white/10 text-white placeholder:text-zinc-600 focus:border-indigo-500"
                 />
 
                 {/* URL Copy Helpers */}
                 <div className="space-y-1 mt-2">
-                  <div className="flex items-center justify-between text-xs p-2 rounded-lg bg-black/40 border border-white/5">
+                  <div className="flex items-center justify-between text-xs p-2 rounded-lg bg-[#101112]/40 border border-white/5">
                     <span className="text-zinc-500">Event URL</span>
                     <div className="flex items-center gap-2">
                       <code className="text-xs text-indigo-400 max-w-[200px] truncate">
@@ -94,7 +94,7 @@ export function EventSetup({ formData, setFormData, currentUser, isEdit }: Edito
                     setFormData({ ...formData, title: e.target.value })
                   }
                   required
-                  className="bg-black/40 border-white/10 text-white placeholder:text-zinc-600 focus:border-indigo-500"
+                  className="bg-[#101112]/40 border-white/10 text-white placeholder:text-zinc-600 focus:border-indigo-500"
                 />
               </div>
             </div>
@@ -109,7 +109,7 @@ export function EventSetup({ formData, setFormData, currentUser, isEdit }: Edito
                   setFormData({ ...formData, description: e.target.value })
                 }
                 rows={3}
-                className="bg-black/40 border-white/10 text-white placeholder:text-zinc-600 focus:border-indigo-500"
+                className="bg-[#101112]/40 border-white/10 text-white placeholder:text-zinc-600 focus:border-indigo-500"
               />
             </div>
 
@@ -123,7 +123,7 @@ export function EventSetup({ formData, setFormData, currentUser, isEdit }: Edito
                   onChange={(e) =>
                     setFormData({ ...formData, start_date: e.target.value })
                   }
-                  className="bg-black/40 border-white/10 text-white placeholder:text-zinc-600 focus:border-indigo-500"
+                  className="bg-[#101112]/40 border-white/10 text-white placeholder:text-zinc-600 focus:border-indigo-500"
                 />
               </div>
               <div className="space-y-2">
@@ -135,7 +135,7 @@ export function EventSetup({ formData, setFormData, currentUser, isEdit }: Edito
                   onChange={(e) =>
                     setFormData({ ...formData, end_date: e.target.value })
                   }
-                  className="bg-black/40 border-white/10 text-white placeholder:text-zinc-600 focus:border-indigo-500"
+                  className="bg-[#101112]/40 border-white/10 text-white placeholder:text-zinc-600 focus:border-indigo-500"
                 />
               </div>
             </div>
@@ -149,9 +149,9 @@ export function EventSetup({ formData, setFormData, currentUser, isEdit }: Edito
           <h3 className="text-lg font-medium text-white">Key Features</h3>
           <p className="text-sm text-zinc-400">Enable additional capabilities for this event.</p>
         </div>
-        <Card className="bg-zinc-900/50 border-white/10 backdrop-blur-sm">
+        <Card className="bg-card/50 border-white/10 backdrop-blur-sm">
           <CardContent className="p-4 space-y-4">
-            <div className="flex items-center justify-between p-3 rounded-lg bg-black/30 border border-white/5">
+            <div className="flex items-center justify-between p-3 rounded-lg bg-[#101112]/30 border border-white/5">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center text-purple-400">
                   <BadgeCheck className="w-5 h-5" />
@@ -189,7 +189,7 @@ export function EventSetup({ formData, setFormData, currentUser, isEdit }: Edito
             })}
             className={`p-5 rounded-2xl border text-left transition-all relative overflow-hidden group ${formData.eventMode === 'free'
                 ? 'border-emerald-500 bg-emerald-500/10 ring-1 ring-emerald-500'
-                : 'border-white/10 bg-zinc-900/50 hover:border-white/20 hover:bg-zinc-900'
+                : 'border-white/10 bg-card/50 hover:border-white/20 hover:bg-card'
               }`}
           >
             <div className="relative z-10 flex flex-col h-full">
@@ -219,7 +219,7 @@ export function EventSetup({ formData, setFormData, currentUser, isEdit }: Edito
             })}
             className={`p-5 rounded-2xl border text-left transition-all relative overflow-hidden group ${formData.eventMode === 'lead_capture'
                 ? 'border-blue-500 bg-blue-500/10 ring-1 ring-blue-500'
-                : 'border-white/10 bg-zinc-900/50 hover:border-white/20 hover:bg-zinc-900'
+                : 'border-white/10 bg-card/50 hover:border-white/20 hover:bg-card'
               }`}
           >
             <div className="relative z-10 flex flex-col h-full">
@@ -242,7 +242,7 @@ export function EventSetup({ formData, setFormData, currentUser, isEdit }: Edito
             })}
             className={`p-5 rounded-2xl border text-left transition-all relative overflow-hidden group ${formData.eventMode === 'pay_per_photo'
                 ? 'border-amber-500 bg-amber-500/10 ring-1 ring-amber-500'
-                : 'border-white/10 bg-zinc-900/50 hover:border-white/20 hover:bg-zinc-900'
+                : 'border-white/10 bg-card/50 hover:border-white/20 hover:bg-card'
               }`}
           >
             <div className="relative z-10 flex flex-col h-full">
@@ -269,7 +269,7 @@ export function EventSetup({ formData, setFormData, currentUser, isEdit }: Edito
             })}
             className={`p-5 rounded-2xl border text-left transition-all relative overflow-hidden group ${formData.eventMode === 'pay_per_album'
                 ? 'border-purple-500 bg-purple-500/10 ring-1 ring-purple-500'
-                : 'border-white/10 bg-zinc-900/50 hover:border-white/20 hover:bg-zinc-900'
+                : 'border-white/10 bg-card/50 hover:border-white/20 hover:bg-card'
               }`}
           >
             <div className="relative z-10 flex flex-col h-full">

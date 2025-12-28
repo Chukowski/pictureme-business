@@ -36,7 +36,7 @@ export function ScanBadgePrompt({
   };
 
   return (
-    <div className={`min-h-screen flex flex-col items-center justify-center p-6 bg-zinc-950 ${className}`}>
+    <div className={`min-h-screen flex flex-col items-center justify-center p-6 bg-card ${className}`}>
       {/* Animated background gradient */}
       <div
         className="absolute inset-0 opacity-20"
@@ -86,11 +86,11 @@ export function ScanBadgePrompt({
 
             {/* Features */}
             <div className="grid grid-cols-2 gap-4 mb-8">
-              <div className="p-4 rounded-xl bg-zinc-900/50 border border-white/10">
+              <div className="p-4 rounded-xl bg-card/50 border border-white/10">
                 <Camera className="w-6 h-6 mx-auto mb-2 text-cyan-400" />
                 <p className="text-sm text-zinc-300">Take Photos</p>
               </div>
-              <div className="p-4 rounded-xl bg-zinc-900/50 border border-white/10">
+              <div className="p-4 rounded-xl bg-card/50 border border-white/10">
                 <Sparkles className="w-6 h-6 mx-auto mb-2 text-purple-400" />
                 <p className="text-sm text-zinc-300">AI Magic</p>
               </div>
@@ -122,7 +122,7 @@ export function ScanBadgePrompt({
         ) : (
           /* Manual Entry Form */
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-300">
-            <div className="p-8 rounded-2xl border border-white/10 bg-zinc-900/50 backdrop-blur-sm mb-6">
+            <div className="p-8 rounded-2xl border border-white/10 bg-card/50 backdrop-blur-sm mb-6">
               <Keyboard className="w-12 h-12 mx-auto mb-4" style={{ color: primaryColor }} />
               <h2 className="text-xl font-semibold text-white mb-2">Enter Code</h2>
               <p className="text-center text-zinc-400 mb-6">
@@ -132,7 +132,7 @@ export function ScanBadgePrompt({
                 value={manualCode}
                 onChange={(e) => setManualCode(e.target.value.toUpperCase())}
                 placeholder="ABCD1234"
-                className="text-center text-xl font-mono bg-black/40 border-white/20 text-white h-14 mb-4"
+                className="text-center text-xl font-mono bg-[#101112]/40 border-white/20 text-white h-14 mb-4"
                 onKeyDown={(e) => e.key === 'Enter' && handleManualSubmit()}
                 autoFocus
               />

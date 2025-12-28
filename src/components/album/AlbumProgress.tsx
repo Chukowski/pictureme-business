@@ -49,7 +49,7 @@ export function AlbumProgress({
   // Compact variant - small badge for camera overlay
   if (variant === "compact") {
     return (
-      <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-sm border border-white/10 ${className}`}>
+      <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#101112]/60 backdrop-blur-sm border border-white/10 ${className}`}>
         <div className="flex gap-0.5">
           {Array.from({ length: maxPhotos }).map((_, i) => (
             <div
@@ -81,7 +81,7 @@ export function AlbumProgress({
 
   // Full variant - complete progress card (positioned in corner)
   return (
-    <div className={`p-3 rounded-xl bg-zinc-900/90 backdrop-blur-sm border border-white/10 ${className}`}>
+    <div className={`p-3 rounded-xl bg-card/90 backdrop-blur-sm border border-white/10 ${className}`}>
       <div className="flex items-center justify-between gap-4">
         {/* Visitor Info */}
         <div className="flex items-center gap-2 min-w-0">

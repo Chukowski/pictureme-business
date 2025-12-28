@@ -170,7 +170,7 @@ export function ScanAlbumQR({
   }, []);
 
   return (
-    <div className={`min-h-screen flex flex-col items-center justify-center p-6 bg-zinc-950 ${className}`}>
+    <div className={`min-h-screen flex flex-col items-center justify-center p-6 bg-card ${className}`}>
       {/* Background gradient */}
       <div 
         className="absolute inset-0 opacity-20"
@@ -293,7 +293,7 @@ export function ScanAlbumQR({
                 value={manualCode}
                 onChange={(e) => setManualCode(e.target.value.toUpperCase())}
                 placeholder="ABCD1234"
-                className="text-center text-xl font-mono bg-black/40 border-white/20 text-white h-14"
+                className="text-center text-xl font-mono bg-[#101112]/40 border-white/20 text-white h-14"
                 onKeyDown={(e) => e.key === 'Enter' && handleManualSubmit()}
               />
             </div>

@@ -47,7 +47,7 @@ export function LiveOverview({ stats }: LiveOverviewProps) {
       {metrics.map((metric, i) => (
         <div 
           key={i} 
-          className="relative overflow-hidden rounded-2xl bg-zinc-900/40 border border-white/5 p-5 hover:bg-zinc-900/60 transition-colors group"
+          className="relative overflow-hidden rounded-2xl bg-card/40 border border-white/5 p-5 hover:bg-card/60 transition-colors group"
         >
            {/* Semantic Color Top Bar */}
            <div className={`absolute top-0 left-0 w-full h-1 ${metric.status === 'alert' ? 'bg-red-500' : 'bg-transparent'}`} />

@@ -170,7 +170,7 @@ export default function CreatorBoothPage() {
       )}
 
       {/* Main Content Area */}
-      <div className="flex-1 relative bg-black rounded-2xl overflow-hidden border border-white/10 shadow-2xl">
+      <div className="flex-1 relative bg-[#101112] rounded-2xl overflow-hidden border border-white/10 shadow-2xl">
         {currentState === 'select' && (
           <div className="h-full overflow-y-auto">
             <BackgroundSelector
@@ -194,7 +194,7 @@ export default function CreatorBoothPage() {
         )}
 
         {currentState === 'result' && processedImage && (
-          <div className="h-full overflow-y-auto bg-zinc-950">
+          <div className="h-full overflow-y-auto bg-card">
             <ResultDisplay
               imageUrl={processedImage}
               shareCode={shareCode || undefined}

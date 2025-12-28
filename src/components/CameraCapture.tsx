@@ -191,13 +191,13 @@ export const CameraCapture = ({
 
   // Icons
   const TimerIcon = () => (
-    <div className="flex flex-col items-center justify-center w-10 h-10 rounded-full bg-black/50 backdrop-blur-md text-white">
+    <div className="flex flex-col items-center justify-center w-10 h-10 rounded-full bg-[#101112]/50 backdrop-blur-md text-white">
       {timer === 0 ? <span className="text-xs font-bold">OFF</span> : <span className="text-xs font-bold">{timer}s</span>}
     </div>
   );
 
   return (
-    <div className="relative w-full min-h-screen flex items-center justify-center bg-black overflow-hidden">
+    <div className="relative w-full min-h-screen flex items-center justify-center bg-[#101112] overflow-hidden">
       <div className="relative w-full max-w-3xl h-screen flex flex-col">
 
         {/* Video Feed */}
@@ -215,7 +215,7 @@ export const CameraCapture = ({
 
         {/* Countdown Overlay */}
         {countdown !== null && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-50">
+          <div className="absolute inset-0 flex items-center justify-center bg-[#101112]/50 backdrop-blur-sm z-50">
             <div className="text-[200px] font-bold text-primary glow-teal animate-scale-in">
               {countdown}
             </div>
@@ -228,7 +228,7 @@ export const CameraCapture = ({
             {/* Back Button */}
             <button
               onClick={onBack}
-              className="w-10 h-10 rounded-full bg-zinc-900/50 backdrop-blur-xl border border-white/10 flex items-center justify-center text-white hover:bg-zinc-800/50 transition-all"
+              className="w-10 h-10 rounded-full bg-card/50 backdrop-blur-xl border border-white/10 flex items-center justify-center text-white hover:bg-zinc-800/50 transition-all"
             >
               <RotateCcw className="w-5 h-5" />
             </button>
@@ -236,11 +236,11 @@ export const CameraCapture = ({
             {/* Camera Selector Dropdown */}
             {availableCameras.length > 1 && (
               <Select value={selectedCameraId} onValueChange={setSelectedCameraId}>
-                <SelectTrigger className="w-[180px] h-10 bg-zinc-900/50 backdrop-blur-xl border-white/10 text-white text-xs">
+                <SelectTrigger className="w-[180px] h-10 bg-card/50 backdrop-blur-xl border-white/10 text-white text-xs">
                   <Camera className="w-4 h-4 mr-2" />
                   <SelectValue placeholder="Select camera" />
                 </SelectTrigger>
-                <SelectContent className="bg-zinc-900 border-white/10">
+                <SelectContent className="bg-card border-white/10">
                   {availableCameras.map((camera, index) => (
                     <SelectItem 
                       key={camera.deviceId} 
@@ -257,7 +257,7 @@ export const CameraCapture = ({
             {/* Fit/Fill Toggle */}
             <button
               onClick={() => setFitMode(prev => prev === 'cover' ? 'contain' : 'cover')}
-              className="px-4 h-10 rounded-full bg-zinc-900/50 backdrop-blur-xl border border-white/10 flex items-center justify-center text-white text-xs font-bold hover:bg-zinc-800/50 transition-all"
+              className="px-4 h-10 rounded-full bg-card/50 backdrop-blur-xl border border-white/10 flex items-center justify-center text-white text-xs font-bold hover:bg-zinc-800/50 transition-all"
             >
               {fitMode === 'cover' ? 'FIT' : 'FILL'}
             </button>
@@ -275,19 +275,19 @@ export const CameraCapture = ({
         <div className="absolute top-4 right-1/2 translate-x-1/2 z-30">
           <button
             onClick={() => setShowControls(!showControls)}
-            className="w-8 h-8 rounded-full bg-zinc-900/30 backdrop-blur-sm flex items-center justify-center text-white/70 hover:bg-zinc-900/50 transition-all"
+            className="w-8 h-8 rounded-full bg-card/30 backdrop-blur-sm flex items-center justify-center text-white/70 hover:bg-card/50 transition-all"
           >
             {showControls ? <div className="w-4 h-1 bg-white/50 rounded-full" /> : <div className="w-4 h-4 border-2 border-white/50 rounded-full" />}
           </button>
         </div>
 
         {/* Bottom Controls Bar */}
-        <div className={`absolute bottom-0 inset-x-0 z-20 pb-8 pt-12 bg-gradient-to-t from-black/80 to-transparent transition-transform duration-300 ${showControls ? 'translate-y-0' : 'translate-y-full'}`}>
+        <div className={`absolute bottom-0 inset-x-0 z-20 pb-8 pt-12 bg-gradient-to-t from-[#101112]/80 to-transparent transition-transform duration-300 ${showControls ? 'translate-y-0' : 'translate-y-full'}`}>
 
           {/* Individual/Group Toggle - Only show if group prompt is available */}
           {hasGroupPrompt && onGroupPhotoChange && (
             <div className="flex justify-center mb-4">
-              <div className="inline-flex items-center gap-1 p-1 rounded-full bg-zinc-900/70 backdrop-blur-sm border border-white/10">
+              <div className="inline-flex items-center gap-1 p-1 rounded-full bg-card/70 backdrop-blur-sm border border-white/10">
                 <button
                   onClick={() => onGroupPhotoChange(false)}
                   className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-all ${

@@ -13,7 +13,7 @@ export function CommunityHighlightsCard({ content }: CommunityHighlightsCardProp
   if (creations.length === 0) return null;
 
   return (
-    <Card className="bg-zinc-900/30 border-white/10 h-full">
+    <Card className="bg-card/30 border-white/10 h-full">
       <CardHeader className="pb-2">
         <CardTitle className="text-sm font-medium text-zinc-300 flex items-center gap-2">
           <Users className="w-4 h-4 text-indigo-300" />
@@ -24,7 +24,7 @@ export function CommunityHighlightsCard({ content }: CommunityHighlightsCardProp
         {creations.map((creation) => (
           <div
             key={creation.id}
-            className="flex gap-3 p-3 rounded-lg bg-black/20 border border-white/5"
+            className="flex gap-3 p-3 rounded-lg bg-[#101112]/20 border border-white/5"
           >
             <div className="w-16 h-16 rounded-lg bg-zinc-800 overflow-hidden flex items-center justify-center">
               {creation.thumbnail_url ? (

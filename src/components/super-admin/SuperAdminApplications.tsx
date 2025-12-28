@@ -178,13 +178,13 @@ export default function SuperAdminApplications() {
                     <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
                 </div>
             ) : applications.length === 0 ? (
-                <div className="rounded-xl border border-white/10 bg-zinc-900/50 p-12 text-center">
+                <div className="rounded-xl border border-white/10 bg-card/50 p-12 text-center">
                     <Users className="w-12 h-12 mx-auto mb-4 text-zinc-600" />
                     <h3 className="text-lg font-medium text-white mb-2">No Applications Yet</h3>
                     <p className="text-zinc-500">Business tier applications will appear here when submitted.</p>
                 </div>
             ) : (
-                <div className="rounded-xl border border-white/10 bg-zinc-900/50 backdrop-blur-sm overflow-hidden">
+                <div className="rounded-xl border border-white/10 bg-card/50 backdrop-blur-sm overflow-hidden">
                     <Table>
                         <TableHeader className="bg-white/5">
                             <TableRow className="border-white/10 hover:bg-transparent">
@@ -295,7 +295,7 @@ export default function SuperAdminApplications() {
 
             {/* Application Details Modal */}
             <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
-                <DialogContent className="bg-zinc-900 border-white/10 text-white max-w-2xl">
+                <DialogContent className="bg-card border-white/10 text-white max-w-2xl">
                     <DialogHeader>
                         <DialogTitle>Application Details</DialogTitle>
                         <DialogDescription>Review full application data.</DialogDescription>
@@ -382,7 +382,7 @@ export default function SuperAdminApplications() {
                                     <h4 className="text-sm font-medium text-zinc-400 mb-2">Internal Notes</h4>
                                     <Textarea
                                         placeholder="Add notes here..."
-                                        className="bg-zinc-950 border-white/10 text-sm"
+                                        className="bg-card border-white/10 text-sm"
                                         value={internalNotes}
                                         onChange={(e) => setInternalNotes(e.target.value)}
                                     />

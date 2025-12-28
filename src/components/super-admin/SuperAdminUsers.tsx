@@ -586,14 +586,14 @@ export default function SuperAdminUsers() {
                         <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-zinc-500" />
                         <Input
                             placeholder="Search users..."
-                            className="pl-8 bg-zinc-950 border-zinc-800 h-9 text-sm focus-visible:ring-indigo-500/50"
+                            className="pl-8 bg-card border-zinc-800 h-9 text-sm focus-visible:ring-indigo-500/50"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
                     </div>
                     <Button
                         variant="outline"
-                        className="border-zinc-800 bg-zinc-950 hover:bg-zinc-900 h-9 w-9 p-0"
+                        className="border-zinc-800 bg-card hover:bg-card h-9 w-9 p-0"
                         onClick={fetchUsers}
                         disabled={isLoading}
                     >
@@ -614,7 +614,7 @@ export default function SuperAdminUsers() {
             )}
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-                <TabsList className="bg-zinc-950 border border-white/5 h-9 p-0.5">
+                <TabsList className="bg-card border border-white/5 h-9 p-0.5">
                     <TabsTrigger
                         value="all"
                         className="data-[state=active]:bg-zinc-800 data-[state=active]:text-white text-zinc-500 text-xs h-7 px-4"
@@ -631,7 +631,7 @@ export default function SuperAdminUsers() {
 
                 {/* All Users Tab */}
                 <TabsContent value="all" className="space-y-4">
-                    <div className="rounded-lg border border-white/5 bg-zinc-950 overflow-hidden shadow-sm">
+                    <div className="rounded-lg border border-white/5 bg-card overflow-hidden shadow-sm">
                         <Table>
                             <TableHeader className="bg-white/5">
                                 <TableRow className="border-white/10 hover:bg-transparent">
@@ -707,7 +707,7 @@ export default function SuperAdminUsers() {
                                                             <MoreHorizontal className="h-4 w-4" />
                                                         </Button>
                                                     </DropdownMenuTrigger>
-                                                    <DropdownMenuContent align="end" className="bg-zinc-900 border-white/10 text-white">
+                                                    <DropdownMenuContent align="end" className="bg-card border-white/10 text-white">
                                                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
                                                         <DropdownMenuItem
                                                             onClick={() => openTokensDialog(user)}
@@ -747,7 +747,7 @@ export default function SuperAdminUsers() {
 
                 {/* Enterprise Users Tab */}
                 <TabsContent value="enterprise" className="space-y-4">
-                    <div className="rounded-xl border border-white/10 bg-zinc-900/50 backdrop-blur-sm overflow-hidden">
+                    <div className="rounded-xl border border-white/10 bg-card/50 backdrop-blur-sm overflow-hidden">
                         <Table>
                             <TableHeader className="bg-white/5">
                                 <TableRow className="border-white/10 hover:bg-transparent">
@@ -827,7 +827,7 @@ export default function SuperAdminUsers() {
                                                             <MoreHorizontal className="h-4 w-4" />
                                                         </Button>
                                                     </DropdownMenuTrigger>
-                                                    <DropdownMenuContent align="end" className="bg-zinc-900 border-white/10 text-white">
+                                                    <DropdownMenuContent align="end" className="bg-card border-white/10 text-white">
                                                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
                                                         <DropdownMenuItem
                                                             onClick={() => openPricingDialog(user)}
@@ -868,7 +868,7 @@ export default function SuperAdminUsers() {
 
             {/* Delete Confirmation Dialog */}
             <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-                <DialogContent className="bg-zinc-900 border-red-500/20 text-white">
+                <DialogContent className="bg-card border-red-500/20 text-white">
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2 text-red-400">
                             <AlertCircle className="w-5 h-5" />
@@ -901,7 +901,7 @@ export default function SuperAdminUsers() {
 
             {/* Edit User Dialog */}
             <Dialog open={isEditUserDialogOpen} onOpenChange={setIsEditUserDialogOpen}>
-                <DialogContent className="bg-zinc-900 border-white/10 text-white">
+                <DialogContent className="bg-card border-white/10 text-white">
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2">
                             <UserCog className="w-5 h-5 text-indigo-400" />
@@ -919,10 +919,10 @@ export default function SuperAdminUsers() {
                                 value={editForm.role}
                                 onValueChange={(value) => setEditForm({ ...editForm, role: value })}
                             >
-                                <SelectTrigger className="bg-zinc-950 border-white/10">
+                                <SelectTrigger className="bg-card border-white/10">
                                     <SelectValue placeholder="Select role" />
                                 </SelectTrigger>
-                                <SelectContent className="bg-zinc-900 border-white/10">
+                                <SelectContent className="bg-card border-white/10">
                                     {ROLE_OPTIONS.map(role => (
                                         <SelectItem key={role.value} value={role.value}>
                                             {role.label}
@@ -938,10 +938,10 @@ export default function SuperAdminUsers() {
                                 value={editForm.subscription_tier}
                                 onValueChange={(value) => setEditForm({ ...editForm, subscription_tier: value })}
                             >
-                                <SelectTrigger className="bg-zinc-950 border-white/10">
+                                <SelectTrigger className="bg-card border-white/10">
                                     <SelectValue placeholder="Select tier" />
                                 </SelectTrigger>
-                                <SelectContent className="bg-zinc-900 border-white/10">
+                                <SelectContent className="bg-card border-white/10">
                                     <SelectItem value="free">Free</SelectItem>
                                     <SelectItem value="spark">Spark ($9/mo)</SelectItem>
                                     <SelectItem value="vibe">Vibe ($19/mo)</SelectItem>
@@ -960,10 +960,10 @@ export default function SuperAdminUsers() {
                                 value={editForm.subscription_status}
                                 onValueChange={(value) => setEditForm({ ...editForm, subscription_status: value })}
                             >
-                                <SelectTrigger className="bg-zinc-950 border-white/10">
+                                <SelectTrigger className="bg-card border-white/10">
                                     <SelectValue placeholder="Select status" />
                                 </SelectTrigger>
-                                <SelectContent className="bg-zinc-900 border-white/10">
+                                <SelectContent className="bg-card border-white/10">
                                     <SelectItem value="active">Active</SelectItem>
                                     <SelectItem value="trialing">Trialing</SelectItem>
                                     <SelectItem value="past_due">Past Due</SelectItem>
@@ -983,7 +983,7 @@ export default function SuperAdminUsers() {
                                 type="number"
                                 value={editForm.tokens_remaining}
                                 onChange={(e) => setEditForm({ ...editForm, tokens_remaining: parseInt(e.target.value) || 0 })}
-                                className="bg-zinc-950 border-white/10"
+                                className="bg-card border-white/10"
                             />
                             <p className="text-xs text-zinc-500">
                                 Set the exact token balance for this user
@@ -1030,7 +1030,7 @@ export default function SuperAdminUsers() {
 
             {/* Custom Pricing Dialog */}
             <Dialog open={isPricingDialogOpen} onOpenChange={setIsPricingDialogOpen}>
-                <DialogContent className="bg-zinc-900 border-white/10 text-white max-w-4xl max-h-[90vh] overflow-y-auto">
+                <DialogContent className="bg-card border-white/10 text-white max-w-4xl max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2">
                             <Building2 className="w-5 h-5 text-indigo-400" />
@@ -1081,7 +1081,7 @@ export default function SuperAdminUsers() {
                                                                     type="number"
                                                                     value={model.custom_cost ?? model.default_cost}
                                                                     onChange={(e) => handlePricingChange(model.model_id, 'custom_cost', parseInt(e.target.value) || 0)}
-                                                                    className="w-20 h-8 bg-zinc-950 border-white/10 text-center"
+                                                                    className="w-20 h-8 bg-card border-white/10 text-center"
                                                                 />
                                                             </div>
                                                         </div>
@@ -1120,7 +1120,7 @@ export default function SuperAdminUsers() {
                                                                     type="number"
                                                                     value={model.custom_cost ?? model.default_cost}
                                                                     onChange={(e) => handlePricingChange(model.model_id, 'custom_cost', parseInt(e.target.value) || 0)}
-                                                                    className="w-20 h-8 bg-zinc-950 border-white/10 text-center"
+                                                                    className="w-20 h-8 bg-card border-white/10 text-center"
                                                                 />
                                                             </div>
                                                         </div>
@@ -1166,7 +1166,7 @@ export default function SuperAdminUsers() {
                                                     ...enterpriseSettings,
                                                     default_price_per_token: parseFloat(e.target.value) || 0
                                                 })}
-                                                className="bg-zinc-950 border-white/10"
+                                                className="bg-card border-white/10"
                                             />
                                         </div>
                                         <div className="space-y-2">
@@ -1178,7 +1178,7 @@ export default function SuperAdminUsers() {
                                                     ...enterpriseSettings,
                                                     credit_limit: parseInt(e.target.value) || 0
                                                 })}
-                                                className="bg-zinc-950 border-white/10"
+                                                className="bg-card border-white/10"
                                             />
                                         </div>
                                     </div>
@@ -1192,7 +1192,7 @@ export default function SuperAdminUsers() {
                                                     ...enterpriseSettings,
                                                     contract_start_date: e.target.value
                                                 })}
-                                                className="bg-zinc-950 border-white/10"
+                                                className="bg-card border-white/10"
                                             />
                                         </div>
                                         <div className="space-y-2">
@@ -1204,7 +1204,7 @@ export default function SuperAdminUsers() {
                                                     ...enterpriseSettings,
                                                     contract_end_date: e.target.value
                                                 })}
-                                                className="bg-zinc-950 border-white/10"
+                                                className="bg-card border-white/10"
                                             />
                                         </div>
                                     </div>
@@ -1217,7 +1217,7 @@ export default function SuperAdminUsers() {
                                                 ...enterpriseSettings,
                                                 billing_email: e.target.value
                                             })}
-                                            className="bg-zinc-950 border-white/10"
+                                            className="bg-card border-white/10"
                                         />
                                     </div>
                                     <div className="space-y-2">
@@ -1228,7 +1228,7 @@ export default function SuperAdminUsers() {
                                                 ...enterpriseSettings,
                                                 contract_notes: e.target.value
                                             })}
-                                            className="w-full h-24 px-3 py-2 bg-zinc-950 border border-white/10 rounded-md text-white resize-none"
+                                            className="w-full h-24 px-3 py-2 bg-card border border-white/10 rounded-md text-white resize-none"
                                             placeholder="Notes about this contract..."
                                         />
                                     </div>
@@ -1262,7 +1262,7 @@ export default function SuperAdminUsers() {
 
             {/* Add Tokens Dialog */}
             <Dialog open={isTokensDialogOpen} onOpenChange={setIsTokensDialogOpen}>
-                <DialogContent className="bg-zinc-900 border-white/10 text-white">
+                <DialogContent className="bg-card border-white/10 text-white">
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2">
                             <Coins className="w-5 h-5 text-yellow-400" />
@@ -1280,7 +1280,7 @@ export default function SuperAdminUsers() {
                                 type="number"
                                 value={tokensToAdd}
                                 onChange={(e) => setTokensToAdd(parseInt(e.target.value) || 0)}
-                                className="bg-zinc-950 border-white/10 text-lg font-mono"
+                                className="bg-card border-white/10 text-lg font-mono"
                                 placeholder="10000"
                             />
                             <p className="text-xs text-zinc-500">
@@ -1293,7 +1293,7 @@ export default function SuperAdminUsers() {
                             <Input
                                 value={tokenReason}
                                 onChange={(e) => setTokenReason(e.target.value)}
-                                className="bg-zinc-950 border-white/10"
+                                className="bg-card border-white/10"
                                 placeholder="Business tier upgrade, manual adjustment, etc."
                             />
                         </div>

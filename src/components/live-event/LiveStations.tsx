@@ -109,7 +109,7 @@ export function LiveStations({ event, mode = 'grid' }: LiveStationsProps) {
   };
 
   const StationCard = ({ station }: { station: typeof stations[0] }) => (
-    <Card className={`bg-zinc-900 border-white/10 hover:border-white/20 transition-all group overflow-hidden relative ${mode === 'sidebar' ? 'mb-3' : ''}`}>
+    <Card className={`bg-card border-white/10 hover:border-white/20 transition-all group overflow-hidden relative ${mode === 'sidebar' ? 'mb-3' : ''}`}>
       {/* Status Indicator Line */}
       <div className={`absolute top-0 left-0 w-1 h-full ${station.status === 'active' ? 'bg-purple-500' : station.status === 'online' ? 'bg-emerald-500' : 'bg-zinc-700'}`} />
       
@@ -145,7 +145,7 @@ export function LiveStations({ event, mode = 'grid' }: LiveStationsProps) {
             Let's add an expanded view overlay or drawer. 
             For simplicity in this step, let's use the group-hover to show more details.
         */}
-        <div className="hidden group-hover:block absolute inset-0 bg-zinc-900/95 z-10 p-4 pl-6 animate-in fade-in zoom-in-95 duration-200">
+        <div className="hidden group-hover:block absolute inset-0 bg-card/95 z-10 p-4 pl-6 animate-in fade-in zoom-in-95 duration-200">
            <div className="flex items-center justify-between mb-2">
              <h3 className="font-bold text-white text-sm">{station.name}</h3>
              <Badge variant="outline" className="text-[10px] border-white/20 text-zinc-400">{station.version}</Badge>
@@ -216,7 +216,7 @@ export function LiveStations({ event, mode = 'grid' }: LiveStationsProps) {
       </div>
 
       <Dialog open={!!qrStation} onOpenChange={() => setQrStation(null)}>
-        <DialogContent className="bg-zinc-900 border-white/10 text-white sm:max-w-sm">
+        <DialogContent className="bg-card border-white/10 text-white sm:max-w-sm">
           <DialogHeader>
             <DialogTitle>Scan to Open {qrStation?.name}</DialogTitle>
           </DialogHeader>
@@ -229,7 +229,7 @@ export function LiveStations({ event, mode = 'grid' }: LiveStationsProps) {
                 />
               )}
             </div>
-            <p className="text-sm text-zinc-400 text-center break-all px-4 bg-zinc-950/50 p-2 rounded border border-white/5">
+            <p className="text-sm text-zinc-400 text-center break-all px-4 bg-card/50 p-2 rounded border border-white/5">
               {qrStation && getStationUrl(qrStation.id)}
             </p>
             <Button variant="outline" onClick={() => {

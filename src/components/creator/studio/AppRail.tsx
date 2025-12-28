@@ -23,7 +23,7 @@ export const AppRail = ({ activeView, onViewChange, onToggle }: AppRailProps) =>
     const navigate = useNavigate();
 
     return (
-        <div className="w-[60px] flex flex-col items-center py-4 z-30 flex-shrink-0 ml-3 my-3 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 shadow-2xl h-fit sticky top-3 transition-all duration-300">
+        <div className="w-[60px] flex flex-col items-center py-4 z-30 flex-shrink-0 ml-3 my-3 rounded-2xl bg-[#101112]/40 backdrop-blur-md border border-white/10 shadow-2xl h-fit sticky top-3 transition-all duration-300">
             {/* Toggle Button */}
             <button
                 onClick={onToggle}

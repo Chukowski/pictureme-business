@@ -171,7 +171,7 @@ export default function PublicProfile() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-black text-white flex items-center justify-center">
+      <div className="min-h-screen bg-[#101112] text-white flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
       </div>
     );
@@ -179,7 +179,7 @@ export default function PublicProfile() {
 
   if (!profile) {
     return (
-      <div className="min-h-screen bg-black text-white flex items-center justify-center">
+      <div className="min-h-screen bg-[#101112] text-white flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold mb-2">Profile not found</h1>
           <p className="text-zinc-400 mb-4">This user doesn't exist or their profile is private.</p>
@@ -196,14 +196,14 @@ export default function PublicProfile() {
         description={`Check out ${profile?.username || 'this user'}'s AI-generated creations on PictureMe.Now.`}
         image={profile?.avatar_url || undefined}
       />
-      <div className="min-h-screen bg-black text-white">
+      <div className="min-h-screen bg-[#101112] text-white">
         {/* Back Button */}
         <div className="fixed top-4 left-4 z-50">
           <Button
             variant="ghost"
             size="icon"
             onClick={() => navigate(-1)}
-            className="bg-black/50 backdrop-blur-sm hover:bg-black/70"
+            className="bg-[#101112]/50 backdrop-blur-sm hover:bg-[#101112]/70"
           >
             <ArrowLeft className="w-5 h-5" />
           </Button>
@@ -220,7 +220,7 @@ export default function PublicProfile() {
           ) : (
             <div className="w-full h-full bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600" />
           )}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#101112]/60 to-transparent" />
         </div>
 
         {/* Profile Content */}
@@ -294,7 +294,7 @@ export default function PublicProfile() {
           {profile.bio && <p className="text-zinc-300 mb-6 max-w-2xl">{profile.bio}</p>}
 
           <Tabs defaultValue="all" className="w-full" onValueChange={setActiveTab}>
-            <TabsList className="bg-zinc-900/50 border border-white/10 p-1 mb-6">
+            <TabsList className="bg-card/50 border border-white/10 p-1 mb-6">
               <TabsTrigger value="all">All</TabsTrigger>
               <TabsTrigger value="image">Image</TabsTrigger>
               <TabsTrigger value="video">Video</TabsTrigger>
@@ -398,7 +398,7 @@ export default function PublicProfile() {
             remixFromUsername: item.creator_username,
             view: 'create'
           };
-          navigate('/creator/studio', { state: remixState });
+          navigate('/creator/studio?view=create', { state: remixState });
         }}
 
       />
@@ -429,7 +429,7 @@ function CreationsGrid({ creations, isOwnProfile, onLike, onItemClick }: {
           <div
             key={creation.id}
             onClick={() => onItemClick(index)}
-            className="relative aspect-square rounded-xl overflow-hidden bg-zinc-900 group cursor-pointer"
+            className="relative aspect-square rounded-xl overflow-hidden bg-card group cursor-pointer"
           >
             {creation.type === 'video' ? (
               <>
@@ -444,7 +444,7 @@ function CreationsGrid({ creations, isOwnProfile, onLike, onItemClick }: {
                     e.currentTarget.currentTime = 0;
                   }}
                 />
-                <div className="absolute top-2 right-2 p-1.5 rounded-full bg-black/50 backdrop-blur-sm">
+                <div className="absolute top-2 right-2 p-1.5 rounded-full bg-[#101112]/50 backdrop-blur-sm">
                   <Play className="w-3 h-3 text-white" fill="white" />
                 </div>
               </>
@@ -459,7 +459,7 @@ function CreationsGrid({ creations, isOwnProfile, onLike, onItemClick }: {
               />
             )}
 
-            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-3">
+            <div className="absolute inset-0 bg-[#101112]/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-3">
               <div className="flex items-center gap-4 text-sm w-full">
                 <button
                   className="flex items-center gap-1 hover:scale-105 transition-transform"

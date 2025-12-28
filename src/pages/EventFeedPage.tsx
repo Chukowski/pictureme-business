@@ -141,7 +141,7 @@ export const EventFeedPage = () => {
 
   if (configLoading) {
     return (
-      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
+      <div className="min-h-screen bg-card flex items-center justify-center">
         <div className="text-center space-y-4">
           <Loader2 className="w-12 h-12 animate-spin mx-auto text-primary" />
           <p className="text-white text-lg">Loading event feed...</p>
@@ -167,7 +167,7 @@ export const EventFeedPage = () => {
     <div
       className={clsx(
         "h-screen flex flex-col overflow-hidden transition-colors duration-500",
-        isDarkMode ? "bg-zinc-950" : "bg-slate-50"
+        isDarkMode ? "bg-card" : "bg-slate-50"
       )}
     >
       {/* Header - Fixed height in vh */}
@@ -175,7 +175,7 @@ export const EventFeedPage = () => {
         className={clsx(
           "h-[8vh] min-h-[50px] max-h-[80px] flex-shrink-0 border-b backdrop-blur-xl transition-all duration-500",
           isDarkMode
-            ? "border-white/10 bg-zinc-900/80"
+            ? "border-white/10 bg-card/80"
             : "border-slate-200 bg-white/80 shadow-sm"
         )}
       >
@@ -252,7 +252,7 @@ export const EventFeedPage = () => {
                           className={clsx(
                             "relative w-full max-h-[55vh] aspect-[3/5] rounded-xl overflow-hidden border backdrop-blur-sm transition-all duration-500",
                             isDarkMode
-                              ? "border-white/10 bg-zinc-900/50 shadow-2xl"
+                              ? "border-white/10 bg-card/50 shadow-2xl"
                               : "border-slate-200 bg-white/60 shadow-xl"
                           )}
                         >
@@ -260,7 +260,7 @@ export const EventFeedPage = () => {
                             className={clsx(
                               "absolute inset-0 pointer-events-none transition-colors duration-500",
                               isDarkMode
-                                ? "bg-gradient-to-b from-white/5 via-transparent to-black/45"
+                                ? "bg-gradient-to-b from-white/5 via-transparent to-[#101112]/45"
                                 : "bg-gradient-to-b from-white/40 via-transparent to-slate-900/5"
                             )}
                           />
@@ -276,7 +276,7 @@ export const EventFeedPage = () => {
                           className={clsx(
                             "relative w-full mt-3 sm:mt-4 rounded-[1.2rem] border backdrop-blur-md p-2.5 sm:p-3 lg:p-4 flex items-center justify-between gap-3 overflow-hidden transition-all duration-500",
                             isDarkMode
-                              ? "border-white/10 bg-zinc-900/50 shadow-lg"
+                              ? "border-white/10 bg-card/50 shadow-lg"
                               : "border-slate-200 bg-white/80 shadow-md"
                           )}
                         >
@@ -349,7 +349,7 @@ export const EventFeedPage = () => {
           className={clsx(
             "h-[25vh] min-h-[200px] max-h-[280px] flex-shrink-0 w-full border-t backdrop-blur-2xl transition-all duration-500",
             isDarkMode
-              ? "border-white/10 bg-zinc-950/90"
+              ? "border-white/10 bg-card/90"
               : "border-slate-200 bg-white/90 shadow-[0_-4px_20px_-4px_rgba(0,0,0,0.1)]"
           )}
         >
@@ -378,7 +378,7 @@ export const EventFeedPage = () => {
                 className={clsx(
                   "pointer-events-none absolute inset-y-0 left-0 w-12 sm:w-16 z-10 transition-opacity duration-300",
                   isDarkMode
-                    ? "bg-gradient-to-r from-black/90 via-black/65 to-transparent"
+                    ? "bg-gradient-to-r from-[#101112]/90 via-[#101112]/65 to-transparent"
                     : "bg-gradient-to-r from-white via-white/70 to-transparent"
                 )}
               />
@@ -386,7 +386,7 @@ export const EventFeedPage = () => {
                 className={clsx(
                   "pointer-events-none absolute inset-y-0 right-0 w-12 sm:w-16 z-10 transition-opacity duration-300",
                   isDarkMode
-                    ? "bg-gradient-to-l from-black/90 via-black/65 to-transparent"
+                    ? "bg-gradient-to-l from-[#101112]/90 via-[#101112]/65 to-transparent"
                     : "bg-gradient-to-l from-white via-white/70 to-transparent"
                 )}
               />
@@ -436,7 +436,7 @@ export const EventFeedPage = () => {
           className={clsx(
             "absolute top-[11vh] right-4 flex items-center gap-2 text-xs px-3 py-1.5 rounded-full backdrop-blur-sm transition-colors duration-300",
             isDarkMode
-              ? "text-gray-400 bg-black/50 border border-white/10"
+              ? "text-gray-400 bg-[#101112]/50 border border-white/10"
               : "text-slate-600 bg-white/90 border border-slate-200 shadow-sm"
           )}
         >

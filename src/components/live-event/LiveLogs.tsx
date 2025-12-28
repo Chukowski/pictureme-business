@@ -18,7 +18,7 @@ export function LiveLogs({ logs }: LiveLogsProps) {
   return (
     <div className="space-y-4">
       <h3 className="text-sm font-medium text-zinc-400 uppercase tracking-wider px-1">Live Activity Log</h3>
-      <div className="bg-zinc-900 border border-white/10 rounded-xl overflow-hidden">
+      <div className="bg-card border border-white/10 rounded-xl overflow-hidden">
         <ScrollArea className="h-[250px] w-full p-4">
           <div className="space-y-4">
             {logs.length === 0 && (

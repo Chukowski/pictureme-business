@@ -277,7 +277,7 @@ export default function SuperAdminBilling() {
             );
         }
         return (
-            <div className="rounded-xl border border-white/10 bg-zinc-900/50 backdrop-blur-sm overflow-hidden">
+            <div className="rounded-xl border border-white/10 bg-card/50 backdrop-blur-sm overflow-hidden">
                 <Table>
                     <TableHeader className="bg-white/5">
                         <TableRow className="border-white/10 hover:bg-transparent">
@@ -379,7 +379,7 @@ export default function SuperAdminBilling() {
             </div>
 
             <Tabs defaultValue="packages" className="space-y-4">
-                <TabsList className="bg-zinc-900 border border-white/10">
+                <TabsList className="bg-card border border-white/10">
                     <TabsTrigger value="packages">Token Packages</TabsTrigger>
                     <TabsTrigger value="transactions">Transaction Logs</TabsTrigger>
                     <TabsTrigger value="pricing">Pricing Calculator</TabsTrigger>
@@ -462,7 +462,7 @@ export default function SuperAdminBilling() {
                 {/* Transaction Logs Tab */}
                 <TabsContent value="transactions" className="space-y-4">
                     <h2 className="text-xl font-semibold">Recent Transactions</h2>
-                    <Card className="bg-zinc-900/50 border-white/10">
+                    <Card className="bg-card/50 border-white/10">
                         <CardContent className="p-0">
                             {transactions.length === 0 ? (
                                 <div className="p-8 text-center text-zinc-500">
@@ -500,7 +500,7 @@ export default function SuperAdminBilling() {
                 <TabsContent value="pricing" className="space-y-4">
                     <h2 className="text-xl font-semibold">Pricing Calculator</h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <Card className="bg-zinc-900/50 border-white/10">
+                        <Card className="bg-card/50 border-white/10">
                             <CardHeader>
                                 <CardTitle>Cost Analysis</CardTitle>
                                 <CardDescription>Calculate token pricing based on FAL.ai costs</CardDescription>
@@ -512,7 +512,7 @@ export default function SuperAdminBilling() {
                                         type="number"
                                         step="0.001"
                                         defaultValue="0.02"
-                                        className="bg-zinc-950 border-white/10"
+                                        className="bg-card border-white/10"
                                     />
                                 </div>
                                 <div className="space-y-2">
@@ -520,7 +520,7 @@ export default function SuperAdminBilling() {
                                     <Input
                                         type="number"
                                         defaultValue="1"
-                                        className="bg-zinc-950 border-white/10"
+                                        className="bg-card border-white/10"
                                     />
                                 </div>
                                 <div className="space-y-2">
@@ -528,7 +528,7 @@ export default function SuperAdminBilling() {
                                     <Input
                                         type="number"
                                         defaultValue="50"
-                                        className="bg-zinc-950 border-white/10"
+                                        className="bg-card border-white/10"
                                     />
                                 </div>
                                 <div className="p-4 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
@@ -538,7 +538,7 @@ export default function SuperAdminBilling() {
                             </CardContent>
                         </Card>
 
-                        <Card className="bg-zinc-900/50 border-white/10">
+                        <Card className="bg-card/50 border-white/10">
                             <CardHeader>
                                 <CardTitle>Package Comparison</CardTitle>
                                 <CardDescription>Compare value across packages</CardDescription>
@@ -566,7 +566,7 @@ export default function SuperAdminBilling() {
 
             {/* Create/Edit Package Dialog */}
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogContent className="bg-zinc-900 border-white/10 text-white">
+                <DialogContent className="bg-card border-white/10 text-white">
                     <DialogHeader>
                         <DialogTitle>
                             {editingPackage ? 'Edit Package' : 'Create Token Package'}
@@ -585,7 +585,7 @@ export default function SuperAdminBilling() {
                             <Input
                                 value={formData.name}
                                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                className="bg-zinc-950 border-white/10"
+                                className="bg-card border-white/10"
                                 placeholder="Pro Pack"
                             />
                         </div>
@@ -595,7 +595,7 @@ export default function SuperAdminBilling() {
                             <Input
                                 value={formData.description}
                                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                className="bg-zinc-950 border-white/10"
+                                className="bg-card border-white/10"
                                 placeholder="Best value for professionals"
                             />
                         </div>
@@ -607,7 +607,7 @@ export default function SuperAdminBilling() {
                                     type="number"
                                     value={formData.tokens}
                                     onChange={(e) => setFormData({ ...formData, tokens: parseInt(e.target.value) || 0 })}
-                                    className="bg-zinc-950 border-white/10"
+                                    className="bg-card border-white/10"
                                 />
                             </div>
                             <div className="space-y-2">
@@ -617,7 +617,7 @@ export default function SuperAdminBilling() {
                                     step="0.01"
                                     value={formData.price_usd}
                                     onChange={(e) => setFormData({ ...formData, price_usd: parseFloat(e.target.value) || 0 })}
-                                    className="bg-zinc-950 border-white/10"
+                                    className="bg-card border-white/10"
                                 />
                             </div>
                         </div>
@@ -658,7 +658,7 @@ export default function SuperAdminBilling() {
                                 type="number"
                                 value={formData.validity_days}
                                 onChange={(e) => setFormData({ ...formData, validity_days: parseInt(e.target.value) || 30 })}
-                                className="bg-zinc-950 border-white/10 w-32"
+                                className="bg-card border-white/10 w-32"
                                 placeholder="30"
                             />
                             <p className="text-xs text-zinc-500">
@@ -680,7 +680,7 @@ export default function SuperAdminBilling() {
                             <Input
                                 value={formData.stripe_price_id}
                                 onChange={(e) => setFormData({ ...formData, stripe_price_id: e.target.value })}
-                                className="bg-zinc-950 border-white/10"
+                                className="bg-card border-white/10"
                                 placeholder="price_..."
                             />
                             <p className="text-xs text-zinc-500">

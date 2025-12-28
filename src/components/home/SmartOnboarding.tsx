@@ -39,7 +39,7 @@ export function SmartOnboarding({ events }: SmartOnboardingProps) {
   ];
 
   return (
-    <Card className="bg-zinc-900 bg-gradient-to-r from-indigo-900/20 to-purple-900/20 border-indigo-500/30 mb-8">
+    <Card className="bg-card bg-gradient-to-r from-indigo-900/20 to-purple-900/20 border-indigo-500/30 mb-8">
       <CardContent className="p-5">
         <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
           <div className="space-y-1 max-w-md">
@@ -54,7 +54,7 @@ export function SmartOnboarding({ events }: SmartOnboardingProps) {
                 className={`flex-1 flex flex-col justify-between p-4 rounded-xl border transition-all h-28 min-w-0 sm:min-w-[200px] relative overflow-hidden ${
                   step.done 
                     ? "bg-emerald-500/10 border-emerald-500/20" 
-                    : "bg-zinc-900/40 border-white/5 hover:bg-zinc-900/60 cursor-pointer group"
+                    : "bg-card/40 border-white/5 hover:bg-card/60 cursor-pointer group"
                 }`}
                 onClick={!step.done ? step.action : undefined}
               >

@@ -159,7 +159,7 @@ export function MarkPaidModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-zinc-900 border-white/10 max-w-md">
+      <DialogContent className="bg-card border-white/10 max-w-md">
         <DialogHeader>
           <DialogTitle className="text-white flex items-center gap-2">
             <Check className="w-5 h-5 text-emerald-400" />
@@ -188,7 +188,7 @@ export function MarkPaidModal({
                     className={`w-full p-4 rounded-xl border flex items-center justify-between transition-all ${
                       selectedPackageId === pkg.id
                         ? 'border-emerald-500 bg-emerald-500/10'
-                        : 'border-white/10 bg-black/20 hover:bg-white/5'
+                        : 'border-white/10 bg-[#101112]/20 hover:bg-white/5'
                     }`}
                   >
                     <div className="flex items-center gap-3">
@@ -241,7 +241,7 @@ export function MarkPaidModal({
                     className={`p-4 rounded-xl border flex flex-col items-center gap-2 transition-all ${
                       saleType === 'digital'
                         ? 'border-blue-500 bg-blue-500/10'
-                        : 'border-white/10 bg-black/20 hover:bg-white/5'
+                        : 'border-white/10 bg-[#101112]/20 hover:bg-white/5'
                     }`}
                   >
                     <Image className={`w-6 h-6 ${saleType === 'digital' ? 'text-blue-400' : 'text-zinc-400'}`} />
@@ -259,7 +259,7 @@ export function MarkPaidModal({
                     className={`p-4 rounded-xl border flex flex-col items-center gap-2 transition-all ${
                       saleType === 'print'
                         ? 'border-orange-500 bg-orange-500/10'
-                        : 'border-white/10 bg-black/20 hover:bg-white/5'
+                        : 'border-white/10 bg-[#101112]/20 hover:bg-white/5'
                     }`}
                   >
                     <Printer className={`w-6 h-6 ${saleType === 'print' ? 'text-orange-400' : 'text-zinc-400'}`} />
@@ -285,7 +285,7 @@ export function MarkPaidModal({
                     placeholder="0.00"
                     value={customAmount}
                     onChange={(e) => setCustomAmount(e.target.value)}
-                    className="bg-black/40 border-white/10 text-white pl-7 text-lg"
+                    className="bg-[#101112]/40 border-white/10 text-white pl-7 text-lg"
                   />
                 </div>
                 <p className="text-xs text-zinc-500">
@@ -308,7 +308,7 @@ export function MarkPaidModal({
                     className={`p-2 rounded-lg border flex items-center justify-center gap-2 transition-all ${
                       paymentMethod === method.value
                         ? 'border-emerald-500 bg-emerald-500/10'
-                        : 'border-white/10 bg-black/20 hover:bg-white/5'
+                        : 'border-white/10 bg-[#101112]/20 hover:bg-white/5'
                     }`}
                   >
                     <method.icon className={`w-4 h-4 ${
@@ -323,7 +323,7 @@ export function MarkPaidModal({
 
           {/* Total Summary */}
           {totalAmount > 0 && (
-            <div className="bg-black/30 rounded-xl p-4 space-y-2">
+            <div className="bg-[#101112]/30 rounded-xl p-4 space-y-2">
               <div className="flex justify-between text-sm">
                 <span className="text-zinc-400">Subtotal</span>
                 <span className="text-white">{currencySymbol}{baseAmount.toFixed(2)}</span>

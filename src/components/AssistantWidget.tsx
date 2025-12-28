@@ -482,7 +482,7 @@ export function AssistantWidget({ className, defaultOpen = false }: AssistantWid
     <div
       className={cn(
         "fixed z-50 shadow-2xl transition-all duration-300 rounded-xl overflow-hidden",
-        "bg-zinc-900/95 backdrop-blur-lg border border-white/10",
+        "bg-card/95 backdrop-blur-lg border border-white/10",
         "flex flex-col",
         isExpanded
           ? "inset-4 sm:inset-8 md:inset-16 lg:inset-24" // Full screen with padding

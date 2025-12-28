@@ -58,7 +58,7 @@ export function CreatorNavbar({ user }: CreatorNavbarProps) {
     const tokens = user?.tokens_remaining || 0;
 
     return (
-        <header className="fixed top-0 w-full z-50 bg-black/30 backdrop-blur-xl border-b border-white/5">
+        <header className="fixed top-0 w-full z-50 bg-[#101112]/30 backdrop-blur-xl border-b border-white/5">
             <div className="w-full px-8 h-16 flex items-center justify-between">
 
                 {/* Logo & Navigation */}
@@ -102,10 +102,10 @@ export function CreatorNavbar({ user }: CreatorNavbarProps) {
                                     <ChevronDown className="w-3.5 h-3.5 opacity-50" />
                                 </button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="start" className="w-56 bg-zinc-950 border-zinc-900 p-2 z-[100] rounded-2xl shadow-2xl">
+                            <DropdownMenuContent align="start" className="w-56 bg-card border-zinc-900 p-2 z-[100] rounded-2xl shadow-2xl">
                                 <DropdownMenuItem
-                                    onClick={() => navigate('/creator/studio', { state: { view: 'create', mode: 'image' } })}
-                                    className="flex items-center gap-3 py-3 rounded-xl cursor-pointer focus:bg-zinc-900 group"
+                                    onClick={() => navigate('/creator/studio?view=create&mode=image')}
+                                    className="flex items-center gap-3 py-3 rounded-xl cursor-pointer focus:bg-card group"
                                 >
                                     <div className="p-2 rounded-lg bg-indigo-500/10 text-indigo-400 group-hover:bg-indigo-500/20 transition-colors">
                                         <ImageIcon className="w-4 h-4" />
@@ -116,8 +116,8 @@ export function CreatorNavbar({ user }: CreatorNavbarProps) {
                                     </div>
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
-                                    onClick={() => navigate('/creator/studio', { state: { view: 'create', mode: 'video' } })}
-                                    className="flex items-center gap-3 py-3 rounded-xl cursor-pointer focus:bg-zinc-900 group"
+                                    onClick={() => navigate('/creator/studio?view=create&mode=video')}
+                                    className="flex items-center gap-3 py-3 rounded-xl cursor-pointer focus:bg-card group"
                                 >
                                     <div className="p-2 rounded-lg bg-[#D1F349]/10 text-[#D1F349] group-hover:bg-[#D1F349]/20 transition-colors">
                                         <Video className="w-4 h-4" />
@@ -128,8 +128,8 @@ export function CreatorNavbar({ user }: CreatorNavbarProps) {
                                     </div>
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
-                                    onClick={() => navigate('/creator/studio', { state: { view: 'create', mode: 'booth' } })}
-                                    className="flex items-center gap-3 py-3 rounded-xl cursor-pointer focus:bg-zinc-900 group"
+                                    onClick={() => navigate('/creator/studio?mode=booth')}
+                                    className="flex items-center gap-3 py-3 rounded-xl cursor-pointer focus:bg-card group"
                                 >
                                     <div className="p-2 rounded-lg bg-amber-500/10 text-amber-500 group-hover:bg-amber-500/20 transition-colors">
                                         <Camera className="w-4 h-4" />
@@ -141,7 +141,7 @@ export function CreatorNavbar({ user }: CreatorNavbarProps) {
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
                                     onClick={() => navigate('/creator/chat')}
-                                    className="flex items-center gap-3 py-3 rounded-xl cursor-pointer focus:bg-zinc-900 group"
+                                    className="flex items-center gap-3 py-3 rounded-xl cursor-pointer focus:bg-card group"
                                 >
                                     <div className="p-2 rounded-lg bg-pink-500/10 text-pink-500 group-hover:bg-pink-500/20 transition-colors">
                                         <Sparkles className="w-4 h-4" />
@@ -155,10 +155,10 @@ export function CreatorNavbar({ user }: CreatorNavbarProps) {
                         </DropdownMenu>
 
                         <button
-                            onClick={() => navigate('/creator/studio', { state: { view: 'gallery' } })}
+                            onClick={() => navigate('/creator/gallery')}
                             className={cn(
                                 "text-sm font-bold transition-all duration-300",
-                                (location.state as any)?.view === 'gallery'
+                                location.pathname === '/creator/gallery'
                                     ? "text-zinc-100"
                                     : "text-zinc-500 hover:text-white"
                             )}
@@ -166,10 +166,10 @@ export function CreatorNavbar({ user }: CreatorNavbarProps) {
                             Gallery
                         </button>
                         <button
-                            onClick={() => navigate('/creator/studio', { state: { view: 'booths' } })}
+                            onClick={() => navigate('/creator/booth')}
                             className={cn(
                                 "text-sm font-bold transition-all duration-300",
-                                (location.state as any)?.view === 'booths'
+                                location.pathname === '/creator/booth'
                                     ? "text-zinc-100"
                                     : "text-zinc-500 hover:text-white"
                             )}
@@ -177,10 +177,10 @@ export function CreatorNavbar({ user }: CreatorNavbarProps) {
                             Booths
                         </button>
                         <button
-                            onClick={() => navigate('/creator/studio', { state: { view: 'templates' } })}
+                            onClick={() => navigate('/creator/models')}
                             className={cn(
                                 "text-sm font-bold transition-all duration-300",
-                                (location.state as any)?.view === 'templates'
+                                location.pathname === '/creator/models'
                                     ? "text-zinc-100"
                                     : "text-zinc-500 hover:text-white"
                             )}
@@ -208,7 +208,7 @@ export function CreatorNavbar({ user }: CreatorNavbarProps) {
                     <Popover>
                         <PopoverTrigger asChild>
                             <div
-                                className="hidden sm:flex items-center gap-2 bg-zinc-900/60 hover:bg-zinc-800/80 backdrop-blur-md border border-white/10 rounded-full px-4 py-2 transition-all cursor-pointer hover:border-amber-500/50"
+                                className="hidden sm:flex items-center gap-2 bg-card/60 hover:bg-zinc-800/80 backdrop-blur-md border border-white/10 rounded-full px-4 py-2 transition-all cursor-pointer hover:border-amber-500/50"
                                 title={`${tokens.toLocaleString()} tokens remaining`}
                             >
                                 <Zap className={cn(
@@ -259,7 +259,7 @@ export function CreatorNavbar({ user }: CreatorNavbarProps) {
                                 </div>
                             </div>
 
-                            <div className="bg-zinc-900/50 p-4 border-t border-white/5 space-y-3">
+                            <div className="bg-card/50 p-4 border-t border-white/5 space-y-3">
                                 <h5 className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Recent Activity</h5>
                                 <div className="space-y-3">
                                     <div className="flex items-center justify-between text-sm">
@@ -277,13 +277,13 @@ export function CreatorNavbar({ user }: CreatorNavbarProps) {
                                         <span className="text-zinc-500 font-mono">-4</span>
                                     </div>
                                 </div>
-                                <button
-                                    onClick={() => navigate('/creator/billing')}
-                                    className="w-full text-center text-xs text-zinc-500 hover:text-white mt-2 transition-colors"
-                                >
-                                    View Full History
-                                </button>
                             </div>
+                            <button
+                                onClick={() => navigate('/creator/billing')}
+                                className="w-full text-center text-xs text-zinc-500 hover:text-white mt-2 transition-colors"
+                            >
+                                View Full History
+                            </button>
                         </PopoverContent>
                     </Popover>
 
@@ -299,7 +299,7 @@ export function CreatorNavbar({ user }: CreatorNavbarProps) {
                                 )}
                             </button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-56 bg-zinc-900/95 backdrop-blur-xl border-white/10 text-white shadow-2xl">
+                        <DropdownMenuContent align="end" className="w-56 bg-card/95 backdrop-blur-xl border-white/10 text-white shadow-2xl">
                             <div className="px-2 py-1.5 border-b border-white/5 mb-1">
                                 <p className="font-medium text-sm text-white">{user?.full_name || user?.username}</p>
                                 <p className="text-xs text-zinc-500 truncate">{user?.email}</p>
@@ -335,7 +335,7 @@ export function CreatorNavbar({ user }: CreatorNavbarProps) {
 
             {/* Mobile Navigation (Horizontal Scroll) */}
             <div className="md:hidden border-t border-white/5 p-2 flex justify-center overflow-hidden">
-                <div className="bg-zinc-900/50 p-1 rounded-full border border-white/10 flex items-center overflow-x-auto no-scrollbar max-w-full">
+                <div className="bg-card/50 p-1 rounded-full border border-white/10 flex items-center overflow-x-auto no-scrollbar max-w-full">
                     <button
                         onClick={() => navigate('/creator/dashboard')}
                         className={cn(
@@ -348,10 +348,10 @@ export function CreatorNavbar({ user }: CreatorNavbarProps) {
                         Explore
                     </button>
                     <button
-                        onClick={() => navigate('/creator/studio', { state: { view: 'create' } })}
+                        onClick={() => navigate('/creator/studio?view=create')}
                         className={cn(
                             "px-4 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap shrink-0",
-                            location.pathname === '/creator/studio' && (location.state as any)?.view === 'create'
+                            location.pathname === '/creator/studio' && ((location.state as any)?.view === 'create' || new URLSearchParams(location.search).get('view') === 'create' || !new URLSearchParams(location.search).get('view'))
                                 ? "bg-zinc-800 text-white shadow-sm border border-white/5"
                                 : "text-zinc-500 hover:text-zinc-300"
                         )}
@@ -359,10 +359,10 @@ export function CreatorNavbar({ user }: CreatorNavbarProps) {
                         Studio
                     </button>
                     <button
-                        onClick={() => navigate('/creator/studio', { state: { view: 'gallery' } })}
+                        onClick={() => navigate('/creator/gallery')}
                         className={cn(
                             "px-4 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap shrink-0",
-                            (location.state as any)?.view === 'gallery'
+                            location.pathname === '/creator/gallery'
                                 ? "bg-zinc-800 text-white shadow-sm border border-white/5"
                                 : "text-zinc-500 hover:text-zinc-300"
                         )}
@@ -370,10 +370,10 @@ export function CreatorNavbar({ user }: CreatorNavbarProps) {
                         Gallery
                     </button>
                     <button
-                        onClick={() => navigate('/creator/studio', { state: { view: 'booths' } })}
+                        onClick={() => navigate('/creator/booth')}
                         className={cn(
                             "px-4 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap shrink-0",
-                            (location.state as any)?.view === 'booths'
+                            location.pathname === '/creator/booth'
                                 ? "bg-zinc-800 text-white shadow-sm border border-white/5"
                                 : "text-zinc-500 hover:text-zinc-300"
                         )}
@@ -381,10 +381,10 @@ export function CreatorNavbar({ user }: CreatorNavbarProps) {
                         Booths
                     </button>
                     <button
-                        onClick={() => navigate('/creator/studio', { state: { view: 'templates' } })}
+                        onClick={() => navigate('/creator/models')}
                         className={cn(
                             "px-4 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap shrink-0",
-                            (location.state as any)?.view === 'templates'
+                            location.pathname === '/creator/models'
                                 ? "bg-zinc-800 text-white shadow-sm border border-white/5"
                                 : "text-zinc-500 hover:text-zinc-300"
                         )}

@@ -28,9 +28,9 @@ export function PlaygroundLayout({
   const getTabLabel = () => navItems.find(t => t.id === currentTab)?.label || 'Playground';
 
   return (
-    <div className="h-screen w-full flex flex-col bg-black overflow-hidden font-sans">
+    <div className="h-screen w-full flex flex-col bg-[#101112] overflow-hidden font-sans">
       {/* Sticky Header */}
-      <header className="h-14 border-b border-white/10 bg-zinc-950 flex items-center justify-between px-4 shrink-0 z-50">
+      <header className="h-14 border-b border-white/10 bg-card flex items-center justify-between px-4 shrink-0 z-50">
         <div className="flex items-center gap-4">
           <Button 
             variant="ghost" 
@@ -64,7 +64,7 @@ export function PlaygroundLayout({
       {/* Main Layout */}
       <div className="flex-1 flex overflow-hidden">
         {/* LEFT SIDEBAR - WORKFLOW COLUMN */}
-        <aside className="w-64 bg-zinc-950 border-r border-white/10 flex flex-col shrink-0">
+        <aside className="w-64 bg-card border-r border-white/10 flex flex-col shrink-0">
           <div className="p-4">
             <h2 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-4 px-2">Tools</h2>
             <div className="space-y-1">
@@ -86,7 +86,7 @@ export function PlaygroundLayout({
                   
                   <div className={cn(
                     "p-2 rounded-lg transition-colors",
-                    currentTab === item.id ? "bg-purple-500/20 text-purple-300" : "bg-zinc-900 text-zinc-500 group-hover:text-zinc-300"
+                    currentTab === item.id ? "bg-purple-500/20 text-purple-300" : "bg-card text-zinc-500 group-hover:text-zinc-300"
                   )}>
                     <item.icon className="w-4 h-4" />
                   </div>
@@ -108,7 +108,7 @@ export function PlaygroundLayout({
         </aside>
 
         {/* MAIN CONTENT AREA */}
-        <main className="flex-1 flex overflow-hidden bg-zinc-900 relative">
+        <main className="flex-1 flex overflow-hidden bg-card relative">
           {children}
         </main>
       </div>

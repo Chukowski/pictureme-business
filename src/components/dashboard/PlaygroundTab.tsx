@@ -1042,7 +1042,7 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
 
       {/* Mode Tabs */}
       <Tabs value={mode} onValueChange={(v) => setMode(v as PlaygroundMode)} className="space-y-6">
-        <TabsList className="bg-zinc-900/50 border border-white/10">
+        <TabsList className="bg-card/50 border border-white/10">
           <TabsTrigger value="template" className="data-[state=active]:bg-purple-600">
             <Palette className="w-4 h-4 mr-2" />
             Template Test
@@ -1065,7 +1065,7 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
         <TabsContent value="template" className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-[1.6fr_1fr] gap-6">
             {/* Input Section */}
-            <Card className="bg-zinc-900/50 border-white/10">
+            <Card className="bg-card/50 border-white/10">
               <CardHeader>
                 <CardTitle className="text-white text-lg flex items-center gap-2">
                   <Sparkles className="w-5 h-5 text-purple-400" />
@@ -1137,7 +1137,7 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
                     onChange={handleImageUpload}
                   />
                   {testImage ? (
-                    <div className={`flex items-center gap-4 p-4 bg-black/20 rounded-xl border ${testImageBase64 ? 'border-white/10' : 'border-red-500/50'}`}>
+                    <div className={`flex items-center gap-4 p-4 bg-[#101112]/20 rounded-xl border ${testImageBase64 ? 'border-white/10' : 'border-red-500/50'}`}>
                       <img src={testImage} alt="Test" className="w-24 h-24 rounded-lg object-cover" />
                       <div className="flex-1">
                         {testImageBase64 ? (
@@ -1232,10 +1232,10 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
                     value={selectedAiModel}
                     onValueChange={(value: AIModelKey) => setSelectedAiModel(value)}
                   >
-                    <SelectTrigger className="bg-black/40 border-white/10 text-white">
+                    <SelectTrigger className="bg-[#101112]/40 border-white/10 text-white">
                       <SelectValue placeholder="Select AI model" />
                     </SelectTrigger>
-                    <SelectContent className="bg-zinc-900 border-white/10">
+                    <SelectContent className="bg-card border-white/10">
                       {Object.entries(AI_MODELS).map(([key, model]) => (
                         <SelectItem key={key} value={key} className="text-white hover:bg-white/10">
                           <div className="flex items-center gap-2">
@@ -1267,7 +1267,7 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
                       className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border transition-all ${
                         !isGroupPhoto 
                           ? 'bg-cyan-500/20 border-cyan-500/50 text-cyan-400' 
-                          : 'bg-black/20 border-white/10 text-zinc-400 hover:text-zinc-300'
+                          : 'bg-[#101112]/20 border-white/10 text-zinc-400 hover:text-zinc-300'
                       }`}
                     >
                       <span className="text-lg">👤</span>
@@ -1280,7 +1280,7 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
                       className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border transition-all ${
                         isGroupPhoto 
                           ? 'bg-purple-500/20 border-purple-500/50 text-purple-400' 
-                          : 'bg-black/20 border-white/10 text-zinc-400 hover:text-zinc-300'
+                          : 'bg-[#101112]/20 border-white/10 text-zinc-400 hover:text-zinc-300'
                       }`}
                     >
                       <span className="text-lg">👥</span>
@@ -1339,7 +1339,7 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
                         onChange={(e) => setCustomPrompt(e.target.value)}
                         placeholder="Write your own prompt to test... e.g., 'Transform this person into a superhero in a comic book style'"
                         rows={4}
-                        className="font-mono text-sm bg-black/40 border-white/10 text-zinc-300 placeholder:text-zinc-600 focus:border-indigo-500"
+                        className="font-mono text-sm bg-[#101112]/40 border-white/10 text-zinc-300 placeholder:text-zinc-600 focus:border-indigo-500"
                       />
                       <PromptHelper
                         onSelectPrompt={(prompt) => setCustomPrompt(prompt)}
@@ -1459,7 +1459,7 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
 
                 {/* Current Prompt Preview */}
                 {selectedTemplate && !useCustomPrompt && (
-                  <div className="p-3 rounded-lg bg-black/30 border border-white/5 space-y-2">
+                  <div className="p-3 rounded-lg bg-[#101112]/30 border border-white/5 space-y-2">
                     <div className="flex items-center justify-between">
                       <p className="text-xs text-zinc-500">
                         {isGroupPhoto && selectedTemplate.groupPrompt ? 'Group Prompt:' : 'Individual Prompt:'}
@@ -1546,7 +1546,7 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
                         value={customSeed || ''}
                         onChange={(e) => setCustomSeed(e.target.value ? parseInt(e.target.value) : undefined)}
                         placeholder="Leave empty for random"
-                        className="h-7 text-xs bg-black/40 border-white/10"
+                        className="h-7 text-xs bg-[#101112]/40 border-white/10"
                       />
                       <p className="text-[10px] text-zinc-500 mt-1">
                         Same seed = similar results. {selectedTemplate?.pipelineConfig?.seed && `Template seed: ${selectedTemplate.pipelineConfig.seed}`}
@@ -1586,7 +1586,7 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
 
             {/* Result Section */}
             <div className="lg:sticky lg:top-4 space-y-4">
-            <Card className="bg-zinc-900/50 border-white/10">
+            <Card className="bg-card/50 border-white/10">
               <CardHeader>
                 <CardTitle className="text-white text-lg">Result</CardTitle>
                 <CardDescription className="text-zinc-400">
@@ -1720,7 +1720,7 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
         <TabsContent value="badge" className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-[1.6fr_1fr] gap-6">
             {/* Badge Input */}
-            <Card className="bg-zinc-900/50 border-white/10">
+            <Card className="bg-card/50 border-white/10">
               <CardHeader>
                 <CardTitle className="text-white text-lg flex items-center gap-2">
                   <QrCode className="w-5 h-5 text-cyan-400" />
@@ -1781,7 +1781,7 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
                 )}
 
                 {/* Visitor Info */}
-                <div className="space-y-3 p-4 rounded-lg bg-zinc-900/60 border border-zinc-800">
+                <div className="space-y-3 p-4 rounded-lg bg-card/60 border border-zinc-800">
                   <div className="flex items-center justify-between">
                   <Label className="text-zinc-300">Visitor Information</Label>
                     <Badge variant="outline" className="text-[11px] border-zinc-700 text-zinc-400">
@@ -1845,7 +1845,7 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
 
                 {/* Process Badge Button */}
                 {badgeConfig.aiPipeline?.enabled && (
-                  <Card className="bg-zinc-900/60 border border-purple-500/10">
+                  <Card className="bg-card/60 border border-purple-500/10">
                     <CardContent className="p-4 space-y-3">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
@@ -1880,7 +1880,7 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
             </Card>
 
             {/* Badge Visual Editor / Preview (sticky on desktop) */}
-            <Card className="bg-zinc-900/50 border-white/10 lg:sticky lg:top-4">
+            <Card className="bg-card/50 border-white/10 lg:sticky lg:top-4">
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div>
@@ -2106,7 +2106,7 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
                               type="text"
                               value={textStyles.nameColor}
                               onChange={(e) => setTextStyles(prev => ({ ...prev, nameColor: e.target.value }))}
-                              className="flex-1 text-[10px] bg-black/30 border border-white/10 rounded px-1.5 py-1 text-white font-mono"
+                              className="flex-1 text-[10px] bg-[#101112]/30 border border-white/10 rounded px-1.5 py-1 text-white font-mono"
                             />
                           </div>
                         </div>
@@ -2123,7 +2123,7 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
                               type="text"
                               value={textStyles.eventNameColor}
                               onChange={(e) => setTextStyles(prev => ({ ...prev, eventNameColor: e.target.value }))}
-                              className="flex-1 text-[10px] bg-black/30 border border-white/10 rounded px-1.5 py-1 text-white font-mono"
+                              className="flex-1 text-[10px] bg-[#101112]/30 border border-white/10 rounded px-1.5 py-1 text-white font-mono"
                             />
                           </div>
                         </div>
@@ -2140,7 +2140,7 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
                               type="text"
                               value={textStyles.dateTimeColor}
                               onChange={(e) => setTextStyles(prev => ({ ...prev, dateTimeColor: e.target.value }))}
-                              className="flex-1 text-[10px] bg-black/30 border border-white/10 rounded px-1.5 py-1 text-white font-mono"
+                              className="flex-1 text-[10px] bg-[#101112]/30 border border-white/10 rounded px-1.5 py-1 text-white font-mono"
                             />
                           </div>
                         </div>
@@ -2255,7 +2255,7 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
           <div className="grid grid-cols-1 lg:grid-cols-[1.6fr_1fr] gap-6">
             <div className="space-y-6">
             {/* Event Selector */}
-            <Card className="bg-zinc-900/50 border-white/10">
+            <Card className="bg-card/50 border-white/10">
               <CardHeader>
                 <CardTitle className="text-white text-lg">Select Event</CardTitle>
                 <CardDescription className="text-zinc-400">
@@ -2300,7 +2300,7 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
                     </div>
                       <div>
                         <span className="text-xs text-zinc-500 block mb-1">Slug</span>
-                        <span className="text-white text-xs font-mono bg-black/30 px-2 py-1 rounded">{selectedEvent.slug}</span>
+                        <span className="text-white text-xs font-mono bg-[#101112]/30 px-2 py-1 rounded">{selectedEvent.slug}</span>
                     </div>
                   </div>
                 )}
@@ -2308,7 +2308,7 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
             </Card>
 
             {/* Station URLs */}
-            <Card className="bg-zinc-900/50 border-white/10">
+            <Card className="bg-card/50 border-white/10">
               <CardHeader>
                 <CardTitle className="text-white text-lg flex items-center gap-2">
                     <Link2 className="w-4 h-4 text-cyan-400" />
@@ -2333,7 +2333,7 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
                       return (
                           <div key={key} className="flex items-center justify-between p-3 rounded-lg bg-zinc-800/50 group hover:bg-zinc-800 transition-colors">
                             <div className="flex items-center gap-3">
-                              <div className="p-2 rounded-md bg-zinc-900 text-zinc-400">
+                              <div className="p-2 rounded-md bg-card text-zinc-400">
                                 {key === 'main' ? <Globe className="w-4 h-4" /> :
                                  key === 'registration' ? <UserPlus className="w-4 h-4" /> :
                                  key === 'booth' ? <Camera className="w-4 h-4" /> :
@@ -2387,7 +2387,7 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
 
             {/* Preview Options (Sticky) */}
             <div className="space-y-6 lg:sticky lg:top-4 h-fit">
-              <Card className="bg-zinc-900/50 border-white/10">
+              <Card className="bg-card/50 border-white/10">
                 <CardHeader>
                   <CardTitle className="text-white text-lg">Preview Options</CardTitle>
                   <CardDescription className="text-zinc-400">
@@ -2402,7 +2402,7 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
                         variant={previewDevice === 'desktop' ? 'default' : 'outline'}
                         size="sm"
                         onClick={() => setPreviewDevice('desktop')}
-                        className={`h-auto py-3 flex-col gap-1 ${previewDevice === 'desktop' ? 'bg-cyan-600 hover:bg-cyan-700' : 'border-zinc-700 bg-zinc-900/50'}`}
+                        className={`h-auto py-3 flex-col gap-1 ${previewDevice === 'desktop' ? 'bg-cyan-600 hover:bg-cyan-700' : 'border-zinc-700 bg-card/50'}`}
                       >
                         <Monitor className="w-5 h-5" />
                         <span className="text-xs">Desktop</span>
@@ -2411,7 +2411,7 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
                         variant={previewDevice === 'mobile' ? 'default' : 'outline'}
                         size="sm"
                         onClick={() => setPreviewDevice('mobile')}
-                        className={`h-auto py-3 flex-col gap-1 ${previewDevice === 'mobile' ? 'bg-cyan-600 hover:bg-cyan-700' : 'border-zinc-700 bg-zinc-900/50'}`}
+                        className={`h-auto py-3 flex-col gap-1 ${previewDevice === 'mobile' ? 'bg-cyan-600 hover:bg-cyan-700' : 'border-zinc-700 bg-card/50'}`}
                       >
                         <Smartphone className="w-5 h-5" />
                         <span className="text-xs">Mobile</span>
@@ -2470,7 +2470,7 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
           <div className="grid grid-cols-1 lg:grid-cols-[1.6fr_1fr] gap-6">
             <div className="space-y-6">
               {/* Config Card */}
-          <Card className="bg-zinc-900/50 border-white/10">
+          <Card className="bg-card/50 border-white/10">
             <CardHeader>
                   <CardTitle className="text-white text-lg flex items-center gap-2">
                     <Camera className="w-5 h-5 text-pink-400" />
@@ -2540,7 +2540,7 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
                         onClick={() => openEventPreview(key)}
                         disabled={!selectedEvent}
                       >
-                          <div className="mr-3 mt-0.5 p-2 rounded-md bg-zinc-900 text-zinc-500 group-hover:text-pink-400 transition-colors">
+                          <div className="mr-3 mt-0.5 p-2 rounded-md bg-card text-zinc-500 group-hover:text-pink-400 transition-colors">
                             <Icon className="w-4 h-4" />
                           </div>
                           <div className="text-left">
@@ -2557,7 +2557,7 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
 
             {/* Launch & Tips (Sticky) */}
             <div className="space-y-6 lg:sticky lg:top-4 h-fit">
-              <Card className="bg-zinc-900/50 border-white/10 border-t-4 border-t-pink-500">
+              <Card className="bg-card/50 border-white/10 border-t-4 border-t-pink-500">
                 <CardHeader>
                   <CardTitle className="text-white text-lg">Launch Simulator</CardTitle>
                   <CardDescription className="text-zinc-400">
@@ -2605,14 +2605,14 @@ export default function PlaygroundTab({ currentUser }: PlaygroundTabProps) {
 
       {/* Preview Modal */}
       <Dialog open={showPreviewModal} onOpenChange={setShowPreviewModal}>
-        <DialogContent className="bg-zinc-900 border-white/10 text-white max-w-4xl max-h-[90vh]">
+        <DialogContent className="bg-card border-white/10 text-white max-w-4xl max-h-[90vh]">
           <DialogHeader>
             <DialogTitle>Event Preview - {selectedEvent?.title}</DialogTitle>
             <DialogDescription className="text-zinc-400">
               Preview how your event will look to visitors
             </DialogDescription>
           </DialogHeader>
-          <div className={`mt-4 rounded-lg overflow-hidden bg-black ${previewDevice === 'mobile' ? 'max-w-[375px] mx-auto' : ''}`}>
+          <div className={`mt-4 rounded-lg overflow-hidden bg-[#101112] ${previewDevice === 'mobile' ? 'max-w-[375px] mx-auto' : ''}`}>
             {selectedEvent && (
               <iframe
                 src={getStationUrl('main')}

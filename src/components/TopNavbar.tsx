@@ -274,7 +274,7 @@ export function TopNavbar() {
             </div>
           )}
 
-          <div className="flex items-center gap-2 p-1 bg-zinc-950/80 backdrop-blur-md border border-white/10 rounded-full shadow-2xl shadow-black/50">
+          <div className="flex items-center gap-2 p-1 bg-card/80 backdrop-blur-md border border-white/10 rounded-full shadow-2xl shadow-black/50">
 
             {/* Home Shortcut */}
             <button
@@ -314,7 +314,7 @@ export function TopNavbar() {
                           <ChevronDown className="w-3 h-3 opacity-50" />
                         </button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="start" className="w-56 bg-zinc-900 border-white/10 text-white p-2 mt-2">
+                      <DropdownMenuContent align="start" className="w-56 bg-card border-white/10 text-white p-2 mt-2">
                         <DropdownMenuItem
                           onClick={() => {
                             navigate('/admin/events');
@@ -455,7 +455,7 @@ export function TopNavbar() {
                   </div>
                 </div>
               )}
-              <DropdownMenuContent align="end" className="w-56 bg-zinc-900 border-white/10 text-white p-2 mt-2">
+              <DropdownMenuContent align="end" className="w-56 bg-card border-white/10 text-white p-2 mt-2">
                 <div className="px-2 py-1.5">
                   <p className="text-sm font-medium text-white">{currentUser?.name || currentUser?.full_name || currentUser?.username || 'User'}</p>
                   <p className="text-xs text-zinc-500 truncate">{currentUser?.email}</p>

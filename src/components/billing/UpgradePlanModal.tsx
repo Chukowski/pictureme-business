@@ -127,8 +127,8 @@ export function UpgradePlanModal({ open, onClose }: UpgradePlanModalProps) {
 
     return (
         <Dialog open={open} onOpenChange={(val) => !val && onClose()}>
-            <DialogContent className="max-w-5xl bg-zinc-950 border-white/10 text-white p-0 overflow-hidden flex flex-col max-h-[90vh]">
-                <div className="p-6 border-b border-white/10 bg-zinc-900/50">
+            <DialogContent className="max-w-5xl bg-card border-white/10 text-white p-0 overflow-hidden flex flex-col max-h-[90vh]">
+                <div className="p-6 border-b border-white/10 bg-card/50">
                     <DialogHeader>
                         <DialogTitle className="text-xl">Choose Your Plan</DialogTitle>
                         <DialogDescription className="text-zinc-400">
@@ -147,7 +147,7 @@ export function UpgradePlanModal({ open, onClose }: UpgradePlanModalProps) {
                                     key={plan.id}
                                     className={`relative p-6 rounded-2xl border transition-all duration-300 ${isCurrent
                                         ? 'border-indigo-500 bg-indigo-500/10 shadow-[0_0_30px_-10px_rgba(99,102,241,0.3)]'
-                                        : 'border-white/10 bg-zinc-900/50 hover:border-white/20 hover:bg-zinc-900'
+                                        : 'border-white/10 bg-card/50 hover:border-white/20 hover:bg-card'
                                         }`}
                                 >
                                     {isCurrent && (

@@ -117,7 +117,7 @@ export default function AdminEventsTab({ currentUser }: AdminEventsTabProps) {
     <div className="max-w-[1280px] mx-auto space-y-8">
       {/* Dashboard Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Card className="bg-zinc-900/50 border-white/10 backdrop-blur-sm p-4 flex flex-col justify-center h-full">
+        <Card className="bg-card/50 border-white/10 backdrop-blur-sm p-4 flex flex-col justify-center h-full">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-lg bg-indigo-500/10 text-indigo-400">
               <Activity className="w-5 h-5" />
@@ -132,7 +132,7 @@ export default function AdminEventsTab({ currentUser }: AdminEventsTabProps) {
           </div>
         </Card>
 
-        <Card className="bg-zinc-900/50 border-white/10 backdrop-blur-sm p-4 flex flex-col justify-center h-full">
+        <Card className="bg-card/50 border-white/10 backdrop-blur-sm p-4 flex flex-col justify-center h-full">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-400">
               <LayoutTemplate className="w-5 h-5" />
@@ -146,7 +146,7 @@ export default function AdminEventsTab({ currentUser }: AdminEventsTabProps) {
           </div>
         </Card>
 
-        <Card className="bg-zinc-900/50 border-white/10 backdrop-blur-sm p-4 flex flex-col justify-center h-full">
+        <Card className="bg-card/50 border-white/10 backdrop-blur-sm p-4 flex flex-col justify-center h-full">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-lg bg-purple-500/10 text-purple-400">
               <Activity className="w-4 h-4" />
@@ -193,11 +193,11 @@ export default function AdminEventsTab({ currentUser }: AdminEventsTabProps) {
         {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="rounded-2xl bg-zinc-900/50 border border-white/5 p-6 h-[240px] animate-pulse" />
+              <div key={i} className="rounded-2xl bg-card/50 border border-white/5 p-6 h-[240px] animate-pulse" />
             ))}
           </div>
         ) : events.length === 0 ? (
-          <div className="rounded-2xl bg-zinc-900/30 border border-white/10 border-dashed p-12 text-center">
+          <div className="rounded-2xl bg-card/30 border border-white/10 border-dashed p-12 text-center">
             <div className="flex flex-col items-center gap-4 max-w-md mx-auto">
               <div className="w-16 h-16 rounded-full bg-zinc-800 flex items-center justify-center border border-white/5">
                 <Calendar className="w-8 h-8 text-zinc-500" />
@@ -223,7 +223,7 @@ export default function AdminEventsTab({ currentUser }: AdminEventsTabProps) {
             {events.map((event) => (
               <div
                 key={event._id}
-                className="group relative rounded-2xl bg-zinc-900/50 backdrop-blur-sm border border-white/10 hover:border-indigo-500/30 transition-all hover:bg-zinc-900/80 flex flex-col"
+                className="group relative rounded-2xl bg-card/50 backdrop-blur-sm border border-white/10 hover:border-indigo-500/30 transition-all hover:bg-card/80 flex flex-col"
               >
                 {/* Card Header */}
                 <div className="p-5 pb-3">
@@ -258,7 +258,7 @@ export default function AdminEventsTab({ currentUser }: AdminEventsTabProps) {
                           <MoreHorizontal className="w-4 h-4" />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="bg-zinc-900 border-white/10 text-zinc-200">
+                      <DropdownMenuContent align="end" className="bg-card border-white/10 text-zinc-200">
                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
                         <DropdownMenuItem onClick={() => handleViewEvent(event)} className="cursor-pointer">
                           <ExternalLink className="w-4 h-4 mr-2" /> View Event
@@ -336,7 +336,7 @@ export default function AdminEventsTab({ currentUser }: AdminEventsTabProps) {
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent className="bg-zinc-900 border-white/10 text-white">
+        <AlertDialogContent className="bg-card border-white/10 text-white">
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Event?</AlertDialogTitle>
             <AlertDialogDescription className="text-zinc-400">

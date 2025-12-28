@@ -206,7 +206,7 @@ export function CreatorStudioSidebar({
         )}>
 
             {/* --- SIDEBAR HEADER (Mobile) --- */}
-            <div className="flex md:hidden items-center justify-between px-4 h-14 border-b border-white/5 flex-shrink-0 bg-black">
+            <div className="flex md:hidden items-center justify-between px-4 h-14 border-b border-white/5 flex-shrink-0 bg-[#101112]">
                 <div className="flex items-center gap-2">
                     <DropdownMenu modal={false}>
                         <DropdownMenuTrigger asChild>
@@ -224,7 +224,7 @@ export function CreatorStudioSidebar({
                                 <ChevronDown className="w-4 h-4 text-zinc-500 group-hover:text-white transition-colors" />
                             </button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="start" className="w-48 bg-zinc-950 border-zinc-900 z-[100] p-1.5">
+                        <DropdownMenuContent align="start" className="w-48 bg-card border-zinc-900 z-[100] p-1.5">
                             {[
                                 { id: 'image', label: 'Create Image', icon: ImageIcon },
                                 { id: 'video', label: 'Create Video', icon: Video },
@@ -234,8 +234,8 @@ export function CreatorStudioSidebar({
                                     key={item.id}
                                     onClick={() => setMode(item.id as any)}
                                     className={cn(
-                                        "flex items-center gap-2.5 cursor-pointer focus:bg-zinc-900 text-[13px] font-bold py-2.5 rounded-lg px-3 transition-colors",
-                                        mode === item.id ? "text-[#D1F349] bg-zinc-900/50" : "text-zinc-400"
+                                        "flex items-center gap-2.5 cursor-pointer focus:bg-card text-[13px] font-bold py-2.5 rounded-lg px-3 transition-colors",
+                                        mode === item.id ? "text-[#D1F349] bg-card/50" : "text-zinc-400"
                                     )}
                                 >
                                     <item.icon className="w-4 h-4" />
@@ -302,7 +302,7 @@ export function CreatorStudioSidebar({
                             onClick={onToggleTemplateLibrary}
                             className="group relative aspect-[2.3] w-full shrink-0 rounded-2xl overflow-hidden cursor-pointer border border-white/10 ring-1 ring-white/5 shadow-2xl"
                         >
-                            <div className="absolute inset-0 bg-zinc-900">
+                            <div className="absolute inset-0 bg-card">
                                 {(selectedTemplate?.images?.[0] || selectedTemplate?.preview_images?.[0]) ? (
                                     <img
                                         src={selectedTemplate.images?.[0] || selectedTemplate.preview_images?.[0]}
@@ -316,14 +316,14 @@ export function CreatorStudioSidebar({
                                         alt="General Style"
                                     />
                                 )}
-                                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
+                                <div className="absolute inset-0 bg-gradient-to-t from-[#101112] via-[#101112]/20 to-transparent" />
                             </div>
 
                             <div className="absolute top-2 right-2 flex gap-1 z-20">
                                 <Button
                                     size="sm"
                                     variant="secondary"
-                                    className="h-7 px-2.5 rounded-lg bg-black/60 backdrop-blur-md border-white/10 text-[10px] font-bold uppercase tracking-wider hover:bg-black/80"
+                                    className="h-7 px-2.5 rounded-lg bg-[#101112]/60 backdrop-blur-md border-white/10 text-[10px] font-bold uppercase tracking-wider hover:bg-[#101112]/80"
                                 >
                                     <Pencil className="w-3 h-3 mr-1.5" />
                                     Change
@@ -346,17 +346,17 @@ export function CreatorStudioSidebar({
                             <div
                                 onClick={() => onUploadClick("main")}
                                 className={cn(
-                                    "aspect-square w-full rounded-2xl border border-dashed border-white/10 bg-zinc-900/30 hover:bg-zinc-900/50 hover:border-white/20 transition-all cursor-pointer flex flex-col items-center justify-center gap-2 relative group overflow-hidden",
+                                    "aspect-square w-full rounded-2xl border border-dashed border-white/10 bg-card/30 hover:bg-card/50 hover:border-white/20 transition-all cursor-pointer flex flex-col items-center justify-center gap-2 relative group overflow-hidden",
                                     inputImage && "border-solid border-[#D1F349]/40"
                                 )}
                             >
                                 {inputImage ? (
                                     <>
                                         <img src={inputImage} className="w-full h-full object-cover" />
-                                        <div className="absolute inset-0 bg-black/20" />
+                                        <div className="absolute inset-0 bg-[#101112]/20" />
                                         <button
                                             onClick={(e) => { e.stopPropagation(); onRemoveInputImage?.(); }}
-                                            className="absolute top-2 right-2 p-1.5 bg-black/60 backdrop-blur-md rounded-full text-white transition-all ring-1 ring-white/10 opacity-0 group-hover:opacity-100"
+                                            className="absolute top-2 right-2 p-1.5 bg-[#101112]/60 backdrop-blur-md rounded-full text-white transition-all ring-1 ring-white/10 opacity-0 group-hover:opacity-100"
                                         >
                                             <X className="w-3 h-3" />
                                         </button>
@@ -377,17 +377,17 @@ export function CreatorStudioSidebar({
                                 <div
                                     onClick={() => onUploadClick("end")}
                                     className={cn(
-                                        "aspect-square w-full rounded-2xl border border-dashed border-white/10 bg-zinc-900/30 hover:bg-zinc-900/50 hover:border-white/20 transition-all cursor-pointer flex flex-col items-center justify-center gap-2 relative group overflow-hidden",
+                                        "aspect-square w-full rounded-2xl border border-dashed border-white/10 bg-card/30 hover:bg-card/50 hover:border-white/20 transition-all cursor-pointer flex flex-col items-center justify-center gap-2 relative group overflow-hidden",
                                         endFrameImage && "border-solid border-[#D1F349]/40"
                                     )}
                                 >
                                     {endFrameImage ? (
                                         <>
                                             <img src={endFrameImage} className="w-full h-full object-cover" />
-                                            <div className="absolute inset-0 bg-black/20" />
+                                            <div className="absolute inset-0 bg-[#101112]/20" />
                                             <button
                                                 onClick={(e) => { e.stopPropagation(); onRemoveEndFrameImage?.(); }}
-                                                className="absolute top-2 right-2 p-1.5 bg-black/60 backdrop-blur-md rounded-full text-white transition-all ring-1 ring-white/10 opacity-0 group-hover:opacity-100"
+                                                className="absolute top-2 right-2 p-1.5 bg-[#101112]/60 backdrop-blur-md rounded-full text-white transition-all ring-1 ring-white/10 opacity-0 group-hover:opacity-100"
                                             >
                                                 <X className="w-3 h-3" />
                                             </button>
@@ -405,11 +405,11 @@ export function CreatorStudioSidebar({
                             ) : (
                                 <div className="grid grid-cols-2 grid-rows-2 gap-1.5 h-full">
                                     {referenceImages.map((refImg, index) => (
-                                        <div key={index} className="rounded-xl overflow-hidden border border-white/5 relative group bg-zinc-900/30">
+                                        <div key={index} className="rounded-xl overflow-hidden border border-white/5 relative group bg-card/30">
                                             <img src={refImg} className="w-full h-full object-cover" />
                                             <button
                                                 onClick={(e) => { e.stopPropagation(); onRemoveReferenceImage(index); }}
-                                                className="absolute top-1 right-1 p-1 bg-black/50 hover:bg-black/80 rounded-full text-white transition-colors opacity-0 group-hover:opacity-100"
+                                                className="absolute top-1 right-1 p-1 bg-[#101112]/50 hover:bg-[#101112]/80 rounded-full text-white transition-colors opacity-0 group-hover:opacity-100"
                                             >
                                                 <X className="w-2.5 h-2.5" />
                                             </button>
@@ -448,7 +448,7 @@ export function CreatorStudioSidebar({
                                     >
                                         <div className={cn(
                                             "w-6 h-3.5 rounded-full relative transition-colors duration-200 border border-white/10",
-                                            enhanceOn ? "bg-[#D1F349]" : "bg-black"
+                                            enhanceOn ? "bg-[#D1F349]" : "bg-[#101112]"
                                         )}>
                                             <div className={cn(
                                                 "absolute top-0.5 bottom-0.5 w-2.5 h-2.5 rounded-full bg-white transition-all transform",
@@ -476,12 +476,12 @@ export function CreatorStudioSidebar({
                                         <ChevronRight className="w-4 h-4 text-zinc-600 transition-transform group-hover:translate-x-0.5" />
                                     </button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width] bg-zinc-950 border-zinc-900 z-[100]" sideOffset={5}>
+                                <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width] bg-card border-zinc-900 z-[100]" sideOffset={5}>
                                     {(mode === 'image' ? imageModels : videoModels).map((m) => (
                                         <DropdownMenuItem
                                             key={m.id}
                                             onClick={() => setModel(m.shortId)}
-                                            className="flex items-center justify-between cursor-pointer focus:bg-zinc-900 text-[12px]"
+                                            className="flex items-center justify-between cursor-pointer focus:bg-card text-[12px]"
                                         >
                                             <span className={cn(m.shortId === model && "text-[#D1F349]")}>{m.name}</span>
                                             {m.shortId === model && <Check className="w-3.5 h-3.5 text-[#D1F349]" />}
@@ -502,9 +502,9 @@ export function CreatorStudioSidebar({
                                             <ChevronRight className="w-4 h-4 text-zinc-600 transition-transform group-hover:translate-x-0.5" />
                                         </button>
                                     </DropdownMenuTrigger>
-                                    <DropdownMenuContent className="bg-zinc-950 border-zinc-900 text-white z-[70] min-w-[100px]">
+                                    <DropdownMenuContent className="bg-card border-zinc-900 text-white z-[70] min-w-[100px]">
                                         {["5s", "10s"].map(d => (
-                                            <DropdownMenuItem key={d} onClick={() => setDuration(d)} className="text-[12px] cursor-pointer focus:bg-zinc-900">
+                                            <DropdownMenuItem key={d} onClick={() => setDuration(d)} className="text-[12px] cursor-pointer focus:bg-card">
                                                 {d}
                                             </DropdownMenuItem>
                                         ))}
@@ -522,9 +522,9 @@ export function CreatorStudioSidebar({
                                             <ChevronRight className="w-4 h-4 text-zinc-600 transition-transform group-hover:translate-x-0.5" />
                                         </button>
                                     </DropdownMenuTrigger>
-                                    <DropdownMenuContent className="bg-zinc-950 border-zinc-900 text-white z-[70] min-w-[100px]">
+                                    <DropdownMenuContent className="bg-card border-zinc-900 text-white z-[70] min-w-[100px]">
                                         {["1:1", "4:5", "16:9", "9:16"].map(r => (
-                                            <DropdownMenuItem key={r} onClick={() => setAspectRatio(r)} className="text-[12px] cursor-pointer focus:bg-zinc-900">
+                                            <DropdownMenuItem key={r} onClick={() => setAspectRatio(r)} className="text-[12px] cursor-pointer focus:bg-card">
                                                 {renderRatioVisual(r)} {r}
                                             </DropdownMenuItem>
                                         ))}
@@ -544,7 +544,7 @@ export function CreatorStudioSidebar({
                     className={cn(
                         "h-10 flex items-center gap-2 px-3 rounded-[1rem] transition-all border group relative overflow-hidden",
                         isFreeTier
-                            ? "bg-zinc-900/50 text-zinc-700 cursor-not-allowed border-transparent opacity-50"
+                            ? "bg-card/50 text-zinc-700 cursor-not-allowed border-transparent opacity-50"
                             : isPublic
                                 ? "bg-zinc-800/20 text-zinc-400 border-white/5 hover:border-white/10"
                                 : "bg-[#251212] text-[#FF8A8A] border-[#FF8A8A]/10 shadow-[inner_0_2px_12px_rgba(0,0,0,0.5)] active:scale-[0.98]"
@@ -570,7 +570,7 @@ export function CreatorStudioSidebar({
                     {isProcessing ? <Loader2 className="animate-spin w-4 h-4" /> : (
                         <div className="flex items-center justify-between w-full h-full gap-1.5">
                             <span className="text-[10px] uppercase tracking-wide">Generate</span>
-                            <div className="flex items-center gap-1 bg-black/10 px-2.5 py-1 rounded-full border border-black/5 mr-[-2px] shadow-inner h-7">
+                            <div className="flex items-center gap-1 bg-[#101112]/10 px-2.5 py-1 rounded-full border border-black/5 mr-[-2px] shadow-inner h-7">
                                 <Coins className="w-2.5 h-2.5 stroke-[2.5] opacity-60" />
                                 <span className="text-[11px] font-bold">{(selectedModelObj as any).cost || 1}</span>
                             </div>

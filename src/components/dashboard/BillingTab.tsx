@@ -614,7 +614,7 @@ export default function BillingTab({ currentUser, openPlansModal = false }: Bill
             </div>
           </CardHeader>
           <CardContent>
-            <div className="flex flex-col md:flex-row items-center justify-between gap-6 p-4 bg-zinc-900/40 rounded-lg border border-indigo-500/20 backdrop-blur-sm">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-6 p-4 bg-card/40 rounded-lg border border-indigo-500/20 backdrop-blur-sm">
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-sm text-zinc-300">
                   <div className="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center">
@@ -650,7 +650,7 @@ export default function BillingTab({ currentUser, openPlansModal = false }: Bill
                     The current implementation has Dialog wrapping the "Upgrade Plan" button. 
                     I will copy the DialogContent here to ensure it works for this button too.
                 */}
-                <DialogContent className="bg-zinc-900 border-white/10 text-white max-w-4xl">
+                <DialogContent className="bg-card border-white/10 text-white max-w-4xl">
                   <DialogHeader>
                     <DialogTitle>Choose Your Business Plan</DialogTitle>
                     <DialogDescription className="text-zinc-400">
@@ -730,7 +730,7 @@ export default function BillingTab({ currentUser, openPlansModal = false }: Bill
         </Card>
       ) : (
         /* Normal Current Plan Card */
-        <Card className="bg-zinc-900/50 border-white/10">
+        <Card className="bg-card/50 border-white/10">
           <CardHeader>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -788,7 +788,7 @@ export default function BillingTab({ currentUser, openPlansModal = false }: Bill
                     Upgrade Plan
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="bg-zinc-900 border-white/10 text-white max-w-4xl">
+                <DialogContent className="bg-card border-white/10 text-white max-w-4xl">
                   <DialogHeader>
                     <DialogTitle>Choose Your Plan</DialogTitle>
                     <DialogDescription className="text-zinc-400">
@@ -902,7 +902,7 @@ export default function BillingTab({ currentUser, openPlansModal = false }: Bill
                     Cancel Subscription
                   </Button>
                 </AlertDialogTrigger>
-                <AlertDialogContent className="bg-zinc-900 border-white/10">
+                <AlertDialogContent className="bg-card border-white/10">
                   <AlertDialogHeader>
                     <AlertDialogTitle className="text-white">Cancel Subscription?</AlertDialogTitle>
                     <AlertDialogDescription className="text-zinc-400">
@@ -930,7 +930,7 @@ export default function BillingTab({ currentUser, openPlansModal = false }: Bill
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Payment Methods */}
-        <Card className="bg-zinc-900/50 border-white/10">
+        <Card className="bg-card/50 border-white/10">
           <CardHeader className="flex flex-row items-center justify-between">
             <div>
               <CardTitle className="text-white flex items-center gap-2">
@@ -997,7 +997,7 @@ export default function BillingTab({ currentUser, openPlansModal = false }: Bill
         </Card>
 
         {/* Invoices */}
-        <Card className="bg-zinc-900/50 border-white/10">
+        <Card className="bg-card/50 border-white/10">
           <CardHeader>
             <CardTitle className="text-white flex items-center gap-2">
               <FileText className="w-5 h-5" />
@@ -1074,7 +1074,7 @@ export default function BillingTab({ currentUser, openPlansModal = false }: Bill
 
       {/* Stripe Connect Section (Business Users Only) */}
       {isBusinessUser && (
-        <Card className="bg-zinc-900/50 border-white/10">
+        <Card className="bg-card/50 border-white/10">
           <CardHeader>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">

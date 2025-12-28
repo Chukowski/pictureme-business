@@ -23,7 +23,7 @@ export const ProcessingLoader = ({ status = "AI is doing its magic..." }: Proces
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden">
       {/* Glass background that adapts to theme */}
-      <div className="absolute inset-0 bg-white/95 dark:bg-black/85 backdrop-blur-2xl transition-colors duration-700" />
+      <div className="absolute inset-0 bg-white/95 dark:bg-[#101112]/85 backdrop-blur-2xl transition-colors duration-700" />
 
       {/* Aurora layers */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">

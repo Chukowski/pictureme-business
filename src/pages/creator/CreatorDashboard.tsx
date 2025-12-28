@@ -70,7 +70,7 @@ function MarketplaceFeedCard({ creation, onImageClick, onRemixClick }: { creatio
 
   return (
     <div
-      className="break-inside-avoid group relative rounded-2xl overflow-hidden bg-zinc-900 border border-white/5 hover:border-white/20 transition-all cursor-pointer shadow-lg aspect-[4/5] h-min"
+      className="break-inside-avoid group relative rounded-2xl overflow-hidden bg-card border border-white/5 hover:border-white/20 transition-all cursor-pointer shadow-lg aspect-[4/5] h-min"
       onClick={onImageClick}
     >
       <img
@@ -83,13 +83,13 @@ function MarketplaceFeedCard({ creation, onImageClick, onRemixClick }: { creatio
       />
 
       {/* Gradient Overlay */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-80 group-hover:opacity-100 transition-opacity duration-300"></div>
+      <div className="absolute inset-0 bg-gradient-to-t from-[#101112]/90 via-[#101112]/20 to-transparent opacity-80 group-hover:opacity-100 transition-opacity duration-300"></div>
 
       {/* Like Button (Top Right) */}
       <div className="absolute top-3 right-3 z-30 opacity-0 group-hover:opacity-100 transition-opacity">
         <button
           onClick={handleLike}
-          className="p-2 rounded-full bg-black/40 backdrop-blur-md hover:bg-black/60 transition-colors border border-white/10"
+          className="p-2 rounded-full bg-[#101112]/40 backdrop-blur-md hover:bg-[#101112]/60 transition-colors border border-white/10"
         >
           <Heart className={`w-4 h-4 ${isLiked ? "fill-pink-500 text-pink-500" : "text-white"}`} />
         </button>
@@ -98,7 +98,7 @@ function MarketplaceFeedCard({ creation, onImageClick, onRemixClick }: { creatio
       {/* Like Count (visible on hover or if liked) */}
       {(likes > 0 || isLiked) && (
         <div className="absolute top-3 right-3 z-20 pointer-events-none group-hover:opacity-0 transition-opacity">
-          <Badge variant="secondary" className="bg-black/30 backdrop-blur-sm hover:bg-black/40 border-0 gap-1 pl-1.5 pr-2 h-8">
+          <Badge variant="secondary" className="bg-[#101112]/30 backdrop-blur-sm hover:bg-[#101112]/40 border-0 gap-1 pl-1.5 pr-2 h-8">
             <Heart className={`w-3.5 h-3.5 ${isLiked ? "fill-pink-500 text-pink-500" : "text-white"}`} />
             <span className="text-xs font-medium text-white">{likes}</span>
           </Badge>
@@ -167,7 +167,7 @@ function CreatorsGallerySection({ creations, onImageClick, onRemixClick, columns
 }) {
   if (!creations || creations.length === 0) {
     return (
-      <div className="text-center py-12 bg-zinc-900/30 rounded-xl border border-white/5 border-dashed">
+      <div className="text-center py-12 bg-card/30 rounded-xl border border-white/5 border-dashed">
         <p className="text-zinc-500">Marketplace loading...</p>
       </div>
     );
@@ -287,7 +287,7 @@ export default function CreatorDashboard() {
   const [isFeedLoading, setIsFeedLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [feedOffset, setFeedOffset] = useState(0);
-  const [feedZoom, setFeedZoom] = useState([2]);
+  const [feedZoom, setFeedZoom] = useState([3]);
   const FEED_LIMIT = 12;
 
   // Community Feed Preview State
@@ -487,7 +487,7 @@ export default function CreatorDashboard() {
             <h2 className="text-xl font-bold text-white tracking-tight">Feed</h2>
 
             <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2 px-3 py-1.5 bg-zinc-900/50 rounded-xl border border-white/5">
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-card/50 rounded-xl border border-white/5">
                 <Layout className="w-3.5 h-3.5 text-zinc-500" />
                 <div className="w-24">
                   <Slider
@@ -526,7 +526,7 @@ export default function CreatorDashboard() {
                 view: 'create' // Intent for Studio to open in create mode
               };
 
-              navigate('/creator/studio', { state: remixState });
+              navigate('/creator/studio?view=create', { state: remixState });
             }}
           />
 
@@ -611,7 +611,7 @@ export default function CreatorDashboard() {
           // Use item.url directly if it's already an optimized imgproxy url or wrap it
           const optimizedSourceUrl = getProcessingUrl(item.url, 2048);
 
-          navigate('/creator/studio', {
+          navigate('/creator/studio?view=create', {
             state: {
               prompt: item.prompt || '',
               templateId: item.template?.id || null, // Works for both flat and nested template objects
@@ -674,7 +674,7 @@ function HeroSection({ user, homeState, creations, navigate, pendingJobs = [] }:
 
           <Button
             size="sm"
-            onClick={() => navigate(homeState === 'out_of_tokens' ? '/creator/settings?tab=billing' : '/creator/studio')}
+            onClick={() => navigate(homeState === 'out_of_tokens' ? '/creator/settings?tab=billing' : '/creator/studio?view=create')}
             className="
                           rounded-full px-4 md:px-8 py-2 md:py-6 text-[10px] md:text-base font-semibold 
                           bg-[#8b5cf6] hover:bg-[#7c3aed] text-white
@@ -758,8 +758,8 @@ function FeaturedStyleCard({ navigate, template }: { navigate: (p: string, optio
 
   return (
     <div
-      onClick={() => navigate('/creator/studio', { state: { view: 'create', selectedTemplate: template } })}
-      className="group relative w-full h-[240px] md:h-full md:min-h-[400px] rounded-2xl overflow-hidden cursor-pointer border border-white/10 bg-zinc-900 shadow-xl shadow-black/40 transition-all hover:border-white/20"
+      onClick={() => navigate('/creator/studio?view=create', { state: { view: 'create', selectedTemplate: template } })}
+      className="group relative w-full h-[240px] md:h-full md:min-h-[400px] rounded-2xl overflow-hidden cursor-pointer border border-white/10 bg-card shadow-xl shadow-black/40 transition-all hover:border-white/20"
     >
       {/* Background Image */}
       <img
@@ -770,7 +770,7 @@ function FeaturedStyleCard({ navigate, template }: { navigate: (p: string, optio
       />
 
       {/* Gradient Overlay - Optimized for readability */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent opacity-90 z-10"></div>
+      <div className="absolute inset-0 bg-gradient-to-t from-[#101112] via-[#101112]/40 to-transparent opacity-90 z-10"></div>
 
       {/* Content Container */}
       <div className="absolute inset-0 p-5 md:p-6 z-20 flex flex-col justify-end">
@@ -860,7 +860,7 @@ function RecentCreationsBento({ creations, hasCreations, navigate }: { creations
     <div className="bg-[#1A1A1A] rounded-2xl border border-white/5 p-5 relative overflow-hidden flex flex-col group shadow-lg h-auto">
       <div className="flex items-center justify-between mb-4 z-10 w-full">
         <h3 className="text-lg font-semibold text-white tracking-wide">Your Recent Creations</h3>
-        <span onClick={() => navigate('/creator/studio')} className="text-xs text-zinc-400 cursor-pointer hover:text-white flex items-center gap-1">
+        <span onClick={() => navigate('/creator/studio?view=gallery')} className="text-xs text-zinc-400 cursor-pointer hover:text-white flex items-center gap-1">
           My Studio <ChevronRight className="w-3 h-3" />
         </span>
       </div>
@@ -868,7 +868,7 @@ function RecentCreationsBento({ creations, hasCreations, navigate }: { creations
       {hasCreations ? (
         <div className="grid grid-cols-4 gap-3 h-auto z-10">
           {creations.slice(0, 4).map(c => (
-            <div key={c.id} onClick={() => navigate('/creator/studio')} className="aspect-square rounded-xl overflow-hidden border border-white/5 cursor-pointer relative group/item hover:scale-[1.02] transition-transform bg-zinc-800 shadow-md">
+            <div key={c.id} onClick={() => navigate('/creator/studio?view=gallery')} className="aspect-square rounded-xl overflow-hidden border border-white/5 cursor-pointer relative group/item hover:scale-[1.02] transition-transform bg-zinc-800 shadow-md">
               <img src={getThumbnailUrl(c.url, 200)} className="w-full h-full object-cover opacity-90 group-hover/item:opacity-100 transition-opacity" loading="lazy" />
             </div>
           ))}
@@ -884,7 +884,7 @@ function RecentCreationsBento({ creations, hasCreations, navigate }: { creations
           ))}
         </div>
       ) : (
-        <div className="flex-1 flex items-center justify-center z-10 bg-zinc-900/50 rounded-xl border border-white/5 border-dashed mt-0">
+        <div className="flex-1 flex items-center justify-center z-10 bg-card/50 rounded-xl border border-white/5 border-dashed mt-0">
           <div className="text-center p-4">
             <div className="w-12 h-12 rounded-full bg-zinc-800 mx-auto flex items-center justify-center mb-3">
               <Camera className="w-5 h-5 text-zinc-500" />

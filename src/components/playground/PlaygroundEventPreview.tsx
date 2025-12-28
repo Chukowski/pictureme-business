@@ -64,7 +64,7 @@ export function PlaygroundEventPreview({ events, currentUser }: PlaygroundEventP
       </div>
 
       {/* 1. Select Event */}
-      <Card className="bg-zinc-900/50 border-white/10 overflow-hidden shadow-lg">
+      <Card className="bg-card/50 border-white/10 overflow-hidden shadow-lg">
         <div className="px-6 py-4 border-b border-white/5 bg-white/[0.02] flex items-center gap-3">
           <div className="w-6 h-6 rounded-full bg-indigo-500/20 flex items-center justify-center text-indigo-400 text-xs font-bold">1</div>
           <span className="text-base font-medium text-zinc-200">Select Event</span>
@@ -101,7 +101,7 @@ export function PlaygroundEventPreview({ events, currentUser }: PlaygroundEventP
       </Card>
 
       {/* 2. Station Links */}
-      <Card className="bg-zinc-900/50 border-white/10 overflow-hidden shadow-lg">
+      <Card className="bg-card/50 border-white/10 overflow-hidden shadow-lg">
         <div className="px-6 py-4 border-b border-white/5 bg-white/[0.02] flex items-center gap-3">
           <div className="w-6 h-6 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400 text-xs font-bold">2</div>
           <span className="text-base font-medium text-zinc-200">Navigate Stations</span>
@@ -179,7 +179,7 @@ export function PlaygroundEventPreview({ events, currentUser }: PlaygroundEventP
               );
             })
           ) : (
-            <div className="text-center py-12 border-2 border-dashed border-zinc-800 rounded-xl bg-zinc-900/30">
+            <div className="text-center py-12 border-2 border-dashed border-zinc-800 rounded-xl bg-card/30">
                <MapPin className="w-10 h-10 text-zinc-600 mx-auto mb-3" />
               <p className="text-sm text-zinc-400">Select an event to view stations</p>
             </div>
@@ -203,7 +203,7 @@ export function PlaygroundEventPreview({ events, currentUser }: PlaygroundEventP
 
   // --- Right Panel ---
   const PreviewPanel = (
-    <div className="h-full flex flex-col bg-zinc-900 relative group">
+    <div className="h-full flex flex-col bg-card relative group">
       {selectedEvent ? (
         <iframe
           src={getStationUrl(activeStation)}

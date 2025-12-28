@@ -129,7 +129,7 @@ export default function SuperAdminAIModels() {
                             <Image className="w-5 h-5 text-emerald-400" />
                             Image Models ({imageModels.length})
                         </h2>
-                        <div className="rounded-xl border border-white/10 bg-zinc-900/50 backdrop-blur-sm overflow-hidden">
+                        <div className="rounded-xl border border-white/10 bg-card/50 backdrop-blur-sm overflow-hidden">
                             <Table>
                                 <TableHeader className="bg-white/5">
                                     <TableRow className="border-white/10 hover:bg-transparent">
@@ -157,7 +157,7 @@ export default function SuperAdminAIModels() {
                                                         type="number"
                                                         value={model.editedCost}
                                                         onChange={(e) => handleCostChange(model.model_id, parseInt(e.target.value) || 0)}
-                                                        className="w-20 h-8 bg-zinc-950 border-white/10 text-center"
+                                                        className="w-20 h-8 bg-card border-white/10 text-center"
                                                     />
                                                     <span className="text-xs text-zinc-500">tokens</span>
                                                     {model.isEditing && (
@@ -196,7 +196,7 @@ export default function SuperAdminAIModels() {
                             <Video className="w-5 h-5 text-purple-400" />
                             Video Models ({videoModels.length})
                         </h2>
-                        <div className="rounded-xl border border-white/10 bg-zinc-900/50 backdrop-blur-sm overflow-hidden">
+                        <div className="rounded-xl border border-white/10 bg-card/50 backdrop-blur-sm overflow-hidden">
                             <Table>
                                 <TableHeader className="bg-white/5">
                                     <TableRow className="border-white/10 hover:bg-transparent">
@@ -224,7 +224,7 @@ export default function SuperAdminAIModels() {
                                                         type="number"
                                                         value={model.editedCost}
                                                         onChange={(e) => handleCostChange(model.model_id, parseInt(e.target.value) || 0)}
-                                                        className="w-20 h-8 bg-zinc-950 border-white/10 text-center"
+                                                        className="w-20 h-8 bg-card border-white/10 text-center"
                                                     />
                                                     <span className="text-xs text-zinc-500">tokens</span>
                                                     {model.isEditing && (

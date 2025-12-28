@@ -11,7 +11,7 @@ export default function SuperAdminDevTools() {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <Card className="bg-zinc-900/50 border-white/10">
+                <Card className="bg-card/50 border-white/10">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                             <Terminal className="w-5 h-5 text-zinc-400" />
@@ -19,7 +19,7 @@ export default function SuperAdminDevTools() {
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="bg-black rounded-lg p-4 font-mono text-xs text-green-400 h-64 overflow-y-auto border border-white/10">
+                        <div className="bg-[#101112] rounded-lg p-4 font-mono text-xs text-green-400 h-64 overflow-y-auto border border-white/10">
                             <p>[INFO] Server started on port 3001</p>
                             <p>[INFO] Database connected successfully</p>
                             <p>[INFO] Migration 002 applied</p>
@@ -33,7 +33,7 @@ export default function SuperAdminDevTools() {
                 </Card>
 
                 <div className="space-y-6">
-                    <Card className="bg-zinc-900/50 border-white/10">
+                    <Card className="bg-card/50 border-white/10">
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">
                                 <RefreshCw className="w-5 h-5 text-blue-400" />
@@ -57,7 +57,7 @@ export default function SuperAdminDevTools() {
                         </CardContent>
                     </Card>
 
-                    <Card className="bg-zinc-900/50 border-white/10">
+                    <Card className="bg-card/50 border-white/10">
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">
                                 <AlertCircle className="w-5 h-5 text-red-400" />

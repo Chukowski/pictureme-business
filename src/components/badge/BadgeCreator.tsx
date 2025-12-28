@@ -222,7 +222,7 @@ export function BadgeCreator({
       </div>
 
       {/* Edit Form */}
-      <Card className="bg-zinc-900/50 border-white/10">
+      <Card className="bg-card/50 border-white/10">
         <CardContent className="p-4 space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -231,7 +231,7 @@ export function BadgeCreator({
                 value={badgeData.visitorName}
                 onChange={(e) => setBadgeData({ ...badgeData, visitorName: e.target.value })}
                 placeholder="Enter name"
-                className="bg-black/40 border-white/10 text-white"
+                className="bg-[#101112]/40 border-white/10 text-white"
               />
             </div>
             <div className="space-y-2">
@@ -241,7 +241,7 @@ export function BadgeCreator({
                 value={badgeData.visitorNumber || ''}
                 onChange={(e) => setBadgeData({ ...badgeData, visitorNumber: parseInt(e.target.value) || undefined })}
                 placeholder="#"
-                className="bg-black/40 border-white/10 text-white"
+                className="bg-[#101112]/40 border-white/10 text-white"
               />
             </div>
           </div>
@@ -253,7 +253,7 @@ export function BadgeCreator({
                 value={badgeData.customField1}
                 onChange={(e) => setBadgeData({ ...badgeData, customField1: e.target.value })}
                 placeholder="e.g., Company"
-                className="bg-black/40 border-white/10 text-white"
+                className="bg-[#101112]/40 border-white/10 text-white"
               />
             </div>
             <div className="space-y-2">
@@ -262,7 +262,7 @@ export function BadgeCreator({
                 value={badgeData.customField2}
                 onChange={(e) => setBadgeData({ ...badgeData, customField2: e.target.value })}
                 placeholder="e.g., Role"
-                className="bg-black/40 border-white/10 text-white"
+                className="bg-[#101112]/40 border-white/10 text-white"
               />
             </div>
           </div>

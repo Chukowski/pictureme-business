@@ -40,7 +40,7 @@ const TemplateGrid = ({
       {items.map((tpl) => (
         <div
           key={tpl.id}
-          className="border border-white/10 rounded-lg p-3 bg-black/30 hover:border-white/30 transition cursor-pointer"
+          className="border border-white/10 rounded-lg p-3 bg-[#101112]/30 hover:border-white/30 transition cursor-pointer"
           onClick={() => onSelect(tpl)}
         >
           <div className="flex items-center justify-between mb-2">
@@ -90,7 +90,7 @@ export const TemplatesModal = ({
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
-      <DialogContent className="max-w-4xl bg-zinc-950 border-white/10">
+      <DialogContent className="max-w-4xl bg-card border-white/10">
         <DialogHeader>
           <DialogTitle className="text-white">Templates & presets</DialogTitle>
         </DialogHeader>

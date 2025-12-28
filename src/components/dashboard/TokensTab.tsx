@@ -238,7 +238,7 @@ export default function TokensTab({ currentUser }: TokensTabProps) {
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Current Tokens */}
-        <Card className="bg-zinc-900/50 border-white/10">
+        <Card className="bg-card/50 border-white/10">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-zinc-400 flex items-center gap-2">
               <Coins className="w-4 h-4 text-yellow-400" />
@@ -255,7 +255,7 @@ export default function TokensTab({ currentUser }: TokensTabProps) {
         </Card>
 
         {/* Used This Month */}
-        <Card className="bg-zinc-900/50 border-white/10">
+        <Card className="bg-card/50 border-white/10">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-zinc-400 flex items-center gap-2">
               <TrendingDown className="w-4 h-4 text-red-400" />
@@ -273,7 +273,7 @@ export default function TokensTab({ currentUser }: TokensTabProps) {
         </Card>
 
         {/* Forecast */}
-        <Card className="bg-zinc-900/50 border-white/10">
+        <Card className="bg-card/50 border-white/10">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-zinc-400 flex items-center gap-2">
               <Calendar className="w-4 h-4 text-blue-400" />
@@ -289,7 +289,7 @@ export default function TokensTab({ currentUser }: TokensTabProps) {
         </Card>
 
         {/* Quick Actions */}
-        <Card className="bg-zinc-900/50 border-white/10">
+        <Card className="bg-card/50 border-white/10">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-zinc-400 flex items-center gap-2">
               <Zap className="w-4 h-4 text-yellow-400" />
@@ -304,7 +304,7 @@ export default function TokensTab({ currentUser }: TokensTabProps) {
                   Buy Tokens
                 </Button>
               </DialogTrigger>
-              <DialogContent className="bg-zinc-900 border-white/10 text-white max-w-2xl">
+              <DialogContent className="bg-card border-white/10 text-white max-w-2xl">
                 <DialogHeader>
                   <DialogTitle>Purchase Token Package</DialogTitle>
                   <DialogDescription className="text-zinc-400">
@@ -410,7 +410,7 @@ export default function TokensTab({ currentUser }: TokensTabProps) {
 
       {/* Usage by Type (Station) */}
       {(usageByType || []).length > 0 && (
-        <Card className="bg-zinc-900/50 border-white/10">
+        <Card className="bg-card/50 border-white/10">
           <CardHeader>
             <CardTitle className="text-white flex items-center gap-2">
               <BarChart3 className="w-5 h-5 text-cyan-400" />
@@ -448,7 +448,7 @@ export default function TokensTab({ currentUser }: TokensTabProps) {
 
       {/* Usage by Event */}
       {(eventUsage || []).length > 0 && (
-        <Card className="bg-zinc-900/50 border-white/10">
+        <Card className="bg-card/50 border-white/10">
           <CardHeader>
             <CardTitle className="text-white flex items-center gap-2">
               <Package className="w-5 h-5 text-purple-400" />
@@ -478,7 +478,7 @@ export default function TokensTab({ currentUser }: TokensTabProps) {
       )}
 
       {/* Recent Transactions */}
-      <Card className="bg-zinc-900/50 border-white/10">
+      <Card className="bg-card/50 border-white/10">
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
             <CardTitle className="text-white flex items-center gap-2">
@@ -542,7 +542,7 @@ export default function TokensTab({ currentUser }: TokensTabProps) {
 
       {/* Token Ledger Dialog */}
       <Dialog open={showLedger} onOpenChange={setShowLedger}>
-        <DialogContent className="bg-zinc-900 border-white/10 text-white max-w-4xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="bg-card border-white/10 text-white max-w-4xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <History className="w-5 h-5" />

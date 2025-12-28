@@ -299,7 +299,7 @@ export default function CreatorSettings() {
   if (!currentUser) return null;
 
   return (
-    <div className="h-full flex flex-col bg-black text-white overflow-hidden">
+    <div className="h-full flex flex-col bg-[#101112] text-white overflow-hidden">
       {/* Cover Image - Fixed Height, part of layout but not scrolling the whole page */}
       <div className="relative shrink-0 h-48 sm:h-64 w-full group overflow-hidden">
         {(coverPreview || currentUser?.cover_image_url) ? (
@@ -311,11 +311,11 @@ export default function CreatorSettings() {
         ) : (
           <div className="w-full h-full bg-gradient-to-r from-indigo-900 via-purple-900 to-zinc-900 opacity-60" />
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#101112] via-[#101112]/20 to-transparent" />
 
         {/* Upload Cover Button */}
         <label className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-black/50 backdrop-blur-md border border-white/10 rounded-full text-xs hover:bg-black/70 transition-colors">
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-[#101112]/50 backdrop-blur-md border border-white/10 rounded-full text-xs hover:bg-[#101112]/70 transition-colors">
             <Upload className="w-3 h-3" />
             <span>Change Cover</span>
           </div>
@@ -367,7 +367,7 @@ export default function CreatorSettings() {
           variant="ghost"
           size="icon"
           onClick={() => navigate('/creator/dashboard')}
-          className="absolute top-4 left-4 bg-black/30 hover:bg-black/50 backdrop-blur-sm border border-white/10 rounded-full text-white"
+          className="absolute top-4 left-4 bg-[#101112]/30 hover:bg-[#101112]/50 backdrop-blur-sm border border-white/10 rounded-full text-white"
         >
           <ArrowLeft className="w-5 h-5" />
         </Button>
@@ -377,7 +377,7 @@ export default function CreatorSettings() {
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-4xl mx-auto p-6 md:p-8">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
-            <TabsList className="bg-zinc-900/50 border border-white/10 p-1 h-auto">
+            <TabsList className="bg-card/50 border border-white/10 p-1 h-auto">
               <TabsTrigger value="profile" className="px-4 py-2 data-[state=active]:bg-white data-[state=active]:text-black">
                 <User className="w-4 h-4 mr-2" />
                 Profile
@@ -408,7 +408,7 @@ export default function CreatorSettings() {
                       <Input
                         value={formData.full_name}
                         onChange={(e) => setFormData(prev => ({ ...prev, full_name: e.target.value }))}
-                        className="bg-zinc-900 border-white/10 focus:border-indigo-500"
+                        className="bg-card border-white/10 focus:border-indigo-500"
                       />
                     </div>
                     <div className="space-y-2">
@@ -417,7 +417,7 @@ export default function CreatorSettings() {
                         <Input
                           value={formData.username}
                           onChange={(e) => setFormData(prev => ({ ...prev, username: e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, '') }))}
-                          className={`bg-zinc-900 border-white/10 focus:border-indigo-500 ${usernameAvailable === false ? 'border-red-500 focus:border-red-500' :
+                          className={`bg-card border-white/10 focus:border-indigo-500 ${usernameAvailable === false ? 'border-red-500 focus:border-red-500' :
                               usernameAvailable === true && formData.username && formData.username !== (currentUser?.slug || currentUser?.username) ? 'border-green-500 focus:border-green-500' : ''
                             }`}
                           placeholder="username"
@@ -448,7 +448,7 @@ export default function CreatorSettings() {
                       <Input
                         value={formData.email}
                         disabled
-                        className="bg-zinc-900/50 border-white/5 text-zinc-500"
+                        className="bg-card/50 border-white/5 text-zinc-500"
                       />
                     </div>
                     <div className="space-y-2">
@@ -456,7 +456,7 @@ export default function CreatorSettings() {
                       <Textarea
                         value={formData.bio}
                         onChange={(e) => setFormData(prev => ({ ...prev, bio: e.target.value }))}
-                        className="bg-zinc-900 border-white/10 focus:border-indigo-500 min-h-[120px] resize-none"
+                        className="bg-card border-white/10 focus:border-indigo-500 min-h-[120px] resize-none"
                         placeholder="Tell the world about yourself..."
                       />
                     </div>
@@ -478,7 +478,7 @@ export default function CreatorSettings() {
                         <Input
                           value={formData.social_links.x}
                           onChange={(e) => setFormData(prev => ({ ...prev, social_links: { ...prev.social_links, x: e.target.value } }))}
-                          className="bg-zinc-900 border-white/10 rounded-l-none focus:border-indigo-500"
+                          className="bg-card border-white/10 rounded-l-none focus:border-indigo-500"
                         />
                       </div>
                     </div>
@@ -489,7 +489,7 @@ export default function CreatorSettings() {
                         <Input
                           value={formData.social_links.instagram}
                           onChange={(e) => setFormData(prev => ({ ...prev, social_links: { ...prev.social_links, instagram: e.target.value } }))}
-                          className="bg-zinc-900 border-white/10 rounded-l-none focus:border-indigo-500"
+                          className="bg-card border-white/10 rounded-l-none focus:border-indigo-500"
                         />
                       </div>
                     </div>
@@ -500,7 +500,7 @@ export default function CreatorSettings() {
                         <Input
                           value={formData.social_links.youtube}
                           onChange={(e) => setFormData(prev => ({ ...prev, social_links: { ...prev.social_links, youtube: e.target.value } }))}
-                          className="bg-zinc-900 border-white/10 rounded-l-none focus:border-indigo-500"
+                          className="bg-card border-white/10 rounded-l-none focus:border-indigo-500"
                         />
                       </div>
                     </div>
@@ -511,7 +511,7 @@ export default function CreatorSettings() {
                         <Input
                           value={formData.social_links.tiktok}
                           onChange={(e) => setFormData(prev => ({ ...prev, social_links: { ...prev.social_links, tiktok: e.target.value } }))}
-                          className="bg-zinc-900 border-white/10 rounded-l-none focus:border-indigo-500"
+                          className="bg-card border-white/10 rounded-l-none focus:border-indigo-500"
                         />
                       </div>
                     </div>
@@ -532,7 +532,7 @@ export default function CreatorSettings() {
 
             {/* Privacy Tab */}
             <TabsContent value="privacy" className="space-y-6 animate-in fade-in duration-300">
-              <Card className="bg-zinc-900 border-white/10">
+              <Card className="bg-card border-white/10">
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <div className="space-y-1">
@@ -552,7 +552,7 @@ export default function CreatorSettings() {
                 </CardHeader>
               </Card>
 
-              <Card className="bg-zinc-900 border-white/10">
+              <Card className="bg-card border-white/10">
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <div className="space-y-1">
@@ -596,7 +596,7 @@ export default function CreatorSettings() {
                         type={showPassword ? "text" : "password"}
                         value={formData.password}
                         onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
-                        className="bg-zinc-900 border-white/10"
+                        className="bg-card border-white/10"
                       />
                       <button
                         type="button"
@@ -613,7 +613,7 @@ export default function CreatorSettings() {
                       type={showPassword ? "text" : "password"}
                       value={formData.confirmPassword}
                       onChange={(e) => setFormData(prev => ({ ...prev, confirmPassword: e.target.value }))}
-                      className="bg-zinc-900 border-white/10"
+                      className="bg-card border-white/10"
                     />
                   </div>
                 </div>
@@ -644,7 +644,7 @@ export default function CreatorSettings() {
                         Delete Account
                       </Button>
                     </AlertDialogTrigger>
-                    <AlertDialogContent className="bg-zinc-900 border-white/10 text-white">
+                    <AlertDialogContent className="bg-card border-white/10 text-white">
                       <AlertDialogHeader>
                         <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                         <AlertDialogDescription className="text-zinc-400">

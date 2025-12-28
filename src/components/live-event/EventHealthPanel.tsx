@@ -22,7 +22,7 @@ export function EventHealthPanel({
       <h3 className="text-sm font-medium text-zinc-400 uppercase tracking-wider px-1">System Health</h3>
       
       {/* Processor Status */}
-      <Card className="bg-zinc-900 border-white/10">
+      <Card className="bg-card border-white/10">
         <CardContent className="p-4">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm text-zinc-400">AI Processor</span>
@@ -53,7 +53,7 @@ export function EventHealthPanel({
       </Card>
 
       {/* Tokens & Usage */}
-      <Card className="bg-zinc-900 border-white/10">
+      <Card className="bg-card border-white/10">
         <CardContent className="p-4 space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-sm text-zinc-400">
@@ -70,7 +70,7 @@ export function EventHealthPanel({
       </Card>
 
       {/* Error Log Summary */}
-      <Card className="bg-zinc-900 border-white/10">
+      <Card className="bg-card border-white/10">
         <CardContent className="p-4 flex items-center justify-between">
            <div className="flex items-center gap-2">
               <AlertTriangle className={`w-4 h-4 ${errors > 0 ? 'text-red-400' : 'text-zinc-500'}`} />
@@ -83,7 +83,7 @@ export function EventHealthPanel({
       </Card>
       
       {/* Activity Pulse */}
-      <div className="bg-zinc-900/50 rounded-lg p-3 border border-white/5 flex items-center justify-between">
+      <div className="bg-card/50 rounded-lg p-3 border border-white/5 flex items-center justify-between">
          <span className="text-xs text-zinc-500">Activity (1h)</span>
          <div className="flex items-center gap-1">
              <Activity className="w-3 h-3 text-emerald-500" />

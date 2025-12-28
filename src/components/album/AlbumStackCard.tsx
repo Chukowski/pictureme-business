@@ -106,7 +106,7 @@ export function AlbumStackCard({
   return (
     <Card
       className={cn(
-        'relative overflow-hidden bg-zinc-900/50 border-zinc-800 cursor-pointer transition-all duration-300',
+        'relative overflow-hidden bg-card/50 border-zinc-800 cursor-pointer transition-all duration-300',
         isHovered && 'scale-[1.02] shadow-xl shadow-black/30 border-zinc-700'
       )}
       onMouseEnter={() => setIsHovered(true)}
@@ -150,7 +150,7 @@ export function AlbumStackCard({
 
             {/* Locked overlay */}
             {isLocked && (
-              <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center">
+              <div className="absolute inset-0 bg-[#101112]/60 flex flex-col items-center justify-center">
                 <Lock className="w-8 h-8 text-white mb-2" />
                 <p className="text-white text-sm font-medium">Unlock to view</p>
               </div>
@@ -158,7 +158,7 @@ export function AlbumStackCard({
 
             {/* Photo count badge */}
             <div className="absolute top-3 right-3">
-              <Badge className="bg-black/70 text-white border-0">
+              <Badge className="bg-[#101112]/70 text-white border-0">
                 <Camera className="w-3 h-3 mr-1" />
                 {photoCount}/{maxPhotos}
               </Badge>
@@ -174,7 +174,7 @@ export function AlbumStackCard({
 
             {/* Hover overlay */}
             {isHovered && !isLocked && (
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex items-end justify-center pb-4">
+              <div className="absolute inset-0 bg-gradient-to-t from-[#101112]/80 via-transparent to-transparent flex items-end justify-center pb-4">
                 <Button
                   variant="secondary"
                   size="sm"

@@ -26,7 +26,7 @@ export const ShortUrlEventPage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-black">
+      <div className="min-h-screen flex items-center justify-center bg-[#101112]">
         <div className="text-center">
           <Loader2 className="w-12 h-12 animate-spin text-white mx-auto mb-4" />
           <p className="text-white/60">Loading event...</p>

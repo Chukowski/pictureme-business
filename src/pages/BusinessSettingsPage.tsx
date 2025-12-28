@@ -312,7 +312,7 @@ export function BusinessSettingsPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
+      <div className="min-h-screen bg-card flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
       </div>
     );
@@ -321,7 +321,7 @@ export function BusinessSettingsPage() {
   const isOwner = members.find(m => m.user_id === user?.id)?.role === 'owner';
 
   return (
-    <div className="min-h-screen bg-zinc-950">
+    <div className="min-h-screen bg-card">
       <div className="container mx-auto px-4 py-8 max-w-6xl">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
@@ -344,7 +344,7 @@ export function BusinessSettingsPage() {
         </div>
 
         <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
-          <TabsList className="bg-zinc-900 border border-zinc-800">
+          <TabsList className="bg-card border border-zinc-800">
             <TabsTrigger value="overview" className="data-[state=active]:bg-indigo-500">
               <Building2 className="w-4 h-4 mr-2" />
               Overview
@@ -367,7 +367,7 @@ export function BusinessSettingsPage() {
           <TabsContent value="overview" className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {/* Organization Card */}
-              <Card className="md:col-span-2 bg-zinc-900 border-zinc-800">
+              <Card className="md:col-span-2 bg-card border-zinc-800">
                 <CardHeader className="flex flex-row items-center justify-between">
                   <div>
                     <CardTitle className="text-white">Organization Profile</CardTitle>
@@ -417,7 +417,7 @@ export function BusinessSettingsPage() {
               </Card>
 
               {/* Quick Stats */}
-              <Card className="bg-zinc-900 border-zinc-800">
+              <Card className="bg-card border-zinc-800">
                 <CardHeader>
                   <CardTitle className="text-white">Token Balance</CardTitle>
                 </CardHeader>
@@ -441,7 +441,7 @@ export function BusinessSettingsPage() {
             </div>
 
             {/* Quick Links */}
-            <Card className="bg-zinc-900 border-zinc-800">
+            <Card className="bg-card border-zinc-800">
               <CardHeader>
                 <CardTitle className="text-white">Quick Actions</CardTitle>
               </CardHeader>
@@ -478,7 +478,7 @@ export function BusinessSettingsPage() {
 
           {/* Team Tab */}
           <TabsContent value="team" className="space-y-6">
-            <Card className="bg-zinc-900 border-zinc-800">
+            <Card className="bg-card border-zinc-800">
               <CardHeader className="flex flex-row items-center justify-between">
                 <div>
                   <CardTitle className="text-white">Team Members</CardTitle>
@@ -536,7 +536,7 @@ export function BusinessSettingsPage() {
                                   <MoreVertical className="w-4 h-4" />
                                 </Button>
                               </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" className="bg-zinc-900 border-zinc-800">
+                              <DropdownMenuContent align="end" className="bg-card border-zinc-800">
                                 <DropdownMenuItem
                                   onClick={() => handleRoleChange(
                                     member.user_id,
@@ -586,7 +586,7 @@ export function BusinessSettingsPage() {
 
         {/* Invite Member Modal */}
         <Dialog open={showInviteModal} onOpenChange={setShowInviteModal}>
-          <DialogContent className="bg-zinc-900 border-zinc-800">
+          <DialogContent className="bg-card border-zinc-800">
             <DialogHeader>
               <DialogTitle className="text-white">Invite Team Member</DialogTitle>
               <DialogDescription className="text-zinc-400">
@@ -639,7 +639,7 @@ export function BusinessSettingsPage() {
 
         {/* Edit Organization Modal */}
         <Dialog open={showEditOrgModal} onOpenChange={setShowEditOrgModal}>
-          <DialogContent className="bg-zinc-900 border-zinc-800">
+          <DialogContent className="bg-card border-zinc-800">
             <DialogHeader>
               <DialogTitle className="text-white">Edit Organization</DialogTitle>
               <DialogDescription className="text-zinc-400">

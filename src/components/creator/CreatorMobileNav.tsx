@@ -74,7 +74,7 @@ export function CreatorMobileNav() {
             <div className="h-px w-full bg-gradient-to-r from-transparent via-white/20 to-transparent" />
 
             {/* Navbar Container */}
-            <div className="bg-black/85 backdrop-blur-xl pb-safe pt-2 px-2">
+            <div className="bg-[#101112]/85 backdrop-blur-xl pb-safe pt-2 px-2">
                 <div className="flex items-end justify-between max-w-lg mx-auto h-16 relative">
 
                     {/* 1. Home */}
@@ -179,7 +179,7 @@ export function CreatorMobileNav() {
                                 </span>
                             </button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-56 bg-zinc-900 border-white/10 text-white mb-2 pb-2">
+                        <DropdownMenuContent align="end" className="w-56 bg-card border-white/10 text-white mb-2 pb-2">
                             <div className="px-2 py-2 border-b border-white/5 mb-1">
                                 <p className="font-medium text-sm">{currentUser?.full_name || currentUser?.username}</p>
                                 <p className="text-xs text-zinc-500 truncate">{currentUser?.email}</p>

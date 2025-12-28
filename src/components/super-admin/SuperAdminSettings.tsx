@@ -187,7 +187,7 @@ export default function SuperAdminSettings() {
                 <Button 
                     variant="outline" 
                     onClick={() => { loadSettings(); checkServices(); }}
-                    className="border-white/10 bg-zinc-900/50"
+                    className="border-white/10 bg-card/50"
                 >
                     <RefreshCw className="w-4 h-4 mr-2" />
                     Refresh
@@ -196,7 +196,7 @@ export default function SuperAdminSettings() {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Service Status */}
-                <Card className="bg-zinc-900/50 border-white/10">
+                <Card className="bg-card/50 border-white/10">
                     <CardHeader>
                         <CardTitle>Service Status</CardTitle>
                         <CardDescription>External service connections.</CardDescription>
@@ -215,7 +215,7 @@ export default function SuperAdminSettings() {
                 </Card>
 
                 {/* API Keys (masked) */}
-                <Card className="bg-zinc-900/50 border-white/10">
+                <Card className="bg-card/50 border-white/10">
                     <CardHeader>
                         <div className="flex items-center justify-between">
                             <div>
@@ -239,7 +239,7 @@ export default function SuperAdminSettings() {
                                 type={showApiKeys ? "text" : "password"} 
                                 value="************************" 
                                 disabled
-                                className="bg-zinc-950 border-white/10" 
+                                className="bg-card border-white/10" 
                             />
                             <p className="text-xs text-zinc-500">Set via FAL_KEY environment variable</p>
                         </div>
@@ -249,7 +249,7 @@ export default function SuperAdminSettings() {
                                 type={showApiKeys ? "text" : "password"} 
                                 value="************************" 
                                 disabled
-                                className="bg-zinc-950 border-white/10" 
+                                className="bg-card border-white/10" 
                             />
                             <p className="text-xs text-zinc-500">Set via STRIPE_SECRET_KEY environment variable</p>
                         </div>
@@ -259,7 +259,7 @@ export default function SuperAdminSettings() {
                                 type={showApiKeys ? "text" : "password"} 
                                 value="************************" 
                                 disabled
-                                className="bg-zinc-950 border-white/10" 
+                                className="bg-card border-white/10" 
                             />
                             <p className="text-xs text-zinc-500">Set via AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY</p>
                         </div>
@@ -267,7 +267,7 @@ export default function SuperAdminSettings() {
                 </Card>
 
                 {/* System Toggles */}
-                <Card className="bg-zinc-900/50 border-white/10">
+                <Card className="bg-card/50 border-white/10">
                     <CardHeader>
                         <CardTitle>System Toggles</CardTitle>
                         <CardDescription>Enable or disable global features.</CardDescription>
@@ -307,7 +307,7 @@ export default function SuperAdminSettings() {
                 </Card>
 
                 {/* Default Values */}
-                <Card className="bg-zinc-900/50 border-white/10">
+                <Card className="bg-card/50 border-white/10">
                     <CardHeader>
                         <CardTitle>Default Values</CardTitle>
                         <CardDescription>Default settings for new users and events.</CardDescription>
@@ -319,7 +319,7 @@ export default function SuperAdminSettings() {
                                 type="number"
                                 value={settings.free_trial_tokens}
                                 onChange={(e) => setSettings({ ...settings, free_trial_tokens: parseInt(e.target.value) || 0 })}
-                                className="bg-zinc-950 border-white/10"
+                                className="bg-card border-white/10"
                             />
                             <p className="text-xs text-zinc-500">Tokens given to new users on signup</p>
                         </div>
@@ -329,7 +329,7 @@ export default function SuperAdminSettings() {
                                 type="number"
                                 value={settings.max_events_per_user}
                                 onChange={(e) => setSettings({ ...settings, max_events_per_user: parseInt(e.target.value) || 0 })}
-                                className="bg-zinc-950 border-white/10"
+                                className="bg-card border-white/10"
                             />
                             <p className="text-xs text-zinc-500">Maximum active events per user (0 = unlimited)</p>
                         </div>
@@ -339,7 +339,7 @@ export default function SuperAdminSettings() {
                                 type="number"
                                 value={settings.max_photos_per_event}
                                 onChange={(e) => setSettings({ ...settings, max_photos_per_event: parseInt(e.target.value) || 0 })}
-                                className="bg-zinc-950 border-white/10"
+                                className="bg-card border-white/10"
                             />
                             <p className="text-xs text-zinc-500">Maximum photos per event (0 = unlimited)</p>
                         </div>

@@ -56,7 +56,7 @@ function PhotoCard({
   return (
     <div
       className={cn(
-        "relative rounded-xl overflow-hidden bg-black/60 cursor-pointer",
+        "relative rounded-xl overflow-hidden bg-[#101112]/60 cursor-pointer",
         "ring-1 ring-white/10 transition-all duration-300 hover:ring-2 hover:ring-white/30 hover:scale-[1.02]",
         "animate-in fade-in zoom-in-95 duration-500",
         "aspect-[3/4]" // Fixed aspect ratio for gallery consistency
@@ -93,7 +93,7 @@ function PhotoCard({
       {/* Blur overlay badge */}
       {!isPaid && blurEnabled && (
         <div className="absolute bottom-3 left-3 right-3">
-          <div className="bg-black/70 backdrop-blur-sm px-3 py-1.5 rounded-lg border border-white/20 text-center">
+          <div className="bg-[#101112]/70 backdrop-blur-sm px-3 py-1.5 rounded-lg border border-white/20 text-center">
             <p className="text-white/90 text-xs font-medium tracking-wide uppercase">
               Preview
             </p>
@@ -139,7 +139,7 @@ function PhotoLightbox({
 
   return (
     <div 
-      className="fixed inset-0 z-50 bg-black/95 backdrop-blur-md flex items-center justify-center animate-in fade-in duration-200"
+      className="fixed inset-0 z-50 bg-[#101112]/95 backdrop-blur-md flex items-center justify-center animate-in fade-in duration-200"
       onClick={onClose}
     >
       {/* Close button */}
@@ -376,7 +376,7 @@ export function BigScreenPage() {
   // Loading state
   if (configLoading || isLoading) {
     return (
-      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
+      <div className="min-h-screen bg-card flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="w-12 h-12 animate-spin text-indigo-500 mx-auto mb-4" />
           <p className="text-zinc-400">Loading Big Screen...</p>
@@ -388,7 +388,7 @@ export function BigScreenPage() {
   // Error state
   if (configError || !config) {
     return (
-      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
+      <div className="min-h-screen bg-card flex items-center justify-center">
         <div className="text-center">
           <Monitor className="w-16 h-16 text-zinc-600 mx-auto mb-4" />
           <p className="text-xl text-white mb-2">Event Not Found</p>
@@ -409,7 +409,7 @@ export function BigScreenPage() {
     : albums;
 
   return (
-    <div className="min-h-screen bg-zinc-950 overflow-hidden flex flex-col">
+    <div className="min-h-screen bg-card overflow-hidden flex flex-col">
       {/* Header */}
       <header
         className="sticky top-0 z-10 border-b border-zinc-800/50 backdrop-blur-xl"

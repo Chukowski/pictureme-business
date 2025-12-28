@@ -42,12 +42,12 @@ export function RecommendedTemplates({ templates = [] }: RecommendedTemplatesPro
 
           return (
             <div key={template.id} className="min-w-[200px] snap-start h-full">
-              <Card className="bg-zinc-900/40 border-white/5 hover:border-white/10 transition-all group overflow-hidden h-full rounded-xl">
+              <Card className="bg-card/40 border-white/5 hover:border-white/10 transition-all group overflow-hidden h-full rounded-xl">
                 <div
                   className="aspect-[3/4] bg-zinc-800 bg-cover bg-center relative"
                   style={{ backgroundImage: `url(${thumb})` }}
                 >
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent opacity-80" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#101112]/90 via-transparent to-transparent opacity-80" />
                   <div className="absolute bottom-3 left-3 right-3">
                     <h4 className="text-sm font-bold text-white truncate leading-tight">{template.name}</h4>
                     <div className="flex items-center gap-2 mt-1">
@@ -58,7 +58,7 @@ export function RecommendedTemplates({ templates = [] }: RecommendedTemplatesPro
                   </div>
 
                   {/* Hover Overlay */}
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-[1px]">
+                  <div className="absolute inset-0 bg-[#101112]/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-[1px]">
                     <Button
                       size="sm"
                       className="bg-white text-black hover:bg-zinc-200 h-8 text-xs font-semibold"

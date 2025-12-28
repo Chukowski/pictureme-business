@@ -190,7 +190,7 @@ export function PlaygroundTemplateTest({ events, currentUser, onReloadEvents }: 
       </div>
 
       {/* 1. Photo Source Section */}
-      <Card className="bg-zinc-900/50 border-white/10 overflow-hidden shadow-lg">
+      <Card className="bg-card/50 border-white/10 overflow-hidden shadow-lg">
         <div className="px-6 py-4 border-b border-white/5 bg-white/[0.02] flex items-center gap-3">
           <div className="w-6 h-6 rounded-full bg-indigo-500/20 flex items-center justify-center text-indigo-400 text-xs font-bold">1</div>
           <span className="text-base font-medium text-zinc-200">Photo Source</span>
@@ -206,7 +206,7 @@ export function PlaygroundTemplateTest({ events, currentUser, onReloadEvents }: 
               onChange={handleImageUpload}
             />
             {testImage ? (
-              <div className="flex items-center gap-5 p-4 bg-black/30 rounded-xl border border-white/10">
+              <div className="flex items-center gap-5 p-4 bg-[#101112]/30 rounded-xl border border-white/10">
                 <img src={testImage} alt="Test" className="w-20 h-20 rounded-lg object-cover shadow-md" />
                 <div className="flex-1">
                   <p className="text-sm text-zinc-300 mb-3 font-medium">Source Image Loaded</p>
@@ -216,7 +216,7 @@ export function PlaygroundTemplateTest({ events, currentUser, onReloadEvents }: 
                       size="sm"
                       variant="outline"
                       onClick={() => fileInputRef.current?.click()}
-                      className="h-8 text-xs border-white/20 text-zinc-300 bg-zinc-900/50 hover:bg-zinc-800 hover:text-white"
+                      className="h-8 text-xs border-white/20 text-zinc-300 bg-card/50 hover:bg-zinc-800 hover:text-white"
                     >
                       Change
                     </Button>
@@ -237,7 +237,7 @@ export function PlaygroundTemplateTest({ events, currentUser, onReloadEvents }: 
               </div>
             ) : (
               <div
-                className="border-2 border-dashed border-zinc-700 rounded-xl p-8 text-center cursor-pointer hover:border-purple-500/50 transition-all bg-black/20 hover:bg-black/30 group"
+                className="border-2 border-dashed border-zinc-700 rounded-xl p-8 text-center cursor-pointer hover:border-purple-500/50 transition-all bg-[#101112]/20 hover:bg-[#101112]/30 group"
                 onClick={() => fileInputRef.current?.click()}
               >
                 <div className="w-12 h-12 rounded-full bg-zinc-800 flex items-center justify-center mx-auto mb-4 group-hover:bg-purple-500/20 transition-colors">
@@ -290,7 +290,7 @@ export function PlaygroundTemplateTest({ events, currentUser, onReloadEvents }: 
       </Card>
 
       {/* 2. Template & Model Section */}
-      <Card className="bg-zinc-900/50 border-white/10 overflow-hidden shadow-lg">
+      <Card className="bg-card/50 border-white/10 overflow-hidden shadow-lg">
         <div className="px-6 py-4 border-b border-white/5 bg-white/[0.02] flex items-center gap-3">
           <div className="w-6 h-6 rounded-full bg-purple-500/20 flex items-center justify-center text-purple-400 text-xs font-bold">2</div>
           <span className="text-base font-medium text-zinc-200">Configuration</span>
@@ -388,13 +388,13 @@ export function PlaygroundTemplateTest({ events, currentUser, onReloadEvents }: 
       </Card>
 
       {/* 3. Prompt Section */}
-      <Card className="bg-zinc-900/50 border-white/10 overflow-hidden shadow-lg">
+      <Card className="bg-card/50 border-white/10 overflow-hidden shadow-lg">
         <div className="px-6 py-4 border-b border-white/5 bg-white/[0.02] flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-6 h-6 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400 text-xs font-bold">3</div>
             <span className="text-base font-medium text-zinc-200">Prompting</span>
           </div>
-          <div className="flex items-center gap-2 bg-black/20 px-3 py-1.5 rounded-full border border-white/5">
+          <div className="flex items-center gap-2 bg-[#101112]/20 px-3 py-1.5 rounded-full border border-white/5">
             <Label className="text-[10px] text-zinc-400 uppercase font-semibold tracking-wide cursor-pointer" htmlFor="custom-prompt">Custom</Label>
             <Switch 
               id="custom-prompt"
@@ -412,7 +412,7 @@ export function PlaygroundTemplateTest({ events, currentUser, onReloadEvents }: 
                 onChange={(e) => setCustomPrompt(e.target.value)}
                 placeholder="Describe the transformation..."
                 rows={4}
-                className="text-sm font-mono bg-black/30 border-white/10 resize-none text-zinc-300 placeholder:text-zinc-600 focus:border-emerald-500/30"
+                className="text-sm font-mono bg-[#101112]/30 border-white/10 resize-none text-zinc-300 placeholder:text-zinc-600 focus:border-emerald-500/30"
               />
               <PromptHelper
                 onSelectPrompt={setCustomPrompt}
@@ -443,7 +443,7 @@ export function PlaygroundTemplateTest({ events, currentUser, onReloadEvents }: 
               )}
             </div>
           ) : (
-            <div className="p-4 rounded-xl bg-black/30 border border-white/5">
+            <div className="p-4 rounded-xl bg-[#101112]/30 border border-white/5">
               <p className="text-xs text-zinc-400 font-medium mb-2 uppercase tracking-wide">Using Template Prompt:</p>
               <p className="text-sm text-zinc-300 font-mono leading-relaxed">
                 {isGroupPhoto && selectedTemplate?.groupPrompt
@@ -462,7 +462,7 @@ export function PlaygroundTemplateTest({ events, currentUser, onReloadEvents }: 
                 value={customSeed || ''} 
                 onChange={e => setCustomSeed(e.target.value ? parseInt(e.target.value) : undefined)}
                 placeholder="Random"
-                className="h-8 text-xs bg-black/20 border-white/10 text-zinc-300 placeholder:text-zinc-600 font-mono"
+                className="h-8 text-xs bg-[#101112]/20 border-white/10 text-zinc-300 placeholder:text-zinc-600 font-mono"
               />
             </div>
             <div className="flex items-center justify-between pt-6">
@@ -490,7 +490,7 @@ export function PlaygroundTemplateTest({ events, currentUser, onReloadEvents }: 
       </Card>
 
       {/* 4. Action Section - Sticky */}
-      <div className="sticky bottom-0 pt-4 pb-8 bg-zinc-950 z-20 border-t border-white/5 mt-8">
+      <div className="sticky bottom-0 pt-4 pb-8 bg-card z-20 border-t border-white/5 mt-8">
         <Button
           className="w-full h-14 text-lg bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white shadow-xl shadow-purple-900/20 transition-all hover:scale-[1.01] rounded-xl"
           onClick={processWithAI}
@@ -522,7 +522,7 @@ export function PlaygroundTemplateTest({ events, currentUser, onReloadEvents }: 
     <>
       {/* HUD Widget */}
       <div className="absolute top-4 right-4 pointer-events-auto z-10">
-        <div className="bg-black/80 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl w-64 overflow-hidden ring-1 ring-white/5">
+        <div className="bg-[#101112]/80 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl w-64 overflow-hidden ring-1 ring-white/5">
            {/* Header */}
            <div className="px-4 py-3 border-b border-white/5 flex items-center justify-between bg-white/5">
               <div className="flex items-center gap-2">
@@ -593,7 +593,7 @@ export function PlaygroundTemplateTest({ events, currentUser, onReloadEvents }: 
       {/* Run Again Bar - Only visible when result exists */}
       {processedResult && (
         <div className="absolute bottom-8 left-1/2 -translate-x-1/2 pointer-events-auto animate-in slide-in-from-bottom-4 fade-in duration-300">
-           <div className="flex items-center gap-2 bg-zinc-900/90 backdrop-blur-xl p-2 rounded-full border border-white/10 shadow-2xl ring-1 ring-black/50">
+           <div className="flex items-center gap-2 bg-card/90 backdrop-blur-xl p-2 rounded-full border border-white/10 shadow-2xl ring-1 ring-black/50">
               <Button 
                 onClick={processWithAI} 
                 disabled={isProcessing}
@@ -629,7 +629,7 @@ export function PlaygroundTemplateTest({ events, currentUser, onReloadEvents }: 
     <div className="h-full flex flex-col relative group">
       {/* Visual Feedback Overlay */}
       {isProcessing && (
-        <div className="absolute inset-0 z-50 bg-black/60 backdrop-blur-sm flex flex-col items-center justify-center text-center p-6 animate-in fade-in duration-300">
+        <div className="absolute inset-0 z-50 bg-[#101112]/60 backdrop-blur-sm flex flex-col items-center justify-center text-center p-6 animate-in fade-in duration-300">
            <div className="relative w-20 h-20 mb-6">
               <div className="absolute inset-0 rounded-full border-4 border-white/10"></div>
               <div className="absolute inset-0 rounded-full border-4 border-indigo-500 border-t-transparent animate-spin"></div>
@@ -641,7 +641,7 @@ export function PlaygroundTemplateTest({ events, currentUser, onReloadEvents }: 
         </div>
       )}
 
-      <div className="flex-1 flex items-center justify-center bg-zinc-900/50 relative overflow-hidden">
+      <div className="flex-1 flex items-center justify-center bg-card/50 relative overflow-hidden">
         {processedResult ? (
           <img 
             src={processedResult} 

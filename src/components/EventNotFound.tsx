@@ -16,7 +16,7 @@ export function EventNotFound({
   eventSlug
 }: EventNotFoundProps) {
   return (
-    <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-screen bg-card flex items-center justify-center p-4 relative overflow-hidden">
       {/* Animated background */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-red-600/10 rounded-full blur-3xl animate-pulse" />
@@ -36,7 +36,7 @@ export function EventNotFound({
         {/* Icon */}
         <div className="relative mx-auto w-28 h-28">
           <div className="absolute inset-0 rounded-full bg-gradient-to-br from-red-500/20 to-orange-500/20 animate-pulse" />
-          <div className="absolute inset-2 rounded-full bg-zinc-900 flex items-center justify-center">
+          <div className="absolute inset-2 rounded-full bg-card flex items-center justify-center">
             <AlertCircle className="w-12 h-12 text-red-400" />
           </div>
         </div>
@@ -53,7 +53,7 @@ export function EventNotFound({
 
         {/* Event slug if provided */}
         {eventSlug && (
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-zinc-900/50 border border-zinc-800 text-zinc-500 text-sm">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-card/50 border border-zinc-800 text-zinc-500 text-sm">
             <Camera className="h-4 w-4" />
             <code className="font-mono">{eventSlug}</code>
           </div>
@@ -101,7 +101,7 @@ export function EventNotFound({
 
 export function FeedNotAvailable() {
   return (
-    <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-screen bg-card flex items-center justify-center p-4 relative overflow-hidden">
       {/* Background */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute top-1/4 left-0 w-96 h-96 bg-indigo-600/10 rounded-full blur-3xl" />
@@ -112,7 +112,7 @@ export function FeedNotAvailable() {
         {/* Icon */}
         <div className="relative mx-auto w-28 h-28">
           <div className="absolute inset-0 rounded-full bg-gradient-to-br from-indigo-500/20 to-purple-500/20" />
-          <div className="absolute inset-2 rounded-full bg-zinc-900 flex items-center justify-center">
+          <div className="absolute inset-2 rounded-full bg-card flex items-center justify-center">
             <Camera className="w-12 h-12 text-indigo-400" />
           </div>
         </div>
@@ -158,7 +158,7 @@ export function PhotoNotFound({
   shareCode?: string 
 }) {
   return (
-    <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-screen bg-card flex items-center justify-center p-4 relative overflow-hidden">
       {/* Animated background */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-amber-600/10 rounded-full blur-3xl animate-pulse" />
@@ -178,7 +178,7 @@ export function PhotoNotFound({
         {/* Icon */}
         <div className="relative mx-auto w-28 h-28">
           <div className="absolute inset-0 rounded-full bg-gradient-to-br from-amber-500/20 to-orange-500/20 animate-pulse" />
-          <div className="absolute inset-2 rounded-full bg-zinc-900 flex items-center justify-center">
+          <div className="absolute inset-2 rounded-full bg-card flex items-center justify-center">
             <Camera className="w-12 h-12 text-amber-400" />
           </div>
         </div>
@@ -195,7 +195,7 @@ export function PhotoNotFound({
 
         {/* Share code if provided */}
         {shareCode && (
-          <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl px-6 py-4">
+          <div className="bg-card/50 border border-zinc-800 rounded-xl px-6 py-4">
             <p className="text-sm text-zinc-500 mb-1">Código de compartir:</p>
             <p className="font-mono font-bold text-white text-xl">{shareCode}</p>
           </div>

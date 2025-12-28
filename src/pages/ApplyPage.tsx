@@ -101,10 +101,10 @@ export default function ApplyPage() {
 
     if (isSubmitted) {
         return (
-            <div className="min-h-screen bg-black text-white flex items-center justify-center p-4 relative overflow-hidden">
+            <div className="min-h-screen bg-[#101112] text-white flex items-center justify-center p-4 relative overflow-hidden">
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-emerald-900/20 rounded-full blur-[100px] -z-10" />
 
-                <div className="max-w-md w-full bg-zinc-900/50 backdrop-blur-xl border border-white/10 rounded-3xl p-8 text-center shadow-2xl animate-fade-in">
+                <div className="max-w-md w-full bg-card/50 backdrop-blur-xl border border-white/10 rounded-3xl p-8 text-center shadow-2xl animate-fade-in">
                     <div className="w-20 h-20 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto mb-6">
                         <CheckCircle2 className="w-10 h-10 text-emerald-400" />
                     </div>
@@ -124,10 +124,10 @@ export default function ApplyPage() {
     }
 
     return (
-        <div className="min-h-screen bg-black text-white flex items-center justify-center p-4 md:p-8 relative overflow-hidden">
+        <div className="min-h-screen bg-[#101112] text-white flex items-center justify-center p-4 md:p-8 relative overflow-hidden">
             {/* Background Effects */}
-            <div className="fixed top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-indigo-900/20 via-black/0 to-black/0 -z-10" />
-            <div className="fixed bottom-0 left-0 w-full h-full bg-[radial-gradient(circle_at_bottom_left,_var(--tw-gradient-stops))] from-purple-900/20 via-black/0 to-black/0 -z-10" />
+            <div className="fixed top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-indigo-900/20 via-[#101112]/0 to-[#101112]/0 -z-10" />
+            <div className="fixed bottom-0 left-0 w-full h-full bg-[radial-gradient(circle_at_bottom_left,_var(--tw-gradient-stops))] from-purple-900/20 via-[#101112]/0 to-[#101112]/0 -z-10" />
 
             <div className="w-full max-w-2xl relative z-10">
                 <div className="text-center mb-10">
@@ -138,7 +138,7 @@ export default function ApplyPage() {
                     </p>
                 </div>
 
-                <div className="bg-zinc-900/50 backdrop-blur-xl border border-white/10 rounded-3xl p-6 md:p-10 shadow-2xl">
+                <div className="bg-card/50 backdrop-blur-xl border border-white/10 rounded-3xl p-6 md:p-10 shadow-2xl">
                     <form onSubmit={handleSubmit} className="space-y-8">
 
                         {/* Personal & Company Info */}
@@ -157,7 +157,7 @@ export default function ApplyPage() {
                                         value={formData.fullName}
                                         onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
                                         required
-                                        className="bg-black/50 border-white/10 text-white focus:border-indigo-500"
+                                        className="bg-[#101112]/50 border-white/10 text-white focus:border-indigo-500"
                                     />
                                 </div>
                                 <div className="space-y-2">
@@ -168,7 +168,7 @@ export default function ApplyPage() {
                                         value={formData.companyName}
                                         onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
                                         required
-                                        className="bg-black/50 border-white/10 text-white focus:border-indigo-500"
+                                        className="bg-[#101112]/50 border-white/10 text-white focus:border-indigo-500"
                                     />
                                 </div>
                             </div>
@@ -185,7 +185,7 @@ export default function ApplyPage() {
                                             value={formData.email}
                                             onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                                             required
-                                            className="bg-black/50 border-white/10 text-white pl-10 focus:border-indigo-500"
+                                            className="bg-[#101112]/50 border-white/10 text-white pl-10 focus:border-indigo-500"
                                         />
                                     </div>
                                 </div>
@@ -199,7 +199,7 @@ export default function ApplyPage() {
                                             value={formData.location}
                                             onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                                             required
-                                            className="bg-black/50 border-white/10 text-white pl-10 focus:border-indigo-500"
+                                            className="bg-[#101112]/50 border-white/10 text-white pl-10 focus:border-indigo-500"
                                         />
                                     </div>
                                 </div>
@@ -244,10 +244,10 @@ export default function ApplyPage() {
                                         value={formData.eventVolume}
                                         onValueChange={(val) => setFormData({ ...formData, eventVolume: val })}
                                     >
-                                        <SelectTrigger className="bg-black/50 border-white/10 text-white">
+                                        <SelectTrigger className="bg-[#101112]/50 border-white/10 text-white">
                                             <SelectValue placeholder="Select volume" />
                                         </SelectTrigger>
-                                        <SelectContent className="bg-zinc-900 border-white/10 text-white">
+                                        <SelectContent className="bg-card border-white/10 text-white">
                                             <SelectItem value="1-2">1-2 events</SelectItem>
                                             <SelectItem value="3-5">3-5 events</SelectItem>
                                             <SelectItem value="6-10">6-10 events</SelectItem>
@@ -262,10 +262,10 @@ export default function ApplyPage() {
                                         value={formData.tierInterest}
                                         onValueChange={(val) => setFormData({ ...formData, tierInterest: val })}
                                     >
-                                        <SelectTrigger className="bg-black/50 border-white/10 text-white">
+                                        <SelectTrigger className="bg-[#101112]/50 border-white/10 text-white">
                                             <SelectValue placeholder="Select tier" />
                                         </SelectTrigger>
-                                        <SelectContent className="bg-zinc-900 border-white/10 text-white">
+                                        <SelectContent className="bg-card border-white/10 text-white">
                                             {tiers.filter(t => t.category === 'business').map((t) => (
                                                 <SelectItem key={t.id} value={t.code}>{t.name}</SelectItem>
                                             ))}
@@ -313,7 +313,7 @@ export default function ApplyPage() {
                                         placeholder="e.g. iPad Pro 12.9, Ring Light, Custom Enclosure..."
                                         value={formData.hardwareDetails}
                                         onChange={(e) => setFormData({ ...formData, hardwareDetails: e.target.value })}
-                                        className="bg-black/50 border-white/10 text-white min-h-[80px] focus:border-indigo-500"
+                                        className="bg-[#101112]/50 border-white/10 text-white min-h-[80px] focus:border-indigo-500"
                                     />
                                 </div>
                             )}

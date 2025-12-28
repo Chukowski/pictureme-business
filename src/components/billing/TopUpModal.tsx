@@ -136,8 +136,8 @@ export function TopUpModal({ open, onClose }: TopUpModalProps) {
 
     return (
         <Dialog open={open} onOpenChange={(val) => !val && onClose()}>
-            <DialogContent className="max-w-5xl bg-zinc-950 border-white/10 text-white p-0 overflow-hidden flex flex-col max-h-[90vh]">
-                <div className="p-6 border-b border-white/10 bg-zinc-900/50">
+            <DialogContent className="max-w-5xl bg-card border-white/10 text-white p-0 overflow-hidden flex flex-col max-h-[90vh]">
+                <div className="p-6 border-b border-white/10 bg-card/50">
                     <DialogHeader>
                         <DialogTitle className="text-xl">Top Up Tokens</DialogTitle>
                         <DialogDescription className="text-zinc-400">
@@ -161,7 +161,7 @@ export function TopUpModal({ open, onClose }: TopUpModalProps) {
                                         key={pack.id}
                                         className={`relative p-6 rounded-2xl border transition-all duration-300 ${isPopular
                                             ? 'border-indigo-500 bg-indigo-500/10 shadow-[0_0_30px_-10px_rgba(99,102,241,0.3)]'
-                                            : 'border-white/10 bg-zinc-900/50 hover:border-white/20 hover:bg-zinc-900'
+                                            : 'border-white/10 bg-card/50 hover:border-white/20 hover:bg-card'
                                             }`}
                                     >
                                         {isPopular && (
@@ -208,7 +208,7 @@ export function TopUpModal({ open, onClose }: TopUpModalProps) {
                         </div>
                     )}
 
-                    <div className="mt-8 text-center bg-zinc-900/30 p-4 rounded-xl border border-white/5">
+                    <div className="mt-8 text-center bg-card/30 p-4 rounded-xl border border-white/5">
                         <p className="text-zinc-400 text-sm">
                             Need a monthly refill? <a href="/creator/billing" className="text-indigo-400 hover:text-indigo-300 underline underline-offset-4">Upgrade your subscription plan</a> to get tokens automatically every month.
                         </p>

@@ -20,7 +20,7 @@ export function LiveEventCard({ event }: LiveEventCardProps) {
   };
 
   return (
-    <Card className="bg-zinc-900 bg-gradient-to-r from-emerald-950/30 to-zinc-900 border-emerald-500/20 overflow-hidden relative group mb-8">
+    <Card className="bg-card bg-gradient-to-r from-emerald-950/30 to-zinc-900 border-emerald-500/20 overflow-hidden relative group mb-8">
       {/* Live Status Badge - Positioned relatively on mobile to avoid overlap */}
       <div className="absolute top-4 right-4 z-10">
         <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-bold tracking-wider uppercase shadow-sm backdrop-blur-md">

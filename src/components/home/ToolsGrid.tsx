@@ -79,7 +79,7 @@ export function ToolsGrid({ activeEvent, isBusinessUser = false }: ToolsGridProp
         return (
           <Card 
             key={index}
-            className={`bg-zinc-900/40 border-white/5 transition-all duration-300 cursor-pointer group hover:bg-zinc-900 hover:-translate-y-1 hover:shadow-lg ${item.border}`}
+            className={`bg-card/40 border-white/5 transition-all duration-300 cursor-pointer group hover:bg-card hover:-translate-y-1 hover:shadow-lg ${item.border}`}
             onClick={item.onClick}
           >
             <CardContent className="p-4 flex flex-col items-center text-center h-full justify-center space-y-3">

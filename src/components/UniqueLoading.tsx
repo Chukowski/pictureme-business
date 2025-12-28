@@ -26,7 +26,7 @@ export const UniqueLoading = ({
           {[0, 1, 2, 3].map((i) => (
             <div
               key={i}
-              className="absolute w-4 h-4 rounded-md bg-black dark:bg-white"
+              className="absolute w-4 h-4 rounded-md bg-[#101112] dark:bg-white"
               style={{
                 animation: `morph-${i} 2.4s infinite ease-in-out`,
                 animationDelay: `${i * 0.2}s`,

@@ -324,7 +324,7 @@ export function PromptHelper({
             <span className="text-xs font-medium text-cyan-300">🎯 Quick Start Templates</span>
             
             {/* Individual/Group Toggle */}
-            <div className="flex gap-1 p-0.5 rounded-lg bg-black/40 border border-white/10">
+            <div className="flex gap-1 p-0.5 rounded-lg bg-[#101112]/40 border border-white/10">
               <button
                 type="button"
                 onClick={() => setTemplateType('individual')}
@@ -351,7 +351,7 @@ export function PromptHelper({
           </div>
           
           {/* Category Tabs */}
-          <div className="flex gap-1 p-1 rounded-lg bg-black/30">
+          <div className="flex gap-1 p-1 rounded-lg bg-[#101112]/30">
             <button
               type="button"
               onClick={() => setSelectedCategory('compositing')}
@@ -397,7 +397,7 @@ export function PromptHelper({
                   onSelectPrompt(template.prompt);
                   toast.success(`Applied: ${template.label}`);
                 }}
-                className="p-2 text-left rounded-lg bg-black/30 border border-white/5 hover:border-cyan-500/30 hover:bg-cyan-500/5 transition-all group"
+                className="p-2 text-left rounded-lg bg-[#101112]/30 border border-white/5 hover:border-cyan-500/30 hover:bg-cyan-500/5 transition-all group"
               >
                 <span className="text-sm font-medium text-white group-hover:text-cyan-300 transition-colors">
                   {template.label}
@@ -452,7 +452,7 @@ export function PromptHelper({
           value={userRequest}
           onChange={(e) => setUserRequest(e.target.value)}
           placeholder={placeholder}
-          className="bg-black/40 border-white/10 text-white text-sm placeholder:text-zinc-500"
+          className="bg-[#101112]/40 border-white/10 text-white text-sm placeholder:text-zinc-500"
           onKeyDown={(e) => e.key === "Enter" && handleGeneratePrompt()}
         />
         <Button
@@ -490,7 +490,7 @@ export function PromptHelper({
           </CollapsibleTrigger>
           <CollapsibleContent className="mt-2 space-y-3">
             {/* Main Enhanced Prompt */}
-            <div className="p-3 rounded-lg bg-black/40 border border-white/10">
+            <div className="p-3 rounded-lg bg-[#101112]/40 border border-white/10">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs font-medium text-purple-300">Enhanced Prompt</span>
                 <Button
@@ -531,7 +531,7 @@ export function PromptHelper({
                 {suggestion.alternative_prompts.map((alt, i) => (
                   <div
                     key={i}
-                    className="p-2 rounded-lg bg-black/30 border border-white/5 flex items-start justify-between gap-2 group hover:border-white/10 transition-colors"
+                    className="p-2 rounded-lg bg-[#101112]/30 border border-white/5 flex items-start justify-between gap-2 group hover:border-white/10 transition-colors"
                   >
                     <p className="text-xs text-zinc-400 flex-1">{alt}</p>
                     <Button

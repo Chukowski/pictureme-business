@@ -252,7 +252,7 @@ export function EventTemplates({ formData, setFormData, onPreviewModeChange }: E
         </div>
 
         <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
-          <TabsList className="bg-black/30 border border-white/10 p-1">
+          <TabsList className="bg-[#101112]/30 border border-white/10 p-1">
              <TabsTrigger value="templates" className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-zinc-400">
               <Sparkles className="w-4 h-4 mr-2" />
               AI Templates
@@ -310,7 +310,7 @@ export function EventTemplates({ formData, setFormData, onPreviewModeChange }: E
         
             {/* Templates Grid */}
             {templates.length === 0 ? (
-              <div className="text-center py-12 border-2 border-dashed border-white/10 rounded-2xl bg-zinc-900/30">
+              <div className="text-center py-12 border-2 border-dashed border-white/10 rounded-2xl bg-card/30">
                 <div className="w-16 h-16 rounded-full bg-zinc-800 mx-auto flex items-center justify-center mb-4">
                   <Sparkles className="w-8 h-8 text-zinc-500" />
                 </div>
@@ -335,13 +335,13 @@ export function EventTemplates({ formData, setFormData, onPreviewModeChange }: E
                 {templates.map((template: Template, index: number) => (
                   <Card 
                     key={template.id} 
-                    className={`bg-zinc-900/50 border-white/10 backdrop-blur-sm overflow-hidden group hover:border-white/20 transition-all cursor-pointer ${!template.active ? 'opacity-60' : ''}`}
+                    className={`bg-card/50 border-white/10 backdrop-blur-sm overflow-hidden group hover:border-white/20 transition-all cursor-pointer ${!template.active ? 'opacity-60' : ''}`}
                     onClick={() => {
                       setEditingTemplateIndex(index);
                       setIsSheetOpen(true);
                     }}
                   >
-                    <div className="aspect-video bg-black/40 relative">
+                    <div className="aspect-video bg-[#101112]/40 relative">
                       {template.images && template.images.length > 0 ? (
                         <img 
                           src={template.images[0]} 
@@ -358,7 +358,7 @@ export function EventTemplates({ formData, setFormData, onPreviewModeChange }: E
                          <Button 
                           size="icon" 
                           variant="secondary" 
-                          className="h-7 w-7 bg-black/50 hover:bg-black/70 text-white border border-white/10"
+                          className="h-7 w-7 bg-[#101112]/50 hover:bg-[#101112]/70 text-white border border-white/10"
                           onClick={(e) => handleExportSingleTemplate(template, e)}
                           title="Export template"
                         >
@@ -367,7 +367,7 @@ export function EventTemplates({ formData, setFormData, onPreviewModeChange }: E
                          <Button 
                           size="icon" 
                           variant="secondary" 
-                          className="h-7 w-7 bg-black/50 hover:bg-black/70 text-white border border-white/10"
+                          className="h-7 w-7 bg-[#101112]/50 hover:bg-[#101112]/70 text-white border border-white/10"
                           onClick={(e) => {
                             e.stopPropagation();
                             duplicateTemplate(index);
@@ -392,12 +392,12 @@ export function EventTemplates({ formData, setFormData, onPreviewModeChange }: E
                       
                       <div className="absolute bottom-2 left-2 flex gap-1 flex-wrap">
                         {template.pipelineConfig?.videoEnabled && (
-                          <Badge variant="secondary" className="h-5 bg-black/50 text-white backdrop-blur-sm border border-white/10 text-[10px] px-1.5">
+                          <Badge variant="secondary" className="h-5 bg-[#101112]/50 text-white backdrop-blur-sm border border-white/10 text-[10px] px-1.5">
                             <Video className="w-3 h-3 mr-1" /> Video
                           </Badge>
                         )}
                         {template.pipelineConfig?.faceswapEnabled && (
-                          <Badge variant="secondary" className="h-5 bg-black/50 text-white backdrop-blur-sm border border-white/10 text-[10px] px-1.5">
+                          <Badge variant="secondary" className="h-5 bg-[#101112]/50 text-white backdrop-blur-sm border border-white/10 text-[10px] px-1.5">
                             <Smile className="w-3 h-3 mr-1" /> Face
                           </Badge>
                         )}
@@ -409,7 +409,7 @@ export function EventTemplates({ formData, setFormData, onPreviewModeChange }: E
                       </div>
 
                       {!template.active && (
-                        <div className="absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+                        <div className="absolute inset-0 flex items-center justify-center bg-[#101112]/60 backdrop-blur-sm">
                           <Badge variant="secondary" className="bg-zinc-800 text-zinc-400">Inactive</Badge>
                         </div>
                       )}
@@ -449,7 +449,7 @@ export function EventTemplates({ formData, setFormData, onPreviewModeChange }: E
               </div>
 
               {/* Template selector for badge photo */}
-              <Card className="bg-zinc-900/50 border-white/10 backdrop-blur-sm">
+              <Card className="bg-card/50 border-white/10 backdrop-blur-sm">
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between mb-4">
                     <div>
@@ -485,10 +485,10 @@ export function EventTemplates({ formData, setFormData, onPreviewModeChange }: E
                         });
                       }}
                     >
-                      <SelectTrigger className="bg-black/40 border-white/10 text-white">
+                      <SelectTrigger className="bg-[#101112]/40 border-white/10 text-white">
                         <SelectValue placeholder="Select a template" />
                       </SelectTrigger>
-                      <SelectContent className="bg-zinc-900 border-zinc-800">
+                      <SelectContent className="bg-card border-zinc-800">
                         {templates.filter(t => t.active).map((template) => (
                           <SelectItem key={template.id} value={template.id} className="text-white">
                             <div className="flex items-center gap-2">
@@ -506,7 +506,7 @@ export function EventTemplates({ formData, setFormData, onPreviewModeChange }: E
               </Card>
 
               {/* Badge Template Editor */}
-              <Card className="bg-zinc-900/50 border-white/10 backdrop-blur-sm">
+              <Card className="bg-card/50 border-white/10 backdrop-blur-sm">
                 <CardContent className="p-6">
                   <BadgeTemplateEditor 
                     config={formData.badgeTemplate || DEFAULT_BADGE_CONFIG} 
@@ -520,7 +520,7 @@ export function EventTemplates({ formData, setFormData, onPreviewModeChange }: E
 
           {badgeEnabled && (
             <TabsContent value="badge-pro" className="space-y-6">
-              <Card className="bg-zinc-900/20 border-white/5 backdrop-blur-sm">
+              <Card className="bg-card/20 border-white/5 backdrop-blur-sm">
                 <CardContent className="p-6 space-y-4">
                   <div className="flex items-center justify-between">
                     <div>
@@ -544,10 +544,10 @@ export function EventTemplates({ formData, setFormData, onPreviewModeChange }: E
 
       {/* Template Editor Sheet */}
       <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-        <SheetContent className="w-full sm:max-w-xl bg-zinc-950 border-l border-white/10 p-0 flex flex-col overflow-hidden" side="right">
+        <SheetContent className="w-full sm:max-w-xl bg-card border-l border-white/10 p-0 flex flex-col overflow-hidden" side="right">
           {currentTemplate && editingTemplateIndex !== null && (
             <>
-              <SheetHeader className="p-6 border-b border-white/10 bg-zinc-900/50">
+              <SheetHeader className="p-6 border-b border-white/10 bg-card/50">
                 <div className="flex items-center justify-between">
                   <SheetTitle className="text-white">Edit Template</SheetTitle>
                   <div className="flex items-center gap-2 mr-8">
@@ -573,7 +573,7 @@ export function EventTemplates({ formData, setFormData, onPreviewModeChange }: E
                       <Input 
                         value={currentTemplate.name}
                         onChange={(e) => updateTemplate(editingTemplateIndex, { name: e.target.value })}
-                        className="bg-black/40 border-white/10 text-white"
+                        className="bg-[#101112]/40 border-white/10 text-white"
                       />
                     </div>
                     <div className="space-y-2">
@@ -581,14 +581,14 @@ export function EventTemplates({ formData, setFormData, onPreviewModeChange }: E
                       <Input 
                         value={currentTemplate.description}
                         onChange={(e) => updateTemplate(editingTemplateIndex, { description: e.target.value })}
-                        className="bg-black/40 border-white/10 text-white"
+                        className="bg-[#101112]/40 border-white/10 text-white"
                       />
                     </div>
                   </div>
                 </div>
 
                 {/* Pipeline Configuration */}
-                <div className="space-y-4 p-4 rounded-lg bg-zinc-900/50 border border-white/5">
+                <div className="space-y-4 p-4 rounded-lg bg-card/50 border border-white/5">
                   <h4 className="text-sm font-medium text-white mb-3 flex items-center gap-2">
                     <Sparkles className="w-4 h-4 text-purple-400" />
                     AI Pipeline Settings
@@ -603,10 +603,10 @@ export function EventTemplates({ formData, setFormData, onPreviewModeChange }: E
                           pipelineConfig: { ...currentTemplate.pipelineConfig, imageModel: v } 
                         })}
                       >
-                        <SelectTrigger className="bg-black/40 border-white/10 text-white text-xs h-8">
+                        <SelectTrigger className="bg-[#101112]/40 border-white/10 text-white text-xs h-8">
                           <SelectValue />
                         </SelectTrigger>
-                        <SelectContent className="bg-zinc-900 border-zinc-800 text-white">
+                        <SelectContent className="bg-card border-zinc-800 text-white">
                           <SelectItem value="nano-banana">Nano Banana (Fast)</SelectItem>
                           <SelectItem value="nano-banana-pro">Nano Banana Pro (Quality)</SelectItem>
                           <SelectItem value="seedream-v4">SeeDream v4</SelectItem>
@@ -629,10 +629,10 @@ export function EventTemplates({ formData, setFormData, onPreviewModeChange }: E
                         value={currentTemplate.aspectRatio || 'auto'}
                         onValueChange={(v: any) => updateTemplate(editingTemplateIndex, { aspectRatio: v })}
                       >
-                        <SelectTrigger className="bg-black/40 border-white/10 text-white text-xs h-8">
+                        <SelectTrigger className="bg-[#101112]/40 border-white/10 text-white text-xs h-8">
                           <SelectValue />
                         </SelectTrigger>
-                        <SelectContent className="bg-zinc-900 border-zinc-800 text-white">
+                        <SelectContent className="bg-card border-zinc-800 text-white">
                           <SelectItem value="auto">Auto (Match Upload)</SelectItem>
                           <SelectItem value="1:1">Square (1:1)</SelectItem>
                           <SelectItem value="3:2">Landscape (3:2)</SelectItem>
@@ -651,10 +651,10 @@ export function EventTemplates({ formData, setFormData, onPreviewModeChange }: E
                           pipelineConfig: { ...currentTemplate.pipelineConfig, groupImageModel: v === 'same' ? undefined : v } 
                         })}
                       >
-                        <SelectTrigger className="bg-black/40 border-white/10 text-white text-xs h-8">
+                        <SelectTrigger className="bg-[#101112]/40 border-white/10 text-white text-xs h-8">
                           <SelectValue placeholder="Same as Individual" />
                         </SelectTrigger>
-                        <SelectContent className="bg-zinc-900 border-zinc-800 text-white">
+                        <SelectContent className="bg-card border-zinc-800 text-white">
                           <SelectItem value="same">Same as Individual</SelectItem>
                           <SelectItem value="nano-banana">Nano Banana (Fast)</SelectItem>
                           <SelectItem value="nano-banana-pro">Nano Banana Pro (Quality)</SelectItem>
@@ -676,7 +676,7 @@ export function EventTemplates({ formData, setFormData, onPreviewModeChange }: E
                           pipelineConfig: { ...currentTemplate.pipelineConfig, seed: e.target.value ? parseInt(e.target.value) : undefined } 
                         })}
                         placeholder="e.g., 12345"
-                        className="bg-black/40 border-white/10 text-white text-xs h-8 font-mono"
+                        className="bg-[#101112]/40 border-white/10 text-white text-xs h-8 font-mono"
                       />
                       <p className="text-[10px] text-zinc-500">Leave empty for random results</p>
                     </div>
@@ -723,10 +723,10 @@ export function EventTemplates({ formData, setFormData, onPreviewModeChange }: E
                             pipelineConfig: { ...currentTemplate.pipelineConfig, videoModel: v } 
                           })}
                         >
-                          <SelectTrigger className="bg-black/40 border-white/10 text-white text-xs h-7">
+                          <SelectTrigger className="bg-[#101112]/40 border-white/10 text-white text-xs h-7">
                             <SelectValue />
                           </SelectTrigger>
-                          <SelectContent className="bg-zinc-900 border-zinc-800 text-white">
+                          <SelectContent className="bg-card border-zinc-800 text-white">
                             <SelectItem value="wan-v2">Wan v2 (Fast)</SelectItem>
                             <SelectItem value="kling-2.6-pro">Kling 2.6 Pro (Cinematic)</SelectItem>
                             <SelectItem value="kling-o1-edit">Kling O1 Video Edit</SelectItem>
@@ -760,7 +760,7 @@ export function EventTemplates({ formData, setFormData, onPreviewModeChange }: E
                     <Textarea 
                       value={currentTemplate.prompt}
                       onChange={(e) => updateTemplate(editingTemplateIndex, { prompt: e.target.value })}
-                      className="bg-black/40 border-white/10 text-white font-mono text-sm min-h-[120px]"
+                      className="bg-[#101112]/40 border-white/10 text-white font-mono text-sm min-h-[120px]"
                       placeholder="A professional studio photo of..."
                     />
                     <div className="mt-2 pt-2 border-t border-white/5">
@@ -783,7 +783,7 @@ export function EventTemplates({ formData, setFormData, onPreviewModeChange }: E
                     <Textarea 
                       value={currentTemplate.negativePrompt || ''}
                       onChange={(e) => updateTemplate(editingTemplateIndex, { negativePrompt: e.target.value })}
-                      className="bg-black/40 border-white/10 text-white font-mono text-sm"
+                      className="bg-[#101112]/40 border-white/10 text-white font-mono text-sm"
                       placeholder="blurry, distorted, ugly, low quality..."
                     />
                   </div>
@@ -796,7 +796,7 @@ export function EventTemplates({ formData, setFormData, onPreviewModeChange }: E
                     <Textarea 
                       value={currentTemplate.groupPrompt || ''}
                       onChange={(e) => updateTemplate(editingTemplateIndex, { groupPrompt: e.target.value })}
-                      className="bg-black/40 border-white/10 text-white font-mono text-sm"
+                      className="bg-[#101112]/40 border-white/10 text-white font-mono text-sm"
                       placeholder="Same as above, but for multiple people..."
                     />
                   </div>
@@ -814,7 +814,7 @@ export function EventTemplates({ formData, setFormData, onPreviewModeChange }: E
                             const newImages = currentTemplate.images.filter((_, idx) => idx !== i);
                             updateTemplate(editingTemplateIndex, { images: newImages });
                           }}
-                          className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white"
+                          className="absolute inset-0 bg-[#101112]/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white"
                         >
                           <Trash2 className="w-5 h-5" />
                         </button>
@@ -855,7 +855,7 @@ export function EventTemplates({ formData, setFormData, onPreviewModeChange }: E
                             const newImages = (currentTemplate.elementImages || []).filter((_, idx) => idx !== i);
                             updateTemplate(editingTemplateIndex, { elementImages: newImages });
                           }}
-                          className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white"
+                          className="absolute inset-0 bg-[#101112]/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -910,13 +910,13 @@ export function EventTemplates({ formData, setFormData, onPreviewModeChange }: E
                         value={currentTemplate.campaignText || ''}
                         onChange={(e) => updateTemplate(editingTemplateIndex, { campaignText: e.target.value })}
                         placeholder="e.g., #MyEvent2025"
-                        className="bg-black/40 border-white/10 text-white text-sm"
+                        className="bg-[#101112]/40 border-white/10 text-white text-sm"
                       />
                       <p className="text-[10px] text-zinc-500">Text to overlay on the final image</p>
                     </div>
                   </div>
 
-                  <div className="space-y-3 bg-black/20 p-3 rounded-lg border border-white/5">
+                  <div className="space-y-3 bg-[#101112]/20 p-3 rounded-lg border border-white/5">
                     <div className="flex items-center justify-between">
                       <div>
                         <Label className="text-zinc-300 text-xs block">Include Header Logo</Label>
@@ -959,7 +959,7 @@ export function EventTemplates({ formData, setFormData, onPreviewModeChange }: E
                     <Lock className="w-4 h-4 text-amber-400" />
                     Access Overrides
                   </h4>
-                  <div className="space-y-3 bg-black/20 p-3 rounded-lg border border-white/5">
+                  <div className="space-y-3 bg-[#101112]/20 p-3 rounded-lg border border-white/5">
                     <div className="flex items-center justify-between">
                       <div>
                         <Label className="text-zinc-300 text-xs block">Require Payment</Label>
@@ -1010,7 +1010,7 @@ export function EventTemplates({ formData, setFormData, onPreviewModeChange }: E
                       Station Availability
                     </h4>
                     <div className="space-y-2">
-                      <div className="flex items-center justify-between p-2 rounded bg-black/20 border border-white/5">
+                      <div className="flex items-center justify-between p-2 rounded bg-[#101112]/20 border border-white/5">
                         <Label className="text-zinc-300 text-xs">All Stations</Label>
                         <Switch 
                           checked={!currentTemplate.stationsAssigned || currentTemplate.stationsAssigned === 'all'}
@@ -1022,7 +1022,7 @@ export function EventTemplates({ formData, setFormData, onPreviewModeChange }: E
                       </div>
                       
                       {currentTemplate.stationsAssigned !== 'all' && formData.albumTracking.stations.map(station => (
-                        <div key={station.id} className="flex items-center justify-between p-2 rounded bg-black/20 border border-white/5 ml-4">
+                        <div key={station.id} className="flex items-center justify-between p-2 rounded bg-[#101112]/20 border border-white/5 ml-4">
                           <Label className="text-zinc-400 text-xs">{station.name}</Label>
                           <Switch 
                             checked={Array.isArray(currentTemplate.stationsAssigned) && currentTemplate.stationsAssigned.includes(station.id)}
@@ -1042,7 +1042,7 @@ export function EventTemplates({ formData, setFormData, onPreviewModeChange }: E
                 )}
               </div>
 
-              <SheetFooter className="p-6 border-t border-white/10 bg-zinc-900/50">
+              <SheetFooter className="p-6 border-t border-white/10 bg-card/50">
                 <Button onClick={() => setIsSheetOpen(false)} className="w-full bg-white text-black hover:bg-zinc-200">
                   Done Editing
                 </Button>

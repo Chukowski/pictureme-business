@@ -571,7 +571,7 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
               <Library className="w-4 h-4" />
               Library
               {myLibrary && myLibrary.length > 0 && (
-                <Badge className={`ml-2 border-0 ${activeSection === 'library' ? 'bg-black/20 text-black' : 'bg-zinc-800 text-zinc-400'}`}>
+                <Badge className={`ml-2 border-0 ${activeSection === 'library' ? 'bg-[#101112]/20 text-black' : 'bg-zinc-800 text-zinc-400'}`}>
                   {myLibrary.length}
                 </Badge>
               )}
@@ -589,12 +589,12 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
                 placeholder="Search templates..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full h-10 pl-10 pr-4 bg-zinc-900/50 rounded-xl border-none text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-[#D1F349]/50"
+                className="w-full h-10 pl-10 pr-4 bg-card/50 rounded-xl border-none text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-[#D1F349]/50"
               />
             </div>
 
             <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-              <SelectTrigger className="w-[140px] h-10 bg-zinc-900/50 border-none rounded-xl text-zinc-300 text-sm focus:ring-0">
+              <SelectTrigger className="w-[140px] h-10 bg-card/50 border-none rounded-xl text-zinc-300 text-sm focus:ring-0">
                 <SelectValue placeholder="Category" />
               </SelectTrigger>
               <SelectContent className="bg-[#18181b] border-white/10 rounded-xl">
@@ -609,7 +609,7 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
             <div className="w-px h-6 bg-white/5 mx-1" />
 
             <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger className="w-[140px] h-10 bg-zinc-900/50 border-none rounded-xl text-zinc-300 text-sm focus:ring-0">
+              <SelectTrigger className="w-[140px] h-10 bg-card/50 border-none rounded-xl text-zinc-300 text-sm focus:ring-0">
                 <SelectValue placeholder="Sort by" />
               </SelectTrigger>
               <SelectContent className="bg-[#18181b] border-white/10 rounded-xl">
@@ -623,7 +623,7 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
 
             {/* View Controls (Integrated) */}
             <div className="flex items-center gap-2">
-              <div className="h-9 px-3 flex items-center bg-zinc-900/50 rounded-xl min-w-[100px]">
+              <div className="h-9 px-3 flex items-center bg-card/50 rounded-xl min-w-[100px]">
                 <Slider
                   value={gridColumns}
                   onValueChange={setZoomLevel}
@@ -634,7 +634,7 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
                   className={`w-24 [&_.bg-primary]:bg-[#D1F349] [&_.border-primary]:border-[#D1F349] ${viewMode === 'list' ? 'opacity-30' : ''}`}
                 />
               </div>
-              <div className="flex items-center gap-1 p-1 bg-zinc-900/50 rounded-xl">
+              <div className="flex items-center gap-1 p-1 bg-card/50 rounded-xl">
                 <button
                   onClick={() => setViewMode('list')}
                   className={cn(
@@ -690,7 +690,7 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
                       onClick={() => setSelectedTemplate(template)}
                     >
                       {/* Image Area */}
-                      <div className={`relative overflow-hidden bg-zinc-900 ${viewMode === 'list' ? 'w-64 aspect-auto h-full shrink-0' : 'aspect-square'}`}>
+                      <div className={`relative overflow-hidden bg-card ${viewMode === 'list' ? 'w-64 aspect-auto h-full shrink-0' : 'aspect-square'}`}>
                         <img
                           src={getTemplateImage(template)}
                           alt={template.name}
@@ -789,9 +789,9 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
                   key={model.id}
                   className={`group relative bg-[#18181b] rounded-3xl overflow-hidden border border-white/5 hover:border-purple-500/30 transition-all duration-300 ${viewMode === 'list' ? 'flex flex-row h-48' : ''}`}
                 >
-                  <div className={`bg-zinc-900 relative ${viewMode === 'list' ? 'w-64 aspect-auto h-full shrink-0' : 'aspect-video'}`}>
+                  <div className={`bg-card relative ${viewMode === 'list' ? 'w-64 aspect-auto h-full shrink-0' : 'aspect-video'}`}>
                     <img src={model.preview_url} className="w-full h-full object-cover opacity-60 group-hover:opacity-80 transition-opacity" />
-                    <div className="absolute top-3 right-3 bg-black/60 backdrop-blur-sm px-2 py-1 rounded-lg border border-white/10">
+                    <div className="absolute top-3 right-3 bg-[#101112]/60 backdrop-blur-sm px-2 py-1 rounded-lg border border-white/10">
                       <span className="text-xs font-bold text-white">${model.price}</span>
                     </div>
                   </div>
@@ -845,12 +845,12 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
                     key={item.id}
                     className={`group relative bg-[#18181b] rounded-3xl overflow-hidden border border-white/5 hover:border-white/20 transition-all duration-300 ${viewMode === 'list' ? 'flex flex-row h-40' : ''}`}
                   >
-                    <div className={`bg-zinc-900 relative ${viewMode === 'list' ? 'w-48 aspect-auto h-full shrink-0' : 'aspect-square'}`}>
+                    <div className={`bg-card relative ${viewMode === 'list' ? 'w-48 aspect-auto h-full shrink-0' : 'aspect-square'}`}>
                       <img
                         src={item.preview_url || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400'}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                       />
-                      <div className="absolute inset-0 bg-black/60 flex items-center justify-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 backdrop-blur-[2px]">
+                      <div className="absolute inset-0 bg-[#101112]/60 flex items-center justify-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 backdrop-blur-[2px]">
                         <Button size="sm" className="rounded-xl bg-white text-black font-bold hover:bg-zinc-200">
                           Use
                         </Button>
@@ -859,7 +859,7 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
                         </Button>
                       </div>
                       <div className="absolute top-3 left-3">
-                        <Badge className="bg-black/50 backdrop-blur-md border border-white/10 text-white">
+                        <Badge className="bg-[#101112]/50 backdrop-blur-md border border-white/10 text-white">
                           {item.template_type === 'business' ? 'Business' : 'Individual'}
                         </Badge>
                       </div>
@@ -890,7 +890,7 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
           {selectedTemplate && (
             <div className="flex flex-col md:flex-row h-[85vh] md:h-auto md:max-h-[85vh]">
               {/* Left: Image */}
-              <div className="w-full md:w-1/2 bg-black relative max-h-[40vh] md:max-h-none overflow-hidden group">
+              <div className="w-full md:w-1/2 bg-[#101112] relative max-h-[40vh] md:max-h-none overflow-hidden group">
                 <img
                   src={getTemplateImage(selectedTemplate)}
                   alt={selectedTemplate.name}
@@ -940,7 +940,7 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
 
                   {/* Pipeline Info */}
                   <div className="grid grid-cols-2 gap-3">
-                    <div className="p-3 rounded-xl bg-zinc-900/50 border border-white/5 flex items-center gap-3">
+                    <div className="p-3 rounded-xl bg-card/50 border border-white/5 flex items-center gap-3">
                       <div className="w-10 h-10 rounded-lg bg-zinc-800 flex items-center justify-center text-zinc-400">
                         <ImageIcon className="w-5 h-5" />
                       </div>
@@ -953,7 +953,7 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
                     </div>
 
                     {selectedTemplate.pipeline_config?.faceswapEnabled && (
-                      <div className="p-3 rounded-xl bg-zinc-900/50 border border-white/5 flex items-center gap-3">
+                      <div className="p-3 rounded-xl bg-card/50 border border-white/5 flex items-center gap-3">
                         <div className="w-10 h-10 rounded-lg bg-zinc-800 flex items-center justify-center text-pink-400">
                           <Sparkles className="w-5 h-5" />
                         </div>
@@ -965,7 +965,7 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
                     )}
 
                     {selectedTemplate.pipeline_config?.videoEnabled && (
-                      <div className="p-3 rounded-xl bg-zinc-900/50 border border-white/5 flex items-center gap-3">
+                      <div className="p-3 rounded-xl bg-card/50 border border-white/5 flex items-center gap-3">
                         <div className="w-10 h-10 rounded-lg bg-zinc-800 flex items-center justify-center text-purple-400">
                           <Video className="w-5 h-5" />
                         </div>
@@ -976,7 +976,7 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
                       </div>
                     )}
 
-                    <div className="p-3 rounded-xl bg-zinc-900/50 border border-white/5 flex items-center gap-3">
+                    <div className="p-3 rounded-xl bg-card/50 border border-white/5 flex items-center gap-3">
                       <div className="w-10 h-10 rounded-lg bg-zinc-800 flex items-center justify-center text-yellow-400">
                         <Star className="w-5 h-5 fill-yellow-400" />
                       </div>
@@ -991,7 +991,7 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
                   {selectedTemplate.prompt && (
                     <div className="space-y-2">
                       <h4 className="text-xs font-black uppercase tracking-wider text-zinc-500">Prompt Preview</h4>
-                      <div className="bg-black/40 p-4 rounded-xl border border-white/5 font-mono text-xs text-zinc-400 leading-relaxed max-h-32 overflow-y-auto">
+                      <div className="bg-[#101112]/40 p-4 rounded-xl border border-white/5 font-mono text-xs text-zinc-400 leading-relaxed max-h-32 overflow-y-auto">
                         {selectedTemplate.prompt}
                       </div>
                     </div>
@@ -1048,7 +1048,7 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
         if (!open) resetNewTemplate();
         setShowCreateModal(open);
       }}>
-        <DialogContent className="bg-zinc-900 border-white/10 text-white max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="bg-card border-white/10 text-white max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Upload className="w-5 h-5" />
@@ -1109,7 +1109,7 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
                     <SelectTrigger className="mt-1 bg-zinc-800 border-white/10 text-white">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="bg-zinc-900 border-white/10">
+                    <SelectContent className="bg-card border-white/10">
                       <SelectItem value="individual" className="text-white">
                         <div className="flex items-center gap-2">
                           <ImageIcon className="w-4 h-4" />
@@ -1135,7 +1135,7 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
                     <SelectTrigger className="mt-1 bg-zinc-800 border-white/10 text-white">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="bg-zinc-900 border-white/10">
+                    <SelectContent className="bg-card border-white/10">
                       {CATEGORIES.filter(c => c !== 'All').map(cat => (
                         <SelectItem key={cat} value={cat} className="text-white">{cat}</SelectItem>
                       ))}
@@ -1195,7 +1195,7 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
                         <img src={url} alt={`bg-${i}`} className="w-full h-full object-cover" />
                         <button
                           onClick={() => removeBackground(url)}
-                          className="absolute top-1 right-1 bg-black/60 rounded p-1 hover:bg-red-500 transition-colors"
+                          className="absolute top-1 right-1 bg-[#101112]/60 rounded p-1 hover:bg-red-500 transition-colors"
                         >
                           <X className="w-3 h-3 text-white" />
                         </button>
@@ -1228,7 +1228,7 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
                         <img src={url} alt={`elem-${i}`} className="w-full h-full object-cover" />
                         <button
                           onClick={() => removeElement(url)}
-                          className="absolute top-1 right-1 bg-black/60 rounded p-1 hover:bg-red-500 transition-colors"
+                          className="absolute top-1 right-1 bg-[#101112]/60 rounded p-1 hover:bg-red-500 transition-colors"
                         >
                           <X className="w-3 h-3 text-white" />
                         </button>
@@ -1310,7 +1310,7 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
                     <SelectTrigger className="bg-zinc-800 border-white/10 text-white">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="bg-zinc-900 border-white/10">
+                    <SelectContent className="bg-card border-white/10">
                       {FACESWAP_MODELS.map((model) => (
                         <SelectItem key={model.value} value={model.value} className="text-white">
                           {model.label} (+{model.tokens} tokens)

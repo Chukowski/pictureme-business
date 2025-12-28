@@ -15,7 +15,7 @@ export function ActivitySystemBlock({ events, isLoading, user }: ActivitySystemB
   const tokensTotal = user?.tokens_total ?? 1000;
 
   return (
-    <Card className="bg-zinc-900/30 border-white/10 h-full">
+    <Card className="bg-card/30 border-white/10 h-full">
       <CardHeader className="pb-3">
         <CardTitle className="text-sm font-medium text-zinc-300 flex items-center gap-2">
           <Activity className="w-4 h-4 text-indigo-400" />
@@ -39,7 +39,7 @@ export function ActivitySystemBlock({ events, isLoading, user }: ActivitySystemB
               
               {recentEvents.map((event, i) => (
                 <div key={event._id} className="relative pl-6 py-2 group">
-                  <div className="absolute left-0 top-3 w-4 h-4 rounded-full bg-zinc-900 border-2 border-zinc-700 flex items-center justify-center z-10 group-hover:border-indigo-500 transition-colors">
+                  <div className="absolute left-0 top-3 w-4 h-4 rounded-full bg-card border-2 border-zinc-700 flex items-center justify-center z-10 group-hover:border-indigo-500 transition-colors">
                     <div className="w-1.5 h-1.5 rounded-full bg-zinc-500 group-hover:bg-indigo-400" />
                   </div>
                   <div className="flex flex-col">
@@ -64,7 +64,7 @@ export function ActivitySystemBlock({ events, isLoading, user }: ActivitySystemB
         <div className="space-y-3 pt-4 border-t border-white/5">
           <p className="text-xs font-medium text-zinc-500 uppercase tracking-wider">System Health</p>
           <div className="grid grid-cols-3 gap-2">
-            <div className="bg-black/20 rounded-lg p-2 flex items-center justify-between border border-white/5">
+            <div className="bg-[#101112]/20 rounded-lg p-2 flex items-center justify-between border border-white/5">
               <span className="text-[11px] text-zinc-400 flex items-center gap-1">
                 <Server className="w-3 h-3" /> AI Processor
               </span>
@@ -73,13 +73,13 @@ export function ActivitySystemBlock({ events, isLoading, user }: ActivitySystemB
                 Operational
               </span>
             </div>
-            <div className="bg-black/20 rounded-lg p-2 flex items-center justify-between border border-white/5">
+            <div className="bg-[#101112]/20 rounded-lg p-2 flex items-center justify-between border border-white/5">
               <span className="text-[11px] text-zinc-400 flex items-center gap-1">
                 <Clock4 className="w-3 h-3" /> Latency
               </span>
               <span className="text-[10px] text-zinc-300 font-mono">~450ms</span>
             </div>
-            <div className="bg-black/20 rounded-lg p-2 flex items-center justify-between border border-white/5">
+            <div className="bg-[#101112]/20 rounded-lg p-2 flex items-center justify-between border border-white/5">
               <span className="text-[11px] text-zinc-400 flex items-center gap-1">
                 <Coins className="w-3 h-3 text-yellow-400" /> Tokens
               </span>

@@ -184,7 +184,7 @@ export function ChargePOSModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-zinc-900 border-white/10 max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className="bg-card border-white/10 max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-white flex items-center gap-2">
             <CreditCard className="w-5 h-5 text-emerald-400" />
@@ -200,10 +200,10 @@ export function ChargePOSModal({
           <div className="space-y-2">
             <Label className="text-zinc-300">Select Album</Label>
             <Select value={selectedAlbumCode} onValueChange={setSelectedAlbumCode}>
-              <SelectTrigger className="bg-black/40 border-white/10 text-white">
+              <SelectTrigger className="bg-[#101112]/40 border-white/10 text-white">
                 <SelectValue placeholder={loadingAlbums ? "Loading..." : "Select an album"} />
               </SelectTrigger>
-              <SelectContent className="bg-zinc-900 border-white/10">
+              <SelectContent className="bg-card border-white/10">
                 {albums.map((album) => (
                   <SelectItem 
                     key={album.id} 
@@ -235,7 +235,7 @@ export function ChargePOSModal({
                     className={`p-3 rounded-xl border text-left transition-all ${
                       selectedPackageId === pkg.id
                         ? 'border-emerald-500 bg-emerald-500/10'
-                        : 'border-white/10 bg-black/20 hover:bg-white/5'
+                        : 'border-white/10 bg-[#101112]/20 hover:bg-white/5'
                     }`}
                   >
                     <div className="flex items-center gap-2 mb-1">
@@ -269,7 +269,7 @@ export function ChargePOSModal({
                   placeholder="0.00"
                   value={customAmount}
                   onChange={(e) => setCustomAmount(e.target.value)}
-                  className="bg-black/40 border-white/10 text-white pl-7 text-lg"
+                  className="bg-[#101112]/40 border-white/10 text-white pl-7 text-lg"
                 />
               </div>
             </div>
@@ -277,7 +277,7 @@ export function ChargePOSModal({
 
           {/* Amount Summary */}
           {totalAmount > 0 && (
-            <div className="bg-black/30 rounded-xl p-4 space-y-2">
+            <div className="bg-[#101112]/30 rounded-xl p-4 space-y-2">
               <div className="flex justify-between text-sm">
                 <span className="text-zinc-400">Subtotal</span>
                 <span className="text-white">{currencySymbol}{baseAmount.toFixed(2)}</span>
@@ -307,7 +307,7 @@ export function ChargePOSModal({
                   className={`p-3 rounded-xl border flex flex-col items-center gap-2 transition-all ${
                     paymentMethod === method.value
                       ? 'border-emerald-500 bg-emerald-500/10'
-                      : 'border-white/10 bg-black/20 hover:bg-white/5'
+                      : 'border-white/10 bg-[#101112]/20 hover:bg-white/5'
                   }`}
                 >
                   <method.icon className={`w-5 h-5 ${
@@ -332,7 +332,7 @@ export function ChargePOSModal({
                   placeholder="Customer name"
                   value={customerName}
                   onChange={(e) => setCustomerName(e.target.value)}
-                  className="bg-black/40 border-white/10 text-white pl-10"
+                  className="bg-[#101112]/40 border-white/10 text-white pl-10"
                 />
               </div>
               <div className="relative">
@@ -342,7 +342,7 @@ export function ChargePOSModal({
                   placeholder="Email address"
                   value={customerEmail}
                   onChange={(e) => setCustomerEmail(e.target.value)}
-                  className="bg-black/40 border-white/10 text-white pl-10"
+                  className="bg-[#101112]/40 border-white/10 text-white pl-10"
                 />
               </div>
               <div className="relative">
@@ -352,14 +352,14 @@ export function ChargePOSModal({
                   placeholder="Phone number"
                   value={customerPhone}
                   onChange={(e) => setCustomerPhone(e.target.value)}
-                  className="bg-black/40 border-white/10 text-white pl-10"
+                  className="bg-[#101112]/40 border-white/10 text-white pl-10"
                 />
               </div>
             </div>
           </div>
 
           {/* Generate Invoice Toggle */}
-          <div className="flex items-center justify-between p-3 bg-black/30 rounded-xl">
+          <div className="flex items-center justify-between p-3 bg-[#101112]/30 rounded-xl">
             <div className="flex items-center gap-3">
               <Receipt className="w-5 h-5 text-zinc-400" />
               <div>
@@ -381,7 +381,7 @@ export function ChargePOSModal({
               placeholder="Add any notes about this transaction..."
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              className="bg-black/40 border-white/10 text-white resize-none h-20"
+              className="bg-[#101112]/40 border-white/10 text-white resize-none h-20"
             />
           </div>
 

@@ -136,11 +136,35 @@ const getApiUrl = (): string => {
 const AppContent = () => {
   const location = useLocation();
   const apiUrl = getApiUrl();
+  const [copilotReady, setCopilotReady] = useState(false);
 
   // Only initialize CopilotKit on admin, super-admin, and creator pages
   const shouldInitCopilot = location.pathname.startsWith('/admin') ||
     location.pathname.startsWith('/super-admin') ||
     location.pathname.startsWith('/creator');
+
+  // Check if backend is available before initializing CopilotKit
+  useEffect(() => {
+    if (!shouldInitCopilot || !apiUrl) return;
+
+    // Quick health check to avoid CORS/503 errors blocking the UI
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 2000);
+
+    fetch(`${apiUrl}/health`, { signal: controller.signal })
+      .then(res => {
+        if (res.ok) setCopilotReady(true);
+      })
+      .catch(() => {
+        console.log('⚠️ Backend not available, CopilotKit disabled');
+      })
+      .finally(() => clearTimeout(timeoutId));
+
+    return () => {
+      controller.abort();
+      clearTimeout(timeoutId);
+    };
+  }, [shouldInitCopilot, apiUrl]);
 
   // Check if user is on authenticated routes
   const isAuthenticatedRoute = shouldInitCopilot;
@@ -177,7 +201,7 @@ const AppContent = () => {
   return (
     <>
       <SEO />
-      {shouldInitCopilot && apiUrl && (
+      {shouldInitCopilot && apiUrl && copilotReady && (
         <CopilotKit
           runtimeUrl={`${apiUrl}/copilotkit/`}
           properties={getUserProperties()}
@@ -239,10 +263,12 @@ const AppContent = () => {
             <Route path="dashboard" element={<CreatorDashboard />} />
             <Route path="chat" element={<ChatPage />} />
             <Route path="create" element={<Navigate to="/creator/studio" replace />} />
+            <Route path="gallery" element={<CreatorStudioPage defaultView="gallery" />} />
             <Route path="booth" element={<BoothDashboard />} />
             <Route path="booth/:eventId" element={<CreatorBoothPage />} />
             <Route path="booth/:eventId/edit" element={<CreatorBoothEditor />} />
             <Route path="studio" element={<CreatorStudioPage />} />
+            <Route path="models" element={<CreatorTemplatesPage />} />
             <Route path="templates" element={<CreatorTemplatesPage />} />
             <Route path="billing" element={<CreatorBillingPage />} />
             <Route path="support" element={<CreatorSupportPage />} />

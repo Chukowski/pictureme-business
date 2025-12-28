@@ -14,7 +14,7 @@ export function DeveloperToolsCard({ user }: DeveloperToolsCardProps) {
   if (!isBusiness) return null;
 
   return (
-    <Card className="bg-zinc-900/20 border-white/5">
+    <Card className="bg-card/20 border-white/5">
       <CardHeader className="pb-2">
         <CardTitle className="text-sm font-medium text-zinc-400 flex items-center gap-2">
           <Terminal className="w-4 h-4" />

@@ -40,7 +40,7 @@ export function CreatorSmartOnboarding({ events }: CreatorSmartOnboardingProps) 
   ];
 
   return (
-    <Card className="bg-zinc-900 bg-gradient-to-r from-indigo-900/20 to-purple-900/20 border-indigo-500/30">
+    <Card className="bg-card bg-gradient-to-r from-indigo-900/20 to-purple-900/20 border-indigo-500/30">
       <CardContent className="p-4 sm:p-5">
         <div className="flex flex-col gap-4">
           <div className="space-y-1">
@@ -54,7 +54,7 @@ export function CreatorSmartOnboarding({ events }: CreatorSmartOnboardingProps) 
                 key={step.id}
                 className={`snap-center flex-none w-48 sm:w-auto sm:flex-1 flex flex-col justify-between p-3 sm:p-4 rounded-xl border transition-all h-24 sm:h-28 relative overflow-hidden ${step.done
                     ? "bg-emerald-500/10 border-emerald-500/20"
-                    : "bg-zinc-900/60 border-white/5 hover:bg-zinc-900/80 cursor-pointer group"
+                    : "bg-card/60 border-white/5 hover:bg-card/80 cursor-pointer group"
                   }`}
                 onClick={!step.done ? step.action : undefined}
               >

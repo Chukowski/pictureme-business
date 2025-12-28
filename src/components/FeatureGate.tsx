@@ -47,7 +47,7 @@ export function FeatureGate({
             <div className="opacity-50 pointer-events-none select-none">
               {children}
             </div>
-            <div className="absolute inset-0 flex items-center justify-center bg-black/20 backdrop-blur-[1px] rounded-lg">
+            <div className="absolute inset-0 flex items-center justify-center bg-[#101112]/20 backdrop-blur-[1px] rounded-lg">
               <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-zinc-800/90 border border-white/10">
                 <Lock className="w-3.5 h-3.5 text-amber-400" />
                 <span className="text-xs font-medium text-zinc-300">Locked</span>
@@ -55,7 +55,7 @@ export function FeatureGate({
             </div>
           </div>
         </TooltipTrigger>
-        <TooltipContent side="top" className="bg-zinc-900 border-white/10 text-white max-w-xs">
+        <TooltipContent side="top" className="bg-card border-white/10 text-white max-w-xs">
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               <Crown className="w-4 h-4 text-amber-400" />
@@ -103,7 +103,7 @@ export function FeatureLockBadge({
             <span className="hidden sm:inline">Pro</span>
           </span>
         </TooltipTrigger>
-        <TooltipContent side="top" className="bg-zinc-900 border-white/10 text-white">
+        <TooltipContent side="top" className="bg-card border-white/10 text-white">
           <p className="text-xs">{getUpgradeMessage(feature)}</p>
         </TooltipContent>
       </Tooltip>

@@ -53,9 +53,9 @@ export function BoothEditorLayout({
     ];
 
     return (
-        <div className="h-screen w-full flex flex-col bg-black overflow-hidden font-sans">
+        <div className="h-screen w-full flex flex-col bg-[#101112] overflow-hidden font-sans">
             {/* Sticky Header */}
-            <header className="h-14 border-b border-white/10 bg-zinc-950 flex items-center justify-between px-4 shrink-0 z-50">
+            <header className="h-14 border-b border-white/10 bg-card flex items-center justify-between px-4 shrink-0 z-50">
                 <div className="flex items-center gap-4">
                     <Button
                         variant="ghost"
@@ -79,7 +79,7 @@ export function BoothEditorLayout({
 
                 <div className="flex items-center gap-3">
                     {/* Status Toggle */}
-                    <div className="flex items-center gap-1 bg-black/30 p-1 rounded-lg border border-white/5">
+                    <div className="flex items-center gap-1 bg-[#101112]/30 p-1 rounded-lg border border-white/5">
                         <button
                             onClick={() => onStatusChange?.('draft')}
                             className={cn(
@@ -120,7 +120,7 @@ export function BoothEditorLayout({
 
             <div className="flex-1 flex overflow-hidden">
                 {/* LEFT SIDEBAR - Step Navigation */}
-                <aside className="w-56 bg-zinc-950 border-r border-white/10 flex flex-col shrink-0">
+                <aside className="w-56 bg-card border-r border-white/10 flex flex-col shrink-0">
                     <div className="p-3 border-b border-white/5">
                         <h2 className="text-[10px] uppercase tracking-wider text-zinc-500 font-semibold px-2">
                             Booth Configuration
@@ -146,7 +146,7 @@ export function BoothEditorLayout({
 
                                     <div className={cn(
                                         "p-2 rounded-lg transition-colors",
-                                        currentStep === step.id ? "bg-indigo-500/20 text-indigo-300" : "bg-zinc-900 text-zinc-500 group-hover:text-zinc-300"
+                                        currentStep === step.id ? "bg-indigo-500/20 text-indigo-300" : "bg-card text-zinc-500 group-hover:text-zinc-300"
                                     )}>
                                         <step.icon className="w-4 h-4" />
                                     </div>
@@ -177,10 +177,10 @@ export function BoothEditorLayout({
                 </aside>
 
                 {/* MAIN CONTENT - SPLIT VIEW */}
-                <div className="flex-1 flex overflow-hidden bg-zinc-900">
+                <div className="flex-1 flex overflow-hidden bg-card">
 
                     {/* Center Panel - Form - FULL WIDTH */}
-                    <div className="flex-1 flex flex-col min-w-[500px] bg-zinc-950 relative z-10 shadow-2xl border-r border-white/5">
+                    <div className="flex-1 flex flex-col min-w-[500px] bg-card relative z-10 shadow-2xl border-r border-white/5">
                         <ScrollArea className="flex-1">
                             <div className="w-full pb-32">
                                 {children}
@@ -192,7 +192,7 @@ export function BoothEditorLayout({
                     <div className="w-[45%] min-w-[450px] max-w-[800px] flex flex-col bg-[#09090b] relative shrink-0">
 
                         {/* Canvas Toolbar */}
-                        <div className="h-14 border-b border-white/5 flex items-center justify-between px-4 bg-zinc-900/50 backdrop-blur-sm z-20">
+                        <div className="h-14 border-b border-white/5 flex items-center justify-between px-4 bg-card/50 backdrop-blur-sm z-20">
                             <div className="flex items-center gap-2">
                                 <span className="text-xs text-zinc-500 font-medium">LIVE PREVIEW</span>
                             </div>
@@ -200,7 +200,7 @@ export function BoothEditorLayout({
                             <div className="flex items-center gap-2">
                                 {/* Device Switcher */}
                                 <TooltipProvider>
-                                    <div className="flex items-center gap-0.5 bg-zinc-900 p-0.5 rounded-lg border border-white/5">
+                                    <div className="flex items-center gap-0.5 bg-card p-0.5 rounded-lg border border-white/5">
                                         <Tooltip>
                                             <TooltipTrigger asChild>
                                                 <button
@@ -300,7 +300,7 @@ export function BoothEditorLayout({
                         </div>
 
                         {/* Preview Canvas */}
-                        <div className="flex-1 relative overflow-hidden bg-gradient-to-br from-zinc-900 via-black to-zinc-950">
+                        <div className="flex-1 relative overflow-hidden bg-gradient-to-br from-zinc-900 via-[#101112] to-zinc-950">
                             {showGrid && (
                                 <div
                                     className="absolute inset-0 opacity-10"
@@ -316,7 +316,7 @@ export function BoothEditorLayout({
                                 style={{ transform: `scale(${zoom / 100})` }}
                             >
                                 <div className={cn(
-                                    "bg-black rounded-2xl shadow-2xl border border-white/10 overflow-hidden transition-all",
+                                    "bg-[#101112] rounded-2xl shadow-2xl border border-white/10 overflow-hidden transition-all",
                                     previewDevice === 'mobile' && "w-[375px] h-[812px]",
                                     previewDevice === 'tablet' && "w-[768px] h-[1024px]",
                                     previewDevice === 'desktop' && "w-full h-full max-w-[1200px]"

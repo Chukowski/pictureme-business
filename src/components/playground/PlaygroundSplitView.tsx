@@ -26,7 +26,7 @@ export function PlaygroundSplitView({ leftPanel, rightPanel, canvasOverlay }: Pl
   return (
     <div className="flex w-full h-full overflow-hidden">
       {/* Center Panel - Configuration & Controls */}
-      <div className="flex-1 flex flex-col min-w-[400px] bg-zinc-950 relative z-10 shadow-2xl border-r border-white/5">
+      <div className="flex-1 flex flex-col min-w-[400px] bg-card relative z-10 shadow-2xl border-r border-white/5">
         <ScrollArea className="flex-1">
           <div className="p-6 max-w-3xl mx-auto w-full pb-32 space-y-8">
              {leftPanel}
@@ -38,14 +38,14 @@ export function PlaygroundSplitView({ leftPanel, rightPanel, canvasOverlay }: Pl
       <div className="w-[45%] min-w-[450px] max-w-[800px] flex flex-col bg-[#09090b] relative shrink-0">
         
         {/* Canvas Toolbar */}
-        <div className="h-14 border-b border-white/5 flex items-center justify-between px-4 bg-zinc-900/50 backdrop-blur-sm z-20">
+        <div className="h-14 border-b border-white/5 flex items-center justify-between px-4 bg-card/50 backdrop-blur-sm z-20">
           <div className="flex items-center gap-4">
             <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Device Canvas</span>
             
             <div className="h-4 w-px bg-white/10" />
             
             {/* Device Selector */}
-            <div className="flex items-center bg-zinc-900 rounded-lg p-0.5 border border-white/5">
+            <div className="flex items-center bg-card rounded-lg p-0.5 border border-white/5">
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -92,7 +92,7 @@ export function PlaygroundSplitView({ leftPanel, rightPanel, canvasOverlay }: Pl
 
           <div className="flex items-center gap-2">
              {/* Zoom Controls */}
-             <div className="flex items-center bg-zinc-900 rounded-lg p-0.5 border border-white/5">
+             <div className="flex items-center bg-card rounded-lg p-0.5 border border-white/5">
                 <Button variant="ghost" size="icon" className="h-7 w-7 text-zinc-400 hover:text-white" onClick={handleZoomOut}>
                   <ZoomOut className="w-3.5 h-3.5" />
                 </Button>
@@ -140,7 +140,7 @@ export function PlaygroundSplitView({ leftPanel, rightPanel, canvasOverlay }: Pl
             style={{ transform: `scale(${zoom / 100})` }}
           >
             <div className={cn(
-              "relative bg-black border-[8px] border-zinc-800 shadow-2xl overflow-hidden transition-all duration-500",
+              "relative bg-[#101112] border-[8px] border-zinc-800 shadow-2xl overflow-hidden transition-all duration-500",
               previewDevice === 'mobile' ? "w-[375px] h-[812px] rounded-[3rem]" : 
               previewDevice === 'tablet' ? "w-[768px] h-[1024px] rounded-[2rem]" : 
               "w-[1280px] h-[800px] rounded-xl border-[12px]" // Desktop
@@ -148,12 +148,12 @@ export function PlaygroundSplitView({ leftPanel, rightPanel, canvasOverlay }: Pl
               {/* Notch / Header for Mobile */}
               {previewDevice === 'mobile' && (
                 <div className="absolute top-0 left-1/2 -translate-x-1/2 w-36 h-7 bg-zinc-800 rounded-b-2xl z-50 flex items-center justify-center">
-                   <div className="w-16 h-1 rounded-full bg-black/40" />
+                   <div className="w-16 h-1 rounded-full bg-[#101112]/40" />
                 </div>
               )}
               
               {/* Content */}
-              <div className="w-full h-full bg-zinc-900 overflow-y-auto scrollbar-hide">
+              <div className="w-full h-full bg-card overflow-y-auto scrollbar-hide">
                 {rightPanel}
               </div>
             </div>

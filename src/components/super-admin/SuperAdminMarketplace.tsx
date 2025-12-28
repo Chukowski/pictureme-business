@@ -334,7 +334,7 @@ export default function SuperAdminMarketplace() {
                     <Button
                         variant="outline"
                         onClick={() => setIsImportOpen(true)}
-                        className="bg-zinc-900 border-white/10 hover:bg-zinc-800"
+                        className="bg-card border-white/10 hover:bg-zinc-800"
                     >
                         <Upload className="w-4 h-4 mr-2" />
                         Import JSON
@@ -356,21 +356,21 @@ export default function SuperAdminMarketplace() {
                     <Search className="absolute left-3 top-2.5 h-4 w-4 text-zinc-500" />
                     <Input
                         placeholder="Search templates by name, ID or category..."
-                        className="pl-10 bg-zinc-950 border-white/10 text-white h-10"
+                        className="pl-10 bg-card border-white/10 text-white h-10"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
                 </div>
                 <Button
                     variant="outline"
-                    className="h-10 border-white/10 bg-zinc-950"
+                    className="h-10 border-white/10 bg-card"
                     onClick={fetchTemplates}
                 >
                     <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
                 </Button>
             </div>
 
-            <div className="rounded-xl border border-white/5 bg-zinc-900/50 backdrop-blur-sm overflow-hidden min-h-[400px]">
+            <div className="rounded-xl border border-white/5 bg-card/50 backdrop-blur-sm overflow-hidden min-h-[400px]">
                 <Table>
                     <TableHeader className="bg-white/5">
                         <TableRow className="border-white/10 hover:bg-transparent">
@@ -569,7 +569,7 @@ export default function SuperAdminMarketplace() {
 
             {/* Create/Edit Template Dialog */}
             <Dialog open={isCreateOpen || isEditDialogOpen} onOpenChange={(open) => { if (!open) { setIsCreateOpen(false); setIsEditDialogOpen(false); } }}>
-                <DialogContent className="max-w-2xl bg-zinc-900 border-white/10 text-white max-h-[90vh] overflow-y-auto">
+                <DialogContent className="max-w-2xl bg-card border-white/10 text-white max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
                         <DialogTitle>{isEditDialogOpen ? 'Edit Template' : 'Create New Template'}</DialogTitle>
                         <DialogDescription>
@@ -583,7 +583,7 @@ export default function SuperAdminMarketplace() {
                             <Input
                                 value={formData.name}
                                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                className="bg-zinc-950 border-white/10"
+                                className="bg-card border-white/10"
                             />
                         </div>
                         <div className="space-y-2">
@@ -592,10 +592,10 @@ export default function SuperAdminMarketplace() {
                                 value={formData.category}
                                 onValueChange={(val) => setFormData({ ...formData, category: val })}
                             >
-                                <SelectTrigger className="bg-zinc-950 border-white/10">
+                                <SelectTrigger className="bg-card border-white/10">
                                     <SelectValue placeholder="Category" />
                                 </SelectTrigger>
-                                <SelectContent className="bg-zinc-900 border-white/10 text-white">
+                                <SelectContent className="bg-card border-white/10 text-white">
                                     <SelectItem value="portrait">Portrait</SelectItem>
                                     <SelectItem value="art">Digital Art</SelectItem>
                                     <SelectItem value="photorealistic">Photorealistic</SelectItem>
@@ -611,7 +611,7 @@ export default function SuperAdminMarketplace() {
                             <Textarea
                                 value={formData.description}
                                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                className="bg-zinc-950 border-white/10 h-20"
+                                className="bg-card border-white/10 h-20"
                             />
                         </div>
                         <div className="space-y-2">
@@ -620,10 +620,10 @@ export default function SuperAdminMarketplace() {
                                 value={formData.template_type}
                                 onValueChange={(val) => setFormData({ ...formData, template_type: val })}
                             >
-                                <SelectTrigger className="bg-zinc-950 border-white/10 text-white">
+                                <SelectTrigger className="bg-card border-white/10 text-white">
                                     <SelectValue placeholder="Select Tier" />
                                 </SelectTrigger>
-                                <SelectContent className="bg-zinc-900 border-white/10 text-white">
+                                <SelectContent className="bg-card border-white/10 text-white">
                                     <SelectItem value="individual">Individual (Regular)</SelectItem>
                                     <SelectItem value="business">Business (Enterprise)</SelectItem>
                                 </SelectContent>
@@ -635,10 +635,10 @@ export default function SuperAdminMarketplace() {
                                 value={formData.media_type}
                                 onValueChange={(val) => setFormData({ ...formData, media_type: val as any })}
                             >
-                                <SelectTrigger className="bg-zinc-950 border-white/10 text-white">
+                                <SelectTrigger className="bg-card border-white/10 text-white">
                                     <SelectValue placeholder="Select Format" />
                                 </SelectTrigger>
-                                <SelectContent className="bg-zinc-900 border-white/10 text-white">
+                                <SelectContent className="bg-card border-white/10 text-white">
                                     <SelectItem value="image">Image Generation</SelectItem>
                                     <SelectItem value="video">Video Generation</SelectItem>
                                     <SelectItem value="workflow">Workflow (Complex)</SelectItem>
@@ -651,10 +651,10 @@ export default function SuperAdminMarketplace() {
                                 value={formData.ai_model}
                                 onValueChange={(val) => setFormData({ ...formData, ai_model: val })}
                             >
-                                <SelectTrigger className="bg-zinc-950 border-white/10">
+                                <SelectTrigger className="bg-card border-white/10">
                                     <SelectValue placeholder="Select AI Model" />
                                 </SelectTrigger>
-                                <SelectContent className="bg-zinc-900 border-white/10 text-white">
+                                <SelectContent className="bg-card border-white/10 text-white">
                                     {Object.values(AI_MODELS).filter(m => m.type === 'image').map(model => (
                                         <SelectItem key={model.id} value={model.id}>
                                             <div className="flex flex-col">
@@ -672,7 +672,7 @@ export default function SuperAdminMarketplace() {
                                 type="number"
                                 value={formData.tokens_cost}
                                 onChange={(e) => setFormData({ ...formData, tokens_cost: parseInt(e.target.value) || 0 })}
-                                className="bg-zinc-950 border-white/10"
+                                className="bg-card border-white/10"
                             />
                         </div>
                         <div className="space-y-2">
@@ -682,7 +682,7 @@ export default function SuperAdminMarketplace() {
                                 step="0.01"
                                 value={formData.price}
                                 onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })}
-                                className="bg-zinc-950 border-white/10"
+                                className="bg-card border-white/10"
                                 placeholder="0.00"
                             />
                         </div>
@@ -692,7 +692,7 @@ export default function SuperAdminMarketplace() {
                             <Textarea
                                 value={formData.prompt}
                                 onChange={(e) => setFormData({ ...formData, prompt: e.target.value })}
-                                className="bg-zinc-950 border-white/10 h-32 font-mono text-xs"
+                                className="bg-card border-white/10 h-32 font-mono text-xs"
                                 placeholder="A professional portrait of [name] wearing..."
                             />
                         </div>
@@ -703,10 +703,10 @@ export default function SuperAdminMarketplace() {
                                 value={formData.status}
                                 onValueChange={(val: any) => setFormData({ ...formData, status: val })}
                             >
-                                <SelectTrigger className="bg-zinc-950 border-white/10">
+                                <SelectTrigger className="bg-card border-white/10">
                                     <SelectValue placeholder="Status" />
                                 </SelectTrigger>
-                                <SelectContent className="bg-zinc-900 border-white/10 text-white">
+                                <SelectContent className="bg-card border-white/10 text-white">
                                     <SelectItem value="draft">Draft</SelectItem>
                                     <SelectItem value="pending">Pending Review</SelectItem>
                                     <SelectItem value="published">Published</SelectItem>
@@ -720,7 +720,7 @@ export default function SuperAdminMarketplace() {
                             <Textarea
                                 value={formData.negative_prompt}
                                 onChange={(e) => setFormData({ ...formData, negative_prompt: e.target.value })}
-                                className="bg-zinc-950 border-white/10 h-20 font-mono text-xs"
+                                className="bg-card border-white/10 h-20 font-mono text-xs"
                             />
                         </div>
 
@@ -781,7 +781,7 @@ export default function SuperAdminMarketplace() {
 
             {/* Import JSON Dialog */}
             <Dialog open={isImportOpen} onOpenChange={setIsImportOpen}>
-                <DialogContent className="max-w-2xl bg-zinc-900 border-white/10 text-white">
+                <DialogContent className="max-w-2xl bg-card border-white/10 text-white">
                     <DialogHeader>
                         <DialogTitle>Import Templates (JSON)</DialogTitle>
                         <DialogDescription>
@@ -791,7 +791,7 @@ export default function SuperAdminMarketplace() {
                     <div className="py-4">
                         <Textarea
                             placeholder='{ "name": "New Template", ... }'
-                            className="bg-zinc-950 border-white/10 h-[400px] font-mono text-[11px]"
+                            className="bg-card border-white/10 h-[400px] font-mono text-[11px]"
                             value={importJson}
                             onChange={(e) => setImportJson(e.target.value)}
                         />
@@ -807,7 +807,7 @@ export default function SuperAdminMarketplace() {
 
             {/* Assign to User Dialog */}
             <Dialog open={isAssignOpen} onOpenChange={setIsAssignOpen}>
-                <DialogContent className="bg-zinc-900 border-white/10 text-white">
+                <DialogContent className="bg-card border-white/10 text-white">
                     <DialogHeader>
                         <DialogTitle>Assign Template to User</DialogTitle>
                         <DialogDescription>
@@ -819,7 +819,7 @@ export default function SuperAdminMarketplace() {
                             <Search className="absolute left-3 top-2.5 h-4 w-4 text-zinc-500" />
                             <Input
                                 placeholder="Search user by email or name..."
-                                className="pl-10 bg-zinc-950 border-white/10"
+                                className="pl-10 bg-card border-white/10"
                                 value={userSearchTerm}
                                 onChange={(e) => setUserSearchTerm(e.target.value)}
                             />

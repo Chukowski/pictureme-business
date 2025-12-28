@@ -32,7 +32,7 @@ export function PlanInsightsCard({ user }: PlanInsightsCardProps) {
   };
 
   return (
-    <Card className="bg-gradient-to-br from-zinc-900 to-black border-white/10 overflow-hidden relative">
+    <Card className="bg-gradient-to-br from-zinc-900 to-[#101112] border-white/10 overflow-hidden relative">
       {/* Background decoration */}
       <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none" />
 

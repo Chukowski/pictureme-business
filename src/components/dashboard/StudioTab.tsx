@@ -235,7 +235,7 @@ export default function StudioTab({ currentUser }: StudioTabProps) {
             {/* Left Control Panel */}
             <div className="w-full lg:w-96 flex flex-col gap-4 shrink-0">
                 {/* Mode Tabs */}
-                <div className="flex p-1 bg-zinc-900/50 border border-white/10 rounded-xl backdrop-blur-sm">
+                <div className="flex p-1 bg-card/50 border border-white/10 rounded-xl backdrop-blur-sm">
                     <button
                         onClick={() => setActiveMode("video")}
                         className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${activeMode === "video" ? "bg-white/10 text-white shadow-sm" : "text-zinc-400 hover:text-white"
@@ -260,17 +260,17 @@ export default function StudioTab({ currentUser }: StudioTabProps) {
                 </div>
 
                 {/* Main Controls Card */}
-                <div className="flex-1 bg-zinc-900/50 border border-white/10 rounded-xl p-5 flex flex-col gap-5 backdrop-blur-sm overflow-y-auto">
+                <div className="flex-1 bg-card/50 border border-white/10 rounded-xl p-5 flex flex-col gap-5 backdrop-blur-sm overflow-y-auto">
 
                     {/* Preview/Style Selector */}
-                    <div className="relative group cursor-pointer rounded-lg overflow-hidden border border-white/10 aspect-video bg-black/50">
+                    <div className="relative group cursor-pointer rounded-lg overflow-hidden border border-white/10 aspect-video bg-[#101112]/50">
                         <img
                             src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2564&auto=format&fit=crop"
                             alt="Style Preview"
                             className="w-full h-full object-cover opacity-60 group-hover:opacity-80 transition-opacity"
                         />
                         <div className="absolute inset-0 flex items-center justify-center">
-                            <div className="bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-full flex items-center gap-2 border border-white/10">
+                            <div className="bg-[#101112]/60 backdrop-blur-md px-3 py-1.5 rounded-full flex items-center gap-2 border border-white/10">
                                 <span className="text-xs font-bold text-white">GENERAL</span>
                                 <Settings2 className="w-3 h-3 text-zinc-400" />
                             </div>
@@ -290,7 +290,7 @@ export default function StudioTab({ currentUser }: StudioTabProps) {
                         </div>
                         <Textarea
                             placeholder="Describe what you want to create..."
-                            className="min-h-[120px] bg-black/20 border-white/10 resize-none focus:border-indigo-500/50 text-sm leading-relaxed"
+                            className="min-h-[120px] bg-[#101112]/20 border-white/10 resize-none focus:border-indigo-500/50 text-sm leading-relaxed"
                             value={prompt}
                             onChange={(e) => setPrompt(e.target.value)}
                         />
@@ -312,14 +312,14 @@ export default function StudioTab({ currentUser }: StudioTabProps) {
                                     <img src={getThumbnailUrl(startImageUrl, 300)} alt="Start frame" className="w-full h-full object-cover" />
                                 ) : (
                                     <>
-                                        <div className="w-8 h-8 rounded-lg bg-zinc-900 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                                        <div className="w-8 h-8 rounded-lg bg-card flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
                                             <ImagePlus className="w-4 h-4 text-zinc-400" />
                                         </div>
                                         <span className="text-xs font-medium text-zinc-300">Start frame</span>
                                         <span className="text-[10px] text-zinc-500">Optional</span>
                                     </>
                                 )}
-                                {isUploading && <div className="absolute inset-0 bg-black/50 flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin text-white" /></div>}
+                                {isUploading && <div className="absolute inset-0 bg-[#101112]/50 flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin text-white" /></div>}
                             </div>
                             <div
                                 onClick={() => fileInputRefEnd.current?.click()}
@@ -329,14 +329,14 @@ export default function StudioTab({ currentUser }: StudioTabProps) {
                                     <img src={getThumbnailUrl(endImageUrl, 300)} alt="End frame" className="w-full h-full object-cover" />
                                 ) : (
                                     <>
-                                        <div className="w-8 h-8 rounded-lg bg-zinc-900 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                                        <div className="w-8 h-8 rounded-lg bg-card flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
                                             <ImagePlus className="w-4 h-4 text-zinc-400" />
                                         </div>
                                         <span className="text-xs font-medium text-zinc-300">End frame</span>
                                         <span className="text-[10px] text-zinc-500">Optional</span>
                                     </>
                                 )}
-                                {isUploading && <div className="absolute inset-0 bg-black/50 flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin text-white" /></div>}
+                                {isUploading && <div className="absolute inset-0 bg-[#101112]/50 flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin text-white" /></div>}
                             </div>
                         </div>
                     )}
@@ -344,7 +344,7 @@ export default function StudioTab({ currentUser }: StudioTabProps) {
                     {/* Image Specific: Add Photos (Placed in whitespace) */}
                     {activeMode === 'image' && (
                         <div className="w-full aspect-[3/1] rounded-xl border border-dashed border-white/20 bg-white/5 hover:bg-white/10 transition-colors flex flex-col items-center justify-center cursor-pointer group">
-                            <div className="w-10 h-10 rounded-full bg-zinc-900 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                            <div className="w-10 h-10 rounded-full bg-card flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
                                 <ImagePlus className="w-5 h-5 text-zinc-400" />
                             </div>
                             <span className="text-sm font-medium text-zinc-300">Add one or more photos</span>
@@ -356,14 +356,14 @@ export default function StudioTab({ currentUser }: StudioTabProps) {
                     {activeMode === 'face-swap' && (
                         <div className="grid grid-cols-2 gap-3">
                             <div className="aspect-square rounded-xl border border-dashed border-white/20 bg-white/5 hover:bg-white/10 transition-colors flex flex-col items-center justify-center cursor-pointer group">
-                                <div className="w-8 h-8 rounded-lg bg-zinc-900 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                                <div className="w-8 h-8 rounded-lg bg-card flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
                                     <ImagePlus className="w-4 h-4 text-zinc-400" />
                                 </div>
                                 <span className="text-xs font-medium text-zinc-300">Source Face</span>
                                 <span className="text-[10px] text-zinc-500">The face to swap</span>
                             </div>
                             <div className="aspect-square rounded-xl border border-dashed border-white/20 bg-white/5 hover:bg-white/10 transition-colors flex flex-col items-center justify-center cursor-pointer group">
-                                <div className="w-8 h-8 rounded-lg bg-zinc-900 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                                <div className="w-8 h-8 rounded-lg bg-card flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
                                     <ImagePlus className="w-4 h-4 text-zinc-400" />
                                 </div>
                                 <span className="text-xs font-medium text-zinc-300">Target Image</span>
@@ -390,10 +390,10 @@ export default function StudioTab({ currentUser }: StudioTabProps) {
                                 <div className="space-y-1.5">
                                     <Label className="text-xs text-zinc-500">MODEL</Label>
                                     <Select value={selectedModel} onValueChange={setSelectedModel}>
-                                        <SelectTrigger className="bg-black/20 border-white/10 h-12">
+                                        <SelectTrigger className="bg-[#101112]/20 border-white/10 h-12">
                                             <SelectValue />
                                         </SelectTrigger>
-                                        <SelectContent className="bg-zinc-900 border-white/10">
+                                        <SelectContent className="bg-card border-white/10">
                                             {MODELS.filter(m => m.type === 'video').map(model => (
                                                 <SelectItem key={model.id} value={model.id} className="focus:bg-white/10">
                                                     <div className="flex items-center justify-between w-full gap-4">
@@ -416,13 +416,13 @@ export default function StudioTab({ currentUser }: StudioTabProps) {
                                 <div className="grid grid-cols-2 gap-3">
                                     <div className="space-y-1.5">
                                         <Label className="text-xs text-zinc-500">QUALITY</Label>
-                                        <Button variant="outline" className="w-full justify-between bg-black/20 border-white/10 font-normal text-zinc-300 hover:bg-white/5 hover:text-white">
+                                        <Button variant="outline" className="w-full justify-between bg-[#101112]/20 border-white/10 font-normal text-zinc-300 hover:bg-white/5 hover:text-white">
                                             1080p <ChevronRight className="w-4 h-4 opacity-50" />
                                         </Button>
                                     </div>
                                     <div className="space-y-1.5">
                                         <Label className="text-xs text-zinc-500">RATIO</Label>
-                                        <Button variant="outline" className="w-full justify-between bg-black/20 border-white/10 font-normal text-zinc-300 hover:bg-white/5 hover:text-white">
+                                        <Button variant="outline" className="w-full justify-between bg-[#101112]/20 border-white/10 font-normal text-zinc-300 hover:bg-white/5 hover:text-white">
                                             9:16 <Ratio className="w-4 h-4 opacity-50" />
                                         </Button>
                                     </div>
@@ -436,13 +436,13 @@ export default function StudioTab({ currentUser }: StudioTabProps) {
                                 <div className="space-y-1.5">
                                     <Label className="text-xs text-zinc-500">MODEL</Label>
                                     <Select value={selectedModel} onValueChange={setSelectedModel}>
-                                        <SelectTrigger className="bg-black/20 border-white/10 h-10">
+                                        <SelectTrigger className="bg-[#101112]/20 border-white/10 h-10">
                                             <div className="flex items-center gap-2">
                                                 {selectedModelData?.icon && <selectedModelData.icon className="w-4 h-4 text-zinc-400" />}
                                                 <span className="text-sm">{selectedModelData?.name || "Select Model"}</span>
                                             </div>
                                         </SelectTrigger>
-                                        <SelectContent className="bg-zinc-900 border-white/10">
+                                        <SelectContent className="bg-card border-white/10">
                                             {MODELS.filter(m => m.type === 'image').map(model => (
                                                 <SelectItem key={model.id} value={model.id}>
                                                     {model.name}
@@ -455,7 +455,7 @@ export default function StudioTab({ currentUser }: StudioTabProps) {
                                 {/* Quantity & Ratio Row */}
                                 <div className="flex gap-3">
                                     {/* Quantity Counter */}
-                                    <div className="flex-1 flex items-center justify-between bg-black/20 border border-white/10 rounded-md px-2 h-10">
+                                    <div className="flex-1 flex items-center justify-between bg-[#101112]/20 border border-white/10 rounded-md px-2 h-10">
                                         <button
                                             onClick={() => setImageCount(Math.max(1, imageCount - 1))}
                                             className="p-1 hover:text-white text-zinc-500 transition-colors"
@@ -472,18 +472,18 @@ export default function StudioTab({ currentUser }: StudioTabProps) {
                                     </div>
 
                                     {/* Ratio Selector */}
-                                    <Button variant="outline" className="flex-1 justify-between bg-black/20 border-white/10 font-normal text-zinc-300 hover:bg-white/5 hover:text-white h-10 px-3">
+                                    <Button variant="outline" className="flex-1 justify-between bg-[#101112]/20 border-white/10 font-normal text-zinc-300 hover:bg-white/5 hover:text-white h-10 px-3">
                                         9:16 <Ratio className="w-4 h-4 opacity-50" />
                                     </Button>
                                 </div>
 
                                 {/* Unlimited Toggle & Draw Button */}
                                 <div className="flex items-center gap-3">
-                                    <div className="flex-1 flex items-center justify-between bg-black/20 border border-white/10 rounded-md px-3 h-10">
+                                    <div className="flex-1 flex items-center justify-between bg-[#101112]/20 border border-white/10 rounded-md px-3 h-10">
                                         <span className="text-xs text-zinc-300">Unlimited</span>
                                         <Switch className="scale-75" />
                                     </div>
-                                    <Button variant="outline" className="flex-1 bg-black/20 border-white/10 hover:bg-white/5 h-10">
+                                    <Button variant="outline" className="flex-1 bg-[#101112]/20 border-white/10 hover:bg-white/5 h-10">
                                         <PenTool className="w-4 h-4 mr-2" /> Draw
                                     </Button>
                                 </div>
@@ -519,8 +519,8 @@ export default function StudioTab({ currentUser }: StudioTabProps) {
             </div>
 
             {/* Right Area: History Grid */}
-            <div className="flex-1 bg-black rounded-xl border border-white/10 overflow-hidden relative group min-h-0 flex flex-col">
-                <div className="p-4 border-b border-white/10 flex justify-between items-center bg-zinc-900/50 backdrop-blur-sm z-10">
+            <div className="flex-1 bg-[#101112] rounded-xl border border-white/10 overflow-hidden relative group min-h-0 flex flex-col">
+                <div className="p-4 border-b border-white/10 flex justify-between items-center bg-card/50 backdrop-blur-sm z-10">
                     <h3 className="text-sm font-medium text-zinc-300 flex items-center gap-2">
                         <Layers className="w-4 h-4" /> History
                     </h3>
@@ -534,7 +534,7 @@ export default function StudioTab({ currentUser }: StudioTabProps) {
                 <div className="flex-1 overflow-y-auto p-4">
                     {history.length === 0 ? (
                         <div className="h-full flex flex-col items-center justify-center text-zinc-500">
-                            <div className="w-24 h-24 rounded-full bg-zinc-900/50 flex items-center justify-center mb-4 border border-white/5">
+                            <div className="w-24 h-24 rounded-full bg-card/50 flex items-center justify-center mb-4 border border-white/5">
                                 <Sparkles className="w-10 h-10 opacity-20" />
                             </div>
                             <p className="text-lg font-medium">Ready to create</p>
@@ -545,7 +545,7 @@ export default function StudioTab({ currentUser }: StudioTabProps) {
                             {history.map((item) => (
                                 <div
                                     key={item.timestamp}
-                                    className="aspect-square rounded-lg border border-white/10 overflow-hidden cursor-pointer hover:border-white/30 transition-all relative group bg-zinc-900"
+                                    className="aspect-square rounded-lg border border-white/10 overflow-hidden cursor-pointer hover:border-white/30 transition-all relative group bg-card"
                                     onClick={() => setSelectedHistoryItem(item)}
                                 >
                                     {item.type === 'image' ? (
@@ -553,10 +553,10 @@ export default function StudioTab({ currentUser }: StudioTabProps) {
                                     ) : (
                                         <video src={item.url} className="w-full h-full object-cover" />
                                     )}
-                                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                    <div className="absolute inset-0 bg-[#101112]/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                         <MonitorPlay className="w-8 h-8 text-white drop-shadow-lg" />
                                     </div>
-                                    <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/90 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-[#101112]/90 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
                                         <p className="text-[10px] text-white/80 truncate">{new Date(item.timestamp).toLocaleTimeString()}</p>
                                     </div>
                                 </div>
@@ -568,11 +568,11 @@ export default function StudioTab({ currentUser }: StudioTabProps) {
 
             {/* Detail Modal */}
             <Dialog open={!!selectedHistoryItem} onOpenChange={(open) => !open && setSelectedHistoryItem(null)}>
-                <DialogContent className="bg-zinc-950 border-white/10 max-w-4xl w-full p-0 overflow-hidden flex flex-col md:flex-row h-[80vh] md:h-[600px]">
+                <DialogContent className="bg-card border-white/10 max-w-4xl w-full p-0 overflow-hidden flex flex-col md:flex-row h-[80vh] md:h-[600px]">
                     {selectedHistoryItem && (
                         <>
                             {/* Preview Side */}
-                            <div className="flex-1 bg-black flex items-center justify-center relative p-4">
+                            <div className="flex-1 bg-[#101112] flex items-center justify-center relative p-4">
                                 {selectedHistoryItem.type === 'image' ? (
                                     <img src={getOptimizedUrl(selectedHistoryItem.url, 1200)} alt="Detail" className="max-w-full max-h-full object-contain" />
                                 ) : (
@@ -581,7 +581,7 @@ export default function StudioTab({ currentUser }: StudioTabProps) {
                             </div>
 
                             {/* Info Side */}
-                            <div className="w-full md:w-80 bg-zinc-900 p-6 flex flex-col border-l border-white/10">
+                            <div className="w-full md:w-80 bg-card p-6 flex flex-col border-l border-white/10">
                                 <div className="flex justify-between items-start mb-6">
                                     <div>
                                         <h3 className="font-medium text-white">Generation Details</h3>
@@ -597,14 +597,14 @@ export default function StudioTab({ currentUser }: StudioTabProps) {
                                 <div className="space-y-4 flex-1 overflow-y-auto">
                                     <div className="space-y-2">
                                         <Label className="text-xs text-zinc-500">PROMPT</Label>
-                                        <div className="p-3 bg-black/20 rounded-lg border border-white/5 text-sm text-zinc-300 leading-relaxed max-h-32 overflow-y-auto">
+                                        <div className="p-3 bg-[#101112]/20 rounded-lg border border-white/5 text-sm text-zinc-300 leading-relaxed max-h-32 overflow-y-auto">
                                             {selectedHistoryItem.prompt || "No prompt"}
                                         </div>
                                     </div>
 
                                     <div className="space-y-2">
                                         <Label className="text-xs text-zinc-500">MODEL</Label>
-                                        <div className="flex items-center gap-2 p-2 bg-black/20 rounded-lg border border-white/5">
+                                        <div className="flex items-center gap-2 p-2 bg-[#101112]/20 rounded-lg border border-white/5">
                                             <Badge variant="outline" className="bg-indigo-500/10 text-indigo-400 border-indigo-500/20">
                                                 {MODELS.find(m => m.id === selectedHistoryItem.model)?.name || selectedHistoryItem.model || "Unknown"}
                                             </Badge>

@@ -109,7 +109,7 @@ export function LivePreview({ formData, currentStep, previewMode, onBadgeChange 
   };
   
   // Calculate theme styles
-  const bgStyle = theme.mode === 'dark' ? 'bg-zinc-900' : 'bg-white';
+  const bgStyle = theme.mode === 'dark' ? 'bg-card' : 'bg-white';
   const textStyle = theme.mode === 'dark' ? 'text-white' : 'text-zinc-900';
   const subTextStyle = theme.mode === 'dark' ? 'text-zinc-400' : 'text-zinc-500';
   
@@ -124,7 +124,7 @@ export function LivePreview({ formData, currentStep, previewMode, onBadgeChange 
     return (
       <div className="w-full h-full flex flex-col">
         {/* Import/Export Toolbar */}
-        <div className="flex items-center justify-end gap-2 px-4 py-2 border-b border-white/5 bg-zinc-900/30">
+        <div className="flex items-center justify-end gap-2 px-4 py-2 border-b border-white/5 bg-card/30">
           <input
             ref={layoutImportRef}
             type="file"
@@ -368,7 +368,7 @@ export function LivePreview({ formData, currentStep, previewMode, onBadgeChange 
                 <Sparkles className="w-6 h-6 text-white/30" />
               </div>
             )}
-            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-2">
+            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#101112]/80 to-transparent p-2">
               <p className="text-[10px] text-white font-medium truncate">{template.name}</p>
             </div>
           </div>
@@ -384,7 +384,7 @@ export function LivePreview({ formData, currentStep, previewMode, onBadgeChange 
   );
 
   return (
-    <div className={`min-h-full w-full flex flex-col ${showBadgePreview || showBadgeProPreview ? 'bg-zinc-950' : bgStyle} transition-colors duration-300 relative`}>
+    <div className={`min-h-full w-full flex flex-col ${showBadgePreview || showBadgeProPreview ? 'bg-card' : bgStyle} transition-colors duration-300 relative`}>
       {showBadgeProPreview ? (
         <BadgeProContent />
       ) : showBadgePreview ? (
@@ -398,7 +398,7 @@ export function LivePreview({ formData, currentStep, previewMode, onBadgeChange 
       )}
       
       {/* Preview Context Badge */}
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 px-3 py-1 bg-black/50 backdrop-blur-md rounded-full border border-white/10 text-[10px] text-white/80 pointer-events-none">
+      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 px-3 py-1 bg-[#101112]/50 backdrop-blur-md rounded-full border border-white/10 text-[10px] text-white/80 pointer-events-none">
          Previewing: {showBadgeProPreview ? 'Badge Visual Editor' :
                       showBadgePreview ? 'Visitor Badge' :
                       currentStep === 'setup' ? 'Start Screen' : 

@@ -332,7 +332,7 @@ export function StaffAlbumTools({
               {paymentRequests.map((req) => (
                 <div 
                   key={req.code}
-                  className="flex items-center justify-between p-2 rounded-lg bg-black/30"
+                  className="flex items-center justify-between p-2 rounded-lg bg-[#101112]/30"
                 >
                   <div className="flex items-center gap-2">
                     <span className="font-mono text-sm text-white">{req.code}</span>
@@ -360,28 +360,28 @@ export function StaffAlbumTools({
 
       {/* Stats Overview */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="bg-zinc-900/50 border-white/10">
+        <Card className="bg-card/50 border-white/10">
           <CardContent className="p-4 text-center">
             <Users className="w-6 h-6 mx-auto mb-2 text-cyan-400" />
             <p className="text-2xl font-bold text-white">{stats.totalAlbums}</p>
             <p className="text-xs text-zinc-400">Total Albums</p>
           </CardContent>
         </Card>
-        <Card className="bg-zinc-900/50 border-white/10">
+        <Card className="bg-card/50 border-white/10">
           <CardContent className="p-4 text-center">
             <CheckCircle2 className="w-6 h-6 mx-auto mb-2 text-green-400" />
             <p className="text-2xl font-bold text-white">{stats.completedAlbums}</p>
             <p className="text-xs text-zinc-400">Completed</p>
           </CardContent>
         </Card>
-        <Card className="bg-zinc-900/50 border-white/10">
+        <Card className="bg-card/50 border-white/10">
           <CardContent className="p-4 text-center">
             <Clock className="w-6 h-6 mx-auto mb-2 text-amber-400" />
             <p className="text-2xl font-bold text-white">{stats.pendingApproval}</p>
             <p className="text-xs text-zinc-400">Pending Approval</p>
           </CardContent>
         </Card>
-        <Card className="bg-zinc-900/50 border-white/10">
+        <Card className="bg-card/50 border-white/10">
           <CardContent className="p-4 text-center">
             <Camera className="w-6 h-6 mx-auto mb-2 text-purple-400" />
             <p className="text-2xl font-bold text-white">{stats.totalPhotos}</p>
@@ -392,7 +392,7 @@ export function StaffAlbumTools({
 
       {/* Main Tools */}
       <Tabs defaultValue="manage" className="w-full">
-        <TabsList className="grid w-full grid-cols-4 bg-zinc-900/50 border border-white/10">
+        <TabsList className="grid w-full grid-cols-4 bg-card/50 border border-white/10">
           <TabsTrigger value="manage" className="data-[state=active]:bg-white/10 text-zinc-400 data-[state=active]:text-white">
             Manage
           </TabsTrigger>
@@ -409,7 +409,7 @@ export function StaffAlbumTools({
 
         {/* Manage Tab - Album approval and payment */}
         <TabsContent value="manage" className="mt-4">
-          <Card className="bg-zinc-900/50 border-white/10">
+          <Card className="bg-card/50 border-white/10">
             <CardHeader>
               <CardTitle className="text-white text-lg">Manage Albums</CardTitle>
               <CardDescription className="text-zinc-400">
@@ -425,10 +425,10 @@ export function StaffAlbumTools({
                   onValueChange={setSelectedAlbumCode}
                   disabled={isLoadingAlbums}
                 >
-                  <SelectTrigger className="bg-black/40 border-white/10 text-white">
+                  <SelectTrigger className="bg-[#101112]/40 border-white/10 text-white">
                     <SelectValue placeholder={isLoadingAlbums ? "Loading albums..." : "Select an album"} />
                   </SelectTrigger>
-                  <SelectContent className="bg-zinc-900 border-white/10">
+                  <SelectContent className="bg-card border-white/10">
                     {albums.length === 0 ? (
                       <SelectItem value="none" disabled className="text-zinc-500">
                         No albums available
@@ -470,7 +470,7 @@ export function StaffAlbumTools({
                 return (
                   <div className="space-y-3">
                     {/* Album Info */}
-                    <div className="p-3 rounded-lg bg-black/30 border border-white/5">
+                    <div className="p-3 rounded-lg bg-[#101112]/30 border border-white/5">
                       <div className="grid grid-cols-2 gap-2 text-sm">
                         <div>
                           <span className="text-zinc-500">Owner:</span>
@@ -568,7 +568,7 @@ export function StaffAlbumTools({
               <hr className="border-white/10" />
 
               {/* Auto-Approve Toggle */}
-              <div className="flex items-center justify-between p-4 rounded-lg bg-black/30 border border-white/5">
+              <div className="flex items-center justify-between p-4 rounded-lg bg-[#101112]/30 border border-white/5">
                 <div>
                   <p className="text-white font-medium">Auto-Approve Photos</p>
                   <p className="text-xs text-zinc-400">
@@ -587,7 +587,7 @@ export function StaffAlbumTools({
 
         {/* Send Tab */}
         <TabsContent value="send" className="mt-4">
-          <Card className="bg-zinc-900/50 border-white/10">
+          <Card className="bg-card/50 border-white/10">
             <CardHeader>
               <CardTitle className="text-white text-lg">Send Albums</CardTitle>
               <CardDescription className="text-zinc-400">
@@ -603,10 +603,10 @@ export function StaffAlbumTools({
                   onValueChange={setSelectedAlbumCode}
                   disabled={isLoadingAlbums}
                 >
-                  <SelectTrigger className="bg-black/40 border-white/10 text-white">
+                  <SelectTrigger className="bg-[#101112]/40 border-white/10 text-white">
                     <SelectValue placeholder={isLoadingAlbums ? "Loading albums..." : "Select an album"} />
                   </SelectTrigger>
-                  <SelectContent className="bg-zinc-900 border-white/10">
+                  <SelectContent className="bg-card border-white/10">
                     {albums.length === 0 ? (
                       <SelectItem value="none" disabled className="text-zinc-500">
                         No albums available
@@ -644,7 +644,7 @@ export function StaffAlbumTools({
                   <Input
                     value={getAlbumUrl(selectedAlbumCode)}
                     readOnly
-                    className="flex-1 bg-black/40 border-white/10 text-zinc-400 text-sm"
+                    className="flex-1 bg-[#101112]/40 border-white/10 text-zinc-400 text-sm"
                   />
                   <Button
                     onClick={handleCopyUrl}
@@ -671,7 +671,7 @@ export function StaffAlbumTools({
                     value={emailAddress}
                     onChange={(e) => setEmailAddress(e.target.value)}
                     placeholder="visitor@email.com"
-                    className="flex-1 bg-black/40 border-white/10 text-white placeholder:text-zinc-600"
+                    className="flex-1 bg-[#101112]/40 border-white/10 text-white placeholder:text-zinc-600"
                     disabled={isSendingEmail || !selectedAlbumCode}
                   />
                   <Button
@@ -698,7 +698,7 @@ export function StaffAlbumTools({
                     value={phoneNumber}
                     onChange={(e) => setPhoneNumber(e.target.value)}
                     placeholder="+1 234 567 8900"
-                    className="flex-1 bg-black/40 border-white/10 text-white placeholder:text-zinc-600"
+                    className="flex-1 bg-[#101112]/40 border-white/10 text-white placeholder:text-zinc-600"
                     disabled={!selectedAlbumCode}
                   />
                   <Button
@@ -737,7 +737,7 @@ export function StaffAlbumTools({
 
         {/* Display Tab */}
         <TabsContent value="display" className="mt-4">
-          <Card className="bg-zinc-900/50 border-white/10">
+          <Card className="bg-card/50 border-white/10">
             <CardHeader>
               <CardTitle className="text-white text-lg">Big Screen Display</CardTitle>
               <CardDescription className="text-zinc-400">
@@ -745,7 +745,7 @@ export function StaffAlbumTools({
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex items-center justify-between p-4 rounded-lg bg-black/30 border border-white/5">
+              <div className="flex items-center justify-between p-4 rounded-lg bg-[#101112]/30 border border-white/5">
                 <div className="flex items-center gap-3">
                   <MonitorPlay 
                     className="w-8 h-8" 
@@ -801,7 +801,7 @@ export function StaffAlbumTools({
 
         {/* Settings Tab */}
         <TabsContent value="settings" className="mt-4">
-          <Card className="bg-zinc-900/50 border-white/10">
+          <Card className="bg-card/50 border-white/10">
             <CardHeader>
               <CardTitle className="text-white text-lg">Quick Actions</CardTitle>
             </CardHeader>

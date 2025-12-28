@@ -16,7 +16,7 @@ export const GalleryView = ({
     onDownload
 }: GalleryViewProps) => {
     return (
-        <div className="flex-1 bg-black p-8 md:overflow-y-auto overflow-visible">
+        <div className="flex-1 bg-[#101112] p-8 md:overflow-y-auto overflow-visible">
             <div className="max-w-7xl mx-auto">
                 <h2 className="text-2xl font-bold text-white mb-6">Gallery</h2>
                 <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4">
@@ -26,7 +26,7 @@ export const GalleryView = ({
                             <div
                                 key={item.id}
                                 onClick={() => setPreviewItem(item)}
-                                className="cursor-pointer aspect-[3/4] bg-zinc-900 rounded-lg overflow-hidden relative group"
+                                className="cursor-pointer aspect-[3/4] bg-card rounded-lg overflow-hidden relative group"
                             >
                                 {item.type === 'image' ? (
                                     <img
@@ -40,7 +40,7 @@ export const GalleryView = ({
                                 ) : (
                                     <video src={item.url} className="w-full h-full object-cover" />
                                 )}
-                                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-4">
+                                <div className="absolute inset-0 bg-[#101112]/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-4">
                                     <div className="flex items-center gap-3">
                                         <button
                                             onClick={(e) => { e.stopPropagation(); onReusePrompt(item); }}
