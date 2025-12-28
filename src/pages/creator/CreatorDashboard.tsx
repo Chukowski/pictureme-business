@@ -78,7 +78,6 @@ function MarketplaceFeedCard({ creation, onImageClick, onRemixClick }: { creatio
         alt={creation.template_name || creation.prompt || ''}
         className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-500"
         loading={isHero ? "eager" : "lazy"}
-        fetchPriority={isHero ? "high" : "auto"}
         decoding="async"
       />
 
@@ -642,7 +641,7 @@ function HeroSection({ user, homeState, creations, navigate, pendingJobs = [] }:
             {creations.length > 0 ? (
               creations.slice(0, 4).map((c, i) => (
                 <div key={i} className="h-full relative overflow-hidden transition-transform duration-700 group-hover:scale-110">
-                  <img src={getFeedImageUrl(c.url, 800)} className="w-full h-full object-cover" loading="eager" fetchPriority="high" decoding="async" />
+                  <img src={getFeedImageUrl(c.url, 800)} className="w-full h-full object-cover" loading="eager" decoding="async" />
                 </div>
               ))
             ) : (

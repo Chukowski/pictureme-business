@@ -454,7 +454,6 @@ function CreationsGrid({ creations, isOwnProfile, onLike, onItemClick }: {
                 alt=""
                 className="w-full h-full object-cover transition-transform group-hover:scale-105"
                 loading={isHero ? "eager" : "lazy"}
-                fetchPriority={isHero ? "high" : "auto"}
                 decoding="async"
               />
             )}

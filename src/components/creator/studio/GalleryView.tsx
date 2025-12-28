@@ -34,7 +34,6 @@ export const GalleryView = ({
                                         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                                         alt={item.prompt || ''}
                                         loading={isHero ? "eager" : "lazy"}
-                                        fetchPriority={isHero ? "high" : "auto"}
                                         decoding="async"
                                     />
                                 ) : (

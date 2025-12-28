@@ -176,7 +176,7 @@ export function CreatorNavbar({ user }: CreatorNavbarProps) {
                         >
                             Booths
                         </button>
-                        <button
+                        {/* <button
                             onClick={() => navigate('/creator/models')}
                             className={cn(
                                 "text-sm font-bold transition-all duration-300",
@@ -186,7 +186,7 @@ export function CreatorNavbar({ user }: CreatorNavbarProps) {
                             )}
                         >
                             Models
-                        </button>
+                        </button> */}
                         <button
                             onClick={() => navigate('/creator/templates')}
                             className={cn(
@@ -380,7 +380,7 @@ export function CreatorNavbar({ user }: CreatorNavbarProps) {
                     >
                         Booths
                     </button>
-                    <button
+                    {/* <button
                         onClick={() => navigate('/creator/models')}
                         className={cn(
                             "px-4 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap shrink-0",
@@ -390,7 +390,7 @@ export function CreatorNavbar({ user }: CreatorNavbarProps) {
                         )}
                     >
                         Models
-                    </button>
+                    </button> */}
                     <button
                         onClick={() => navigate('/creator/templates')}
                         className={cn(

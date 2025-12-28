@@ -68,7 +68,7 @@ export const AppRail = ({ activeView, onViewChange, onToggle }: AppRailProps) =>
                     {activeView === "create" && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-[#D1F349] rounded-r-full" />}
                 </button>
 
-                <button
+                {/* <button
                     onClick={() => onViewChange("templates")}
                     className={cn(
                         "w-full flex flex-col items-center gap-1 py-2 relative group",
@@ -83,7 +83,7 @@ export const AppRail = ({ activeView, onViewChange, onToggle }: AppRailProps) =>
                     </div>
                     <span className="text-[10px] font-medium">Models</span>
                     {activeView === "templates" && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-white rounded-r-full" />}
-                </button>
+                </button> */}
 
                 <button
                     onClick={() => onViewChange("booths")}

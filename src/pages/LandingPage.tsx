@@ -254,7 +254,6 @@ export default function LandingPage() {
                 alt="Surreal abstract AI-generated background"
                 className="w-full h-full object-cover"
                 loading="eager"
-                fetchPriority="high"
                 decoding="async"
               />
               <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-[#101112]/90 to-transparent">

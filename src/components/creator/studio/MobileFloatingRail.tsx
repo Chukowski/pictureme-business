@@ -66,12 +66,12 @@ export const MobileFloatingRail = ({
                         isActive={activeView === 'create'}
                         onClick={() => { onViewChange('create'); onClose(); }}
                     />
-                    <NavItem
+                    {/* <NavItem
                         icon={<Palette className="w-6 h-6" />}
                         label="Models"
                         isActive={activeView === 'templates'}
                         onClick={() => { onViewChange('templates'); onClose(); }}
-                    />
+                    /> */}
                     <NavItem
                         icon={<Store className="w-6 h-6" />}
                         label="Booths"
