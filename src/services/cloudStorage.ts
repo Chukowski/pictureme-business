@@ -9,12 +9,12 @@ import { ENV } from '@/config/env';
 // Helper to get API URL dynamically with HTTPS enforcement
 function getApiUrl(): string {
   let url = ENV.API_URL || '';
-  
+
   // Force HTTPS for production (non-localhost) URLs
   if (url && url.startsWith('http://') && !url.includes('localhost') && !url.includes('127.0.0.1')) {
     url = url.replace('http://', 'https://');
   }
-  
+
   return url;
 }
 
@@ -43,12 +43,13 @@ export async function savePhotoToCloud(photo: {
   prompt: string;
   userSlug?: string;
   eventSlug?: string;
+  visibility?: 'public' | 'private';
 }): Promise<CloudPhoto> {
   try {
     // Note: trailing slash required to avoid 307 redirect
     const uploadUrl = `${getApiUrl()}/api/photos/upload/public/`;
     console.log('☁️ Uploading to:', uploadUrl);
-    
+
     const response = await fetch(uploadUrl, {
       method: 'POST',
       headers: {
@@ -62,16 +63,17 @@ export async function savePhotoToCloud(photo: {
         prompt: photo.prompt,
         userSlug: photo.userSlug,
         eventSlug: photo.eventSlug,
+        visibility: photo.visibility,
       }),
     });
-    
+
     if (!response.ok) {
       const errorText = await response.text();
       console.error('☁️ Upload failed:', response.status, errorText);
       const error = JSON.parse(errorText).catch?.(() => ({ detail: response.statusText })) || { detail: errorText };
       throw new Error(error.detail || error.error || `Upload failed: ${response.status} ${errorText}`);
     }
-    
+
     const cloudPhoto = await response.json();
     console.log('☁️ Photo saved to cloud:', cloudPhoto.id);
     const createdAtValue = typeof cloudPhoto.createdAt === 'number'
@@ -101,7 +103,7 @@ export async function savePhotoToCloud(photo: {
 export async function getPhotoByShareCode(shareCode: string): Promise<CloudPhoto | null> {
   try {
     const response = await fetch(`${getApiUrl()}/api/photos/${shareCode}`);
-    
+
     if (!response.ok) {
       if (response.status === 404) {
         return null;
@@ -137,11 +139,11 @@ export async function getPhotoByShareCode(shareCode: string): Promise<CloudPhoto
 export async function getAllPhotosFromCloud(): Promise<CloudPhoto[]> {
   try {
     const response = await fetch(`${getApiUrl()}/api/photos`);
-    
+
     if (!response.ok) {
       throw new Error(`Failed to fetch photos: ${response.statusText}`);
     }
-    
+
     return await response.json();
   } catch (error) {
     console.error('Failed to fetch from cloud:', error);
@@ -157,7 +159,7 @@ export async function deletePhotoFromCloud(id: string): Promise<boolean> {
     const response = await fetch(`${getApiUrl()}/api/photos/${id}`, {
       method: 'DELETE',
     });
-    
+
     return response.ok;
   } catch (error) {
     console.error('Failed to delete from cloud:', error);

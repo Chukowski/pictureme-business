@@ -12,13 +12,14 @@ export interface ProcessedPhoto {
   processedImageBase64?: string; // Optional for cloud photos (use URL instead)
   originalImageUrl?: string; // Cloud URL
   processedImageUrl?: string; // Cloud URL
-  backgroundId: string;
-  backgroundName: string;
+  backgroundId?: string;
+  backgroundName?: string;
   shareCode: string;
   createdAt: number;
-  prompt: string;
+  prompt?: string;
   userSlug?: string;
   eventSlug?: string;
+  visibility?: 'public' | 'private';
 }
 
 const STORAGE_KEY = "photobooth_photos";
@@ -35,18 +36,18 @@ async function compressImage(base64: string, quality: number = COMPRESSION_QUALI
       const canvas = document.createElement('canvas');
       canvas.width = img.width;
       canvas.height = img.height;
-      
+
       const ctx = canvas.getContext('2d');
       if (!ctx) {
         reject(new Error('Failed to get canvas context'));
         return;
       }
-      
+
       ctx.drawImage(img, 0, 0);
       const compressedBase64 = canvas.toDataURL('image/jpeg', quality);
       resolve(compressedBase64);
     };
-    
+
     img.onerror = () => reject(new Error('Failed to load image for compression'));
     img.src = base64;
   });
@@ -68,8 +69,9 @@ export async function saveProcessedPhoto(photo: Omit<ProcessedPhoto, "id" | "cre
         prompt: photo.prompt,
         userSlug: photo.userSlug,
         eventSlug: photo.eventSlug,
+        visibility: photo.visibility,
       });
-      
+
       console.log("✅ Photo saved to cloud storage:", cloudPhoto.id);
       return {
         id: cloudPhoto.id,
@@ -87,10 +89,10 @@ export async function saveProcessedPhoto(photo: Omit<ProcessedPhoto, "id" | "cre
   } catch (cloudError) {
     console.warn("⚠️ Cloud storage failed, falling back to localStorage:", cloudError);
   }
-  
+
   // Fallback to localStorage
   const photos = getAllPhotos();
-  
+
   const newPhoto: ProcessedPhoto = {
     ...photo,
     id: generateId(),
@@ -102,7 +104,7 @@ export async function saveProcessedPhoto(photo: Omit<ProcessedPhoto, "id" | "cre
 
   // Keep only the latest MAX_PHOTOS
   let limitedPhotos = photos.slice(0, MAX_PHOTOS);
-  
+
   try {
     // Try to save with compression
     const compressedPhoto = {
@@ -110,14 +112,14 @@ export async function saveProcessedPhoto(photo: Omit<ProcessedPhoto, "id" | "cre
       processedImageBase64: newPhoto.processedImageBase64 ? await compressImage(newPhoto.processedImageBase64, COMPRESSION_QUALITY) : undefined,
       originalImageBase64: newPhoto.originalImageBase64 ? await compressImage(newPhoto.originalImageBase64, COMPRESSION_QUALITY) : undefined,
     };
-    
+
     const compressedPhotos = [compressedPhoto, ...limitedPhotos.slice(1)];
     localStorage.setItem(STORAGE_KEY, JSON.stringify(compressedPhotos));
     console.log("💾 Photo saved to localStorage (compressed):", compressedPhoto.id);
     return compressedPhoto;
   } catch (error) {
     console.error("❌ Failed to save photo:", error);
-    
+
     // If still fails, try with fewer photos
     try {
       const reducedPhotos = photos.slice(0, 5); // Keep only 5 most recent
@@ -126,7 +128,7 @@ export async function saveProcessedPhoto(photo: Omit<ProcessedPhoto, "id" | "cre
         processedImageBase64: newPhoto.processedImageBase64 ? await compressImage(newPhoto.processedImageBase64, 0.6) : undefined,
         originalImageBase64: newPhoto.originalImageBase64 ? await compressImage(newPhoto.originalImageBase64, 0.6) : undefined,
       };
-      
+
       const finalPhotos = [compressedPhoto, ...reducedPhotos.slice(1)];
       localStorage.setItem(STORAGE_KEY, JSON.stringify(finalPhotos));
       console.warn("⚠️ Saved with reduced storage (5 photos max, higher compression)");
@@ -159,7 +161,7 @@ export async function getPhotoByShareCode(shareCode: string): Promise<ProcessedP
   } catch (error) {
     console.warn("⚠️ Cloud fetch failed, checking localStorage:", error);
   }
-  
+
   // Fallback to localStorage
   const photos = getAllPhotos();
   return photos.find(photo => photo.shareCode === shareCode) || null;
@@ -184,11 +186,11 @@ export function getAllPhotos(): ProcessedPhoto[] {
 export function deletePhoto(id: string): boolean {
   const photos = getAllPhotos();
   const filteredPhotos = photos.filter(photo => photo.id !== id);
-  
+
   if (filteredPhotos.length === photos.length) {
     return false; // Photo not found
   }
-  
+
   localStorage.setItem(STORAGE_KEY, JSON.stringify(filteredPhotos));
   console.log("🗑️ Photo deleted:", id);
   return true;
@@ -215,7 +217,7 @@ export function getStorageStats(): {
   const data = localStorage.getItem(STORAGE_KEY) || "";
   const storageUsed = new Blob([data]).size;
   const storageLimit = 5 * 1024 * 1024; // ~5MB typical limit
-  
+
   return {
     photoCount: photos.length,
     storageUsed,

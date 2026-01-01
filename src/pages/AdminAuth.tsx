@@ -26,7 +26,7 @@ export default function AdminAuth() {
       // Check if input is email or username
       const isEmail = loginData.username.includes('@');
       let emailToUse = loginData.username;
-      
+
       // If it's a username, we need to fetch the email from the backend
       if (!isEmail) {
         // For now, try to find user by username in the old users table
@@ -72,21 +72,28 @@ export default function AdminAuth() {
       const data = await response.json();
       const user = data.user;
       const token = data.token;
-      
+
       toast.success(`Welcome back, ${user.name || user.email}!`);
-      
+
       // Store user data and token in localStorage
       localStorage.setItem('user', JSON.stringify(user));
       localStorage.setItem('auth_token', token); // Store token for API calls
-      
+
       // Redirect based on role
-      const isBusiness = user.role?.startsWith('business') && user.role !== 'business_pending';
-      if (isBusiness) {
-        navigate("/admin/home");
+      const searchParams = new URLSearchParams(window.location.search);
+      const redirect = searchParams.get("redirect");
+
+      if (redirect) {
+        window.location.href = redirect;
       } else {
-        navigate("/creator/dashboard");
+        const isBusiness = user.role?.startsWith('business') && user.role !== 'business_pending';
+        if (isBusiness) {
+          navigate("/admin/home");
+        } else {
+          navigate("/creator/dashboard");
+        }
       }
-      
+
       setIsLoading(false);
     } catch (error: any) {
       toast.error(error.message || "Login failed");

@@ -13,12 +13,12 @@ export function EventTitle({ eventName, description, brandName, logoUrl }: Event
   if (!displayTitle && !logoUrl) return null;
 
   return (
-    <div className="absolute top-6 left-1/2 -translate-x-1/2 z-20 text-center pointer-events-none px-4 max-w-4xl">
+    <div className="relative pt-6 pb-2 text-center pointer-events-none px-4 max-w-4xl mx-auto z-20">
       {logoUrl ? (
         // Show logo if available
-        <img 
-          src={logoUrl} 
-          alt={displayTitle} 
+        <img
+          src={logoUrl}
+          alt={displayTitle}
           className="h-16 md:h-24 max-w-[300px] md:max-w-[400px] mx-auto object-contain drop-shadow-lg"
         />
       ) : (

@@ -11,6 +11,13 @@ import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
+interface Step {
+    id: string;
+    label: string;
+    icon: any;
+    description: string;
+}
+
 interface BoothEditorLayoutProps {
     children: ReactNode;
     preview: ReactNode;
@@ -22,6 +29,7 @@ interface BoothEditorLayoutProps {
     isSaving?: boolean;
     currentStep: string;
     onStepChange: (step: string) => void;
+    steps?: Step[];
 }
 
 export function BoothEditorLayout({
@@ -34,7 +42,8 @@ export function BoothEditorLayout({
     onSave,
     isSaving = false,
     currentStep,
-    onStepChange
+    onStepChange,
+    steps: customSteps
 }: BoothEditorLayoutProps) {
     const navigate = useNavigate();
     const [previewDevice, setPreviewDevice] = useState<'mobile' | 'tablet' | 'desktop'>('mobile');
@@ -44,7 +53,7 @@ export function BoothEditorLayout({
     const handleZoomIn = () => setZoom(prev => Math.min(prev + 10, 150));
     const handleZoomOut = () => setZoom(prev => Math.max(prev - 10, 50));
 
-    const steps = [
+    const defaultSteps = [
         { id: 'setup', label: 'Setup', icon: Settings2, description: 'Core details & branding' },
         { id: 'design', label: 'Design', icon: Palette, description: 'Look & feel' },
         { id: 'experience', label: 'Experience', icon: Sparkles, description: 'Templates & flows' },
@@ -52,8 +61,10 @@ export function BoothEditorLayout({
         { id: 'settings', label: 'Settings', icon: Settings, description: 'Advanced config' },
     ];
 
+    const steps = customSteps || defaultSteps;
+
     return (
-        <div className="h-screen w-full flex flex-col bg-[#101112] overflow-hidden font-sans">
+        <div className="h-[calc(100vh-4rem)] w-full flex flex-col bg-[#101112] overflow-hidden font-sans">
             {/* Sticky Header */}
             <header className="h-14 border-b border-white/10 bg-card flex items-center justify-between px-4 shrink-0 z-50">
                 <div className="flex items-center gap-4">

@@ -50,6 +50,18 @@ function getApiPath(path: string, useV2 = false): string {
   return `${base}${version}${path}`;
 }
 
+export async function getPublicUserProfile(usernameOrSlug: string): Promise<User | null> {
+  try {
+    const response = await fetch(`${getApiUrl()}/api/users/profile/${usernameOrSlug}`);
+    if (!response.ok) return null;
+    const data = await response.json();
+    return data.profile; // The API returns { profile: ... }
+  } catch (error) {
+    console.error("Failed to fetch public profile:", error);
+    return null;
+  }
+}
+
 export interface User {
   id: number;
   username: string;
@@ -57,7 +69,7 @@ export interface User {
   full_name?: string;
   name?: string;
   slug: string;
-  role?: 'individual' | 'business_pending' | 'business_starter' | 'business_eventpro' | 'business_masters' | 'superadmin';
+  role?: 'individual' | 'basic' | 'spark' | 'vibe' | 'studio' | 'business_pending' | 'business_starter' | 'business_eventpro' | 'business_masters' | 'superadmin';
   birth_date?: string;
   avatar_url?: string;
   image?: string; // Better Auth field name
@@ -165,14 +177,25 @@ export interface EventConfig {
     footerBackgroundColor?: string;
     taglineText?: string;
     watermark?: WatermarkConfig;
+    // Creator Branding (Studio Tier)
+    showCreatorBrand?: boolean;
+    creatorDisplayName?: string;
+    creatorAvatar?: string;
+    socialInstagram?: string;
+    socialTikTok?: string;
+    socialX?: string;
+    socialWebsite?: string;
   };
   settings: {
     aiModel?: string;
     imageSize?: { width: number; height: number };
     feedEnabled?: boolean;
+    feedPublic?: boolean;
+    feedModeration?: boolean;
     moderationEnabled?: boolean;
     maxPhotosPerSession?: number;
     staffAccessCode?: string;
+    saveToCreatorGallery?: boolean; // New: Booth Creator Economy
   };
   // Album Tracking (Business: Event Pro+)
   albumTracking?: AlbumTrackingConfig;
@@ -211,6 +234,12 @@ export interface EventConfig {
     };
   };
   is_booth?: boolean;
+  monetization?: {
+    type: 'free' | 'tokens' | 'revenue_share';
+    token_price?: number;
+    fiat_price?: number;
+    revenue_split?: number;
+  };
 }
 
 /**
@@ -1459,5 +1488,48 @@ export async function getTransaction(transactionId: string): Promise<AlbumTransa
   if (!response.ok) {
     throw new Error('Failed to fetch transaction');
   }
+  return response.json();
+}
+
+/**
+ * Update booth photo visibility (publish/unpublish to feed)
+ */
+export async function updateBoothPhotoVisibility(shareCode: string, published: boolean): Promise<{ success: boolean }> {
+  const token = getAuthToken();
+  // Note: We use the shareCode to identify the photo
+  const response = await fetch(`${getApiUrl()}/api/photos/${shareCode}/visibility`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token && { 'Authorization': `Bearer ${token}` }),
+    },
+    body: JSON.stringify({ published }),
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to update photo visibility');
+  }
+  return response.json();
+}
+
+export interface BoothPhoto {
+  share_code: string;
+  url: string;
+  created_at: string;
+  published: boolean;
+  views: number;
+  // Add other fields if needed
+}
+
+export async function getBoothPhotos(eventId: number | string, filters?: { published?: boolean }): Promise<BoothPhoto[]> {
+  const token = getAuthToken();
+  let url = `${getApiUrl()}/api/events/${eventId}/photos`;
+  if (filters?.published !== undefined) {
+    url += `?published=${filters.published}`;
+  }
+  const response = await fetch(url, {
+    headers: { 'Authorization': `Bearer ${token}` }
+  });
+  if (!response.ok) return [];
   return response.json();
 }

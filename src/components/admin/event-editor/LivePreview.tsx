@@ -1,12 +1,18 @@
-import { useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { EventFormData } from "./types";
-import { QrCode, User, Calendar, PartyPopper, Sparkles, LayoutTemplate, FileDown, FileUp } from "lucide-react";
+import { QrCode, User, Calendar, PartyPopper, Sparkles, LayoutTemplate, FileDown, FileUp, Camera, ArrowLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { BadgeVisualEditor } from "@/badge-pro/BadgeVisualEditor";
 import { BadgeTemplateConfig, CustomElementPositions } from "@/components/templates/BadgeTemplateEditor";
 import { toast } from "sonner";
+import { BackgroundSelector } from "@/components/BackgroundSelector";
+import { CameraCapture } from "@/components/CameraCapture";
+import { ProcessingLoader } from "@/components/ProcessingLoader";
+import { ResultDisplay } from "@/components/ResultDisplay";
+import { EventTitle } from "@/components/EventTitle";
+import { Template } from "@/services/eventsApi";
 
 interface LivePreviewProps {
   formData: EventFormData;
@@ -19,7 +25,21 @@ export function LivePreview({ formData, currentStep, previewMode, onBadgeChange 
   const { theme, title, description, branding, badgeTemplate, templates } = formData;
   const albumCode = (formData as any).slug || 'CODE';
   const layoutImportRef = useRef<HTMLInputElement>(null);
-  
+
+  // Status Machine for "Real" Preview
+  const [internalState, setInternalState] = useState<'start' | 'select' | 'camera' | 'processing' | 'result'>('start');
+  const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
+  const [mockPhoto, setMockPhoto] = useState<string>("");
+
+  // Sync internal state with step changes to "refresh" preview when nav changes
+  useEffect(() => {
+    if (previewMode === 'template' || currentStep === 'experience') {
+      setInternalState('select');
+    } else if (currentStep === 'setup') {
+      setInternalState('start');
+    }
+  }, [currentStep, previewMode]);
+
   // Determine what to preview based on explicit mode only
   // Badge preview only shows when explicitly set to 'badge' mode
   const showBadgePreview = previewMode === 'badge';
@@ -28,7 +48,7 @@ export function LivePreview({ formData, currentStep, previewMode, onBadgeChange 
   // Export current layout as JSON
   const handleExportLayout = () => {
     if (!badgeTemplate) return;
-    
+
     const layoutExport = {
       id: `custom-${Date.now()}`,
       name: title ? `${title} Layout` : "Custom Layout",
@@ -74,7 +94,7 @@ export function LivePreview({ formData, currentStep, previewMode, onBadgeChange 
       }
 
       const imported = data.layout;
-      
+
       // Apply imported layout to current badge config
       const updatedConfig: BadgeTemplateConfig = {
         ...badgeTemplate,
@@ -92,12 +112,12 @@ export function LivePreview({ formData, currentStep, previewMode, onBadgeChange 
           size: imported.photoSize || badgeTemplate.photoPlacement.size,
         },
       };
-      
+
       // Also copy print settings if available
       if (imported.print) {
         (updatedConfig as any).print = imported.print;
       }
-      
+
       onBadgeChange(updatedConfig);
       toast.success(`Imported: ${imported.name}`);
     } catch (err: any) {
@@ -107,12 +127,12 @@ export function LivePreview({ formData, currentStep, previewMode, onBadgeChange 
 
     e.target.value = "";
   };
-  
+
   // Calculate theme styles
   const bgStyle = theme.mode === 'dark' ? 'bg-card' : 'bg-white';
   const textStyle = theme.mode === 'dark' ? 'text-white' : 'text-zinc-900';
   const subTextStyle = theme.mode === 'dark' ? 'text-zinc-400' : 'text-zinc-500';
-  
+
   const primaryBtnStyle = {
     backgroundColor: theme.primaryColor,
     color: '#ffffff',
@@ -151,12 +171,12 @@ export function LivePreview({ formData, currentStep, previewMode, onBadgeChange 
             Export Layout
           </Button>
         </div>
-        
+
         {/* Visual Editor */}
         <div className="flex-1 flex items-center justify-center p-4">
           <BadgeVisualEditor
             config={badgeTemplate}
-            onChange={onBadgeChange || (() => {})}
+            onChange={onBadgeChange || (() => { })}
             eventName={title}
             albumCode={albumCode}
             className="border-zinc-800 shadow-2xl"
@@ -191,7 +211,7 @@ export function LivePreview({ formData, currentStep, previewMode, onBadgeChange 
     const photoSize = photoSizeMap[badgeTemplate.photoPlacement?.size || 'medium'];
 
     // Find the selected template for badge photo enhancement
-    const selectedTemplate = badgeTemplate.aiPipeline?.sourceTemplateId 
+    const selectedTemplate = badgeTemplate.aiPipeline?.sourceTemplateId
       ? templates?.find(t => t.id === badgeTemplate.aiPipeline.sourceTemplateId)
       : null;
     const now = new Date();
@@ -199,7 +219,7 @@ export function LivePreview({ formData, currentStep, previewMode, onBadgeChange 
     const timePreviewText = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
 
     // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/2c70787a-617e-4831-a3a3-a75ccfa621a2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'run1',hypothesisId:'H1',location:'LivePreview.tsx:BadgePreviewContent',message:'Rendering badge preview date/time text',data:{datePreviewText,timePreviewText,showDateTime:badgeTemplate.fields?.showDateTime,previewMode},timestamp:Date.now()})}).catch(()=>{});
+    fetch('http://127.0.0.1:7242/ingest/2c70787a-617e-4831-a3a3-a75ccfa621a2', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sessionId: 'debug-session', runId: 'run1', hypothesisId: 'H1', location: 'LivePreview.tsx:BadgePreviewContent', message: 'Rendering badge preview date/time text', data: { datePreviewText, timePreviewText, showDateTime: badgeTemplate.fields?.showDateTime, previewMode }, timestamp: Date.now() }) }).catch(() => { });
     // #endregion
 
     return (
@@ -303,53 +323,78 @@ export function LivePreview({ formData, currentStep, previewMode, onBadgeChange 
 
   // Event/Home Preview
   const EventPreviewContent = () => (
-    <>
+    <div className="flex-1 flex flex-col">
       {/* Status Bar Mock */}
-      <div className="h-6 w-full flex items-center justify-between px-4 text-[10px] font-medium text-zinc-500">
+      <div className="h-6 w-full flex items-center justify-between px-4 text-[10px] font-medium text-zinc-500 shrink-0">
         <span>9:41</span>
         <div className="flex gap-1">
-          <span className="w-3 h-3 rounded-sm bg-current opacity-50"/>
-          <span className="w-3 h-3 rounded-sm bg-current opacity-50"/>
-          <span className="w-4 h-3 rounded-sm bg-current opacity-50"/>
+          <span className="w-3 h-3 rounded-sm bg-current opacity-50" />
+          <span className="w-3 h-3 rounded-sm bg-current opacity-50" />
+          <span className="w-4 h-3 rounded-sm bg-current opacity-50" />
         </div>
       </div>
 
-      {/* Event Header (if configured) */}
-      {(branding?.logoPath || branding?.showLogoInBooth) && (
-        <div className="p-4 flex justify-center">
-           {branding.logoPath ? (
-             <img 
-               src={branding.logoPath.startsWith('http') ? branding.logoPath : `${window.location.origin}/${branding.logoPath}`} 
-               className="h-8 object-contain" 
-               alt="Logo"
-             />
-           ) : (
-             <div className={`text-lg font-bold ${textStyle}`}>{theme.brandName || "Brand"}</div>
-           )}
-        </div>
-      )}
+      <div className="flex-1 flex flex-col overflow-y-auto">
+        {/* Event Header (if configured) */}
+        {(branding?.logoPath || branding?.showLogoInBooth) && (
+          <div className="p-4 flex justify-center shrink-0">
+            {branding.logoPath ? (
+              <img
+                src={branding.logoPath.startsWith('http') ? branding.logoPath : `${window.location.origin}/${branding.logoPath}`}
+                className="h-10 object-contain"
+                alt="Logo"
+              />
+            ) : (
+              <div className={`text-xl font-bold ${textStyle}`}>{theme.brandName || "Brand"}</div>
+            )}
+          </div>
+        )}
 
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col items-center justify-center p-6 text-center space-y-6">
-        <div className="space-y-2">
-           <h1 className={`text-3xl font-bold ${textStyle}`}>{title || "Event Title"}</h1>
-           <p className={`text-sm ${subTextStyle}`}>{description || "Welcome to the event photo booth. Tap to start."}</p>
-        </div>
+        {/* Main Content Area */}
+        <div className="flex-1 flex flex-col items-center justify-center p-6 text-center space-y-8">
+          <div className="space-y-3">
+            <h1 className={`text-4xl font-black ${textStyle} tracking-tight`}>{title || "Event Title"}</h1>
+            <p className={`text-base ${subTextStyle} leading-relaxed max-w-xs mx-auto`}>{description || "Welcome to the experience. Ready to create magic?"}</p>
+          </div>
 
-        {/* Start Button */}
-        <button 
-          className="w-full py-4 rounded-full font-semibold shadow-lg hover:opacity-90 transition-opacity transform active:scale-95"
-          style={primaryBtnStyle}
-        >
-          Start Experience
-        </button>
-        
-        <p className={`text-xs ${subTextStyle} opacity-60`}>
-          Powered by {theme.brandName || "PictureMe"}
-        </p>
+          {/* Start Button */}
+          <button
+            onClick={() => setInternalState('select')}
+            className="w-full max-w-[280px] py-4 rounded-full font-bold text-lg shadow-2xl hover:opacity-90 transition-all transform active:scale-95 hover:scale-[1.02]"
+            style={primaryBtnStyle}
+          >
+            Start Experience
+          </button>
+
+          <div className="flex flex-col items-center gap-2">
+            <p className={`text-[10px] ${subTextStyle} opacity-40 uppercase tracking-widest font-bold`}>
+              Powered by {theme.brandName || "PictureMe"}
+            </p>
+          </div>
+        </div>
       </div>
-    </>
+    </div>
   );
+
+  const handleTemplateSelect = (template: Template) => {
+    setSelectedTemplate(template);
+    setInternalState('camera');
+  };
+
+  const handleCapture = (photo: string) => {
+    setMockPhoto(photo);
+    setInternalState('processing');
+    // Simulated AI processing for preview
+    setTimeout(() => {
+      setInternalState('result');
+    }, 3000);
+  };
+
+  const handleReset = () => {
+    setInternalState('start');
+    setSelectedTemplate(null);
+    setMockPhoto("");
+  };
 
   // Template Grid Preview
   const TemplatePreviewContent = () => (
@@ -357,7 +402,7 @@ export function LivePreview({ formData, currentStep, previewMode, onBadgeChange 
       <h3 className={`text-lg font-semibold ${textStyle}`}>Choose Your Style</h3>
       <div className="grid grid-cols-2 gap-2">
         {(templates || []).slice(0, 4).map((template, i) => (
-          <div 
+          <div
             key={template.id || i}
             className="aspect-square rounded-lg overflow-hidden bg-zinc-800 relative group"
           >
@@ -384,27 +429,64 @@ export function LivePreview({ formData, currentStep, previewMode, onBadgeChange 
   );
 
   return (
-    <div className={`min-h-full w-full flex flex-col ${showBadgePreview || showBadgeProPreview ? 'bg-card' : bgStyle} transition-colors duration-300 relative`}>
+    <div className={`min-h-full w-full flex flex-col ${showBadgePreview || showBadgeProPreview ? 'bg-card' : bgStyle} transition-colors duration-300 relative overflow-hidden`}>
       {showBadgeProPreview ? (
         <BadgeProContent />
       ) : showBadgePreview ? (
         <div className="flex-1 flex items-center justify-center p-4">
           <BadgePreviewContent />
         </div>
-      ) : previewMode === 'template' ? (
-        <TemplatePreviewContent />
       ) : (
-        <EventPreviewContent />
+        <div className="flex-1 flex flex-col h-full bg-[#101112]">
+          {internalState === 'start' && <EventPreviewContent />}
+
+          {internalState === 'select' && (
+            <div className="flex-1 flex flex-col">
+              <div className="p-4 flex items-center gap-3">
+                <Button variant="ghost" size="icon" onClick={() => setInternalState('start')} className="h-8 w-8 text-white hover:bg-white/10">
+                  <ArrowLeft className="w-4 h-4" />
+                </Button>
+                <span className="text-sm font-bold text-white uppercase tracking-wider">Select Style</span>
+              </div>
+              <div className="flex-1 overflow-y-auto">
+                <BackgroundSelector
+                  templates={templates || []}
+                  onSelectBackground={handleTemplateSelect}
+                />
+              </div>
+            </div>
+          )}
+
+          {internalState === 'camera' && selectedTemplate && (
+            <div className="flex-1 relative">
+              <CameraCapture
+                selectedBackground={selectedTemplate.name}
+                onCapture={handleCapture}
+                onBack={() => setInternalState('select')}
+              />
+              <div className="absolute top-4 left-4 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                <span className="text-[10px] text-white font-bold uppercase tracking-wider">Preview Mode</span>
+              </div>
+            </div>
+          )}
+
+          {internalState === 'processing' && (
+            <ProcessingLoader status="Processing your AI photo..." />
+          )}
+
+          {internalState === 'result' && (
+            <ResultDisplay
+              imageUrl={mockPhoto}
+              onReset={handleReset}
+            />
+          )}
+        </div>
       )}
-      
+
       {/* Preview Context Badge */}
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 px-3 py-1 bg-[#101112]/50 backdrop-blur-md rounded-full border border-white/10 text-[10px] text-white/80 pointer-events-none">
-         Previewing: {showBadgeProPreview ? 'Badge Visual Editor' :
-                      showBadgePreview ? 'Visitor Badge' :
-                      currentStep === 'setup' ? 'Start Screen' : 
-                      currentStep === 'design' ? 'Theme' :
-                      currentStep === 'experience' ? 'Templates' :
-                      currentStep === 'workflow' ? 'Logistics' : 'Settings'}
+      <div className="absolute top-4 right-4 px-2 py-0.5 bg-[#101112]/80 backdrop-blur-md rounded border border-white/10 text-[8px] text-white/50 pointer-events-none z-50">
+        LIVE MODE: {internalState.toUpperCase()}
       </div>
     </div>
   );

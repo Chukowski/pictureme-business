@@ -120,7 +120,13 @@ export default function HomeDashboard() {
             <ToolsGrid activeEvent={activeEvent} isBusinessUser={isBusinessUser} />
 
             {/* Recommended Templates Slider */}
-            <RecommendedTemplates content={content} />
+            <RecommendedTemplates templates={content.featured_templates.map(t => (t as any).template || ({
+              id: t.template_id,
+              name: t.template_name || 'Featured Style',
+              preview_url: t.thumbnail_url,
+              category: t.template_type || 'Style',
+              tags: []
+            })) as any} />
 
             {/* Activity & System Combined Block */}
             <ActivitySystemBlock events={events} isLoading={isLoading} user={user} />

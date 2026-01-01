@@ -55,6 +55,13 @@ export default function AdminRegister() {
             const user = ctx.data.user;
             toast.success(`Account created! Welcome, ${user.name || user.email}!`);
 
+            // Check for redirect param
+            const redirect = searchParams.get("redirect");
+            if (redirect) {
+              window.location.href = redirect;
+              return;
+            }
+
             // For now, all users go to admin/events
             // TODO: Create separate dashboards for different roles
             navigate("/admin/events");
@@ -265,7 +272,7 @@ export default function AdminRegister() {
         <div className="mt-8 text-center">
           <p className="text-sm text-zinc-500">
             Already have an account?{" "}
-            <button onClick={() => navigate("/admin/auth")} className="text-indigo-400 hover:text-indigo-300 font-medium transition-colors">
+            <button onClick={() => navigate(`/admin/auth?${searchParams.toString()}`)} className="text-indigo-400 hover:text-indigo-300 font-medium transition-colors">
               Sign in
             </button>
           </p>

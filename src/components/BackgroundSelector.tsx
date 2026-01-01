@@ -90,7 +90,7 @@ export const BackgroundSelector = ({ onSelectBackground, templates }: Background
   const selectedBg = backgroundsToShow.find(bg => bg.id === selectedId);
 
   return (
-    <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 pt-28 sm:pt-32 md:pt-36">
+    <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 pt-4 sm:pt-6 md:pt-8">
       {/* Hero Section with Selected Preview */}
       {selectedBg && (
         <div className="mb-8 sm:mb-12 animate-fade-in">
@@ -152,41 +152,41 @@ export const BackgroundSelector = ({ onSelectBackground, templates }: Background
           </div>
         </div>
 
-        {isScrollable && (
-          <div className="md:hidden mb-3 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground dark:text-white/70">
-            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-muted/60 dark:bg-white/10 text-muted-foreground dark:text-white">
-              <ChevronsLeftRight className="h-3 w-3" />
-            </span>
-            <span>Desliza para ver más escenas</span>
-          </div>
-        )}
-
-        {/* Horizontal scrollable carousel on mobile, grid on desktop */}
-        <div className="relative -mx-4 sm:-mx-6 md:mx-0">
-          {isScrollable && (
-            <>
-              <div className="pointer-events-none absolute inset-y-0 left-0 w-10 bg-gradient-to-r from-background via-background/80 to-transparent md:hidden" />
-              <div className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-background via-background/80 to-transparent md:hidden" />
-            </>
-          )}
-          <div className="overflow-x-auto md:overflow-visible px-4 sm:px-6 md:px-0 scrollbar-hide">
-            <div className="flex md:grid md:grid-cols-5 gap-3 sm:gap-4 md:gap-6 pb-4 md:pb-0 min-w-max md:min-w-0">
-              {backgroundsToShow.map((bg) => (
-                <div key={bg.id} className="w-[9.5rem] sm:w-48 md:w-auto flex-shrink-0 md:flex-shrink">
-                  <SceneCard
-                    id={bg.id}
-                    name={bg.name}
-                    image={bg.images[0]}
-                    active={selectedId === bg.id}
-                    isCustomPrompt={bg.isCustomPrompt}
-                    onClick={() => handleSelect(bg)}
-                  />
-                </div>
-              ))}
+        {/* Vertical grid for all screen sizes */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-6 pb-20 px-1">
+          {backgroundsToShow.map((bg) => (
+            <div key={bg.id} className="w-full">
+              <SceneCard
+                id={bg.id}
+                name={bg.name}
+                image={bg.images[0]}
+                active={selectedId === bg.id}
+                isCustomPrompt={bg.isCustomPrompt}
+                onClick={() => handleSelect(bg)}
+              />
             </div>
-          </div>
+          ))}
         </div>
       </div>
+
+      {/* Floating Continue Action for Mobile */}
+      {selectedBg && (
+        <div className="md:hidden fixed bottom-6 left-0 right-0 px-4 z-50 animate-in fade-in slide-in-from-bottom-8 duration-500">
+          <Button
+            onClick={handleConfirm}
+            className="w-full h-16 rounded-2xl bg-[#D9F99D] text-black hover:bg-[#BEF264] shadow-[0_8px_32px_-8px_rgba(217,249,157,0.6)] border border-white/20 backdrop-blur-md flex items-center justify-between px-6 group"
+          >
+            <div className="flex flex-col items-start">
+              <span className="text-[10px] font-bold uppercase tracking-[0.2em] opacity-60">Ready to go</span>
+              <span className="text-base font-bold truncate max-w-[200px]">{selectedBg.name}</span>
+            </div>
+            <div className="flex items-center gap-2 font-bold">
+              Continue
+              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+            </div>
+          </Button>
+        </div>
+      )}
     </div>
   );
 };

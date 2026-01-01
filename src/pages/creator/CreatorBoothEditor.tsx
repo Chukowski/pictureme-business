@@ -1,16 +1,21 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
 import {
     createBooth,
     updateEvent,
     getUserBooths,
     getCurrentUser,
+    getCurrentUserProfile,
     type Template,
+    type User,
 } from "@/services/eventsApi";
 import { BoothEditorLayout } from "@/components/creator/BoothEditorLayout";
+import { BoothPhotoManager } from "@/components/creator/BoothPhotoManager";
 import { LivePreview } from "@/components/admin/event-editor/LivePreview";
 import { EventFormData, EventTheme } from "@/components/admin/event-editor/types";
+import { hasFeature } from "@/lib/planFeatures";
 import {
     Card,
     CardContent,
@@ -22,10 +27,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { EventTemplates } from "@/components/admin/event-editor/EventTemplates";
-import { DollarSign, Palette, Lock } from "lucide-react";
+import { DollarSign, Palette, Lock, Settings2, Sparkles, Upload, Copy, ExternalLink, Camera, Globe, Trash2, Image } from "lucide-react";
+import { ENV } from "@/config/env";
+import { getAuthToken } from "@/services/eventsApi";
 
 // Simplified theme preset for creators
 const CREATOR_THEME_PRESET: EventTheme = {
@@ -45,10 +52,76 @@ export default function CreatorBoothEditor() {
     const { eventId } = useParams();
     const isEdit = Boolean(eventId);
 
-    const currentUser = useMemo(() => getCurrentUser(), []);
+    const [currentUser, setCurrentUser] = useState<User | null>(() => getCurrentUser());
     const [isLoading, setIsLoading] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [currentStep, setCurrentStep] = useState('setup');
+
+    const [isUploading, setIsUploading] = useState(false);
+
+    useEffect(() => {
+        // Refresh profile on mount to ensure we have the latest tier (if updated in DB)
+        const refreshProfile = async () => {
+            try {
+                const freshUser = await getCurrentUserProfile();
+                if (freshUser) {
+                    console.log("Fresh user profile loaded:", freshUser.role, freshUser.subscription_tier);
+                    setCurrentUser(freshUser);
+                }
+            } catch (e) {
+                console.error("Failed to refresh profile", e);
+            }
+        };
+        refreshProfile();
+    }, []);
+
+    const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        try {
+            setIsUploading(true);
+            const token = getAuthToken();
+            const formDataUpload = new FormData();
+            formDataUpload.append("file", file);
+
+            const response = await fetch(`${ENV.API_URL}/api/media/upload`, {
+                method: "POST",
+                headers: {
+                    "Authorization": `Bearer ${token}`
+                },
+                body: formDataUpload
+            });
+
+            if (!response.ok) throw new Error("Upload failed");
+
+            const data = await response.json();
+            setFormData(prev => ({
+                ...prev,
+                branding: { ...prev.branding, logoPath: data.url }
+            }));
+            toast.success("Logo uploaded successfully");
+        } catch (error) {
+            console.error(error);
+            toast.error("Failed to upload logo");
+        } finally {
+            setIsUploading(false);
+        }
+    };
+
+    const copyToClipboard = (text: string, label: string) => {
+        navigator.clipboard.writeText(text);
+        toast.success(`${label} copied to clipboard`);
+    };
+
+    const getBoothUrl = () => {
+        const userSlug = currentUser?.slug || currentUser?.username || 'user';
+        return `${window.location.origin}/${userSlug}/${formData.slug || 'booth'}`;
+    };
+
+    const getFeedUrl = () => {
+        return `${getBoothUrl()}/feed`;
+    };
 
     const [formData, setFormData] = useState<EventFormData>({
         slug: "",
@@ -58,9 +131,16 @@ export default function CreatorBoothEditor() {
         start_date: "",
         end_date: "",
 
-        eventMode: "free", // Can be "free", "tokens", or "paid"
+        eventMode: "free",
         is_booth: true,
-        password: "", // For password protection
+        password: "",
+
+        monetization: {
+            type: "free",
+            token_price: 0,
+            fiat_price: 0,
+            revenue_split: 0.8,
+        },
 
         rules: {
             leadCaptureEnabled: false,
@@ -131,6 +211,7 @@ export default function CreatorBoothEditor() {
                 theme: { ...prev.theme, ...(booth.theme || {}) },
                 templates: booth.templates || prev.templates,
                 is_booth: true,
+                monetization: { ...prev.monetization, ...(booth.monetization || {}) },
             } as EventFormData));
         } catch (error) {
             toast.error("Failed to load booth");
@@ -141,14 +222,13 @@ export default function CreatorBoothEditor() {
     };
 
     const handleSubmit = async () => {
-        if (!formData.slug || !formData.title) {
-            toast.error("Please fill in a title and slug");
+        if (!formData.title) {
+            toast.error("Please fill in a title");
             return;
         }
 
         try {
             setIsSaving(true);
-
             const dataToSave = {
                 ...formData,
                 is_booth: true,
@@ -183,184 +263,578 @@ export default function CreatorBoothEditor() {
     }
 
     const renderStepContent = () => {
+        // Aggregate all potential tier indicators
+        const tierIndicators = [
+            currentUser?.subscription_tier,
+            currentUser?.role,
+            currentUser?.plan_id,
+            currentUser?.plan_name
+        ].filter(Boolean).map(t => String(t).toLowerCase());
+
+        const isStudio = tierIndicators.some(t => t.includes('studio'));
+        const isVibe = tierIndicators.some(t => t.includes('vibe'));
+        const isSpark = tierIndicators.some(t => t.includes('spark') || t.includes('individual'));
+        const isBusiness = tierIndicators.some(t => t.includes('business'));
+
+        // Robust mapping
+        const effectiveTier = isStudio ? 'studio' :
+            isVibe ? 'vibe' :
+                isSpark ? 'spark' :
+                    isBusiness ? 'business_eventpro' : 'spark';
+
+        const canTokens = hasFeature(effectiveTier, 'boothTokenMonetization');
+        const canRevenue = hasFeature(effectiveTier, 'boothRevenueShare');
+        const canCustomSplit = hasFeature(effectiveTier, 'boothCustomSplit');
+
         switch (currentStep) {
             case 'setup':
                 return (
-                    <div className="h-full p-6 space-y-6 overflow-hidden">
-                        <Card className="bg-card border-white/10">
+                    <div className="space-y-6">
+                        <Card className="border-border/40 shadow-sm bg-card/30 backdrop-blur-sm">
                             <CardHeader>
-                                <CardTitle className="text-white">Booth Details</CardTitle>
-                                <CardDescription className="text-zinc-400">
-                                    Basic information about your photo booth
-                                </CardDescription>
+                                <CardTitle className="text-xl">Booth Details</CardTitle>
+                                <CardDescription>Basic information about your photo booth</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">
-                                <div className="space-y-2">
-                                    <Label className="text-zinc-300">Booth Title</Label>
-                                    <Input
-                                        value={formData.title}
-                                        onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                                        className="bg-card border-white/10 text-white"
-                                        placeholder="e.g. My Awesome Party"
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label className="text-zinc-300">URL Slug</Label>
-                                    <div className="flex items-center gap-2 text-sm text-zinc-500">
-                                        <span>pictureme.ai/booth/</span>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="title">Booth Title</Label>
                                         <Input
-                                            value={formData.slug}
-                                            onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
-                                            className="bg-card border-white/10 text-white flex-1 font-mono"
-                                            placeholder="my-party"
+                                            id="title"
+                                            value={formData.title}
+                                            onChange={(e) => {
+                                                const title = e.target.value;
+                                                const updates: any = { title };
+                                                if (!formData.slug || formData.slug === formData.title.toLowerCase().replace(/[^a-z0-9]/g, '-')) {
+                                                    updates.slug = title.toLowerCase().replace(/[^a-z0-9]/g, '-');
+                                                }
+                                                setFormData({ ...formData, ...updates });
+                                            }}
+                                            placeholder="My Awesome Booth"
                                         />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="slug">URL Slug</Label>
+                                        <div className="flex gap-2">
+                                            <div className="flex-1 relative">
+                                                <Input
+                                                    id="slug"
+                                                    value={formData.slug}
+                                                    onChange={(e) => setFormData({ ...formData, slug: e.target.value.toLowerCase().replace(/[^a-z0-9]/g, '-') })}
+                                                    placeholder="unique-slug"
+                                                    className="pl-24 font-mono text-xs"
+                                                />
+                                                <div className="absolute inset-y-0 left-0 flex items-center px-3 border-r bg-muted/50 text-[10px] text-muted-foreground font-mono rounded-l-md select-none">
+                                                    /{currentUser?.slug || '...'}/
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                                 <div className="space-y-2">
-                                    <Label className="text-zinc-300">Description (Optional)</Label>
+                                    <Label htmlFor="description">Description (Optional)</Label>
                                     <Textarea
+                                        id="description"
                                         value={formData.description}
                                         onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                        className="bg-card border-white/10 text-white min-h-[100px]"
-                                        placeholder="Describe what this booth is for..."
+                                        placeholder="Describe your booth experience..."
+                                        className="h-20 resize-none"
                                     />
                                 </div>
-                            </CardContent>
-                        </Card>
 
-                        {/* Monetization */}
-                        <Card className="bg-card border-white/10">
-                            <CardHeader>
-                                <div className="flex items-center gap-2">
-                                    <DollarSign className="w-5 h-5 text-green-400" />
-                                    <CardTitle className="text-white">Monetization</CardTitle>
-                                </div>
-                                <CardDescription className="text-zinc-400">
-                                    Choose how users can access your booth
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                <div className="space-y-2">
-                                    <Label className="text-zinc-300">Access Type</Label>
-                                    <Select
-                                        value={formData.eventMode || "free"}
-                                        onValueChange={(value) => setFormData({ ...formData, eventMode: value as any })}
-                                    >
-                                        <SelectTrigger className="bg-card border-white/10 text-white">
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent className="bg-card border-white/10">
-                                            <SelectItem value="free">Free - No restrictions</SelectItem>
-                                            <SelectItem value="pay_per_photo">Pay Per Photo - Charge via Stripe</SelectItem>
-                                        </SelectContent>
-                                    </Select>
+                                <Separator className="bg-border/40" />
+
+                                <div className="space-y-4">
+                                    <Label className="text-muted-foreground text-[10px] uppercase tracking-wider font-bold">Booth Visuals</Label>
+                                    <div className="flex flex-col gap-4">
+                                        <div className="flex items-start gap-4 p-4 rounded-xl bg-card/40 border border-white/5">
+                                            <div className="w-20 h-20 rounded-lg bg-zinc-900 border border-dashed border-white/10 flex items-center justify-center overflow-hidden shrink-0 relative group">
+                                                {formData.branding?.logoPath ? (
+                                                    <>
+                                                        <img src={formData.branding.logoPath} alt="Logo" className="w-full h-full object-contain p-2" />
+                                                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                className="h-8 w-8 text-white hover:text-red-400"
+                                                                onClick={() => setFormData({ ...formData, branding: { ...formData.branding, logoPath: "" } })}
+                                                            >
+                                                                <Trash2 className="w-4 h-4" />
+                                                            </Button>
+                                                        </div>
+                                                    </>
+                                                ) : (
+                                                    <Palette className="w-8 h-8 text-white/10" />
+                                                )}
+                                            </div>
+                                            <div className="flex-1 space-y-3">
+                                                <div>
+                                                    <Label className="text-xs">Booth Logo</Label>
+                                                    <p className="text-[10px] text-muted-foreground">Upload a PNG/SVG or paste a URL</p>
+                                                </div>
+                                                <div className="flex gap-2">
+                                                    <Input
+                                                        value={formData.branding?.logoPath}
+                                                        onChange={(e) => setFormData({
+                                                            ...formData,
+                                                            branding: { ...formData.branding, logoPath: e.target.value }
+                                                        })}
+                                                        placeholder="https://..."
+                                                        className="flex-1 h-9 text-xs"
+                                                    />
+                                                    <Button
+                                                        variant="secondary"
+                                                        size="sm"
+                                                        className="shrink-0 h-9"
+                                                        disabled={isUploading}
+                                                        onClick={() => document.getElementById('logo-upload')?.click()}
+                                                    >
+                                                        {isUploading ? <div className="animate-spin rounded-full h-3 w-3 border-t-2 border-white"></div> : <Upload className="w-3.5 h-3.5 mr-2" />}
+                                                        Upload
+                                                    </Button>
+                                                    <input
+                                                        id="logo-upload"
+                                                        type="file"
+                                                        className="hidden"
+                                                        accept="image/*"
+                                                        onChange={handleLogoUpload}
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
 
-                                {formData.eventMode === 'pay_per_photo' && (
-                                    <div className="space-y-2 p-4 rounded-lg bg-green-500/5 border border-green-500/20">
-                                        <Label className="text-zinc-300">Price Per Photo (USD)</Label>
-                                        <Input
-                                            type="number"
-                                            min="0"
-                                            step="0.01"
-                                            placeholder="e.g. 2.99"
-                                            className="bg-card border-white/10 text-white"
-                                        />
-                                        <p className="text-xs text-zinc-500">
-                                            Users will pay via Stripe before generating photos
-                                        </p>
+                                {isEdit && (
+                                    <div className="pt-4 space-y-3">
+                                        <Label className="text-muted-foreground text-[10px] uppercase tracking-wider font-bold">Quick Links</Label>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                            <div className="p-3 rounded-xl border bg-card/60 flex items-center justify-between group hover:border-indigo-500/30 transition-colors">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="p-2 rounded-lg bg-indigo-500/10 text-indigo-400">
+                                                        <Camera className="w-4 h-4" />
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-[11px] font-bold text-white">Public Booth</p>
+                                                        <p className="text-[9px] text-muted-foreground truncate max-w-[120px] font-mono">{formData.slug || 'booth'}</p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex gap-1">
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-indigo-500/10 hover:text-indigo-400" onClick={() => copyToClipboard(getBoothUrl(), "Booth URL")}>
+                                                        <Copy className="w-3.5 h-3.5" />
+                                                    </Button>
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-green-500/10 hover:text-green-400" onClick={() => window.open(getBoothUrl(), '_blank')}>
+                                                        <ExternalLink className="w-3.5 h-3.5" />
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                            <div className="p-3 rounded-xl border bg-card/60 flex items-center justify-between group hover:border-[#D1F349]/30 transition-colors">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="p-2 rounded-lg bg-[#D1F349]/10 text-[#D1F349]">
+                                                        <Globe className="w-4 h-4" />
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-[11px] font-bold text-white">Live Results</p>
+                                                        <p className="text-[9px] text-muted-foreground truncate max-w-[120px] font-mono">{formData.slug || 'booth'}/feed</p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex gap-1">
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-[#D1F349]/10 hover:text-[#D1F349]" onClick={() => copyToClipboard(getFeedUrl(), "Feed URL")}>
+                                                        <Copy className="w-3.5 h-3.5" />
+                                                    </Button>
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-green-500/10 hover:text-green-400" onClick={() => window.open(getFeedUrl(), '_blank')}>
+                                                        <ExternalLink className="w-3.5 h-3.5" />
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 )}
                             </CardContent>
                         </Card>
 
-                        {/* Privacy */}
-                        <Card className="bg-card border-white/10">
+                        <Card className="border-border/40 shadow-sm bg-card/30 backdrop-blur-sm">
                             <CardHeader>
-                                <div className="flex items-center gap-2">
-                                    <Lock className="w-5 h-5 text-amber-400" />
-                                    <CardTitle className="text-white">Privacy & Access</CardTitle>
-                                </div>
+                                <CardTitle className="text-xl flex items-center">
+                                    <Palette className="w-5 h-5 mr-2 text-indigo-500" />
+                                    Branding & Settings
+                                </CardTitle>
                             </CardHeader>
-                            <CardContent className="space-y-4">
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <Label className="text-zinc-300">Public Access</Label>
-                                        <p className="text-xs text-zinc-500">Anyone with the link can access your booth</p>
+                            <CardContent className="space-y-6">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="space-y-2">
+                                        <Label>Primary Color</Label>
+                                        <div className="flex items-center gap-3">
+                                            <div
+                                                className="w-10 h-10 rounded-full border border-border shadow-sm cursor-pointer"
+                                                style={{ backgroundColor: formData.theme.primaryColor }}
+                                                onClick={() => document.getElementById('primaryColor')?.click()}
+                                            />
+                                            <input
+                                                id="primaryColor"
+                                                type="color"
+                                                className="hidden"
+                                                value={formData.theme.primaryColor}
+                                                onChange={(e) => setFormData({
+                                                    ...formData,
+                                                    theme: { ...formData.theme, primaryColor: e.target.value }
+                                                })}
+                                            />
+                                            <Input
+                                                type="text"
+                                                className="font-mono text-xs"
+                                                value={formData.theme.primaryColor}
+                                                onChange={(e) => setFormData({
+                                                    ...formData,
+                                                    theme: { ...formData.theme, primaryColor: e.target.value }
+                                                })}
+                                            />
+                                        </div>
                                     </div>
-                                    <Switch
-                                        checked={formData.is_active}
-                                        onCheckedChange={(c) => setFormData({ ...formData, is_active: c })}
-                                    />
+                                    <div className="flex items-center justify-between pt-4">
+                                        <div className="space-y-0.5">
+                                            <Label>Dark Mode</Label>
+                                        </div>
+                                        <Switch
+                                            checked={formData.theme.mode === 'dark'}
+                                            onCheckedChange={(checked) => setFormData({
+                                                ...formData,
+                                                theme: { ...formData.theme, mode: checked ? 'dark' : 'light' }
+                                            })}
+                                        />
+                                    </div>
                                 </div>
 
-                                <Separator className="bg-white/10" />
+                                <Separator className="border-border/40" />
 
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <Label className="text-zinc-300">Enable Photo Feed</Label>
-                                        <p className="text-xs text-zinc-500">Allow users to see photos from others</p>
+                                <div className="space-y-4">
+                                    <div className="space-y-2">
+                                        <Label>Logo URL</Label>
+                                        <Input
+                                            value={formData.branding?.logoPath || ""}
+                                            placeholder="https://your-logo-url"
+                                            onChange={(e) => setFormData({
+                                                ...formData,
+                                                branding: { ...formData.branding, logoPath: e.target.value }
+                                            })}
+                                        />
                                     </div>
-                                    <Switch
-                                        checked={formData.settings?.feedEnabled}
-                                        onCheckedChange={(c) => setFormData({
-                                            ...formData,
-                                            settings: { ...formData.settings, feedEnabled: c }
-                                        })}
-                                    />
+                                    <div className="flex items-center justify-between">
+                                        <Label className="text-sm">Show Logo in Booth</Label>
+                                        <Switch
+                                            checked={formData.branding?.showLogoInBooth}
+                                            onCheckedChange={(c) => setFormData({
+                                                ...formData,
+                                                branding: { ...formData.branding, showLogoInBooth: c }
+                                            })}
+                                        />
+                                    </div>
+                                </div>
+
+                                <Separator className="border-border/40" />
+
+                                {/* Creator Branding Section (Studio Tier) */}
+                                <div className="space-y-4">
+                                    <div className="flex items-center justify-between">
+                                        <Label className="text-muted-foreground text-[10px] uppercase tracking-wider font-bold flex items-center gap-2">
+                                            Creator Personal Branding
+                                            {!isStudio && <Badge variant="secondary" className="text-[9px] h-4 bg-indigo-500/10 text-indigo-400 border-indigo-500/20">Studio Only</Badge>}
+                                        </Label>
+                                        {isStudio && (
+                                            <Switch
+                                                checked={formData.branding?.showCreatorBrand}
+                                                onCheckedChange={(checked) => setFormData({
+                                                    ...formData,
+                                                    branding: { ...formData.branding, showCreatorBrand: checked }
+                                                })}
+                                            />
+                                        )}
+                                    </div>
+
+                                    {!isStudio ? (
+                                        <div className="p-4 rounded-xl border border-dashed border-border bg-card/20 flex flex-col items-center text-center gap-3">
+                                            <div className="w-10 h-10 rounded-full bg-indigo-500/10 flex items-center justify-center">
+                                                <Lock className="w-5 h-5 text-indigo-400" />
+                                            </div>
+                                            <div>
+                                                <p className="text-sm font-medium text-white mb-1">Personal Branding Locked</p>
+                                                <p className="text-xs text-muted-foreground max-w-[280px]">Upgrade to <strong>Studio</strong> to display your name, avatar, and social links on this booth.</p>
+                                            </div>
+                                            <Button variant="outline" size="sm" className="h-8 text-xs border-indigo-500/30 text-indigo-400 hover:bg-indigo-500/10" onClick={() => window.open('/pricing', '_blank')}>
+                                                Upgrade to Studio
+                                            </Button>
+                                        </div>
+                                    ) : (
+                                        <div className={`space-y-4 transition-all duration-300 ${!formData.branding?.showCreatorBrand ? 'opacity-50 pointer-events-none grayscale' : ''}`}>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div className="space-y-2">
+                                                    <Label className="text-xs">Display Name</Label>
+                                                    <Input
+                                                        value={formData.branding?.creatorDisplayName || currentUser?.name || ""}
+                                                        onChange={(e) => setFormData({
+                                                            ...formData,
+                                                            branding: { ...formData.branding, creatorDisplayName: e.target.value }
+                                                        })}
+                                                        placeholder="e.g. Photography by Alex"
+                                                        className="h-9 text-xs"
+                                                    />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <Label className="text-xs">Website / Portfolio</Label>
+                                                    <Input
+                                                        value={formData.branding?.socialWebsite || ""}
+                                                        onChange={(e) => setFormData({
+                                                            ...formData,
+                                                            branding: { ...formData.branding, socialWebsite: e.target.value }
+                                                        })}
+                                                        placeholder="https://..."
+                                                        className="h-9 text-xs"
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label className="text-xs">Social Links</Label>
+                                                <div className="grid grid-cols-3 gap-2">
+                                                    <Input
+                                                        value={formData.branding?.socialInstagram || ""}
+                                                        onChange={(e) => setFormData({
+                                                            ...formData,
+                                                            branding: { ...formData.branding, socialInstagram: e.target.value }
+                                                        })}
+                                                        placeholder="Instagram username"
+                                                        className="h-9 text-xs"
+                                                    />
+                                                    <Input
+                                                        value={formData.branding?.socialTikTok || ""}
+                                                        onChange={(e) => setFormData({
+                                                            ...formData,
+                                                            branding: { ...formData.branding, socialTikTok: e.target.value }
+                                                        })}
+                                                        placeholder="TikTok username"
+                                                        className="h-9 text-xs"
+                                                    />
+                                                    <Input
+                                                        value={formData.branding?.socialX || ""}
+                                                        onChange={(e) => setFormData({
+                                                            ...formData,
+                                                            branding: { ...formData.branding, socialX: e.target.value }
+                                                        })}
+                                                        placeholder="X (Twitter) handle"
+                                                        className="h-9 text-xs"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <Separator className="border-border/40" />
+
+                                <div className="space-y-4">
+                                    <div className="space-y-2">
+                                        <Label>AI Generation Model</Label>
+                                        <select
+                                            value={formData.settings?.aiModel || "nano-banana"}
+                                            onChange={(e) => setFormData({
+                                                ...formData,
+                                                settings: { ...formData.settings, aiModel: e.target.value }
+                                            })}
+                                            className="w-full h-10 px-3 rounded-md border border-border bg-background text-sm"
+                                        >
+                                            <option value="nano-banana">Nano Banana (Standard)</option>
+                                            <option value="nano-banana-pro">Nano Banana Pro (Premium)</option>
+                                            <option value="flux-realism">Flux Realism (Pro)</option>
+                                            <option value="seedream-v4">Seedream v4 (Standard)</option>
+                                        </select>
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                        <div className="space-y-0.5">
+                                            <Label>Email Sharing</Label>
+                                        </div>
+                                        <Switch
+                                            checked={formData.sharing?.emailEnabled}
+                                            onCheckedChange={(c) => setFormData({
+                                                ...formData,
+                                                sharing: { ...formData.sharing, emailEnabled: c }
+                                            })}
+                                        />
+                                    </div>
                                 </div>
                             </CardContent>
                         </Card>
                     </div>
                 );
 
-            case 'design':
+            case 'monetization':
                 return (
-                    <div className="h-full p-6 space-y-6 overflow-hidden">
-                        <Card className="bg-card border-white/10">
+                    <div className="space-y-6">
+                        <Card className="border-border/40 shadow-sm bg-card/30 backdrop-blur-sm overflow-hidden">
                             <CardHeader>
-                                <div className="flex items-center gap-2">
-                                    <Palette className="w-5 h-5 text-purple-400" />
-                                    <CardTitle className="text-white">Branding</CardTitle>
-                                </div>
-                                <CardDescription className="text-zinc-400">
-                                    Customize your booth's appearance
-                                </CardDescription>
+                                <CardTitle className="text-xl flex items-center">
+                                    <DollarSign className="w-5 h-5 mr-2 text-green-500" />
+                                    Monetization
+                                </CardTitle>
+                                <CardDescription>Choose how you want to earn from your booth</CardDescription>
                             </CardHeader>
-                            <CardContent className="space-y-4">
-                                <div className="space-y-2">
-                                    <Label className="text-zinc-300">Logo URL</Label>
-                                    <Input
-                                        value={formData.branding?.logoPath || ""}
-                                        onChange={(e) => setFormData({
+                            <CardContent className="space-y-6">
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    {/* Free Mode */}
+                                    <div
+                                        className={`p-4 rounded-xl border-2 transition-all cursor-pointer flex flex-col items-center text-center gap-2 ${formData.monetization?.type === 'free' ? 'border-primary bg-primary/10' : 'border-border bg-card/50 hover:border-primary/50'}`}
+                                        onClick={() => setFormData({
                                             ...formData,
-                                            branding: { ...formData.branding, logoPath: e.target.value }
+                                            monetization: { ...formData.monetization!, type: 'free' }
                                         })}
-                                        className="bg-card border-white/10 text-white"
-                                        placeholder="https://..."
-                                    />
+                                    >
+                                        <div className="w-12 h-12 rounded-full bg-green-500/10 flex items-center justify-center text-green-500 text-2xl">
+                                            🎁
+                                        </div>
+                                        <div>
+                                            <h3 className="font-bold">Free</h3>
+                                            <p className="text-[10px] text-muted-foreground mt-1">Creator pays tokens. Best for viral sharing.</p>
+                                        </div>
+                                    </div>
+
+
+                                    {/* Save to Creator Gallery Toggle (Free Mode Only) */}
+                                    {formData.monetization?.type === 'free' && (
+                                        <div className="col-span-1 md:col-span-3 mt-4 animate-in fade-in slide-in-from-top-2">
+                                            <div className="p-4 rounded-xl border border-indigo-500/20 bg-indigo-500/5">
+                                                <div className="flex items-center justify-between">
+                                                    <div className="space-y-1">
+                                                        <Label className="flex items-center gap-2">
+                                                            <Sparkles className="w-4 h-4 text-indigo-400" />
+                                                            Save Copies to My Gallery
+                                                        </Label>
+                                                        <p className="text-xs text-muted-foreground max-w-[600px]">
+                                                            By default, booth photos belong 100% to the visitor. Enable this to <strong>also</strong> save a copy to your personal gallery.
+                                                            This may consume your storage limits faster.
+                                                        </p>
+                                                    </div>
+                                                    <Switch
+                                                        checked={formData.settings?.saveToCreatorGallery}
+                                                        onCheckedChange={(checked) => setFormData({
+                                                            ...formData,
+                                                            settings: { ...formData.settings, saveToCreatorGallery: checked }
+                                                        })}
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Token Mode */}
+                                    <div
+                                        className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center text-center gap-2 relative ${!canTokens ? 'opacity-50 cursor-not-allowed border-border' : formData.monetization?.type === 'tokens' ? 'border-primary bg-primary/10 cursor-pointer' : 'border-border bg-card/50 hover:border-primary/50 cursor-pointer'}`}
+                                        onClick={() => {
+                                            if (!canTokens) return;
+                                            setFormData({
+                                                ...formData,
+                                                monetization: { ...formData.monetization!, type: 'tokens', token_price: 1 }
+                                            });
+                                        }}
+                                    >
+                                        {!canTokens && <Lock className="absolute top-2 right-2 w-3 h-3 text-indigo-500" />}
+                                        <div className="w-12 h-12 rounded-full bg-indigo-500/10 flex items-center justify-center text-indigo-500 text-2xl">
+                                            ⚡
+                                        </div>
+                                        <div>
+                                            <h3 className="font-bold">Tokens</h3>
+                                            <p className="text-[10px] text-muted-foreground mt-1">Users pay tokens. Available on <strong>Spark+</strong>.</p>
+                                        </div>
+                                    </div>
+
+                                    {/* Revenue Mode */}
+                                    <div
+                                        className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center text-center gap-2 relative ${!canRevenue ? 'opacity-50 cursor-not-allowed border-border' : formData.monetization?.type === 'revenue_share' ? 'border-primary bg-primary/10 cursor-pointer' : 'border-border bg-card/50 hover:border-primary/50 cursor-pointer'}`}
+                                        onClick={() => {
+                                            if (!canRevenue) return;
+                                            const split = effectiveTier === 'studio' ? 0.7 : 0.5;
+                                            setFormData({
+                                                ...formData,
+                                                monetization: { ...formData.monetization!, type: 'revenue_share', fiat_price: 1.0, revenue_split: split }
+                                            });
+                                        }}
+                                    >
+                                        {!canRevenue && <Lock className="absolute top-2 right-2 w-3 h-3 text-emerald-500" />}
+                                        <div className="w-12 h-12 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500 text-2xl">
+                                            💰
+                                        </div>
+                                        <div>
+                                            <h3 className="font-bold">Revenue</h3>
+                                            <p className="text-[10px] text-muted-foreground mt-1">Users pay $. Available on <strong>Vibe+</strong>.</p>
+                                        </div>
+                                    </div>
                                 </div>
-                                <Separator className="bg-white/10" />
-                                <div className="flex items-center justify-between">
-                                    <Label className="text-zinc-300">Show Logo in Booth</Label>
-                                    <Switch
-                                        checked={formData.branding?.showLogoInBooth}
-                                        onCheckedChange={(c) => setFormData({
-                                            ...formData,
-                                            branding: { ...formData.branding, showLogoInBooth: c }
-                                        })}
-                                    />
-                                </div>
-                                <div className="flex items-center justify-between">
-                                    <Label className="text-zinc-300">Show Logo in Feed</Label>
-                                    <Switch
-                                        checked={formData.branding?.showLogoInFeed}
-                                        onCheckedChange={(c) => setFormData({
-                                            ...formData,
-                                            branding: { ...formData.branding, showLogoInFeed: c }
-                                        })}
-                                    />
-                                </div>
+
+                                <Separator className="border-border/40" />
+
+                                {formData.monetization?.type === 'tokens' && (
+                                    <div className="space-y-4 animate-in fade-in slide-in-from-top-2">
+                                        <div className="space-y-2">
+                                            <Label>Price per use (Tokens)</Label>
+                                            <Input
+                                                type="number"
+                                                min={1}
+                                                className="w-32"
+                                                value={formData.monetization?.token_price}
+                                                onChange={(e) => setFormData({
+                                                    ...formData,
+                                                    monetization: { ...formData.monetization!, token_price: parseInt(e.target.value) || 1 }
+                                                })}
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+
+                                {formData.monetization?.type === 'revenue_share' && (
+                                    <div className="space-y-6 animate-in fade-in slide-in-from-top-2">
+                                        <div className="space-y-2">
+                                            <Label>Price per use (USD)</Label>
+                                            <div className="relative">
+                                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                                                <Input
+                                                    type="number"
+                                                    step="0.01"
+                                                    min="0.50"
+                                                    className="pl-7 w-32"
+                                                    value={formData.monetization?.fiat_price}
+                                                    onChange={(e) => setFormData({
+                                                        ...formData,
+                                                        monetization: { ...formData.monetization!, fiat_price: parseFloat(e.target.value) || 0 }
+                                                    })}
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-4">
+                                            <div className="flex items-center justify-between">
+                                                <Label>Your Revenue Split</Label>
+                                                <span className="text-xs font-bold text-emerald-500 bg-emerald-500/10 px-2 py-1 rounded">
+                                                    {effectiveTier === 'studio' ? 'Studio Plan' : 'Vibe Plan'}
+                                                </span>
+                                            </div>
+                                            <div className="p-4 rounded-xl bg-card border border-white/5 flex items-center justify-between">
+                                                <div className="space-y-1">
+                                                    <p className="text-xs text-muted-foreground uppercase tracking-wider font-bold">You Earn</p>
+                                                    <p className="text-2xl font-bold text-white">
+                                                        {Math.round((formData.monetization?.revenue_split || (effectiveTier === 'studio' ? 0.7 : 0.5)) * 100)}%
+                                                    </p>
+                                                </div>
+                                                <div className="w-px h-10 bg-white/10" />
+                                                <div className="space-y-1 text-right">
+                                                    <p className="text-xs text-muted-foreground uppercase tracking-wider font-bold">Platform Fee</p>
+                                                    <p className="text-2xl font-bold text-muted-foreground">
+                                                        {100 - Math.round((formData.monetization?.revenue_split || (effectiveTier === 'studio' ? 0.7 : 0.5)) * 100)}%
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <p className="text-[10px] text-muted-foreground italic">
+                                                * Fixed split for {effectiveTier.charAt(0).toUpperCase() + effectiveTier.slice(1)} tier.
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
                             </CardContent>
                         </Card>
                     </div>
@@ -368,81 +842,85 @@ export default function CreatorBoothEditor() {
 
             case 'experience':
                 return (
-                    <div className="h-full overflow-y-auto p-6">
-                        <div className="max-w-5xl mx-auto">
-                            <EventTemplates
-                                formData={formData}
-                                setFormData={setFormData}
-                                currentUser={currentUser}
-                                onPreviewModeChange={() => { }}
-                            />
-                        </div>
-                    </div>
-                );
+                    <div className="space-y-6">
+                        <EventTemplates
+                            formData={formData}
+                            setFormData={setFormData}
+                            currentUser={currentUser}
+                            onPreviewModeChange={() => { }}
+                        />
 
-            case 'workflow':
-                return (
-                    <div className="h-full p-6 space-y-6 overflow-hidden">
-                        <Card className="bg-card border-white/10">
+                        <Card className="border-border/40 shadow-sm bg-card/30 backdrop-blur-sm">
                             <CardHeader>
-                                <CardTitle className="text-white">Sharing Options</CardTitle>
+                                <CardTitle className="text-xl flex items-center">
+                                    <Globe className="w-5 h-5 mr-2 text-indigo-400" />
+                                    Public Feed & Social Settings
+                                </CardTitle>
+                                <CardDescription>Control how photos are shared in the public gallery</CardDescription>
                             </CardHeader>
-                            <CardContent className="space-y-4">
+                            <CardContent className="space-y-6">
                                 <div className="flex items-center justify-between">
-                                    <Label className="text-zinc-300">Enable Email Sharing</Label>
+                                    <div className="space-y-0.5">
+                                        <Label className="text-base">Enable Live Feed</Label>
+                                        <p className="text-xs text-muted-foreground">Creates a public gallery for this booth at {formData.slug}/feed</p>
+                                    </div>
                                     <Switch
-                                        checked={formData.sharing?.emailEnabled}
-                                        onCheckedChange={(c) => setFormData({
+                                        checked={formData.settings?.feedEnabled}
+                                        onCheckedChange={(checked) => setFormData({
                                             ...formData,
-                                            sharing: { ...formData.sharing, emailEnabled: c }
+                                            settings: { ...formData.settings, feedEnabled: checked }
                                         })}
                                     />
                                 </div>
-                                <Separator className="bg-white/10" />
-                                <div className="flex items-center justify-between">
-                                    <Label className="text-zinc-300">Group Photos into Albums</Label>
-                                    <Switch
-                                        checked={formData.sharing?.groupPhotosIntoAlbums}
-                                        onCheckedChange={(c) => setFormData({
-                                            ...formData,
-                                            sharing: { ...formData.sharing, groupPhotosIntoAlbums: c }
-                                        })}
-                                    />
-                                </div>
+
+                                {formData.settings?.feedEnabled && (
+                                    <>
+                                        <Separator className="bg-border/20" />
+                                        <div className="flex items-center justify-between">
+                                            <div className="space-y-0.5">
+                                                <Label className="text-base">Public by Default</Label>
+                                                <p className="text-xs text-muted-foreground">
+                                                    {formData.monetization?.type === 'free'
+                                                        ? "Mandatory for free booths: all photos will be public."
+                                                        : "Optional: users can choose to hide their photos."}
+                                                </p>
+                                            </div>
+                                            <Switch
+                                                checked={formData.settings?.feedPublic}
+                                                onCheckedChange={(checked) => setFormData({
+                                                    ...formData,
+                                                    settings: { ...formData.settings, feedPublic: checked }
+                                                })}
+                                            />
+                                        </div>
+
+                                        <div className="flex items-center justify-between border-t border-border/20 pt-4">
+                                            <div className="space-y-0.5">
+                                                <Label className="text-base flex items-center gap-2">
+                                                    AI Moderation
+                                                    <Badge variant="secondary" className="text-[9px] h-4">Recommended</Badge>
+                                                </Label>
+                                                <p className="text-xs text-muted-foreground">Automatically hide inappropriate content from the feed</p>
+                                            </div>
+                                            <Switch
+                                                checked={formData.settings?.feedModeration}
+                                                onCheckedChange={(checked) => setFormData({
+                                                    ...formData,
+                                                    settings: { ...formData.settings, feedModeration: checked }
+                                                })}
+                                            />
+                                        </div>
+                                    </>
+                                )}
                             </CardContent>
                         </Card>
                     </div>
                 );
 
-            case 'settings':
+            case 'photos':
                 return (
-                    <div className="h-full p-6 space-y-6 overflow-hidden">
-                        <Card className="bg-card border-white/10">
-                            <CardHeader>
-                                <CardTitle className="text-white">AI Settings</CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                <div className="space-y-2">
-                                    <Label className="text-zinc-300">Default AI Model</Label>
-                                    <select
-                                        value={formData.settings?.aiModel || "nano-banana"}
-                                        onChange={(e) => setFormData({
-                                            ...formData,
-                                            settings: { ...formData.settings, aiModel: e.target.value }
-                                        })}
-                                        className="w-full bg-card border border-white/10 rounded-md p-2 text-white"
-                                    >
-                                        <option value="nano-banana">Nano Banana [Standard - 1 token]</option>
-                                        <option value="nano-banana-pro">Nano Banana Pro [Premium - 15 tokens]</option>
-                                        <option value="flux-realism">Flux Realism [Pro - 2 tokens]</option>
-                                        <option value="seedream-v4">Seedream v4 [Standard - 1 token]</option>
-                                    </select>
-                                    <p className="text-xs text-zinc-500">
-                                        Choose the AI model used for generating photos
-                                    </p>
-                                </div>
-                            </CardContent>
-                        </Card>
+                    <div className="space-y-6">
+                        <BoothPhotoManager eventId={eventId || ''} />
                     </div>
                 );
 
@@ -450,6 +928,13 @@ export default function CreatorBoothEditor() {
                 return null;
         }
     };
+
+    const steps = [
+        { id: 'setup', label: '1. Setup', icon: Settings2, description: 'Core details & branding' },
+        { id: 'monetization', label: '2. Monetization', icon: DollarSign, description: 'Earning settings' },
+        { id: 'experience', label: '3. Experience', icon: Sparkles, description: 'Templates & AI' },
+        ...(isEdit ? [{ id: 'photos', label: '4. Photos', icon: Image, description: 'Manage gallery' }] : [])
+    ];
 
     return (
         <BoothEditorLayout
@@ -461,9 +946,39 @@ export default function CreatorBoothEditor() {
             isSaving={isSaving}
             currentStep={currentStep}
             onStepChange={setCurrentStep}
-            preview={<LivePreview formData={formData} currentStep={currentStep} />}
+            steps={steps}
+            preview={currentStep === 'photos' ? null : <LivePreview formData={formData} currentStep={currentStep} />}
         >
-            {renderStepContent()}
+            <div className="h-full overflow-y-auto p-6">
+                <div className="max-w-3xl mx-auto">
+                    {renderStepContent()}
+                    <div className="mt-8 flex items-center justify-between pt-6 border-t border-border/40">
+                        <button
+                            onClick={() => {
+                                const idx = steps.findIndex(s => s.id === currentStep);
+                                if (idx > 0) setCurrentStep(steps[idx - 1].id);
+                            }}
+                            disabled={currentStep === 'setup'}
+                            className="text-sm text-muted-foreground hover:text-white disabled:opacity-50 transition-colors"
+                        >
+                            Back
+                        </button>
+                        <button
+                            onClick={() => {
+                                const idx = steps.findIndex(s => s.id === currentStep);
+                                if (idx < steps.length - 1) {
+                                    setCurrentStep(steps[idx + 1].id);
+                                } else {
+                                    handleSubmit();
+                                }
+                            }}
+                            className="px-6 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-sm font-medium transition-all shadow-lg shadow-indigo-500/20"
+                        >
+                            {currentStep === 'experience' ? (isEdit ? 'Save Booth' : 'Create Booth') : 'Next Step'}
+                        </button>
+                    </div>
+                </div>
+            </div>
         </BoothEditorLayout>
     );
 }

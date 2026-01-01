@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Camera, RotateCcw, Video, Info } from "lucide-react";
+import { Camera, RotateCcw, Video, Info, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import {
@@ -18,16 +18,24 @@ interface CameraCaptureProps {
   isGroupPhoto?: boolean;
   onGroupPhotoChange?: (isGroup: boolean) => void;
   hasGroupPrompt?: boolean; // Whether the template has a group prompt configured
+  isPublic?: boolean;
+  onPublicChange?: (isPublic: boolean) => void;
+  publicMandatory?: boolean;
+  feedEnabled?: boolean;
 }
 
-export const CameraCapture = ({ 
-  onCapture, 
-  selectedBackground, 
-  onBack, 
+export const CameraCapture = ({
+  onCapture,
+  selectedBackground,
+  onBack,
   lastPhotoUrl,
   isGroupPhoto = false,
   onGroupPhotoChange,
   hasGroupPrompt = false,
+  isPublic = true,
+  onPublicChange,
+  publicMandatory = false,
+  feedEnabled = false,
 }: CameraCaptureProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -242,8 +250,8 @@ export const CameraCapture = ({
                 </SelectTrigger>
                 <SelectContent className="bg-card border-white/10">
                   {availableCameras.map((camera, index) => (
-                    <SelectItem 
-                      key={camera.deviceId} 
+                    <SelectItem
+                      key={camera.deviceId}
                       value={camera.deviceId}
                       className="text-white hover:bg-zinc-800"
                     >
@@ -290,26 +298,61 @@ export const CameraCapture = ({
               <div className="inline-flex items-center gap-1 p-1 rounded-full bg-card/70 backdrop-blur-sm border border-white/10">
                 <button
                   onClick={() => onGroupPhotoChange(false)}
-                  className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                    !isGroupPhoto 
-                      ? 'bg-cyan-500 text-white shadow-lg' 
-                      : 'text-white/60 hover:text-white/80'
-                  }`}
+                  className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-all ${!isGroupPhoto
+                    ? 'bg-cyan-500 text-white shadow-lg'
+                    : 'text-white/60 hover:text-white/80'
+                    }`}
                 >
                   <span className="text-base">👤</span>
                   Individual
                 </button>
                 <button
                   onClick={() => onGroupPhotoChange(true)}
-                  className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                    isGroupPhoto 
-                      ? 'bg-purple-500 text-white shadow-lg' 
-                      : 'text-white/60 hover:text-white/80'
-                  }`}
+                  className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-all ${isGroupPhoto
+                    ? 'bg-purple-500 text-white shadow-lg'
+                    : 'text-white/60 hover:text-white/80'
+                    }`}
                 >
                   <span className="text-base">👥</span>
                   Group
                 </button>
+              </div>
+            </div>
+          )}
+
+          {/* Public Feed Toggle/Notice */}
+          {feedEnabled && (
+            <div className="flex justify-center mb-6">
+              <div
+                onClick={() => !publicMandatory && onPublicChange?.(!isPublic)}
+                className={`flex items-center gap-3 px-5 py-2.5 rounded-full backdrop-blur-xl border border-white/10 transition-all cursor-pointer ${publicMandatory
+                  ? 'bg-indigo-500/20 text-indigo-300 pointer-events-none'
+                  : isPublic
+                    ? 'bg-green-500/20 text-green-300'
+                    : 'bg-zinc-800/50 text-white/40'
+                  }`}
+              >
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${publicMandatory || isPublic ? 'bg-current text-[#101112]' : 'bg-white/10'
+                  }`}>
+                  <Globe className="w-4 h-4" />
+                </div>
+                <div className="flex flex-col items-start leading-none">
+                  <span className="text-[11px] font-bold uppercase tracking-wider">
+                    {publicMandatory ? 'Mandatory Feed' : 'Post to Live Feed'}
+                  </span>
+                  <span className="text-[9px] opacity-70 mt-1">
+                    {publicMandatory
+                      ? 'Free booths include public sharing'
+                      : isPublic
+                        ? 'Everyone can see your photo'
+                        : 'Private - No one see it'}
+                  </span>
+                </div>
+                {!publicMandatory && (
+                  <div className={`w-10 h-6 rounded-full relative transition-all ${isPublic ? 'bg-green-500' : 'bg-zinc-600'}`}>
+                    <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${isPublic ? 'right-1' : 'left-1'}`} />
+                  </div>
+                )}
               </div>
             </div>
           )}

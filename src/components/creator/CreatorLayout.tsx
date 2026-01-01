@@ -54,9 +54,15 @@ export function CreatorLayout() {
   }, [navigate]);
 
 
+  const isFullBleed = location.pathname.includes('/settings') ||
+    location.pathname.includes('/studio') ||
+    (location.pathname.includes('/booth/') && location.pathname.includes('/edit'));
 
   return (
-    <div className="min-h-screen bg-[#101112] text-white flex flex-col">
+    <div className={cn(
+      "bg-[#101112] text-white flex flex-col",
+      isFullBleed ? "h-screen overflow-hidden" : "min-h-screen"
+    )}>
       {/* Desktop Navigation Bar - Hidden on mobile */}
       <div className="hidden md:block">
         <CreatorNavbar user={user} />
@@ -69,14 +75,10 @@ export function CreatorLayout() {
 
       {/* Main Content */}
       <main className={cn(
-        "flex-1 w-full mx-auto",
-        // Add bottom padding on mobile for the fixed bottom nav
-        "pb-20 md:pb-8",
-        location.pathname.includes('/settings') ||
-          location.pathname.includes('/studio') ||
-          (location.pathname.includes('/booth/') && location.pathname.includes('/edit'))
-          ? "p-0"
-          : "max-w-7xl px-4 sm:px-6 py-8"
+        "flex-1 w-full mx-auto relative",
+        isFullBleed
+          ? "p-0 pt-16 pb-0 md:pb-0"
+          : "max-w-7xl px-4 sm:px-6 py-8 pt-24 md:pt-24 pb-20 md:pb-8"
       )}>
         <Outlet />
       </main>

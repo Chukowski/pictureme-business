@@ -1,20 +1,33 @@
 import { useMemo, useState, useEffect } from "react";
 import { QRCodeSVG } from "qrcode.react";
-import { Download, Mail, RotateCcw, Share2, Copy, CheckCircle } from "lucide-react";
+import { Download, Mail, RotateCcw, Share2, Copy, CheckCircle, User, ExternalLink, Instagram, Globe, ArrowRight, Heart, Sparkles, Grid3X3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { getShareUrl } from "@/services/localStorage";
 import { useTheme } from "@/contexts/ThemeContext";
-import { sendPhotoEmail, getEmailStatus } from "@/services/eventsApi";
+import { sendPhotoEmail, getEmailStatus, updateBoothPhotoVisibility, type EventConfig, type User as CreatorUser } from "@/services/eventsApi";
 
 interface ResultDisplayProps {
   imageUrl: string;
   shareCode?: string;
   onReset: () => void;
+  config?: EventConfig;
+  creator?: CreatorUser;
+  activeTemplatesCount?: number;
 }
 
-export const ResultDisplay = ({ imageUrl, shareCode, onReset }: ResultDisplayProps) => {
+export const ResultDisplay = ({
+  imageUrl,
+  shareCode,
+  onReset,
+  config,
+  creator,
+  activeTemplatesCount = 0
+}: ResultDisplayProps) => {
   const { brandConfig } = useTheme();
   const [email, setEmail] = useState("");
   const [isSending, setIsSending] = useState(false);
@@ -109,46 +122,167 @@ export const ResultDisplay = ({ imageUrl, shareCode, onReset }: ResultDisplayPro
     toast.success("Image link copied to clipboard!");
   };
 
+  const monetizationMessage = useMemo(() => {
+    if (config?.monetization?.type === 'free') return "Free thanks to the creator";
+    if (config?.monetization?.type === 'tokens') return "Premium styles available";
+    if (config?.monetization?.type === 'revenue_share') return "Unlock more styles";
+    return null;
+  }, [config]);
+
+  // Identify if Studio tier for branding rules
+  // We check the role or plan if available, defaulting to false if unknown
+  const creatorRole = creator?.role || "";
+  const isStudioTier = String(creatorRole).toLowerCase().includes('studio');
+
+  const creatorProfileUrl = config?.user_slug ? `/${config.user_slug}` : '#';
+
+  const handleShareBooth = () => {
+    const boothUrl = window.location.href.split('?')[0]; // Clean booth URL
+    if (navigator.share) {
+      navigator.share({
+        title: config?.title || "AI Photo Booth",
+        text: `Check out this AI Photo Booth!`,
+        url: boothUrl,
+      });
+    } else {
+      navigator.clipboard.writeText(boothUrl);
+      toast.success("Booth link copied!");
+    }
+  };
+
+  const handleViewProfile = () => {
+    if (creatorProfileUrl !== '#') {
+      window.open(creatorProfileUrl, '_blank');
+    }
+  };
+
+  const [isPublished, setIsPublished] = useState(false);
+  const [isUpdatingPublish, setIsUpdatingPublish] = useState(false);
+
+  const handlePublishToggle = async (checked: boolean) => {
+    if (!shareCode) return;
+    setIsUpdatingPublish(true);
+    try {
+      await updateBoothPhotoVisibility(shareCode, checked);
+      setIsPublished(checked);
+      if (checked) {
+        toast.success("Photo published to booth feed!");
+      } else {
+        toast.success("Photo removed from booth feed.");
+      }
+    } catch (error) {
+      console.error("Failed to update visibility:", error);
+      toast.error("Failed to update settings");
+    } finally {
+      setIsUpdatingPublish(false);
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-card p-4 md:p-8 flex items-center justify-center">
-      <div className="w-full max-w-3xl mx-auto space-y-6">
-        {/* Result Image */}
-        <div className="relative rounded-3xl shadow-elegant glow-primary animate-fade-in bg-[#101112] overflow-hidden">
-          <img
-            src={imageUrl}
-            alt="Processed photo"
-            className="w-full h-auto max-h-[85vh] object-contain"
-          />
+    <div className="min-h-screen bg-[#0A0A0B] p-4 md:p-8 flex items-center justify-center">
+      <div className="w-full max-w-2xl mx-auto space-y-8 py-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
+
+        {/* Booth Context - Top (Branded Header) */}
+        <div className="text-center space-y-2">
+          <h1 className="text-3xl md:text-4xl font-black text-white tracking-tight">
+            {config?.title || "Your AI Result"}
+          </h1>
+          {config?.description && (
+            <p className="text-zinc-500 text-sm max-w-md mx-auto line-clamp-2">
+              {config.description}
+            </p>
+          )}
+          {monetizationMessage && (
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] uppercase tracking-widest font-black text-primary/80">
+              <Sparkles className="w-3 h-3" />
+              {monetizationMessage}
+            </div>
+          )}
+
+          {activeTemplatesCount > 1 && (
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] uppercase tracking-widest font-black text-zinc-400">
+              <Grid3X3 className="w-3 h-3" />
+              {activeTemplatesCount} Styles Available
+            </div>
+          )}
         </div>
 
-        {/* QR Code & Email Cards */}
+        {/* Result Image */}
+        <div className="relative group">
+          <div className="absolute -inset-1 bg-gradient-to-b from-primary/20 to-secondary/20 rounded-[2rem] blur-2xl opacity-50 group-hover:opacity-100 transition duration-1000"></div>
+          <div className="relative rounded-[2rem] shadow-2xl overflow-hidden bg-[#101112] border border-white/5">
+            <img
+              src={imageUrl}
+              alt="Processed photo"
+              className="w-full h-auto max-h-[75vh] object-contain transition duration-700 hover:scale-105"
+            />
+          </div>
+        </div>
+
+        {/* 1) CREATOR IDENTITY SECTION (Studio only) */}
+        {isStudioTier && (
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex items-center justify-between group cursor-pointer hover:bg-white/10 transition-all" onClick={handleViewProfile}>
+            <div className="flex items-center gap-4">
+              <Avatar className="w-12 h-12 border-2 border-primary/20">
+                <AvatarImage src={creator?.image || creator?.avatar_url} />
+                <AvatarFallback className="bg-zinc-800 text-white">
+                  <User className="w-6 h-6" />
+                </AvatarFallback>
+              </Avatar>
+              <div>
+                <p className="text-[10px] uppercase tracking-widest font-bold text-zinc-500">Created by</p>
+                <p className="text-white font-bold">{creator?.full_name || creator?.username || config?.username || "Creator"}</p>
+              </div>
+            </div>
+            <Button variant="ghost" size="sm" className="text-primary hover:text-primary/80 font-bold gap-2">
+              View profile
+              <ExternalLink className="w-4 h-4" />
+            </Button>
+          </div>
+        )}
+
+
+        {/* Feed Publish Toggle (If Feed Enabled) */}
+        {config?.settings?.feedEnabled && (
+          <div className="bg-gradient-to-r from-indigo-500/10 to-purple-500/10 border border-indigo-500/20 rounded-2xl p-4 flex items-center justify-between">
+            <div className="flex flex-col gap-1">
+              <Label className="text-white font-bold flex items-center gap-2">
+                <Globe className="w-4 h-4 text-indigo-400" />
+                Publish to Booth Feed
+              </Label>
+              <p className="text-[11px] text-zinc-400 max-w-[280px]">
+                Share your photo on the public feed for this event. You can remove it at any time.
+              </p>
+            </div>
+            <Switch
+              checked={isPublished}
+              onCheckedChange={handlePublishToggle}
+              disabled={isUpdatingPublish || !shareCode}
+              className="data-[state=checked]:bg-indigo-500"
+            />
+          </div>
+        )}
+
+        {/* QR Code & Sharing Section */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* QR Code Card */}
-          <div className="bg-card/50 border border-white/10 backdrop-blur-xl rounded-3xl p-6 shadow-2xl space-y-4">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 rounded-full gradient-primary flex items-center justify-center">
-                <Share2 className="w-5 h-5 text-primary-foreground" />
+          <div className="bg-card/30 border border-white/5 backdrop-blur-xl rounded-3xl p-6 space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full gradient-primary flex items-center justify-center">
+                <Share2 className="w-4 h-4 text-primary-foreground" />
               </div>
-              <h3 className="text-xl font-bold text-white">Scan to View</h3>
+              <h3 className="text-sm font-black text-white uppercase tracking-wider">Scan to View</h3>
             </div>
 
-            <p className="text-sm text-zinc-400">
-              {shareCode ? "Scan this QR code to open your photo directly" : "QR code unavailable (storage offline)"}
-            </p>
-
             {shareCode ? (
-              <div className="bg-white p-4 rounded-2xl inline-block w-full flex justify-center">
-                <QRCodeSVG
-                  value={shareUrl}
-                  size={180}
-                  level="H"
-                  includeMargin
-                />
+              <div className="bg-white p-3 rounded-2xl flex justify-center group relative overflow-hidden">
+                <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                <QRCodeSVG value={shareUrl} size={160} level="H" includeMargin />
               </div>
             ) : (
-              <div className="bg-zinc-800/50 p-8 rounded-2xl flex items-center justify-center">
-                <p className="text-zinc-400 text-center">
-                  Photo saved locally.<br />Share code unavailable.
+              <div className="bg-zinc-900/50 aspect-square rounded-2xl flex items-center justify-center">
+                <p className="text-zinc-500 text-[10px] text-center uppercase tracking-widest px-4 font-bold">
+                  Storage offline<br />Local save only
                 </p>
               </div>
             )}
@@ -156,100 +290,125 @@ export const ResultDisplay = ({ imageUrl, shareCode, onReset }: ResultDisplayPro
             <Button
               onClick={handleCopyLink}
               variant="outline"
-              size="lg"
-              className="w-full rounded-xl bg-card/50 border-white/10 text-white hover:bg-zinc-800/50 hover:text-white backdrop-blur-xl"
+              size="sm"
+              className="w-full rounded-xl bg-white/5 border-white/10 text-[11px] font-bold uppercase tracking-wider text-white hover:bg-white/10"
             >
-              <Copy className="w-4 h-4 mr-2" />
-              Copy Image Link
+              <Copy className="w-3.5 h-3.5 mr-2 text-zinc-400" />
+              Copy Photo Link
             </Button>
           </div>
 
           {/* Email Card */}
-          <div className="bg-card/50 border border-white/10 backdrop-blur-xl rounded-3xl p-6 shadow-2xl space-y-4">
-            <div className="flex items-center gap-3 mb-2">
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center ${emailSent ? 'bg-green-600' : 'gradient-secondary glow-secondary'}`}>
-                {emailSent ? (
-                  <CheckCircle className="w-5 h-5 text-white" />
-                ) : (
-                  <Mail className="w-5 h-5 text-secondary-foreground" />
-                )}
+          <div className="bg-card/30 border border-white/5 backdrop-blur-xl rounded-3xl p-6 flex flex-col justify-between space-y-4">
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${emailSent ? 'bg-green-500' : 'gradient-secondary'}`}>
+                  {emailSent ? <CheckCircle className="w-4 h-4 text-white" /> : <Mail className="w-4 h-4 text-secondary-foreground" />}
+                </div>
+                <h3 className="text-sm font-black text-white uppercase tracking-wider">Email Photo</h3>
               </div>
-              <h3 className="text-xl font-bold text-white">
-                {emailSent ? "Email Sent!" : "Email Photo"}
-              </h3>
-            </div>
 
-            <p className="text-sm text-zinc-400">
-              {emailSent 
-                ? "Check your inbox for your photo" 
-                : emailConfigured 
-                  ? "Receive your photo directly in your inbox"
-                  : "Email service not configured"}
-            </p>
-
-            <div className="space-y-3">
               <Input
                 type="email"
-                placeholder="your@email.com"
+                placeholder="Where should we send it?"
                 value={email}
                 onChange={(e) => {
                   setEmail(e.target.value);
                   if (emailSent) setEmailSent(false);
                 }}
-                className="h-12 rounded-xl text-base bg-card/50 border-white/10 text-white placeholder:text-zinc-600"
+                className="h-12 rounded-xl text-sm bg-white/5 border-white/10 text-white placeholder:text-zinc-600 focus:ring-primary/20"
               />
-              <Button
-                onClick={handleEmailSend}
-                disabled={isSending || !shareCode}
-                size="lg"
-                className={`w-full hover:scale-105 transition-transform rounded-xl ${
-                  emailSent ? 'bg-green-600 hover:bg-green-500' : 'gradient-secondary'
-                }`}
-              >
-                {emailSent ? (
-                  <>
-                    <CheckCircle className="w-5 h-5 mr-2" />
-                    Send Again
-                  </>
-                ) : (
-                  <>
-                    <Mail className="w-5 h-5 mr-2" />
-                    {isSending ? "Sending..." : "Send Photo"}
-                  </>
-                )}
-              </Button>
             </div>
+
+            <Button
+              onClick={handleEmailSend}
+              disabled={isSending || !shareCode}
+              size="lg"
+              className={`w-full rounded-xl font-bold uppercase tracking-widest text-[11px] ${emailSent ? 'bg-green-500 hover:bg-green-400' : 'gradient-secondary'
+                }`}
+            >
+              {isSending ? "Processing..." : emailSent ? "Sent Successfully" : "Send to Inbox"}
+            </Button>
           </div>
         </div>
 
-        {/* Action Buttons */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
-          <Button
-            onClick={handleDownload}
-            size="lg"
-            className="gradient-primary hover:scale-105 transition-transform rounded-2xl h-14 glow-primary"
-          >
-            <Download className="w-5 h-5 md:mr-2" />
-            <span className="ml-2">Download</span>
-          </Button>
-          <Button
-            onClick={() => toast.info("Share feature coming soon!")}
-            size="lg"
-            variant="outline"
-            className="rounded-2xl h-14 bg-card/50 border-white/10 text-white hover:bg-zinc-800/50 backdrop-blur-xl"
-          >
-            <Share2 className="w-5 h-5 md:mr-2" />
-            <span className="ml-2">Share</span>
-          </Button>
-          <Button
-            onClick={onReset}
-            variant="outline"
-            size="lg"
-            className="rounded-2xl h-14 bg-card/50 border-white/10 text-white hover:bg-zinc-800/50 backdrop-blur-xl"
-          >
-            <RotateCcw className="w-5 h-5 md:mr-2" />
-            <span className="ml-2">Take Another</span>
-          </Button>
+        {/* 3) RE-ENGAGEMENT ACTIONS */}
+        <div className="space-y-4 pt-4">
+          <div className="grid grid-cols-2 gap-3">
+            <Button
+              onClick={handleDownload}
+              size="lg"
+              className="h-16 rounded-2xl bg-white text-black hover:bg-zinc-200 font-black uppercase tracking-widest text-xs flex items-center justify-center gap-2 group"
+            >
+              <Download className="w-5 h-5 group-hover:translate-y-0.5 transition-transform" />
+              Download
+            </Button>
+
+            <Button
+              onClick={onReset}
+              size="lg"
+              className="h-16 rounded-2xl bg-primary text-primary-foreground hover:opacity-90 font-black uppercase tracking-widest text-xs flex items-center justify-center gap-2"
+            >
+              <Sparkles className="w-5 h-5" />
+              Try Another
+            </Button>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+            <Button
+              onClick={handleShareBooth}
+              variant="outline"
+              className="h-14 rounded-xl border-white/10 bg-white/5 text-white hover:bg-white/10 text-[10px] font-bold uppercase tracking-[0.15em]"
+            >
+              <Share2 className="w-4 h-4 mr-2 text-zinc-500" />
+              Share Booth
+            </Button>
+
+            {isStudioTier && (
+              <Button
+                onClick={handleViewProfile}
+                variant="outline"
+                className="h-14 rounded-xl border-white/10 bg-white/5 text-white hover:bg-white/10 text-[10px] font-bold uppercase tracking-[0.15em]"
+              >
+                <User className="w-4 h-4 mr-2 text-zinc-500" />
+                Creator
+              </Button>
+            )}
+
+            <Button
+              onClick={onReset}
+              variant="outline"
+              className={`h-14 rounded-xl border-white/10 bg-white/5 text-white hover:bg-white/10 text-[10px] font-bold uppercase tracking-[0.15em] ${!isStudioTier ? 'col-span-1' : ''}`}
+            >
+              <ArrowRight className="w-4 h-4 mr-2 text-zinc-500" />
+              Explore {activeTemplatesCount > 1 ? `${activeTemplatesCount} ` : ''}Styles
+            </Button>
+          </div>
+        </div>
+
+        {/* Social branding for Studio only */}
+        {isStudioTier && creator?.social_links && (
+          <div className="flex justify-center gap-4 pt-4">
+            {creator.social_links.instagram && (
+              <a href={creator.social_links.instagram} target="_blank" rel="noreferrer" className="text-zinc-500 hover:text-white transition-colors">
+                <Instagram className="w-5 h-5" />
+              </a>
+            )}
+            {creator.social_links.tiktok && (
+              <a href={`https://tiktok.com/@${creator.social_links.tiktok}`} target="_blank" rel="noreferrer" className="text-zinc-500 hover:text-white transition-colors">
+                <Globe className="w-5 h-5" />
+              </a>
+            )}
+            <a href={creatorProfileUrl} target="_blank" rel="noreferrer" className="text-zinc-500 hover:text-white transition-colors">
+              <User className="w-5 h-5" />
+            </a>
+          </div>
+        )}
+
+        <div className="text-center pt-8">
+          <p className="text-[9px] uppercase tracking-[0.4em] font-black text-zinc-700">
+            Powered by Vibe Booth
+          </p>
         </div>
       </div>
     </div>

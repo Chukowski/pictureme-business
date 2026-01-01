@@ -21,15 +21,20 @@ export const UniqueLoading = ({
 
   if (variant === 'morph') {
     return (
-      <div className={cn('relative', containerSizes[size], className)}>
-        <div className="absolute inset-0 flex items-center justify-center">
+      <div className={cn('relative flex items-center justify-center', containerSizes[size], className)}>
+        {/* Pulsing background glow */}
+        <div className="absolute inset-0 rounded-full bg-primary/10 animate-pulse blur-xl" />
+
+        <div className="relative flex items-center justify-center w-full h-full">
           {[0, 1, 2, 3].map((i) => (
             <div
               key={i}
-              className="absolute w-4 h-4 rounded-md bg-[#101112] dark:bg-white"
+              className="absolute w-4 h-4 rounded-full gradient-primary shadow-glow shadow-primary/20"
               style={{
                 animation: `morph-${i} 2.4s infinite ease-in-out`,
                 animationDelay: `${i * 0.2}s`,
+                left: i % 2 === 0 ? '25%' : '55%',
+                top: i < 2 ? '25%' : '55%',
               }}
             />
           ))}

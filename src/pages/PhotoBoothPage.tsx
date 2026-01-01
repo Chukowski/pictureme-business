@@ -11,12 +11,13 @@ import { CustomPromptModal } from '@/components/CustomPromptModal';
 import ShaderBackground from '@/components/ShaderBackground';
 import { processImageWithAI, downloadImageAsBase64 } from '@/services/aiProcessor';
 import { toast } from 'sonner';
-import { Template, getAlbum, addAlbumPhoto, getAlbumPhotos, deleteAlbumPhoto } from '@/services/eventsApi';
+import { Template, getAlbum, addAlbumPhoto, getAlbumPhotos, deleteAlbumPhoto, getPublicUserProfile, getAuthToken } from '@/services/eventsApi';
 import { saveProcessedPhoto, getAllPhotos } from '@/services/localStorage';
 import { EventNotFound } from '@/components/EventNotFound';
 import { ScanBadgePrompt, AlbumProgress, AlbumResultActions, ScanAlbumQR, RegistrationBadgeFlow } from '@/components/album';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { BoothGate } from '@/components/auth/BoothGate';
 
 type AppState = 'select' | 'camera' | 'processing' | 'result' | 'custom-prompt' | 'scan-badge' | 'registration';
 
@@ -79,11 +80,60 @@ export const PhotoBoothPage = ({ configOverride, userSlugOverride, eventSlugOver
   const [processedPhoto, setProcessedPhoto] = useState<string>('');
   const [shareCode, setShareCode] = useState<string>('');
   const [processingStatus, setProcessingStatus] = useState<string>('');
+  const [isPublic, setIsPublic] = useState(true);
   const [showCustomPromptModal, setShowCustomPromptModal] = useState(false);
   const [customPrompt, setCustomPrompt] = useState<string>('');
   const [customImages, setCustomImages] = useState<string[]>([]);
   const [showQRScanner, setShowQRScanner] = useState(false);
   const [isGroupPhoto, setIsGroupPhoto] = useState(false); // Toggle for individual vs group photo
+  const [creator, setCreator] = useState<import('@/services/eventsApi').User | null>(null);
+
+  const [showAuthGate, setShowAuthGate] = useState(false);
+
+  useEffect(() => {
+    if (config?.user_slug) {
+      getPublicUserProfile(config.user_slug).then(setCreator);
+    }
+  }, [config?.user_slug]);
+
+  // Determine if authentication should be enforced
+  // We want to avoid breaking Business events which often allow guest access
+  const shouldEnforceAuth = useMemo(() => {
+    if (!config) return false;
+
+    // 1. Always enforce for monetized events (tokens/revenue share) where user needs to pay/split
+    if (config.monetization?.type === 'tokens' || config.monetization?.type === 'revenue_share') {
+      return true;
+    }
+
+    // 2. If we have creator info, check their role
+    if (creator) {
+      const role = creator.role || 'individual';
+      // If it's a business user, skip auth gate (unless monetized above)
+      // Business events typically use kiosks or own billing
+      if (role.startsWith('business')) {
+        return false;
+      }
+    }
+
+    // 3. Default for non-business "Booths" is to enforce auth
+    return true;
+  }, [config, creator]);
+
+  // Enforce Auth
+  useEffect(() => {
+    // Only run check when config AND creator (if applicable) are loaded
+    if (!loading && config && creator) {
+      if (shouldEnforceAuth) {
+        const token = getAuthToken();
+        if (!token) {
+          setShowAuthGate(true);
+        } else {
+          setShowAuthGate(false);
+        }
+      }
+    }
+  }, [loading, config, creator, shouldEnforceAuth]);
 
   // Memoized values - MUST be before any conditional returns
   const isAlbumMode = useMemo(() => {
@@ -428,6 +478,7 @@ export const PhotoBoothPage = ({ configOverride, userSlugOverride, eventSlugOver
           prompt: promptToUse, // Use the actual prompt used for processing
           userSlug: config.user_slug || userSlug,
           eventSlug: config.slug || eventSlug,
+          visibility: isPublic ? 'public' : 'private',
         });
 
         if (savedPhoto.processedImageUrl) {
@@ -620,21 +671,18 @@ export const PhotoBoothPage = ({ configOverride, userSlugOverride, eventSlugOver
 
       {/* Only show title in select state */}
       {state === 'select' && (
-        <div>
+        <div className="flex flex-col min-h-screen">
           <EventTitle
             eventName={config.title}
             description={config.description}
             brandName={config.theme?.brandName || 'AI Photobooth'}
             logoUrl={config.branding?.logoPath}
           />
+          <BackgroundSelector
+            onSelectBackground={handleBackgroundSelect}
+            templates={filteredTemplates}
+          />
         </div>
-      )}
-
-      {state === 'select' && (
-        <BackgroundSelector
-          onSelectBackground={handleBackgroundSelect}
-          templates={filteredTemplates}
-        />
       )}
 
       {state === 'camera' && selectedBackground && (
@@ -650,6 +698,10 @@ export const PhotoBoothPage = ({ configOverride, userSlugOverride, eventSlugOver
           isGroupPhoto={isGroupPhoto}
           onGroupPhotoChange={setIsGroupPhoto}
           hasGroupPrompt={!!selectedBackground.groupPrompt}
+          isPublic={isPublic}
+          onPublicChange={setIsPublic}
+          publicMandatory={config.monetization?.type === 'free' && !!config.settings?.feedEnabled && !!config.settings?.feedPublic}
+          feedEnabled={!!config.settings?.feedEnabled}
         />
       )}
 
@@ -686,6 +738,9 @@ export const PhotoBoothPage = ({ configOverride, userSlugOverride, eventSlugOver
             imageUrl={processedPhoto}
             shareCode={shareCode}
             onReset={handleReset}
+            config={config}
+            creator={creator || undefined}
+            activeTemplatesCount={config.templates.filter(t => t.active).length}
           />
         )
       )}
@@ -709,6 +764,16 @@ export const PhotoBoothPage = ({ configOverride, userSlugOverride, eventSlugOver
         <div className="hidden dark:block fixed bottom-0 left-0 right-0 h-[40vh] pointer-events-none z-0">
           <div className="absolute inset-0 [mask-image:linear-gradient(to_top,black_20%,transparent_100%)]">
             <ShaderBackground />
+          </div>
+        </div>
+      )}
+
+      {/* Auth Gate Overlay */}
+      {showAuthGate && config && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-md" />
+          <div className="relative z-10 w-full max-w-lg">
+            <BoothGate config={config} onSuccess={() => setShowAuthGate(false)} />
           </div>
         </div>
       )}

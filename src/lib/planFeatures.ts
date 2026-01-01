@@ -3,7 +3,7 @@
  * Defines what features are available for each plan tier
  */
 
-export type UserRole = 'individual' | 'business_pending' | 'business_starter' | 'business_eventpro' | 'business_masters' | 'superadmin';
+export type UserRole = 'individual' | 'basic' | 'spark' | 'vibe' | 'studio' | 'business_pending' | 'business_starter' | 'business_eventpro' | 'business_masters' | 'superadmin';
 
 export interface PlanFeatures {
   maxActiveEvents: number;
@@ -37,6 +37,11 @@ export interface PlanFeatures {
   teamAccess: boolean;         // Business team members access
   maxTeamMembers: number;      // Max team members (Starter=1, Pro=3, Masters=custom)
   hardwareSupport: boolean;    // Hardware integration options (Masters only)
+  // New Booth Monetization Features
+  boothTokenMonetization: boolean;
+  boothRevenueShare: boolean;
+  boothCustomSplit: boolean;
+  boothAdvancedAnalytics: boolean;
 }
 
 // Feature definitions per plan
@@ -68,6 +73,138 @@ const PLAN_FEATURES: Record<UserRole, PlanFeatures> = {
     teamAccess: false,
     maxTeamMembers: 0,
     hardwareSupport: false,
+    boothTokenMonetization: false,
+    boothRevenueShare: false,
+    boothCustomSplit: false,
+    boothAdvancedAnalytics: false,
+  },
+  basic: {
+    maxActiveEvents: 1,
+    tokensMonthly: 0,
+    videoGeneration: false,
+    faceswap: false,
+    badgeCreatorAI: false,
+    premiumModels: false,
+    timelineSplitView: false,
+    printStation: false,
+    hardWatermark: false,
+    customThemes: false,
+    payPerPhoto: false,
+    payPerAlbum: false,
+    leadCapture: false,
+    stripeIntegration: false,
+    staffOnlyMode: false,
+    marketplacePublishing: false,
+    customPipelines: false,
+    revenueShare: false,
+    albumTracking: false,
+    stationFlow: false,
+    multiStationFlow: false,
+    badgeQRTracking: false,
+    sharingOverride: false,
+    teamAccess: false,
+    maxTeamMembers: 0,
+    hardwareSupport: false,
+    boothTokenMonetization: false,
+    boothRevenueShare: false,
+    boothCustomSplit: false,
+    boothAdvancedAnalytics: false,
+  },
+  spark: {
+    maxActiveEvents: 3,
+    tokensMonthly: 0,
+    videoGeneration: false,
+    faceswap: true,
+    badgeCreatorAI: false,
+    premiumModels: false,
+    timelineSplitView: false,
+    printStation: false,
+    hardWatermark: false,
+    customThemes: false,
+    payPerPhoto: false,
+    payPerAlbum: false,
+    leadCapture: false,
+    stripeIntegration: false,
+    staffOnlyMode: false,
+    marketplacePublishing: false,
+    customPipelines: false,
+    revenueShare: false,
+    albumTracking: false,
+    stationFlow: false,
+    multiStationFlow: false,
+    badgeQRTracking: false,
+    sharingOverride: false,
+    teamAccess: false,
+    maxTeamMembers: 0,
+    hardwareSupport: false,
+    boothTokenMonetization: true,
+    boothRevenueShare: false,
+    boothCustomSplit: false,
+    boothAdvancedAnalytics: false,
+  },
+  vibe: {
+    maxActiveEvents: 10,
+    tokensMonthly: 0,
+    videoGeneration: true,
+    faceswap: true,
+    badgeCreatorAI: false,
+    premiumModels: false,
+    timelineSplitView: false,
+    printStation: false,
+    hardWatermark: false,
+    customThemes: true,
+    payPerPhoto: true,
+    payPerAlbum: false,
+    leadCapture: true,
+    stripeIntegration: true,
+    staffOnlyMode: false,
+    marketplacePublishing: true,
+    customPipelines: false,
+    revenueShare: true,
+    albumTracking: false,
+    stationFlow: false,
+    multiStationFlow: false,
+    badgeQRTracking: false,
+    sharingOverride: false,
+    teamAccess: false,
+    maxTeamMembers: 0,
+    hardwareSupport: false,
+    boothTokenMonetization: true,
+    boothRevenueShare: true,
+    boothCustomSplit: false,
+    boothAdvancedAnalytics: false,
+  },
+  studio: {
+    maxActiveEvents: 25,
+    tokensMonthly: 0,
+    videoGeneration: true,
+    faceswap: true,
+    badgeCreatorAI: true,
+    premiumModels: true,
+    timelineSplitView: false,
+    printStation: false,
+    hardWatermark: false,
+    customThemes: true,
+    payPerPhoto: true,
+    payPerAlbum: true,
+    leadCapture: true,
+    stripeIntegration: true,
+    staffOnlyMode: false,
+    marketplacePublishing: true,
+    customPipelines: true,
+    revenueShare: true,
+    albumTracking: false,
+    stationFlow: false,
+    multiStationFlow: false,
+    badgeQRTracking: false,
+    sharingOverride: false,
+    teamAccess: false,
+    maxTeamMembers: 0,
+    hardwareSupport: false,
+    boothTokenMonetization: true,
+    boothRevenueShare: true,
+    boothCustomSplit: true,
+    boothAdvancedAnalytics: true,
   },
   business_pending: {
     maxActiveEvents: 0,
@@ -96,6 +233,10 @@ const PLAN_FEATURES: Record<UserRole, PlanFeatures> = {
     teamAccess: false,
     maxTeamMembers: 0,
     hardwareSupport: false,
+    boothTokenMonetization: false,
+    boothRevenueShare: false,
+    boothCustomSplit: false,
+    boothAdvancedAnalytics: false,
   },
   business_starter: {
     maxActiveEvents: 1,
@@ -124,6 +265,10 @@ const PLAN_FEATURES: Record<UserRole, PlanFeatures> = {
     teamAccess: true,
     maxTeamMembers: 1,
     hardwareSupport: false,
+    boothTokenMonetization: true,
+    boothRevenueShare: false,
+    boothCustomSplit: false,
+    boothAdvancedAnalytics: false,
   },
   business_eventpro: {
     maxActiveEvents: 2,
@@ -152,6 +297,10 @@ const PLAN_FEATURES: Record<UserRole, PlanFeatures> = {
     teamAccess: true,
     maxTeamMembers: 3,
     hardwareSupport: false,
+    boothTokenMonetization: true,
+    boothRevenueShare: true,
+    boothCustomSplit: true,
+    boothAdvancedAnalytics: true,
   },
   business_masters: {
     maxActiveEvents: 3,
@@ -180,6 +329,10 @@ const PLAN_FEATURES: Record<UserRole, PlanFeatures> = {
     teamAccess: true,
     maxTeamMembers: 10, // Custom, can be increased
     hardwareSupport: true,
+    boothTokenMonetization: true,
+    boothRevenueShare: true,
+    boothCustomSplit: true,
+    boothAdvancedAnalytics: true,
   },
   superadmin: {
     maxActiveEvents: 999,
@@ -208,6 +361,10 @@ const PLAN_FEATURES: Record<UserRole, PlanFeatures> = {
     teamAccess: true,
     maxTeamMembers: 999,
     hardwareSupport: true,
+    boothTokenMonetization: true,
+    boothRevenueShare: true,
+    boothCustomSplit: true,
+    boothAdvancedAnalytics: true,
   },
 };
 
@@ -215,7 +372,7 @@ const PLAN_FEATURES: Record<UserRole, PlanFeatures> = {
  * Get features available for a user role
  */
 export function getPlanFeatures(role: string | undefined): PlanFeatures {
-  const normalizedRole = (role || 'individual') as UserRole;
+  const normalizedRole = (role || 'individual').toLowerCase() as UserRole;
   return PLAN_FEATURES[normalizedRole] || PLAN_FEATURES.individual;
 }
 
@@ -231,14 +388,14 @@ export function hasFeature(role: string | undefined, feature: keyof PlanFeatures
  * Get the minimum plan required for a feature
  */
 export function getMinPlanForFeature(feature: keyof PlanFeatures): UserRole {
-  const plans: UserRole[] = ['business_starter', 'business_eventpro', 'business_masters'];
-  
+  const plans: UserRole[] = ['spark', 'vibe', 'studio', 'business_starter', 'business_eventpro', 'business_masters'];
+
   for (const plan of plans) {
-    if (PLAN_FEATURES[plan][feature]) {
+    if (PLAN_FEATURES[plan] && PLAN_FEATURES[plan][feature]) {
       return plan;
     }
   }
-  
+
   return 'business_masters';
 }
 
@@ -259,7 +416,7 @@ export function getPlanDisplayName(role: string | undefined): string {
     'business_masters': 'Masters',
     'superadmin': 'Super Admin',
   };
-  
+
   const normalizedRole = (role || 'individual').toLowerCase();
   return names[normalizedRole] || 'Spark';
 }

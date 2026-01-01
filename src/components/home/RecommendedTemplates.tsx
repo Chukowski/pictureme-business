@@ -36,9 +36,14 @@ export function RecommendedTemplates({ templates = [] }: RecommendedTemplatesPro
         className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide snap-x snap-mandatory"
         style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
       >
-        {templates.slice(0, 10).map((template) => {
+        {templates.slice(0, 10).map((template: any) => {
           // Resolve thumbnail
-          const thumb = template.preview_url || (template.preview_images && template.preview_images.length > 0 ? template.preview_images[0] : '/placeholder-template.jpg');
+          const thumb = template.preview_url ||
+            (template.preview_images && template.preview_images.length > 0 ? template.preview_images[0] :
+              (template.thumbnail_url || '/placeholder-template.jpg'));
+
+          const name = template.name || template.template_name || 'Featured Style';
+          const category = template.category || template.template_type || 'Style';
 
           return (
             <div key={template.id} className="min-w-[200px] snap-start h-full">
@@ -49,10 +54,10 @@ export function RecommendedTemplates({ templates = [] }: RecommendedTemplatesPro
                 >
                   <div className="absolute inset-0 bg-gradient-to-t from-[#101112]/90 via-transparent to-transparent opacity-80" />
                   <div className="absolute bottom-3 left-3 right-3">
-                    <h4 className="text-sm font-bold text-white truncate leading-tight">{template.name}</h4>
+                    <h4 className="text-sm font-bold text-white truncate leading-tight">{name}</h4>
                     <div className="flex items-center gap-2 mt-1">
                       <Badge variant="secondary" className="h-4 text-[9px] bg-white/10 text-zinc-300 px-1 border-0">
-                        {template.category}
+                        {category}
                       </Badge>
                     </div>
                   </div>

@@ -28,10 +28,20 @@ export default function BoothDashboard() {
     const [newBoothTitle, setNewBoothTitle] = useState("");
     const [newBoothSlug, setNewBoothSlug] = useState("");
     const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [activeImageIndex, setActiveImageIndex] = useState(0);
 
     useEffect(() => {
         loadData();
     }, []);
+
+    useEffect(() => {
+        if (booths.length > 0) {
+            const interval = setInterval(() => {
+                setActiveImageIndex(prev => prev + 1);
+            }, 5000);
+            return () => clearInterval(interval);
+        }
+    }, [booths]);
 
     const loadData = async () => {
         try {
@@ -177,13 +187,26 @@ export default function BoothDashboard() {
                                 <p className="text-xs text-zinc-500 font-mono">/{booth.slug}</p>
                             </CardHeader>
                             <CardContent>
-                                <div className="aspect-video bg-zinc-800/50 rounded-lg mb-4 flex items-center justify-center border border-white/5 group-hover:border-white/10 transition-colors relative overflow-hidden">
-                                    {booth.branding?.logoPath ? (
-                                        <img src={booth.branding.logoPath} alt={booth.title} className="w-full h-full object-cover" />
-                                    ) : (
-                                        <Camera className="w-10 h-10 text-zinc-700" />
-                                    )}
-                                    <div className="absolute inset-0 bg-[#101112]/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                                <div className="aspect-video bg-zinc-800/50 rounded-lg mb-4 flex items-center justify-center border border-white/5 group-hover:border-white/10 transition-all duration-500 relative overflow-hidden">
+                                    {(() => {
+                                        const templates = booth.templates || [];
+                                        const currentTpl = templates[activeImageIndex % templates.length];
+                                        const backgroundImage = currentTpl?.images?.[0] || booth.branding?.logoPath;
+
+                                        if (backgroundImage) {
+                                            return (
+                                                <img
+                                                    key={backgroundImage}
+                                                    src={backgroundImage}
+                                                    alt={booth.title}
+                                                    className="w-full h-full object-cover animate-in fade-in zoom-in-95 duration-700"
+                                                />
+                                            );
+                                        }
+                                        return <Camera className="w-10 h-10 text-zinc-700" />;
+                                    })()}
+                                    <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                                    <div className="absolute inset-0 bg-[#101112]/40 opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center gap-2">
                                         <Button className="bg-white text-black hover:bg-zinc-200" onClick={() => navigate(`/${user?.slug || user?.username || 'user'}/${booth.slug}`)}>
                                             <Play className="w-4 h-4 mr-2" /> Launch
                                         </Button>

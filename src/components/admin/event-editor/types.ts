@@ -76,7 +76,7 @@ export interface EventFormData extends Omit<EventConfig, 'id' | '_id' | 'user_id
     includeLogoOnPrints?: boolean;
     sponsorLogos?: string[];
   };
-  
+
   eventMode: 'free' | 'lead_capture' | 'pay_per_photo' | 'pay_per_album';
   rules: {
     leadCaptureEnabled: boolean;
@@ -104,9 +104,17 @@ export interface EventFormData extends Omit<EventConfig, 'id' | '_id' | 'user_id
 
   // Pricing configuration (for pay_per_photo and pay_per_album modes)
   pricing?: EventPricingConfig;
-  
+
   // Online payments configuration (Stripe)
   onlinePayments?: OnlinePaymentsConfig;
+
+  // Booth Monetization
+  monetization?: {
+    type: 'free' | 'tokens' | 'revenue_share';
+    token_price?: number;
+    fiat_price?: number;
+    revenue_split?: number;
+  };
 
   // Legacy fields kept for compatibility
   badgeCreator?: {

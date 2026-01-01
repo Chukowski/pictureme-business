@@ -59,6 +59,7 @@ import {
     adminAssignTemplate,
     MarketplaceTemplate
 } from "@/services/marketplaceApi";
+import { addFeaturedTemplate } from "@/services/contentApi";
 import { toast } from "sonner";
 import { ENV } from "@/config/env";
 import { AI_MODELS } from "@/services/aiProcessor";
@@ -212,6 +213,20 @@ export default function SuperAdminMarketplace() {
             toast.error("Failed to assign template");
         } finally {
             setIsSaving(false);
+        }
+    };
+
+    const handleFeatureOnHome = async (template: MarketplaceTemplate) => {
+        try {
+            await addFeaturedTemplate({
+                template_id: template.id,
+                template_name: template.name,
+                template_type: template.template_type,
+                thumbnail_url: template.preview_url || template.backgrounds?.[0]
+            });
+            toast.success(`${template.name} added to home featured styles!`);
+        } catch (error) {
+            toast.error("Failed to feature template on home");
         }
     };
 
@@ -541,6 +556,15 @@ export default function SuperAdminMarketplace() {
                                                 title="Assign to User"
                                             >
                                                 <UserPlus className="w-4 h-4" />
+                                            </Button>
+                                            <Button
+                                                size="sm"
+                                                variant="ghost"
+                                                className="h-8 w-8 p-0 text-amber-400 hover:bg-amber-500/10"
+                                                onClick={() => handleFeatureOnHome(item)}
+                                                title="Feature on Home"
+                                            >
+                                                <Star className="w-4 h-4" />
                                             </Button>
                                             <Button
                                                 size="sm"
