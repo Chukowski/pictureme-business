@@ -68,6 +68,14 @@ interface CreatorStudioSidebarProps {
     isFreeTier: boolean;
     onCloseMobile?: () => void;
     availableModels?: any[];
+    userBooths?: any[];
+    selectedBooth?: any | null;
+    onSelectBooth?: (booth: any) => void;
+    selectedBoothTemplate?: any | null;
+    onSelectBoothTemplate?: (template: any) => void;
+    onImageCaptured?: (base64: string) => void;
+    inputImages?: string[];
+    onRemoveInputImageObj?: (index: number) => void;
     remixFromUsername?: string | null;
 }
 
@@ -94,11 +102,117 @@ export function CreatorStudioSidebar({
     isFreeTier,
     onCloseMobile,
     availableModels = [],
-    remixFromUsername
+    remixFromUsername,
+    userBooths = [],
+    selectedBooth,
+    onSelectBooth,
+    selectedBoothTemplate,
+    onSelectBoothTemplate,
+    onImageCaptured,
+    inputImages = [],
+    onRemoveInputImageObj
 }: CreatorStudioSidebarProps) {
 
     const [enhanceOn, setEnhanceOn] = useState(false);
+    const [activeBoothImageIndex, setActiveBoothImageIndex] = useState(0);
+    const [showCamera, setShowCamera] = useState(false);
+    const [countdown, setCountdown] = useState<number | null>(null);
+    const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
+    const videoRef = React.useRef<HTMLVideoElement>(null);
     const textareaRef = React.useRef<HTMLTextAreaElement>(null);
+
+    const startCamera = async () => {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } }
+            });
+            setCameraStream(stream);
+            setShowCamera(true);
+            if (videoRef.current) {
+                videoRef.current.srcObject = stream;
+            }
+        } catch (err) {
+            console.error("Error accessing camera:", err);
+            toast.error("Could not access camera. Please check permissions.");
+        }
+    };
+
+    const stopCamera = () => {
+        if (cameraStream) {
+            cameraStream.getTracks().forEach(track => track.stop());
+            setCameraStream(null);
+        }
+        setShowCamera(false);
+    };
+
+    const capturePhoto = () => {
+        if (videoRef.current) {
+            const canvas = document.createElement("canvas");
+            canvas.width = videoRef.current.videoWidth;
+            canvas.height = videoRef.current.videoHeight;
+            const ctx = canvas.getContext("2d");
+            if (ctx) {
+                // Mirror the image horizontally to match the user-facing camera view
+                ctx.translate(canvas.width, 0);
+                ctx.scale(-1, 1);
+                ctx.drawImage(videoRef.current, 0, 0);
+                const dataUrl = canvas.toDataURL("image/jpeg", 0.9);
+                onImageCaptured?.(dataUrl);
+                // Don't stop camera immediately if we want to take multiple, but user requested 'grid' so maybe stop?
+                // Actually, "replace upload button for a grid of squares... so user can see and delete if any".
+                // If I keep camera open, they can take more.
+                // Let's keep camera open? No, typical flow is Capture -> Review -> Retake/Add.
+                // But for "Studio" or "Booth", rapid fire is cool.
+                // Currently stopCamera() is called.
+                stopCamera();
+            }
+        }
+    };
+
+    const startCountdownAndCapture = () => {
+        setCountdown(3);
+        const timer = setInterval(() => {
+            setCountdown(prev => {
+                if (prev === 1) {
+                    clearInterval(timer);
+                    capturePhoto();
+                    return null;
+                }
+                return prev ? prev - 1 : null;
+            });
+        }, 1000);
+    };
+
+    // Cleanup camera on unmount or when leaving specific booth steps
+    useEffect(() => {
+        return () => {
+            stopCamera();
+        };
+    }, []);
+
+    // Also stop camera if we navigate away from the camera step
+    useEffect(() => {
+        if (!selectedBoothTemplate) {
+            stopCamera();
+        }
+    }, [selectedBoothTemplate]);
+
+    // Update video ref when stream changes
+    useEffect(() => {
+        if (videoRef.current && cameraStream) {
+            videoRef.current.srcObject = cameraStream;
+        }
+    }, [cameraStream, showCamera]);
+
+    useEffect(() => {
+        let interval: NodeJS.Timeout;
+        if (mode === 'booth' && userBooths.length > 0) {
+            interval = setInterval(() => {
+                setActiveBoothImageIndex(prev => prev + 1);
+            }, 5000);
+        }
+        return () => clearInterval(interval);
+    }, [mode, userBooths]);
 
     useEffect(() => {
         if (textareaRef.current) {
@@ -283,14 +397,278 @@ export function CreatorStudioSidebar({
             {/* --- SCROLLABLE CONTENT --- */}
             <div className="flex-1 overflow-y-auto px-4 py-4 scrollbar-hide">
                 {mode === 'booth' ? (
-                    <div className="h-48 flex flex-col items-center justify-center text-zinc-500 space-y-3">
-                        <Camera className="w-10 h-10 opacity-20" />
-                        <p className="text-xs">Booth settings coming soon...</p>
+                    <div className="flex flex-col gap-4">
+                        {!selectedBooth ? (
+                            <div className="flex flex-col gap-3">
+                                <div className="flex items-center justify-between px-1">
+                                    <Label className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Select Booth</Label>
+                                    <span className="text-[10px] text-zinc-600 font-medium">Step 1 of 3</span>
+                                </div>
+                                {(!userBooths || userBooths.length === 0) ? (
+                                    <div className="p-4 border border-dashed border-white/10 rounded-xl bg-white/5 text-center">
+                                        <p className="text-xs text-zinc-500">No booths found.</p>
+                                    </div>
+                                ) : (
+                                    <div className="grid grid-cols-1 gap-3">
+                                        {userBooths.map((booth) => {
+                                            const templates = booth.templates || [];
+                                            const currentTpl = templates.length > 0 ? templates[activeBoothImageIndex % templates.length] : null;
+                                            const bgImage = currentTpl ? (currentTpl.imageUrl || currentTpl.image_url || currentTpl.images?.[0]) : null;
+
+                                            return (
+                                                <button
+                                                    key={booth._id || booth.id}
+                                                    onClick={() => onSelectBooth?.(booth)}
+                                                    className="group relative h-32 w-full rounded-2xl overflow-hidden border border-white/10 transition-all hover:scale-[1.02] active:scale-[0.98] text-left"
+                                                >
+                                                    {/* Background Image with Rotation */}
+                                                    <div className="absolute inset-0 bg-[#151515]">
+                                                        {bgImage && (
+                                                            <div
+                                                                key={bgImage} // Key change triggers animation
+                                                                className="absolute inset-0 animate-in fade-in duration-700"
+                                                            >
+                                                                <img
+                                                                    src={bgImage}
+                                                                    className="w-full h-full object-cover opacity-60 group-hover:opacity-40 transition-opacity"
+                                                                />
+                                                            </div>
+                                                        )}
+                                                        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-black/10" />
+                                                    </div>
+
+                                                    {/* Content */}
+                                                    <div className="absolute inset-0 p-4 flex flex-col justify-end">
+                                                        <div className="flex items-end justify-between">
+                                                            <div className="flex flex-col gap-1">
+                                                                <div className="flex items-center gap-2">
+                                                                    <div className="w-6 h-6 rounded-lg bg-[#D1F349] flex items-center justify-center">
+                                                                        <Camera className="w-3.5 h-3.5 text-black" />
+                                                                    </div>
+                                                                    <h3 className="text-sm font-black text-white tracking-wide shadow-black drop-shadow-md">
+                                                                        {booth.title}
+                                                                    </h3>
+                                                                </div>
+                                                                <p className="text-[10px] font-medium text-white/70 line-clamp-1 ml-8">
+                                                                    {booth.description || 'Virtual AI Photo Booth'}
+                                                                </p>
+                                                            </div>
+                                                            <div className="w-8 h-8 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/10 group-hover:bg-white/20 transition-colors">
+                                                                <ChevronRight className="w-4 h-4 text-white" />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                            </div>
+                        ) : !selectedBoothTemplate ? (
+                            <div className="flex flex-col gap-4 animate-in slide-in-from-right-8 duration-300">
+                                <button
+                                    onClick={() => { onSelectBooth?.(null); onSelectBoothTemplate?.(null); }}
+                                    className="flex items-center gap-2 text-xs text-zinc-400 hover:text-white transition-colors pl-1"
+                                >
+                                    <ChevronRight className="w-3 h-3 rotate-180" />
+                                    Back to Booths
+                                </button>
+
+                                <div className="flex flex-col gap-1 px-1">
+                                    <div className="flex items-center justify-between">
+                                        <h3 className="text-xl font-black text-white tracking-tight">{selectedBooth.title}</h3>
+                                        <span className="text-[10px] text-zinc-600 font-medium">Step 2 of 3</span>
+                                    </div>
+                                    <p className="text-xs text-zinc-500">Choose a style to continue</p>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-2.5">
+                                    {(selectedBooth.templates || []).map((template: any) => (
+                                        <button
+                                            key={template.id}
+                                            onClick={() => onSelectBoothTemplate?.(template)}
+                                            className={cn(
+                                                "relative aspect-square rounded-2xl overflow-hidden border transition-all text-left group",
+                                                selectedBoothTemplate?.id === template.id
+                                                    ? "border-[#D1F349] ring-2 ring-[#D1F349]/50"
+                                                    : "border-white/10 hover:border-white/30"
+                                            )}
+                                        >
+                                            <img
+                                                src={template.imageUrl || template.image_url || template.images?.[0]}
+                                                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                                            />
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent opacity-80" />
+                                            <div className="absolute bottom-3 left-3 right-3">
+                                                <span className="text-[11px] font-black text-white uppercase tracking-wider leading-tight block drop-shadow-lg">
+                                                    {template.name}
+                                                </span>
+                                            </div>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="flex flex-col gap-4 animate-in slide-in-from-right-8 duration-300 h-full">
+                                <button
+                                    onClick={() => onSelectBoothTemplate?.(null)}
+                                    className="flex items-center gap-2 text-xs text-zinc-400 hover:text-white transition-colors pl-1"
+                                >
+                                    <ChevronRight className="w-3 h-3 rotate-180" />
+                                    Back to Styles
+                                </button>
+
+                                <div className="flex flex-col gap-1 px-1">
+                                    <div className="flex items-center justify-between">
+                                        <h3 className="text-xl font-black text-white tracking-tight">Capture</h3>
+                                        <span className="text-[10px] text-zinc-600 font-medium">Step 3 of 3</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-[10px] text-zinc-500">Style:</span>
+                                        <span className="text-[10px] font-bold text-[#D1F349] uppercase tracking-wider">{selectedBoothTemplate.name}</span>
+                                    </div>
+                                </div>
+
+                                {/* Camera UI Simulator */}
+                                <div className="flex flex-col gap-3">
+                                    <div
+                                        className="relative aspect-[3/4] w-full bg-black rounded-[2rem] overflow-hidden border border-white/10 shadow-2xl group flex flex-col items-center justify-center cursor-pointer hover:border-white/20 transition-all"
+                                        onClick={() => !showCamera && (inputImages.length === 0 && !inputImage) && startCamera()}
+                                    >
+                                        {showCamera ? (
+                                            <div className="absolute inset-0 z-20 flex flex-col bg-black">
+                                                {/* Camera Feed */}
+                                                <video
+                                                    ref={videoRef}
+                                                    autoPlay
+                                                    playsInline
+                                                    className="w-full h-full object-cover scale-x-[-1]"
+                                                />
+
+                                                {/* Countdown Overlay */}
+                                                {countdown !== null && (
+                                                    <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/20 backdrop-blur-sm">
+                                                        <span className="text-[120px] font-black text-white animate-bounce drop-shadow-2xl">
+                                                            {countdown}
+                                                        </span>
+                                                    </div>
+                                                )}
+
+                                                {/* Camera Controls Overlay */}
+                                                <div className="absolute inset-0 pointer-events-none flex flex-col justify-between p-6">
+                                                    {/* Top Controls */}
+                                                    <div className="flex justify-between items-start pointer-events-auto">
+                                                        <button
+                                                            onClick={(e) => { e.stopPropagation(); stopCamera(); }}
+                                                            className="p-2 rounded-full bg-black/40 backdrop-blur-md border border-white/10 text-white"
+                                                        >
+                                                            <X className="w-5 h-5" />
+                                                        </button>
+                                                    </div>
+
+                                                    {/* Bottom Controls */}
+                                                    <div className="flex flex-col items-center gap-6 pointer-events-auto mb-4">
+                                                        {/* Shutter Button */}
+                                                        <button
+                                                            onClick={(e) => { e.stopPropagation(); startCountdownAndCapture(); }}
+                                                            disabled={countdown !== null}
+                                                            className="w-16 h-16 rounded-full border-[4px] border-white flex items-center justify-center transition-transform hover:scale-105 active:scale-95 bg-transparent"
+                                                        >
+                                                            <div className="w-[calc(100%-8px)] h-[calc(100%-8px)] rounded-full bg-white hover:bg-[#D1F349] transition-colors duration-200" />
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ) : (inputImages.length > 0 || inputImage) ? (
+                                            <>
+                                                {/* If we have images, show the LAST one as preview in the big box, OR just keep the camera view with overlay? 
+                                                User said: "replace the upload button for a grid of squares". 
+                                                The camera component (600 lines long) acts as the 'main display'. 
+                                                If we have an image, typically we show it. 
+                                                Let's show the LATEST image here.
+                                            */}
+                                                <img src={inputImages.length > 0 ? inputImages[inputImages.length - 1] : inputImage!} className="w-full h-full object-cover" />
+                                                <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-black/80 to-transparent pointer-events-none" />
+
+                                                {/* Tap to retake/add more Overlay */}
+                                                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40 pointer-events-none">
+                                                    <p className="font-bold text-white uppercase tracking-widest">Tap to Add Photo</p>
+                                                </div>
+
+                                                {/* Retake/Add Controls */}
+                                                <div className="absolute bottom-6 inset-x-0 flex justify-center z-20 gap-3">
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); startCamera(); }}
+                                                        className="flex items-center gap-2 px-4 py-2.5 bg-white/10 backdrop-blur-md rounded-full border border-white/10 hover:bg-white/20 transition-all"
+                                                    >
+                                                        <Camera className="w-4 h-4 text-white" />
+                                                        <span className="text-xs font-bold text-white uppercase tracking-wider">Add Photo</span>
+                                                    </button>
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <>
+                                                {/* Viewfinder Overlay */}
+                                                <div className="absolute inset-0 pointer-events-none z-10">
+                                                    <div className="absolute top-6 left-6 w-8 h-8 border-t-2 border-l-2 border-white/30 rounded-tl-lg" />
+                                                    <div className="absolute top-6 right-6 w-8 h-8 border-t-2 border-r-2 border-white/30 rounded-tr-lg" />
+                                                    <div className="absolute bottom-6 left-6 w-8 h-8 border-b-2 border-l-2 border-white/30 rounded-bl-lg" />
+                                                    <div className="absolute bottom-6 right-6 w-8 h-8 border-b-2 border-r-2 border-white/30 rounded-br-lg" />
+                                                </div>
+
+                                                {/* Central UI */}
+                                                <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 z-0">
+                                                    <div className="p-4 rounded-full bg-white/5 border border-white/10 group-hover:bg-[#D1F349]/10 group-hover:border-[#D1F349] transition-colors">
+                                                        <Camera className="w-8 h-8 text-white/50 group-hover:text-[#D1F349] transition-colors" />
+                                                    </div>
+                                                    <p className="text-xs font-medium text-white/50 animate-pulse group-hover:text-white transition-colors">Tap to open camera</p>
+                                                </div>
+                                            </>
+                                        )}
+                                    </div>
+
+                                    {/* Image Grid (Replaces Upload Button) */}
+                                    {inputImages.length > 0 ? (
+                                        <div className="grid grid-cols-4 gap-2 animate-in slide-in-from-bottom-4">
+                                            {/* Upload Button Tile */}
+                                            <button
+                                                onClick={() => onUploadClick("main")}
+                                                className="aspect-square rounded-xl bg-white/5 border border-dashed border-white/10 hover:bg-white/10 flex items-center justify-center transition-all group/up"
+                                                title="Upload more"
+                                            >
+                                                <Upload className="w-4 h-4 text-zinc-500 group-hover/up:text-white" />
+                                            </button>
+
+                                            {/* Image Tiles */}
+                                            {inputImages.map((img, idx) => (
+                                                <div key={idx} className="relative aspect-square rounded-xl overflow-hidden border border-white/10 group/item">
+                                                    <img src={img} className="w-full h-full object-cover" />
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); onRemoveInputImageObj?.(idx); }}
+                                                        className="absolute top-0.5 right-0.5 p-1 bg-black/60 rounded-full text-white opacity-0 group-hover/item:opacity-100 transition-opacity"
+                                                    >
+                                                        <X className="w-3 h-3" />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        /* Empty State Upload Button */
+                                        <button
+                                            onClick={() => onUploadClick("main")}
+                                            className="w-full py-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 flex items-center justify-center gap-2 transition-all group"
+                                        >
+                                            <Upload className="w-4 h-4 text-zinc-400 group-hover:text-white" />
+                                            <span className="text-xs font-bold text-zinc-400 group-hover:text-white uppercase tracking-wider">Upload Photos</span>
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        )}
                     </div>
                 ) : (
                     <div className="flex flex-col gap-4">
-                        {/* Remixing Banner */}
-                        {remixFromUsername && (
+                        {/* Remixing Banner */}                    {remixFromUsername && (
                             <div className="flex items-center gap-2 bg-[#D1F349]/10 px-3 py-2 rounded-xl border border-[#D1F349]/20 animate-in fade-in slide-in-from-top-2 duration-300">
                                 <Sparkles className="w-3.5 h-3.5 text-[#D1F349]" />
                                 <span className="text-[10px] font-black text-[#D1F349] uppercase tracking-widest">Remixing @{remixFromUsername}</span>
@@ -569,10 +947,17 @@ export function CreatorStudioSidebar({
                 >
                     {isProcessing ? <Loader2 className="animate-spin w-4 h-4" /> : (
                         <div className="flex items-center justify-between w-full h-full gap-1.5">
-                            <span className="text-[10px] uppercase tracking-wide">Generate</span>
+                            <span className="text-[10px] uppercase tracking-wide">
+                                Generate
+                            </span>
                             <div className="flex items-center gap-1 bg-[#101112]/10 px-2.5 py-1 rounded-full border border-black/5 mr-[-2px] shadow-inner h-7">
                                 <Coins className="w-2.5 h-2.5 stroke-[2.5] opacity-60" />
-                                <span className="text-[11px] font-bold">{(selectedModelObj as any).cost || 1}</span>
+                                <span className="text-[11px] font-bold">
+                                    {(mode === 'booth' && selectedBoothTemplate)
+                                        ? (availableModels?.find(m => m.id === selectedBoothTemplate.pipelineConfig?.imageModel || m.id === selectedBoothTemplate.ai_model)?.cost || 1)
+                                        : ((selectedModelObj as any).cost || 1)
+                                    }
+                                </span>
                             </div>
                         </div>
                     )}

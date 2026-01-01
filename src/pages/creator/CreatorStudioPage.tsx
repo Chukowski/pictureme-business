@@ -48,7 +48,7 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
-import { getCurrentUser, getCurrentUserProfile, User } from "@/services/eventsApi";
+import { getCurrentUser, getCurrentUserProfile, User, getUserBooths, EventConfig, Template } from "@/services/eventsApi";
 import { getMarketplaceTemplates } from "@/services/marketplaceApi";
 
 import { processImageWithAI, AspectRatio, AI_MODELS, resolveModelId } from "@/services/aiProcessor";
@@ -149,10 +149,26 @@ function CreatorStudioPageContent({ defaultView }: CreatorStudioPageProps) {
     // View Synchronization Ref - prevents infinite loops between state and URL
     const isInternalTransition = useRef(false);
 
+    // Create Mode State
+    const [mode, setMode] = useState<SidebarMode>(() => {
+        const modeParam = searchParams.get("mode") as SidebarMode;
+        const validModes: SidebarMode[] = ["image", "video", "booth"];
+        if (modeParam && validModes.includes(modeParam)) return modeParam;
+        return "image";
+    });
+
+    const [prompt, setPrompt] = useState("");
+    const [model, setModel] = useState("nano-banana");
+    const [aspectRatio, setAspectRatio] = useState("9:16");
+    const [duration, setDuration] = useState("5s");
+    const [audioOn, setAudioOn] = useState(false);
+
     // Effect 1: Sync URL param -> State
     useEffect(() => {
         const viewParam = searchParams.get("view") as MainView;
+        const modeParam = searchParams.get("mode") as SidebarMode;
         const validViews: MainView[] = ["create", "templates", "booths", "gallery"];
+        const validModes: SidebarMode[] = ["image", "video", "booth"];
 
         if (viewParam && validViews.includes(viewParam)) {
             if (viewParam !== activeView) {
@@ -163,7 +179,14 @@ function CreatorStudioPageContent({ defaultView }: CreatorStudioPageProps) {
             isInternalTransition.current = true;
             setActiveView(defaultView);
         }
-    }, [searchParams, defaultView, activeView]);
+
+        if (modeParam && validModes.includes(modeParam)) {
+            if (modeParam !== mode) {
+                isInternalTransition.current = true;
+                setMode(modeParam);
+            }
+        }
+    }, [searchParams, defaultView]);
 
     // Effect 2: Sync State -> URL param
     useEffect(() => {
@@ -172,15 +195,22 @@ function CreatorStudioPageContent({ defaultView }: CreatorStudioPageProps) {
             return;
         }
 
-        const currentParam = searchParams.get("view");
-        if (activeView && currentParam !== activeView) {
+        const currentViewParam = searchParams.get("view");
+        const currentModeParam = searchParams.get("mode");
+
+        if ((activeView && currentViewParam !== activeView) || (mode && currentModeParam !== mode)) {
             setSearchParams(prev => {
                 const next = new URLSearchParams(prev);
-                next.set("view", activeView);
+                if (activeView) next.set("view", activeView);
+                if (activeView === 'create') {
+                    next.set("mode", mode);
+                } else {
+                    next.delete("mode");
+                }
                 return next;
             }, { replace: true });
         }
-    }, [activeView, searchParams, setSearchParams]);
+    }, [activeView, mode, searchParams, setSearchParams]);
 
     // Effect 3: Handle External Transitions (defaultView Prop or Location State)
     useEffect(() => {
@@ -257,13 +287,7 @@ function CreatorStudioPageContent({ defaultView }: CreatorStudioPageProps) {
         }
     }, [isFreeTier]);
 
-    // Create Mode State
-    const [mode, setMode] = useState<SidebarMode>("image");
-    const [prompt, setPrompt] = useState("");
-    const [model, setModel] = useState("nano-banana");
-    const [aspectRatio, setAspectRatio] = useState("9:16");
-    const [duration, setDuration] = useState("5s");
-    const [audioOn, setAudioOn] = useState(false);
+
 
 
     // Templates
@@ -278,11 +302,31 @@ function CreatorStudioPageContent({ defaultView }: CreatorStudioPageProps) {
 
     // Input Media
     const [inputImage, setInputImage] = useState<string | null>(null);
+    const [inputImages, setInputImages] = useState<string[]>([]); // Multiple images for booth
     const [endFrameImage, setEndFrameImage] = useState<string | null>(null);
     const [referenceImages, setReferenceImages] = useState<string[]>([]);
     const [activeInputType, setActiveInputType] = useState<"main" | "end" | "ref" | "subject">("main");
     const [remixFrom, setRemixFrom] = useState<number | null>(null);
     const [remixFromUsername, setRemixFromUsername] = useState<string | null>(null);
+
+    // Booth State
+    const [userBooths, setUserBooths] = useState<EventConfig[]>([]);
+    const [selectedBooth, setSelectedBooth] = useState<EventConfig | null>(null);
+    const [selectedBoothTemplate, setSelectedBoothTemplate] = useState<Template | null>(null);
+
+    useEffect(() => {
+        if (mode === 'booth') {
+            if (userBooths.length === 0) {
+                getUserBooths().then(booths => {
+                    setUserBooths(booths);
+                });
+            }
+        } else {
+            // Reset booth selection when leaving booth mode to ensure a fresh start next time
+            setSelectedBooth(null);
+            setSelectedBoothTemplate(null);
+        }
+    }, [mode]);
 
     // Unified Remix State Handler
     useEffect(() => {
@@ -744,7 +788,49 @@ function CreatorStudioPageContent({ defaultView }: CreatorStudioPageProps) {
 
     const handleGenerate = async () => {
         if (mode === "booth") {
-            toast.info("Booth generation is handled in the Booth Dashboard.");
+            if (!selectedBoothTemplate) return toast.error("Select a style first");
+            if (!inputImage) return toast.error("Upload a photo first");
+
+            setIsProcessing(true);
+            setStatusMessage("Processing Booth Photo...");
+
+            try {
+                // Use the creator processor but with booth parameters
+                const result = await processCreatorImage({
+                    userPhotoBase64: inputImage!,
+                    backgroundPrompt: selectedBoothTemplate.prompt,
+                    backgroundImageUrls: selectedBoothTemplate.images || [],
+                    aspectRatio: selectedBoothTemplate.aspectRatio || "auto",
+                    aiModel: selectedBoothTemplate.pipelineConfig?.imageModel || "nano-banana",
+                    onProgress: setStatusMessage,
+                    isPublic
+                });
+
+                addToHistory({
+                    id: crypto.randomUUID(),
+                    url: result.url,
+                    type: 'image',
+                    timestamp: Date.now(),
+                    prompt: selectedBoothTemplate.prompt,
+                    model: selectedBoothTemplate.pipelineConfig?.imageModel || "nano-banana",
+                    ratio: selectedBoothTemplate.aspectRatio || "auto",
+                    status: 'completed',
+                    isPublic,
+                    template: {
+                        id: selectedBoothTemplate.id,
+                        name: selectedBoothTemplate.name,
+                        image: selectedBoothTemplate.images?.[0] || ""
+                    }
+                }, true);
+
+                setIsProcessing(false);
+                toast.success("Booth photo ready!");
+
+            } catch (e) {
+                console.error(e);
+                toast.error("Failed to process photo");
+                setIsProcessing(false);
+            }
             return;
         }
         if (mode === "image" && !inputImage) return toast.error("Upload image first");
@@ -832,16 +918,28 @@ function CreatorStudioPageContent({ defaultView }: CreatorStudioPageProps) {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const triggerFileUpload = (type: any) => { setActiveInputType(type); fileInputRef.current?.click(); };
     const handleFileUpload = (e: any) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-            const res = ev.target?.result as string;
-            if (activeInputType === 'main') setInputImage(res);
-            else if (activeInputType === 'end') setEndFrameImage(res);
-            else if (activeInputType === 'ref') setReferenceImages(prev => [...prev, res]);
-        };
-        reader.readAsDataURL(file);
+        const files = Array.from(e.target.files || []);
+        if (files.length === 0) return;
+
+        files.forEach((file: any) => {
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                const res = ev.target?.result as string;
+                if (activeInputType === 'main') {
+                    // For booth, append to list. For others, replace.
+                    if (mode === 'booth') {
+                        setInputImages(prev => [...prev, res]);
+                        // Update primary inputImage to the last uploaded one for compatibility
+                        setInputImage(res);
+                    } else {
+                        setInputImage(res);
+                    }
+                }
+                else if (activeInputType === 'end') setEndFrameImage(res);
+                else if (activeInputType === 'ref') setReferenceImages(prev => [...prev, res]);
+            };
+            reader.readAsDataURL(file);
+        });
     };
 
     const applyTemplate = (tpl: MarketplaceTemplate) => {
@@ -924,6 +1022,25 @@ function CreatorStudioPageContent({ defaultView }: CreatorStudioPageProps) {
                                 }}
                                 availableModels={availableModels}
                                 remixFromUsername={remixFromUsername}
+                                userBooths={userBooths}
+                                selectedBooth={selectedBooth}
+                                onSelectBooth={setSelectedBooth}
+                                selectedBoothTemplate={selectedBoothTemplate}
+                                onSelectBoothTemplate={setSelectedBoothTemplate}
+                                onImageCaptured={(img) => {
+                                    setInputImage(img);
+                                    setInputImages(prev => [...prev, img]);
+                                }}
+                                inputImages={inputImages}
+                                onRemoveInputImageObj={(index) => {
+                                    // Filter once and update both relevant states
+                                    setInputImages(prev => {
+                                        const newList = prev.filter((_, i) => i !== index);
+                                        // Update primary inputImage to the last remaining one for compatibility
+                                        setInputImage(newList.length > 0 ? newList[newList.length - 1] : null);
+                                        return newList;
+                                    });
+                                }}
                             />
                         </div>
 
@@ -961,7 +1078,7 @@ function CreatorStudioPageContent({ defaultView }: CreatorStudioPageProps) {
             </div>
 
             {/* Hidden Input */}
-            <input type="file" ref={fileInputRef} className="hidden" onChange={handleFileUpload} accept="image/*" />
+            <input type="file" ref={fileInputRef} className="hidden" onChange={handleFileUpload} accept="image/*" multiple />
 
             {/* --- OVERLAYS & MOBILE NAV --- */}
 

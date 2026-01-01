@@ -128,7 +128,7 @@ export function CreatorNavbar({ user }: CreatorNavbarProps) {
                                     </div>
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
-                                    onClick={() => navigate('/creator/studio?mode=booth')}
+                                    onClick={() => navigate('/creator/studio?view=create&mode=booth')}
                                     className="flex items-center gap-3 py-3 rounded-xl cursor-pointer focus:bg-card group"
                                 >
                                     <div className="p-2 rounded-lg bg-amber-500/10 text-amber-500 group-hover:bg-amber-500/20 transition-colors">
