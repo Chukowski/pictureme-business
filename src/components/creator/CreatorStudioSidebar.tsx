@@ -946,19 +946,24 @@ export function CreatorStudioSidebar({
                     )}
                 >
                     {isProcessing ? <Loader2 className="animate-spin w-4 h-4" /> : (
-                        <div className="flex items-center justify-between w-full h-full gap-1.5">
+                        <div className={cn(
+                            "flex items-center w-full h-full gap-1.5 px-1",
+                            (mode === 'booth' && !selectedBoothTemplate) ? "justify-center" : "justify-between"
+                        )}>
                             <span className="text-[10px] uppercase tracking-wide">
                                 Generate
                             </span>
-                            <div className="flex items-center gap-1 bg-[#101112]/10 px-2.5 py-1 rounded-full border border-black/5 mr-[-2px] shadow-inner h-7">
-                                <Coins className="w-2.5 h-2.5 stroke-[2.5] opacity-60" />
-                                <span className="text-[11px] font-bold">
-                                    {(mode === 'booth' && selectedBoothTemplate)
-                                        ? (availableModels?.find(m => m.id === selectedBoothTemplate.pipelineConfig?.imageModel || m.id === selectedBoothTemplate.ai_model)?.cost || 1)
-                                        : ((selectedModelObj as any).cost || 1)
-                                    }
-                                </span>
-                            </div>
+                            {!(mode === 'booth' && !selectedBoothTemplate) && (
+                                <div className="flex items-center gap-1 bg-[#101112]/10 px-2.5 py-1 rounded-full border border-black/5 mr-[-2px] shadow-inner h-7">
+                                    <Coins className="w-2.5 h-2.5 stroke-[2.5] opacity-60" />
+                                    <span className="text-[11px] font-bold">
+                                        {(mode === 'booth' && selectedBoothTemplate)
+                                            ? (availableModels?.find(m => m.id === selectedBoothTemplate.pipelineConfig?.imageModel || m.id === selectedBoothTemplate.ai_model)?.cost || 1)
+                                            : ((selectedModelObj as any).cost || 1)
+                                        }
+                                    </span>
+                                </div>
+                            )}
                         </div>
                     )}
                 </Button>
