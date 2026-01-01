@@ -316,17 +316,17 @@ export default function CreatorBoothEditor() {
                                     <div className="space-y-2">
                                         <Label htmlFor="slug">URL Slug</Label>
                                         <div className="flex gap-2">
-                                            <div className="flex-1 relative">
+                                            <div className="flex-1 flex">
+                                                <div className="flex items-center px-3 border border-r-0 bg-muted/50 text-xs text-muted-foreground font-mono rounded-l-md select-none whitespace-nowrap">
+                                                    /{currentUser?.slug || '...'}/
+                                                </div>
                                                 <Input
                                                     id="slug"
                                                     value={formData.slug}
                                                     onChange={(e) => setFormData({ ...formData, slug: e.target.value.toLowerCase().replace(/[^a-z0-9]/g, '-') })}
                                                     placeholder="unique-slug"
-                                                    className="pl-24 font-mono text-xs"
+                                                    className="rounded-l-none font-mono text-xs"
                                                 />
-                                                <div className="absolute inset-y-0 left-0 flex items-center px-3 border-r bg-muted/50 text-[10px] text-muted-foreground font-mono rounded-l-md select-none">
-                                                    /{currentUser?.slug || '...'}/
-                                                </div>
                                             </div>
                                         </div>
                                     </div>
