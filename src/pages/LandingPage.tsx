@@ -547,7 +547,7 @@ export default function LandingPage() {
         <div className="container mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-3 group">
-              <div className="w-8 h-8 rounded-md overflow-hidden bg-white shadow-lg shadow-black/20 group-hover:bg-transparent transition-colors duration-300">
+              <div className="w-10 h-10 rounded-[.4rem] overflow-hidden bg-white shadow-lg shadow-black/20 group-hover:bg-transparent transition-colors duration-300">
                 <img src="/PicturemeIconv2.png" alt="Pictureme" className="w-full h-full object-cover group-hover:hidden" />
                 <img src="/PicturemeIconv2white.png" alt="Pictureme" className="w-full h-full object-cover hidden group-hover:block" />
               </div>
