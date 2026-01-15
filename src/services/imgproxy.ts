@@ -223,6 +223,11 @@ export function getImgproxyUrl(sourceUrl: string, options: ImgproxyOptions = {})
         return sourceUrl;
     }
 
+    // Bypass for Unsplash to prevent broken images if the remote proxy misbehaves
+    if (sourceUrl.includes('images.unsplash.com')) {
+        return sourceUrl;
+    }
+
     // Don't process data URLs or blob URLs
     if (sourceUrl.startsWith('data:') || sourceUrl.startsWith('blob:')) {
         return sourceUrl;
