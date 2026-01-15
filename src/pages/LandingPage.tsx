@@ -205,7 +205,7 @@ export default function LandingPage() {
           </div>
 
           <h1 className="text-6xl md:text-8xl font-bold tracking-tight mb-8 leading-tight flex flex-col md:flex-row items-center justify-center gap-4 md:gap-8">
-            <div className="w-20 h-20 md:w-32 md:h-32 rounded-[1.5rem] md:rounded-[1rem] overflow-hidden bg-white shadow-2xl group transition-all duration-500 hover:rotate-6 hover:scale-110 shrink-0">
+            <div className="w-20 h-20 md:w-32 md:h-32 rounded-xl md:rounded-2xl overflow-hidden bg-white shadow-2xl group transition-all duration-500 hover:rotate-6 hover:scale-110 shrink-0">
               <img src="/PicturemeIconv2.png" alt="Pictureme" className="w-full h-full object-cover group-hover:hidden" />
               <img src="/PicturemeIconv2white.png" alt="Pictureme" className="w-full h-full object-cover hidden group-hover:block" />
             </div>
@@ -547,7 +547,7 @@ export default function LandingPage() {
         <div className="container mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-3 group">
-              <div className="w-8 h-8 rounded-[.3rem] overflow-hidden bg-white shadow-lg shadow-black/20 group-hover:bg-transparent transition-colors duration-300">
+              <div className="w-8 h-8 rounded-md overflow-hidden bg-white shadow-lg shadow-black/20 group-hover:bg-transparent transition-colors duration-300">
                 <img src="/PicturemeIconv2.png" alt="Pictureme" className="w-full h-full object-cover group-hover:hidden" />
                 <img src="/PicturemeIconv2white.png" alt="Pictureme" className="w-full h-full object-cover hidden group-hover:block" />
               </div>
