@@ -259,6 +259,11 @@ export async function getUserBooths(): Promise<EventConfig[]> {
       credentials: 'include',
     });
 
+    if (response.status === 401) {
+      logoutUser();
+      return [];
+    }
+
     if (!response.ok) {
       console.error(`Failed to load booths: ${response.statusText}`);
       return [];
@@ -544,6 +549,11 @@ export async function getCurrentUserProfile(): Promise<User | null> {
       }
     });
 
+    if (response.status === 401) {
+      logoutUser();
+      return null;
+    }
+
     if (!response.ok) {
       // If 404/401, maybe token is invalid, but let caller handle
       return null;
@@ -599,6 +609,11 @@ export function logoutUser(): void {
   }));
 
   console.log('🚪 User logged out - all auth data cleared');
+
+  // Hard redirect to clear any sensitive state and go to landing
+  if (typeof window !== 'undefined') {
+    window.location.href = '/?logout=success';
+  }
 }
 
 /**
@@ -670,7 +685,8 @@ export async function getUserEvents(): Promise<EventConfig[]> {
 
     if (response.status === 401) {
       console.warn('Unauthorized - token may be expired');
-      return []; // Return empty instead of throwing
+      logoutUser();
+      return [];
     }
 
     if (!response.ok) {
@@ -841,6 +857,11 @@ export async function getTokenStats(): Promise<{ current_tokens: number; tokens_
     },
     credentials: 'include',
   });
+
+  if (response.status === 401) {
+    logoutUser();
+    throw new Error('Session expired');
+  }
 
   if (!response.ok) {
     throw new Error('Failed to fetch token stats');

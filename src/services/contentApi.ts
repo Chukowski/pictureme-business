@@ -74,13 +74,31 @@ const getAuthHeaders = () => {
   return token ? { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' };
 };
 
+/**
+ * Centered fetch wrapper for content API that handles 401s
+ */
+async function fetchWithAuth(url: string, options: RequestInit = {}) {
+  const response = await fetch(url, {
+    ...options,
+    headers: {
+      ...getAuthHeaders(),
+      ...options.headers,
+    }
+  });
+
+  if (response.status === 401) {
+    console.warn('🔒 [ContentAPI] Unauthorized (401). logging out.');
+    // @ts-ignore
+    import('./eventsApi').then(m => m.logoutUser());
+  }
+
+  return response;
+}
+
 // Public / Home Endpoints
 export async function getHomeContent(userType: 'personal' | 'business' | 'individual' = 'business'): Promise<HomeContentResponse> {
-  // Map individual to personal if needed, or keep consistent with backend expectation
   const type = userType === 'individual' ? 'personal' : userType;
-  const response = await fetch(`${getApiUrl()}/api/content/home?user_type=${type}`, {
-    headers: getAuthHeaders()
-  });
+  const response = await fetchWithAuth(`${getApiUrl()}/api/content/home?user_type=${type}`);
   if (!response.ok) throw new Error('Failed to fetch home content');
   return response.json();
 }
@@ -91,33 +109,30 @@ export async function getPublicCreations(params: { limit?: number; offset?: numb
   if (params.offset) query.append('offset', params.offset.toString());
   if (params.featured) query.append('featured', 'true');
 
-  const response = await fetch(`${getApiUrl()}/api/creations/public?${query.toString()}`, {
-    headers: getAuthHeaders()
-  });
+  const response = await fetchWithAuth(`${getApiUrl()}/api/creations/public?${query.toString()}`);
   if (!response.ok) throw new Error('Failed to fetch public creations');
   const data = await response.json();
   return data.creations || [];
 }
 
 export async function viewTemplate(id: string) {
-  return fetch(`${getApiUrl()}/api/templates/${id}/view`, { method: 'POST', headers: getAuthHeaders() });
+  return fetchWithAuth(`${getApiUrl()}/api/templates/${id}/view`, { method: 'POST' });
 }
 
 export async function likeCreation(id: number) {
-  return fetch(`${getApiUrl()}/api/creations/${id}/like`, { method: 'POST', headers: getAuthHeaders() });
+  return fetchWithAuth(`${getApiUrl()}/api/creations/${id}/like`, { method: 'POST' });
 }
 
 // Admin Endpoints
 export async function getAdminAnnouncements() {
-  const response = await fetch(`${getApiUrl()}/api/admin/content/announcements`, { headers: getAuthHeaders() });
+  const response = await fetchWithAuth(`${getApiUrl()}/api/admin/content/announcements`);
   if (!response.ok) throw new Error('Failed to fetch announcements');
   return response.json();
 }
 
 export async function createAnnouncement(data: Partial<Announcement>) {
-  const response = await fetch(`${getApiUrl()}/api/admin/content/announcements`, {
+  const response = await fetchWithAuth(`${getApiUrl()}/api/admin/content/announcements`, {
     method: 'POST',
-    headers: getAuthHeaders(),
     body: JSON.stringify(data)
   });
   if (!response.ok) throw new Error('Failed to create announcement');
@@ -125,9 +140,8 @@ export async function createAnnouncement(data: Partial<Announcement>) {
 }
 
 export async function updateAnnouncement(id: number, data: Partial<Announcement>) {
-  const response = await fetch(`${getApiUrl()}/api/admin/content/announcements/${id}`, {
+  const response = await fetchWithAuth(`${getApiUrl()}/api/admin/content/announcements/${id}`, {
     method: 'PUT',
-    headers: getAuthHeaders(),
     body: JSON.stringify(data)
   });
   if (!response.ok) throw new Error('Failed to update announcement');
@@ -135,24 +149,16 @@ export async function updateAnnouncement(id: number, data: Partial<Announcement>
 }
 
 export async function deleteAnnouncement(id: number) {
-  const response = await fetch(`${getApiUrl()}/api/admin/content/announcements/${id}`, {
-    method: 'DELETE',
-    headers: getAuthHeaders()
+  const response = await fetchWithAuth(`${getApiUrl()}/api/admin/content/announcements/${id}`, {
+    method: 'DELETE'
   });
   if (!response.ok) throw new Error('Failed to delete announcement');
   return response.json();
 }
 
 export async function publishAnnouncement(id: number, publish: boolean) {
-  // Using endpoint from instructions: POST /api/admin/content/announcements/:id/publish
-  // Assuming body might need published state or just toggle. Instructions imply publish/despublicar.
-  // Let's assume it toggles or takes a body. Often 'publish' action implies true. 
-  // If despublicar is needed, maybe a different endpoint or body. 
-  // Going with PUT update for explicit control if the specific publish endpoint is just a trigger.
-  // Re-reading: "POST .../publish". Let's try that.
-  const response = await fetch(`${getApiUrl()}/api/admin/content/announcements/${id}/publish`, {
+  const response = await fetchWithAuth(`${getApiUrl()}/api/admin/content/announcements/${id}/publish`, {
     method: 'POST',
-    headers: getAuthHeaders(),
     body: JSON.stringify({ published: publish })
   });
   if (!response.ok) throw new Error('Failed to update publish state');
@@ -161,15 +167,14 @@ export async function publishAnnouncement(id: number, publish: boolean) {
 
 // Featured Templates Admin
 export async function getAdminFeaturedTemplates() {
-  const response = await fetch(`${getApiUrl()}/api/admin/content/templates/featured`, { headers: getAuthHeaders() });
+  const response = await fetchWithAuth(`${getApiUrl()}/api/admin/content/templates/featured`);
   if (!response.ok) throw new Error('Failed to fetch featured templates');
   return response.json();
 }
 
 export async function addFeaturedTemplate(data: Partial<FeaturedTemplate>) {
-  const response = await fetch(`${getApiUrl()}/api/admin/content/templates/featured`, {
+  const response = await fetchWithAuth(`${getApiUrl()}/api/admin/content/templates/featured`, {
     method: 'POST',
-    headers: getAuthHeaders(),
     body: JSON.stringify(data)
   });
   if (!response.ok) throw new Error('Failed to add featured template');
@@ -177,9 +182,8 @@ export async function addFeaturedTemplate(data: Partial<FeaturedTemplate>) {
 }
 
 export async function removeFeaturedTemplate(id: number) {
-  const response = await fetch(`${getApiUrl()}/api/admin/content/templates/featured/${id}`, {
-    method: 'DELETE',
-    headers: getAuthHeaders()
+  const response = await fetchWithAuth(`${getApiUrl()}/api/admin/content/templates/featured/${id}`, {
+    method: 'DELETE'
   });
   if (!response.ok) throw new Error('Failed to remove featured template');
   return response.json();
@@ -187,9 +191,8 @@ export async function removeFeaturedTemplate(id: number) {
 
 // Trending Admin
 export async function recalculateTrending() {
-  const response = await fetch(`${getApiUrl()}/api/admin/content/trending/recalculate`, {
-    method: 'POST',
-    headers: getAuthHeaders()
+  const response = await fetchWithAuth(`${getApiUrl()}/api/admin/content/trending/recalculate`, {
+    method: 'POST'
   });
   if (!response.ok) throw new Error('Failed to recalculate trending');
   return response.json();

@@ -143,8 +143,18 @@ export function useSSE(options: UseSSEOptions = {}): UseSSEReturn {
         const isUnauthorized = event?.status === 401 || (event?.target as any)?.readyState === 2;
 
         if (isUnauthorized) {
-          console.warn('🛑 SSE: Circuit breaker triggered due to unauthorized error. Stopping retries.');
+          console.warn('🛑 SSE: Circuit breaker triggered due to unauthorized error. Stopping retries and logging out.');
           setConnectionStatus('error');
+
+          // Import dynamically to avoid circular dependency
+          import('../services/eventsApi').then(module => {
+            module.logoutUser();
+            window.location.href = '/?error=session_expired';
+          }).catch(() => {
+            localStorage.clear();
+            window.location.href = '/';
+          });
+
           return; // Stop the retry logic
         }
 

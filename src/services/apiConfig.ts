@@ -20,14 +20,14 @@ const GO_ENDPOINTS = {
  */
 export function getApiUrl(endpoint?: string): string {
   const baseUrl = ENV.API_URL;
-  
+
   if (!USE_GO_BACKEND || !endpoint) {
     return baseUrl;
   }
 
   // Check if endpoint should use Go backend
   const endpointType = endpoint.split('/')[1]; // Get 'albums', 'events', etc.
-  
+
   if (GO_ENDPOINTS[endpointType as keyof typeof GO_ENDPOINTS]) {
     // Use Go backend with /api/v2 prefix
     return baseUrl.replace(':3001', ':3002');
@@ -41,20 +41,41 @@ export function getApiUrl(endpoint?: string): string {
  */
 export async function apiFetch(endpoint: string, options?: RequestInit) {
   const url = `${getApiUrl(endpoint)}${endpoint.startsWith('/') ? '' : '/'}${endpoint}`;
-  
+
   // Add /api/v2 prefix for Go endpoints
   const finalUrl = url.includes(':3002') && !endpoint.includes('/api/v2')
     ? url.replace(endpoint, `/api/v2${endpoint}`)
     : url;
 
   console.log(`📡 API Request: ${finalUrl}`);
-  
-  return fetch(finalUrl, {
+
+  // Perform the fetch
+  const response = await fetch(finalUrl, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
       ...options?.headers,
     },
   });
+
+  // Global 401 Unauthorized handler
+  if (response.status === 401) {
+    console.warn('🔒 [API] Unauthorized (401). Your session may have expired.');
+
+    // Import dynamically to avoid circular dependency
+    // @ts-ignore
+    import('./eventsApi').then(module => {
+      module.logoutUser();
+      // Force a redirect to landing page
+      window.location.href = '/?error=session_expired';
+    }).catch(err => {
+      console.error('Failed to logout user', err);
+      // Fallback: clear local storage and redirect anyway
+      localStorage.clear();
+      window.location.href = '/';
+    });
+  }
+
+  return response;
 }
 

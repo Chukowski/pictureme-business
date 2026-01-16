@@ -41,24 +41,41 @@ const getAuthHeaders = () => {
     return token ? { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' };
 };
 
+/**
+ * Centered fetch wrapper for marketplace API that handles 401s
+ */
+async function fetchWithAuth(url: string, options: RequestInit = {}) {
+    const response = await fetch(url, {
+        ...options,
+        headers: {
+            ...getAuthHeaders(),
+            ...options.headers,
+        }
+    });
+
+    if (response.status === 401) {
+        console.warn('🔒 [MarketplaceAPI] Unauthorized (401). logging out.');
+        // @ts-ignore
+        import('./eventsApi').then(m => m.logoutUser());
+    }
+
+    return response;
+}
+
 export async function getMarketplaceTemplates(params?: { category?: string; search?: string; limit?: number }): Promise<MarketplaceTemplate[]> {
     const query = new URLSearchParams();
     if (params?.category) query.append('category', params.category);
     if (params?.search) query.append('search', params.search);
     if (params?.limit) query.append('limit', params.limit.toString());
 
-    const response = await fetch(`${getApiUrl()}/api/marketplace/templates?${query.toString()}`, {
-        headers: getAuthHeaders()
-    });
+    const response = await fetchWithAuth(`${getApiUrl()}/api/marketplace/templates?${query.toString()}`);
 
     if (!response.ok) throw new Error('Failed to fetch marketplace templates');
     return response.json();
 }
 
 export async function getMarketplaceTemplate(id: string): Promise<MarketplaceTemplate> {
-    const response = await fetch(`${getApiUrl()}/api/marketplace/templates/${id}`, {
-        headers: getAuthHeaders()
-    });
+    const response = await fetchWithAuth(`${getApiUrl()}/api/marketplace/templates/${id}`);
 
     if (!response.ok) throw new Error('Failed to fetch template');
     return response.json();
@@ -70,9 +87,7 @@ export async function adminGetTemplates(params?: { category?: string; search?: s
     if (params?.category) query.append('category', params.category);
     if (params?.search) query.append('search', params.search);
 
-    const response = await fetch(`${getApiUrl()}/api/admin/marketplace/templates?${query.toString()}`, {
-        headers: getAuthHeaders()
-    });
+    const response = await fetchWithAuth(`${getApiUrl()}/api/admin/marketplace/templates?${query.toString()}`);
 
     if (!response.ok) throw new Error('Failed to fetch admin templates');
     const data = await response.json();
@@ -80,9 +95,8 @@ export async function adminGetTemplates(params?: { category?: string; search?: s
 }
 
 export async function adminCreateTemplate(template: Partial<MarketplaceTemplate>): Promise<MarketplaceTemplate> {
-    const response = await fetch(`${getApiUrl()}/api/admin/marketplace/templates`, {
+    const response = await fetchWithAuth(`${getApiUrl()}/api/admin/marketplace/templates`, {
         method: 'POST',
-        headers: getAuthHeaders(),
         body: JSON.stringify(template)
     });
 
@@ -91,9 +105,8 @@ export async function adminCreateTemplate(template: Partial<MarketplaceTemplate>
 }
 
 export async function adminUpdateTemplate(id: string, template: Partial<MarketplaceTemplate>): Promise<MarketplaceTemplate> {
-    const response = await fetch(`${getApiUrl()}/api/admin/marketplace/templates/${id}`, {
+    const response = await fetchWithAuth(`${getApiUrl()}/api/admin/marketplace/templates/${id}`, {
         method: 'PUT',
-        headers: getAuthHeaders(),
         body: JSON.stringify(template)
     });
 
@@ -102,18 +115,16 @@ export async function adminUpdateTemplate(id: string, template: Partial<Marketpl
 }
 
 export async function adminDeleteTemplate(id: string): Promise<void> {
-    const response = await fetch(`${getApiUrl()}/api/admin/marketplace/templates/${id}`, {
-        method: 'DELETE',
-        headers: getAuthHeaders()
+    const response = await fetchWithAuth(`${getApiUrl()}/api/admin/marketplace/templates/${id}`, {
+        method: 'DELETE'
     });
 
     if (!response.ok) throw new Error('Failed to delete template');
 }
 
 export async function adminAssignTemplate(userId: string, templateId: string): Promise<void> {
-    const response = await fetch(`${getApiUrl()}/api/admin/marketplace/templates/assign`, {
+    const response = await fetchWithAuth(`${getApiUrl()}/api/admin/marketplace/templates/assign`, {
         method: 'POST',
-        headers: getAuthHeaders(),
         body: JSON.stringify({ user_id: userId, template_id: templateId })
     });
 
