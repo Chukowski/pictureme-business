@@ -9,7 +9,7 @@ const pool = new Pool({
 
 export const auth = betterAuth({
   database: pool,
-  
+
   emailAndPassword: {
     enabled: true,
     autoSignIn: true, // Auto sign in after registration
@@ -100,7 +100,7 @@ export const auth = betterAuth({
 
   // Session configuration
   session: {
-    expiresIn: 60 * 60 * 24 * 7, // 7 days
+    expiresIn: 60 * 60 * 24 * 30, // 30 days
     updateAge: 60 * 60 * 24, // Update session every 24 hours
   },
 

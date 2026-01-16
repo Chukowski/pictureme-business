@@ -115,7 +115,7 @@ export default function LandingPage() {
       />
       {/* Navigation */}
       <nav className="fixed top-0 w-full z-50 bg-[#101112]/80 backdrop-blur-xl border-b border-white/5">
-        <div className="container mx-auto px-6 h-20 flex items-center justify-between">
+        <div className="container mx-auto px-4 md:px-6 h-20 flex items-center justify-between">
           <div
             className="flex items-center gap-3 cursor-pointer group"
             onClick={() => navigate('/')}
@@ -124,7 +124,7 @@ export default function LandingPage() {
               <img src="/PicturemeIconv2.png" alt="Pictureme" className="w-full h-full object-cover group-hover:hidden" />
               <img src="/PicturemeIconv2white.png" alt="Pictureme" className="w-full h-full object-cover hidden group-hover:block" />
             </div>
-            <span className="text-xl font-bold tracking-tight">PictureMe.now</span>
+            <span className="text-lg md:text-xl font-bold tracking-tight hidden sm:block">PictureMe.now</span>
           </div>
           <div className="hidden md:flex items-center gap-8 text-sm font-medium text-zinc-400">
             <button onClick={() => scrollToSection("features")} className="hover:text-white transition-colors">Features</button>
@@ -132,7 +132,7 @@ export default function LandingPage() {
             <button onClick={() => scrollToSection("pricing")} className="hover:text-white transition-colors">Pricing</button>
             <button onClick={() => scrollToSection("about-assistant")} className="hover:text-white transition-colors text-indigo-400">About Assist</button>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 md:gap-4">
             {currentUser ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -179,10 +179,10 @@ export default function LandingPage() {
               </DropdownMenu>
             ) : (
               <>
-                <Button variant="ghost" className="text-zinc-400 hover:text-white hover:bg-white/5" onClick={() => navigate("/admin/auth")}>
+                <Button variant="ghost" className="text-zinc-400 hover:text-white hover:bg-white/5 px-3 sm:px-4 text-sm" onClick={() => navigate("/admin/auth")}>
                   Log in
                 </Button>
-                <Button className="bg-white text-black hover:bg-zinc-200 rounded-full px-6 font-semibold" onClick={() => navigate("/admin/register")}>
+                <Button className="bg-white text-black hover:bg-zinc-200 rounded-full px-4 sm:px-6 font-semibold text-sm" onClick={() => navigate("/admin/register")}>
                   Get Started
                 </Button>
               </>
