@@ -58,12 +58,14 @@ import { AI_MODELS, LOCAL_IMAGE_MODELS, LOCAL_VIDEO_MODELS, type AspectRatio } f
 
 // CopilotKit hook for chat (optional - gracefully degrades if not available)
 let useCopilotChat: any = null;
+/*
 try {
   const copilotCore = require("@copilotkit/react-core");
   useCopilotChat = copilotCore.useCopilotChat;
 } catch {
   // CopilotKit not available, will use direct API calls
 }
+*/
 
 const API_URL = ENV.API_URL || "";
 
@@ -256,6 +258,8 @@ export default function ChatPage() {
     try {
       let responseText = "";
 
+      // CopilotKit logic commented out as per user request
+      /*
       if (copilotChat && copilotChat.appendMessage) {
         try {
           await copilotChat.appendMessage({
@@ -266,6 +270,7 @@ export default function ChatPage() {
           console.log("CopilotKit not fully initialized, using direct API");
         }
       }
+      */
 
       const userInfo = getUserInfo();
 

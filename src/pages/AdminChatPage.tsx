@@ -26,12 +26,14 @@ import {
 
 // CopilotKit hook for chat (optional - gracefully degrades if not available)
 let useCopilotChat: any = null;
+/*
 try {
     const copilotCore = require("@copilotkit/react-core");
     useCopilotChat = copilotCore.useCopilotChat;
 } catch {
     // CopilotKit not available, will use direct API calls
 }
+*/
 
 const API_URL = ENV.API_URL || "";
 
@@ -149,6 +151,8 @@ export default function AdminChatPage() {
         try {
             let responseText = "";
 
+            // CopilotKit logic commented out as per user request
+            /*
             if (copilotChat && copilotChat.appendMessage) {
                 try {
                     await copilotChat.appendMessage({
@@ -159,6 +163,7 @@ export default function AdminChatPage() {
                     console.log("CopilotKit not fully initialized, using direct API");
                 }
             }
+            */
 
             const userInfo = getUserInfo();
 

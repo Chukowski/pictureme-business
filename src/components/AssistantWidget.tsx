@@ -40,12 +40,14 @@ import {
 
 // CopilotKit hook for chat (optional - gracefully degrades if not available)
 let useCopilotChat: any = null;
+/*
 try {
   const copilotCore = require("@copilotkit/react-core");
   useCopilotChat = copilotCore.useCopilotChat;
 } catch {
   // CopilotKit not available, will use direct API calls
 }
+*/
 
 const API_URL = ENV.API_URL || "";
 
@@ -309,6 +311,7 @@ export function AssistantWidget({ className, defaultOpen = false }: AssistantWid
       let responseText = "";
 
       // Try CopilotKit first if available
+      /*
       if (copilotChat && copilotChat.appendMessage) {
         try {
           await copilotChat.appendMessage({
@@ -319,6 +322,7 @@ export function AssistantWidget({ className, defaultOpen = false }: AssistantWid
           console.log("CopilotKit not fully initialized, using direct API");
         }
       }
+      */
 
       // Get fresh user info
       const userInfo = getUserInfo();

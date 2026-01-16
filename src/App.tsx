@@ -63,8 +63,8 @@ const CreatorSupportPage = lazy(() => import("./pages/creator/CreatorSupportPage
 import { CreatorOnly } from "./components/routing/CreatorOnly";
 
 // CopilotKit imports (self-hosted, no cloud required)
-import { CopilotKit } from "@copilotkit/react-core";
-import { AssistantCopilotActions } from "./components/AssistantCopilotActions";
+// import { CopilotKit } from "@copilotkit/react-core";
+// import { AssistantCopilotActions } from "./components/AssistantCopilotActions";
 
 const ChatPage = lazy(() => import("./pages/ChatPage"));
 const AdminChatPage = lazy(() => import("./pages/AdminChatPage"));
@@ -153,6 +153,8 @@ const AppContent = () => {
 
   // Check if backend is available before initializing CopilotKit
   useEffect(() => {
+    // CopilotKit disabled as per user request
+    /*
     if (!shouldInitCopilot || !apiUrl) return;
 
     // Quick health check to avoid CORS/503 errors blocking the UI
@@ -172,6 +174,7 @@ const AppContent = () => {
       controller.abort();
       clearTimeout(timeoutId);
     };
+    */
   }, [shouldInitCopilot, apiUrl]);
 
   // Check if user is on authenticated routes
@@ -209,14 +212,15 @@ const AppContent = () => {
   return (
     <>
       <SEO />
-      {shouldInitCopilot && apiUrl && copilotReady && (
+      {/* CopilotKit disabled as per user request */}
+      {/* {shouldInitCopilot && apiUrl && copilotReady && (
         <CopilotKit
           runtimeUrl={`${apiUrl}/copilotkit`}
           properties={getUserProperties()}
         >
           <AssistantCopilotActions />
         </CopilotKit>
-      )}
+      )} */}
       <TopNavbar />
       <Suspense fallback={
         <div className="min-h-[60vh] flex items-center justify-center">
