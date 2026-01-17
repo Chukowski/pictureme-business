@@ -299,7 +299,7 @@ export default function CreatorSettings() {
   if (!currentUser) return null;
 
   return (
-    <div className="h-full flex flex-col bg-[#101112] text-white overflow-hidden">
+    <div className="min-h-full md:h-full flex flex-col bg-[#101112] text-white md:overflow-hidden">
       {/* Cover Image - Fixed Height, part of layout but not scrolling the whole page */}
       <div className="relative shrink-0 h-48 sm:h-64 w-full group overflow-hidden">
         {(coverPreview || currentUser?.cover_image_url) ? (
@@ -418,7 +418,7 @@ export default function CreatorSettings() {
                           value={formData.username}
                           onChange={(e) => setFormData(prev => ({ ...prev, username: e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, '') }))}
                           className={`bg-card border-white/10 focus:border-indigo-500 ${usernameAvailable === false ? 'border-red-500 focus:border-red-500' :
-                              usernameAvailable === true && formData.username && formData.username !== (currentUser?.slug || currentUser?.username) ? 'border-green-500 focus:border-green-500' : ''
+                            usernameAvailable === true && formData.username && formData.username !== (currentUser?.slug || currentUser?.username) ? 'border-green-500 focus:border-green-500' : ''
                             }`}
                           placeholder="username"
                         />

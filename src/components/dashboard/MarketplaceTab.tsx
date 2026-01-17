@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -141,6 +141,7 @@ let cachedUserId: string | number | null = null;
 
 export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   // Invalidate cache if user changed
   if (cachedUserId !== currentUser.id) {
     cachedTemplates = null;
@@ -534,14 +535,14 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
   const isInLibrary = (templateId: string) => (myLibrary || []).some(t => t.template_id === templateId);
 
   return (
-    <div className="flex flex-col h-full animate-in fade-in duration-500 w-full overflow-hidden">
+    <div className="flex flex-col animate-in fade-in duration-500 w-full">
       <div className="flex-none space-y-6 pb-6">
         {/* Section Tabs & Actions */}
-        <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="flex p-1.5 bg-[#18181b] rounded-full border border-white/5 shadow-2xl shadow-black/50">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-4 md:gap-6">
+          <div className="flex w-full md:w-auto p-1 bg-[#18181b] rounded-full border border-white/5 shadow-2xl shadow-black/50 overflow-x-auto scrollbar-hide">
             <button
               onClick={() => setActiveSection('templates')}
-              className={`flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-bold transition-all duration-300 ${activeSection === 'templates'
+              className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-4 md:px-6 py-2.5 rounded-full text-xs md:text-sm font-bold transition-all duration-300 whitespace-nowrap ${activeSection === 'templates'
                 ? 'bg-[#D1F349] text-black shadow-lg shadow-[#D1F349]/20'
                 : 'text-zinc-400 hover:text-white hover:bg-white/5'
                 }`}
@@ -552,7 +553,7 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
             {isBusiness && (
               <button
                 onClick={() => setActiveSection('lora')}
-                className={`flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-bold transition-all duration-300 ${activeSection === 'lora'
+                className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-4 md:px-6 py-2.5 rounded-full text-xs md:text-sm font-bold transition-all duration-300 whitespace-nowrap ${activeSection === 'lora'
                   ? 'bg-[#D1F349] text-black shadow-lg shadow-[#D1F349]/20'
                   : 'text-zinc-400 hover:text-white hover:bg-white/5'
                   }`}
@@ -563,7 +564,7 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
             )}
             <button
               onClick={() => setActiveSection('library')}
-              className={`flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-bold transition-all duration-300 ${activeSection === 'library'
+              className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-4 md:px-6 py-2.5 rounded-full text-xs md:text-sm font-bold transition-all duration-300 whitespace-nowrap ${activeSection === 'library'
                 ? 'bg-[#D1F349] text-black shadow-lg shadow-[#D1F349]/20'
                 : 'text-zinc-400 hover:text-white hover:bg-white/5'
                 }`}
@@ -571,59 +572,58 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
               <Library className="w-4 h-4" />
               Library
               {myLibrary && myLibrary.length > 0 && (
-                <Badge className={`ml-2 border-0 ${activeSection === 'library' ? 'bg-[#101112]/20 text-black' : 'bg-zinc-800 text-zinc-400'}`}>
+                <Badge className={`ml-2 border-0 px-1.5 h-4 min-w-[16px] text-[10px] flex items-center justify-center ${activeSection === 'library' ? 'bg-[#101112]/20 text-black' : 'bg-zinc-800 text-zinc-400'}`}>
                   {myLibrary.length}
                 </Badge>
               )}
             </button>
           </div>
-
         </div>
 
-        {/* Templates Section */}
+        {/* Templates Section Filters */}
         {activeSection === 'templates' && (
-          <div className="flex flex-wrap gap-4 items-center bg-[#18181b] p-2 rounded-[2rem] border border-white/5 w-fit shadow-xl">
+          <div className="flex flex-col sm:flex-row gap-3 items-center bg-[#18181b] p-3 rounded-[1.5rem] md:rounded-[2rem] border border-white/5 w-full shadow-xl">
             <div className="relative w-full md:w-[280px]">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
               <input
                 placeholder="Search templates..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full h-10 pl-10 pr-4 bg-card/50 rounded-xl border-none text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-[#D1F349]/50"
+                className="w-full h-11 md:h-10 pl-10 pr-4 bg-card/50 rounded-xl border-none text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-[#D1F349]/50"
               />
             </div>
 
-            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-              <SelectTrigger className="w-[140px] h-10 bg-card/50 border-none rounded-xl text-zinc-300 text-sm focus:ring-0">
-                <SelectValue placeholder="Category" />
-              </SelectTrigger>
-              <SelectContent className="bg-[#18181b] border-white/10 rounded-xl">
-                {CATEGORIES.map(cat => (
-                  <SelectItem key={cat} value={cat} className="text-zinc-300 focus:bg-zinc-800 focus:text-white rounded-lg cursor-pointer">
-                    {cat}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="flex w-full sm:w-auto gap-2">
+              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                <SelectTrigger className="flex-1 sm:w-[140px] h-12 md:h-10 bg-card/50 border-none rounded-2xl text-zinc-300 text-sm focus:ring-0">
+                  <SelectValue placeholder="Category" />
+                </SelectTrigger>
+                <SelectContent className="bg-[#18181b] border-white/10 rounded-xl">
+                  {CATEGORIES.map(cat => (
+                    <SelectItem key={cat} value={cat} className="text-zinc-300 focus:bg-zinc-800 focus:text-white rounded-lg cursor-pointer">
+                      {cat}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
 
-            <div className="w-px h-6 bg-white/5 mx-1" />
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger className="flex-1 sm:w-[140px] h-12 md:h-10 bg-card/50 border-none rounded-2xl text-zinc-300 text-sm focus:ring-0">
+                  <SelectValue placeholder="Sort by" />
+                </SelectTrigger>
+                <SelectContent className="bg-[#18181b] border-white/10 rounded-xl">
+                  <SelectItem value="popular" className="text-zinc-300 focus:bg-zinc-800 focus:text-white rounded-lg cursor-pointer">Most Popular</SelectItem>
+                  <SelectItem value="newest" className="text-zinc-300 focus:bg-zinc-800 focus:text-white rounded-lg cursor-pointer">Newest</SelectItem>
+                  <SelectItem value="price-low" className="text-zinc-300 focus:bg-zinc-800 focus:text-white rounded-lg cursor-pointer">Price: Low to High</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-            <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger className="w-[140px] h-10 bg-card/50 border-none rounded-xl text-zinc-300 text-sm focus:ring-0">
-                <SelectValue placeholder="Sort by" />
-              </SelectTrigger>
-              <SelectContent className="bg-[#18181b] border-white/10 rounded-xl">
-                <SelectItem value="popular" className="text-zinc-300 focus:bg-zinc-800 focus:text-white rounded-lg cursor-pointer">Most Popular</SelectItem>
-                <SelectItem value="newest" className="text-zinc-300 focus:bg-zinc-800 focus:text-white rounded-lg cursor-pointer">Newest</SelectItem>
-                <SelectItem value="price-low" className="text-zinc-300 focus:bg-zinc-800 focus:text-white rounded-lg cursor-pointer">Price: Low to High</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <div className="w-px h-6 bg-white/5 mx-1 hidden md:block" />
+            <div className="w-full sm:w-px h-px sm:h-6 bg-white/5 mx-1" />
 
             {/* View Controls (Integrated) */}
-            <div className="flex items-center gap-2">
-              <div className="h-9 px-3 flex items-center bg-card/50 rounded-xl min-w-[100px]">
+            <div className="flex items-center justify-between sm:justify-start w-full sm:w-auto gap-2">
+              <div className="h-12 md:h-9 px-3 hidden sm:flex flex-1 sm:flex-none items-center bg-card/50 rounded-2xl min-w-[100px]">
                 <Slider
                   value={gridColumns}
                   onValueChange={setZoomLevel}
@@ -631,14 +631,14 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
                   max={6}
                   step={1}
                   disabled={viewMode === 'list'}
-                  className={`w-24 [&_.bg-primary]:bg-[#D1F349] [&_.border-primary]:border-[#D1F349] ${viewMode === 'list' ? 'opacity-30' : ''}`}
+                  className={`w-full sm:w-24 [&_.bg-primary]:bg-[#D1F349] [&_.border-primary]:border-[#D1F349] ${viewMode === 'list' ? 'opacity-30' : ''}`}
                 />
               </div>
-              <div className="flex items-center gap-1 p-1 bg-card/50 rounded-xl">
+              <div className="flex items-center gap-1 p-1 bg-card/50 rounded-2xl w-full sm:w-auto">
                 <button
                   onClick={() => setViewMode('list')}
                   className={cn(
-                    "flex items-center justify-center w-8 h-8 rounded-lg transition-all",
+                    "flex-1 sm:flex-none flex items-center justify-center h-10 md:w-8 md:h-8 rounded-xl transition-all",
                     viewMode === 'list' ? "bg-[#333333] text-white shadow-md" : "text-zinc-500 hover:text-zinc-300"
                   )}
                   title="List View"
@@ -648,7 +648,7 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
                 <button
                   onClick={() => setViewMode('grid')}
                   className={cn(
-                    "flex items-center justify-center w-8 h-8 rounded-lg transition-all",
+                    "flex-1 sm:flex-none flex items-center justify-center h-10 md:w-8 md:h-8 rounded-xl transition-all",
                     viewMode === 'grid' ? "bg-[#D1F349] text-black shadow-md" : "text-zinc-500 hover:text-zinc-300"
                   )}
                   title="Grid View"
@@ -661,7 +661,7 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
         )}
       </div>
 
-      <div className="flex-1 overflow-y-auto min-h-0 pr-2 pb-20 scrollbar-hide">
+      <div className="min-h-0 pr-2 pb-20">
         {activeSection === 'templates' && (
 
           isLoading ? (
@@ -680,17 +680,22 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
                 </div>
               ) : (
                 <div
-                  className={`grid gap-6 transition-all duration-300 ${viewMode === 'list' ? 'grid-cols-1' : ''}`}
-                  style={viewMode === 'grid' ? { gridTemplateColumns: `repeat(${gridColumns[0]}, minmax(0, 1fr))` } : {}}
+                  className={cn(
+                    "grid gap-4 md:gap-6 transition-all duration-300",
+                    viewMode === 'list' ? "grid-cols-1" : "grid-cols-2 md:grid-cols-4"
+                  )}
+                  style={viewMode === 'grid' ? {
+                    gridTemplateColumns: `repeat(${window.innerWidth < 768 ? 2 : gridColumns[0]}, minmax(0, 1fr))`
+                  } : {}}
                 >
                   {filteredTemplates.map((template) => (
                     <div
                       key={template.id}
-                      className={`group relative bg-[#18181b] rounded-3xl overflow-hidden border border-white/5 hover:border-[#D1F349]/30 transition-all duration-500 hover:shadow-2xl hover:shadow-[#D1F349]/5 ${viewMode === 'list' ? 'flex flex-row h-48' : ''}`}
+                      className={`group relative bg-[#18181b] rounded-3xl overflow-hidden border border-white/5 hover:border-[#D1F349]/30 transition-all duration-500 hover:shadow-2xl hover:shadow-[#D1F349]/5 ${viewMode === 'list' ? 'flex flex-row h-40 md:h-48' : ''}`}
                       onClick={() => setSelectedTemplate(template)}
                     >
                       {/* Image Area */}
-                      <div className={`relative overflow-hidden bg-card ${viewMode === 'list' ? 'w-64 aspect-auto h-full shrink-0' : 'aspect-square'}`}>
+                      <div className={`relative overflow-hidden bg-card ${viewMode === 'list' ? 'w-40 md:w-64 aspect-auto h-full shrink-0' : 'aspect-square'}`}>
                         <img
                           src={getTemplateImage(template)}
                           alt={template.name}
@@ -722,28 +727,28 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
                       </div>
 
                       {/* Content Area */}
-                      <div className={`p-5 relative ${viewMode === 'list' ? 'flex-1 flex flex-col justify-between' : ''}`}>
-                        <div className="flex justify-between items-start mb-2">
-                          <div>
-                            <h3 className="font-bold text-white text-lg leading-tight truncate pr-2 group-hover:text-[#D1F349] transition-colors">{template.name}</h3>
-                            <p className="text-xs text-zinc-500 font-medium mt-1">{template.category}</p>
+                      <div className={`p-3 md:p-5 relative ${viewMode === 'list' ? 'flex-1 flex flex-col justify-between' : ''}`}>
+                        <div className="flex flex-col md:flex-row md:justify-between md:items-start mb-2 gap-1 md:gap-4">
+                          <div className="min-w-0 flex-1">
+                            <h3 className="font-black text-white text-base md:text-xl leading-[1.1] truncate group-hover:text-[#D1F349] transition-colors uppercase tracking-tight">{template.name}</h3>
+                            <p className="text-[10px] md:text-xs text-zinc-500 font-bold mt-0.5 md:mt-1 uppercase">{template.category}</p>
                           </div>
                           {template.price > 0 && (
-                            <div className="flex items-center gap-1 bg-white/5 px-2 py-1 rounded-lg border border-white/5">
+                            <div className="flex items-center gap-1 bg-white/5 px-2 py-0.5 md:py-1 rounded-lg border border-white/5 shrink-0 self-start">
                               <Coins className="w-3 h-3 text-[#D1F349]" />
-                              <span className="text-xs font-bold text-white">{template.price}</span>
+                              <span className="text-[10px] md:text-xs font-bold text-white">{template.price}</span>
                             </div>
                           )}
                         </div>
 
-                        <p className={`text-sm text-zinc-400 line-clamp-2 leading-relaxed ${viewMode === 'list' ? 'mb-auto' : 'mb-4 h-10'}`}>
+                        <p className={`text-xs md:text-sm text-zinc-400 line-clamp-2 leading-relaxed ${viewMode === 'list' ? 'mb-auto block' : 'hidden sm:block mb-3 h-10'}`}>
                           {template.description}
                         </p>
 
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2 mt-auto">
                           <Button
-                            className={`flex-1 rounded-xl h-10 font-bold transition-all ${(template.is_owned || isInLibrary(template.id))
-                              ? 'bg-zinc-800 text-white hover:bg-zinc-700'
+                            className={`flex-1 rounded-2xl h-10 md:h-11 text-xs md:text-sm font-black uppercase tracking-wide transition-all ${(template.is_owned || isInLibrary(template.id))
+                              ? 'bg-zinc-800 text-zinc-500'
                               : 'bg-[#D1F349] text-black hover:bg-[#b0cc3d] shadow-lg shadow-[#D1F349]/10'
                               }`}
                             onClick={(e) => {
@@ -755,17 +760,17 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
                               }
                             }}
                           >
-                            {(template.is_owned || isInLibrary(template.id)) ? 'Use' : (template.price === 0 ? 'Add for Free' : 'Purchase')}
+                            {(template.is_owned || isInLibrary(template.id)) ? 'Owned' : (template.price === 0 ? 'Add' : 'Get')}
                           </Button>
 
                           <button
-                            className="w-10 h-10 rounded-xl bg-zinc-800 flex items-center justify-center text-zinc-400 hover:text-white hover:bg-zinc-700 transition-colors border border-white/5"
+                            className="w-10 h-10 md:w-11 md:h-11 rounded-2xl bg-white/5 flex items-center justify-center text-zinc-400 hover:text-white transition-colors border border-white/5 shrink-0"
                             onClick={(e) => {
                               e.stopPropagation();
                               setSelectedTemplate(template);
                             }}
                           >
-                            <Eye className="w-4 h-4" />
+                            <Eye className="w-5 h-5" />
                           </button>
                         </div>
                       </div>
@@ -780,28 +785,37 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
         {/* LoRA Models Section (Redesigned) */}
         {activeSection === 'lora' && isBusiness && (
           <div
-            className={`grid gap-6 transition-all duration-300 ${viewMode === 'list' ? 'grid-cols-1' : ''}`}
-            style={viewMode === 'grid' ? { gridTemplateColumns: `repeat(${gridColumns[0]}, minmax(0, 1fr))` } : {}}
+            className={cn(
+              "grid gap-6 transition-all duration-300",
+              viewMode === 'list' ? "grid-cols-1" : ""
+            )}
+            style={viewMode === 'grid' ? {
+              gridTemplateColumns: `repeat(${window.innerWidth < 768 ? 2 : gridColumns[0]}, minmax(0, 1fr))`
+            } : {}}
           >
             {loraModels.length > 0 ? (
               loraModels.map((model) => (
                 <div
                   key={model.id}
-                  className={`group relative bg-[#18181b] rounded-3xl overflow-hidden border border-white/5 hover:border-purple-500/30 transition-all duration-300 ${viewMode === 'list' ? 'flex flex-row h-48' : ''}`}
+                  className={`group relative bg-[#18181b] rounded-3xl overflow-hidden border border-white/5 hover:border-purple-500/30 transition-all duration-300 ${viewMode === 'list' ? 'flex flex-row h-40 md:h-48' : ''}`}
                 >
-                  <div className={`bg-card relative ${viewMode === 'list' ? 'w-64 aspect-auto h-full shrink-0' : 'aspect-video'}`}>
+                  <div className={`bg-card relative ${viewMode === 'list' ? 'w-40 md:w-64 aspect-auto h-full shrink-0' : 'aspect-square'}`}>
                     <img src={model.preview_url} className="w-full h-full object-cover opacity-60 group-hover:opacity-80 transition-opacity" />
                     <div className="absolute top-3 right-3 bg-[#101112]/60 backdrop-blur-sm px-2 py-1 rounded-lg border border-white/10">
                       <span className="text-xs font-bold text-white">${model.price}</span>
                     </div>
                   </div>
-                  <div className={`p-5 ${viewMode === 'list' ? 'flex-1 flex flex-col justify-between' : ''}`}>
-                    <div className="flex justify-between items-start mb-2">
-                      <h3 className="font-bold text-white text-lg">{model.name}</h3>
-                      <Badge variant="outline" className="border-white/10 text-zinc-400 text-[10px]">{model.category}</Badge>
+                  <div className={`p-3 md:p-5 ${viewMode === 'list' ? 'flex-1 flex flex-col justify-between' : ''}`}>
+                    <div className="flex flex-col md:flex-row md:justify-between md:items-start mb-2 gap-1 md:gap-4">
+                      <div className="min-w-0 flex-1">
+                        <h3 className="font-black text-white text-base md:text-xl truncate uppercase tracking-tight">{model.name}</h3>
+                        <p className="text-[10px] md:text-xs text-zinc-500 font-bold mt-0.5 md:mt-1 uppercase">{model.category}</p>
+                      </div>
                     </div>
-                    <p className={`text-sm text-zinc-400 line-clamp-2 ${viewMode === 'list' ? 'mb-auto' : 'mb-4'}`}>{model.description}</p>
-                    <Button className="w-full bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-bold h-10">
+                    <p className={`text-xs md:text-sm text-zinc-400 line-clamp-2 leading-relaxed ${viewMode === 'list' ? 'mb-auto block' : 'hidden sm:block mb-3 h-10'}`}>
+                      {model.description}
+                    </p>
+                    <Button className="w-full bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-black uppercase tracking-wide text-xs h-10 md:h-11">
                       View Model
                     </Button>
                   </div>
@@ -837,15 +851,20 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
               </div>
             ) : (
               <div
-                className={`grid gap-6 transition-all duration-300 ${viewMode === 'list' ? 'grid-cols-1' : ''}`}
-                style={viewMode === 'grid' ? { gridTemplateColumns: `repeat(${gridColumns[0]}, minmax(0, 1fr))` } : {}}
+                className={cn(
+                  "grid gap-4 md:gap-6 transition-all duration-300",
+                  viewMode === 'list' ? "grid-cols-1" : "grid-cols-2 md:grid-cols-4"
+                )}
+                style={viewMode === 'grid' ? {
+                  gridTemplateColumns: `repeat(${window.innerWidth < 768 ? 2 : gridColumns[0]}, minmax(0, 1fr))`
+                } : {}}
               >
                 {myLibrary.map((item) => (
                   <div
                     key={item.id}
-                    className={`group relative bg-[#18181b] rounded-3xl overflow-hidden border border-white/5 hover:border-white/20 transition-all duration-300 ${viewMode === 'list' ? 'flex flex-row h-40' : ''}`}
+                    className={`group relative bg-[#18181b] rounded-3xl overflow-hidden border border-white/5 hover:border-white/20 transition-all duration-300 ${viewMode === 'list' ? 'flex flex-row h-32 md:h-40' : ''}`}
                   >
-                    <div className={`bg-card relative ${viewMode === 'list' ? 'w-48 aspect-auto h-full shrink-0' : 'aspect-square'}`}>
+                    <div className={`bg-card relative ${viewMode === 'list' ? 'w-32 md:w-48 aspect-auto h-full shrink-0' : 'aspect-square'}`}>
                       <img
                         src={item.preview_url || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400'}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
@@ -864,17 +883,26 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
                         </Badge>
                       </div>
                     </div>
-                    <div className={`p-4 flex items-center justify-between ${viewMode === 'list' ? 'flex-1' : ''}`}>
-                      <div className="min-w-0">
-                        <h3 className="font-bold text-white text-sm truncate">{item.name}</h3>
-                        <p className="text-xs text-zinc-500">Used {item.times_used} times</p>
+                    <div className={`p-3 md:p-4 flex items-center justify-between ${viewMode === 'list' ? 'flex-1' : ''}`}>
+                      <div className="min-w-0 pr-2">
+                        <h3 className="font-black text-white text-base md:text-lg truncate uppercase tracking-tight">{item.name}</h3>
+                        <p className="text-[10px] md:text-xs text-zinc-500 font-bold hidden sm:block">Used {item.times_used} times</p>
                       </div>
-                      <button
-                        onClick={() => handleRemoveFromLibrary(item)}
-                        className="w-8 h-8 rounded-lg flex items-center justify-center text-zinc-600 hover:text-red-400 hover:bg-red-500/10 transition-all"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <Button
+                          size="sm"
+                          className="md:hidden h-8 px-4 rounded-xl bg-[#D1F349] text-black font-black uppercase text-[10px] tracking-wider"
+                          onClick={() => navigate('/creator/studio?view=create', { state: { selectedTemplateId: item.template_id } })}
+                        >
+                          Use
+                        </Button>
+                        <button
+                          onClick={() => handleRemoveFromLibrary(item)}
+                          className="w-8 h-8 md:w-9 md:h-9 rounded-xl flex items-center justify-center text-zinc-600 hover:text-red-400 hover:bg-red-500/10 transition-all border border-white/5"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))}

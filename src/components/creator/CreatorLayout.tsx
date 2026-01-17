@@ -45,23 +45,35 @@ export function CreatorLayout() {
       }) : null);
     };
 
+    const handleAuthChange = () => {
+      console.log("👤 [Layout] Auth change detected, refreshing user");
+      loadUser();
+    };
+
     loadUser();
 
     window.addEventListener('tokens-updated', handleTokensUpdated);
+    window.addEventListener('auth-change', handleAuthChange);
+    window.addEventListener('storage', handleAuthChange);
+
     return () => {
       window.removeEventListener('tokens-updated', handleTokensUpdated);
+      window.removeEventListener('auth-change', handleAuthChange);
+      window.removeEventListener('storage', handleAuthChange);
     };
   }, [navigate]);
 
 
   const isFullBleed = location.pathname.includes('/settings') ||
     location.pathname.includes('/studio') ||
+    location.pathname.includes('/gallery') ||
+    location.pathname.includes('/chat') ||
     (location.pathname.includes('/booth/') && location.pathname.includes('/edit'));
 
   return (
     <div className={cn(
       "bg-[#101112] text-white flex flex-col",
-      isFullBleed ? "h-screen overflow-hidden" : "min-h-screen"
+      isFullBleed ? "h-[100dvh] overflow-hidden" : "min-h-screen"
     )}>
       {/* Top Navigation Bar - Now visible on all screens */}
       <div>
@@ -70,15 +82,15 @@ export function CreatorLayout() {
 
       {/* Mobile Bottom Navigation - Hidden on desktop */}
       <div className="md:hidden">
-        {!location.pathname.includes('/studio') && <CreatorBottomNav />}
+        {!location.pathname.includes('/studio') && !location.pathname.includes('/chat') && <CreatorBottomNav />}
       </div>
 
       {/* Main Content */}
       <main className={cn(
         "flex-1 w-full mx-auto relative",
         isFullBleed
-          ? "p-0 pt-16 pb-0 md:pb-0"
-          : "max-w-7xl px-4 sm:px-6 py-8 pt-24 md:pt-24 pb-20 md:pb-8"
+          ? cn("flex flex-col p-0 pt-16 md:pb-0 overflow-hidden", (!location.pathname.includes('/studio') && !location.pathname.includes('/chat')) ? "pb-32" : "pb-0")
+          : "max-w-7xl px-4 sm:px-6 py-8 pt-20 md:pt-24 pb-32 md:pb-8"
       )}>
         <Outlet />
       </main>

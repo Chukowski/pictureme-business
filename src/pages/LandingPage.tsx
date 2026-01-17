@@ -124,7 +124,7 @@ export default function LandingPage() {
               <img src="/PicturemeIconv2.png" alt="Pictureme" className="w-full h-full object-cover group-hover:hidden" />
               <img src="/PicturemeIconv2white.png" alt="Pictureme" className="w-full h-full object-cover hidden group-hover:block" />
             </div>
-            <span className="text-lg md:text-xl font-bold tracking-tight hidden sm:block">PictureMe.now</span>
+            <span className="text-lg md:text-xl font-bold tracking-tight hidden sm:block">PictureMe</span>
           </div>
           <div className="hidden md:flex items-center gap-8 text-sm font-medium text-zinc-400">
             <button onClick={() => scrollToSection("features")} className="hover:text-white transition-colors">Features</button>
@@ -551,7 +551,7 @@ export default function LandingPage() {
                 <img src="/PicturemeIconv2.png" alt="Pictureme" className="w-full h-full object-cover group-hover:hidden" />
                 <img src="/PicturemeIconv2white.png" alt="Pictureme" className="w-full h-full object-cover hidden group-hover:block" />
               </div>
-              <span className="font-semibold text-zinc-300">PictureMe.now</span>
+              <span className="font-semibold text-zinc-300">PictureMe</span>
             </div>
             <div className="h-4 w-px bg-zinc-800 hidden md:block" />
             <div className="flex items-center gap-2 opacity-60 hover:opacity-100 transition-opacity">
@@ -570,7 +570,7 @@ export default function LandingPage() {
             <a href="#" className="hover:text-white transition-colors">Twitter</a>
             <a href="#" className="hover:text-white transition-colors">Instagram</a>
           </div>
-          <p>© 2025 PictureMe.now. All rights reserved.</p>
+          <p>© 2025 PictureMe. All rights reserved.</p>
         </div>
       </footer>
     </div>

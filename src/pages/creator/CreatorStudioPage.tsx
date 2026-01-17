@@ -965,16 +965,14 @@ function CreatorStudioPageContent({ defaultView }: CreatorStudioPageProps) {
     };
 
     return (
-        <div className="min-h-screen md:h-screen md:overflow-hidden pt-20 flex flex-col md:flex-row bg-[#101112] text-white font-sans relative">
-
-
+        <div className="flex-1 h-full overflow-hidden flex flex-col md:flex-row bg-[#101112] text-white font-sans relative">
 
             {/* MAIN CONTENT AREA */}
-            <div className="flex-1 flex flex-col md:flex-row min-w-0 transition-all duration-300 pb-32 md:pb-0">
+            <div className="flex-1 flex flex-col md:flex-row min-w-0 transition-all duration-300 h-full overflow-hidden">
                 {activeView === "templates" ? (
                     <TemplatesView />
                 ) : activeView === "booths" ? (
-                    <div className="flex-1 bg-[#101112] md:overflow-y-auto overflow-visible w-full"><BoothDashboard /></div>
+                    <div className="flex-1 bg-[#101112] flex flex-col overflow-hidden"><BoothDashboard /></div>
                 ) : (activeView === "gallery" || activeView === "home") ? (
                     <GalleryView
                         history={history}

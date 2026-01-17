@@ -73,160 +73,27 @@ export function CreatorNavbar({ user }: CreatorNavbarProps) {
 
     return (
         <header className="fixed top-0 w-full z-50 bg-[#101112]/30 backdrop-blur-xl border-b border-white/5">
-            <div className="w-full px-8 h-16 flex items-center justify-between">
+            <div className="w-full px-4 md:px-8 h-16 flex items-center justify-between">
 
-                {/* Logo & Navigation */}
-                <div className="flex items-center gap-8 z-50">
-                    <div
-                        className="flex items-center gap-2 cursor-pointer group"
-                        onClick={() => navigate('/creator/dashboard')}
-                    >
-                        <div className="w-10 h-10 rounded-[.4rem] overflow-hidden bg-white shadow-lg shadow-black/20 group-hover:bg-transparent transition-colors duration-300">
-                            <img src="/PicturemeIconv2.png" alt="Pictureme" className="w-full h-full object-cover group-hover:hidden" />
-                            <img src="/PicturemeIconv2white.png" alt="Pictureme" className="w-full h-full object-cover hidden group-hover:block" />
-                        </div>
-                    </div>
-
-                    {/* Navigation Links */}
-                    <div className="hidden md:flex items-center gap-6">
-                        <button
-                            onClick={() => navigate('/creator/dashboard')}
-                            className={cn(
-                                "text-sm font-bold transition-all duration-300",
-                                location.pathname === '/creator/dashboard'
-                                    ? "text-zinc-100"
-                                    : "text-zinc-500 hover:text-white"
-                            )}
-                        >
-                            Explore
-                        </button>
-
-                        {/* Studio Dropdown */}
-                        <DropdownMenu modal={false}>
-                            <DropdownMenuTrigger asChild>
-                                <button
-                                    className={cn(
-                                        "text-sm font-bold transition-all duration-300 flex items-center gap-1",
-                                        location.pathname === '/creator/studio'
-                                            ? "text-zinc-100"
-                                            : "text-zinc-500 hover:text-white"
-                                    )}
-                                >
-                                    Studio
-                                    <ChevronDown className="w-3.5 h-3.5 opacity-50" />
-                                </button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="start" className="w-56 bg-card border-zinc-900 p-2 z-[100] rounded-2xl shadow-2xl">
-                                <DropdownMenuItem
-                                    onClick={() => navigate('/creator/studio?view=create&mode=image')}
-                                    className="flex items-center gap-3 py-3 rounded-xl cursor-pointer focus:bg-card group"
-                                >
-                                    <div className="p-2 rounded-lg bg-indigo-500/10 text-indigo-400 group-hover:bg-indigo-500/20 transition-colors">
-                                        <ImageIcon className="w-4 h-4" />
-                                    </div>
-                                    <div className="flex flex-col">
-                                        <span className="font-bold text-[13px] text-white">Create Image</span>
-                                        <span className="text-[10px] text-zinc-500">Professional AI snapshots</span>
-                                    </div>
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                    onClick={() => navigate('/creator/studio?view=create&mode=video')}
-                                    className="flex items-center gap-3 py-3 rounded-xl cursor-pointer focus:bg-card group"
-                                >
-                                    <div className="p-2 rounded-lg bg-[#D1F349]/10 text-[#D1F349] group-hover:bg-[#D1F349]/20 transition-colors">
-                                        <Video className="w-4 h-4" />
-                                    </div>
-                                    <div className="flex flex-col">
-                                        <span className="font-bold text-[13px] text-white">Create Video</span>
-                                        <span className="text-[10px] text-zinc-500">Cinematic AI animations</span>
-                                    </div>
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                    onClick={() => navigate('/creator/studio?view=create&mode=booth')}
-                                    className="flex items-center gap-3 py-3 rounded-xl cursor-pointer focus:bg-card group"
-                                >
-                                    <div className="p-2 rounded-lg bg-amber-500/10 text-amber-500 group-hover:bg-amber-500/20 transition-colors">
-                                        <Camera className="w-4 h-4" />
-                                    </div>
-                                    <div className="flex flex-col">
-                                        <span className="font-bold text-[13px] text-white">Photo Booth</span>
-                                        <span className="text-[10px] text-zinc-500">Real-time AI sessions</span>
-                                    </div>
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                    onClick={() => navigate('/creator/chat')}
-                                    className="flex items-center gap-3 py-3 rounded-xl cursor-pointer focus:bg-card group"
-                                >
-                                    <div className="p-2 rounded-lg bg-pink-500/10 text-pink-500 group-hover:bg-pink-500/20 transition-colors">
-                                        <Sparkles className="w-4 h-4" />
-                                    </div>
-                                    <div className="flex flex-col">
-                                        <span className="font-bold text-[13px] text-white">Assistant</span>
-                                        <span className="text-[10px] text-zinc-500">AI Creative Partner</span>
-                                    </div>
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-
-                        <button
-                            onClick={() => navigate('/creator/gallery')}
-                            className={cn(
-                                "text-sm font-bold transition-all duration-300",
-                                location.pathname === '/creator/gallery'
-                                    ? "text-zinc-100"
-                                    : "text-zinc-500 hover:text-white"
-                            )}
-                        >
-                            Gallery
-                        </button>
-                        <button
-                            onClick={() => navigate('/creator/booth')}
-                            className={cn(
-                                "text-sm font-bold transition-all duration-300",
-                                location.pathname === '/creator/booth'
-                                    ? "text-zinc-100"
-                                    : "text-zinc-500 hover:text-white"
-                            )}
-                        >
-                            Booths
-                        </button>
-                        {/* <button
-                            onClick={() => navigate('/creator/models')}
-                            className={cn(
-                                "text-sm font-bold transition-all duration-300",
-                                location.pathname === '/creator/models'
-                                    ? "text-zinc-100"
-                                    : "text-zinc-500 hover:text-white"
-                            )}
-                        >
-                            Models
-                        </button> */}
-                        <button
-                            onClick={() => navigate('/creator/templates')}
-                            className={cn(
-                                "text-sm font-bold transition-all duration-300",
-                                location.pathname === '/creator/templates'
-                                    ? "text-zinc-100"
-                                    : "text-zinc-500 hover:text-white"
-                            )}
-                        >
-                            Marketplace
-                        </button>
-                    </div>
-                </div>
-
-                {/* Desktop View Right side / Mobile Hamburger Trigger */}
-                <div className="flex items-center gap-2 sm:gap-4 z-50">
-                    {/* Mobile Hamburger Menu */}
+                {/* Left Side: Hamburger (Mobile) & Logo */}
+                <div className="flex items-center gap-2 md:gap-8 z-50">
+                    {/* Mobile Hamburger Menu - Moved to Left */}
                     <div className="md:hidden">
                         <Sheet>
                             <SheetTrigger asChild>
-                                <Button variant="ghost" size="icon" className="text-white hover:bg-white/10 h-10 w-10">
-                                    <Menu className="w-6 h-6" />
+                                <Button variant="ghost" size="icon" className="text-white hover:bg-white/10 h-12 w-12 -ml-2">
+                                    <Menu className="w-8 h-8" />
                                 </Button>
                             </SheetTrigger>
                             <SheetContent side="left" className="bg-[#101112]/95 backdrop-blur-xl border-white/5 text-white p-0">
-                                <div className="flex flex-col h-full pt-16">
+                                <div className="flex flex-col h-full">
+                                    {/* Logo in Menu Header */}
+                                    <div className="px-6 pt-10 pb-6 border-b border-white/5 flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-[.4rem] overflow-hidden bg-white shadow-lg shadow-black/20 shrink-0">
+                                            <img src="/PicturemeIconv2.png" alt="Pictureme" className="w-full h-full object-cover" />
+                                        </div>
+                                        <span className="text-xl font-bold tracking-tight text-white whitespace-nowrap">PictureMe</span>
+                                    </div>
                                     <div className="px-6 py-4 space-y-6 flex-1 overflow-y-auto">
                                         {/* Featured Section */}
                                         <div className="space-y-3">
@@ -348,8 +215,8 @@ export function CreatorNavbar({ user }: CreatorNavbarProps) {
                                     <div className="p-6 bg-white/5 border-t border-white/5">
                                         <div className="flex items-center gap-3">
                                             <div className="w-10 h-10 rounded-full bg-zinc-800 overflow-hidden border border-white/10">
-                                                {user?.avatar_url ? (
-                                                    <img src={user.avatar_url} alt="Profile" className="w-full h-full object-cover" />
+                                                {(user?.avatar_url || user?.image) ? (
+                                                    <img src={user.avatar_url || user.image} alt="Profile" className="w-full h-full object-cover" />
                                                 ) : (
                                                     <div className="w-full h-full flex items-center justify-center text-xs font-bold text-zinc-500">
                                                         {user?.username?.substring(0, 2).toUpperCase()}
@@ -367,19 +234,158 @@ export function CreatorNavbar({ user }: CreatorNavbarProps) {
                         </Sheet>
                     </div>
 
+                    {/* Logo - Desktop Only */}
+                    <div
+                        className={cn(
+                            "hidden md:flex items-center gap-2 cursor-pointer group",
+                            "md:relative md:left-auto md:translate-x-0"
+                        )}
+                        onClick={() => navigate('/creator/dashboard')}
+                    >
+                        <div className="w-10 h-10 rounded-[.4rem] overflow-hidden bg-white shadow-lg shadow-black/20 group-hover:bg-transparent transition-colors duration-300">
+                            <img src="/PicturemeIconv2.png" alt="Pictureme" className="w-full h-full object-cover group-hover:hidden" />
+                            <img src="/PicturemeIconv2white.png" alt="Pictureme" className="w-full h-full object-cover hidden group-hover:block" />
+                        </div>
+                        <span className="text-lg font-bold tracking-tight text-white">PictureMe</span>
+                    </div>
+
+                    {/* Navigation Links (Desktop Only) */}
+                    <div className="hidden md:flex items-center gap-6">
+                        <button
+                            onClick={() => navigate('/creator/dashboard')}
+                            className={cn(
+                                "text-sm font-bold transition-all duration-300",
+                                location.pathname === '/creator/dashboard'
+                                    ? "text-zinc-100"
+                                    : "text-zinc-500 hover:text-white"
+                            )}
+                        >
+                            Explore
+                        </button>
+
+                        {/* Studio Dropdown */}
+                        <DropdownMenu modal={false}>
+                            <DropdownMenuTrigger asChild>
+                                <button
+                                    className={cn(
+                                        "text-sm font-bold transition-all duration-300 flex items-center gap-1",
+                                        location.pathname === '/creator/studio'
+                                            ? "text-zinc-100"
+                                            : "text-zinc-500 hover:text-white"
+                                    )}
+                                >
+                                    Studio
+                                    <ChevronDown className="w-3.5 h-3.5 opacity-50" />
+                                </button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="start" className="w-56 bg-card border-zinc-900 p-2 z-[100] rounded-2xl shadow-2xl">
+                                <DropdownMenuItem
+                                    onClick={() => navigate('/creator/studio?view=create&mode=image')}
+                                    className="flex items-center gap-3 py-3 rounded-xl cursor-pointer focus:bg-card group"
+                                >
+                                    <div className="p-2 rounded-lg bg-indigo-500/10 text-indigo-400 group-hover:bg-indigo-500/20 transition-colors">
+                                        <ImageIcon className="w-4 h-4" />
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <span className="font-bold text-[13px] text-white">Create Image</span>
+                                        <span className="text-[10px] text-zinc-500">Professional AI snapshots</span>
+                                    </div>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                    onClick={() => navigate('/creator/studio?view=create&mode=video')}
+                                    className="flex items-center gap-3 py-3 rounded-xl cursor-pointer focus:bg-card group"
+                                >
+                                    <div className="p-2 rounded-lg bg-[#D1F349]/10 text-[#D1F349] group-hover:bg-[#D1F349]/20 transition-colors">
+                                        <Video className="w-4 h-4" />
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <span className="font-bold text-[13px] text-white">Create Video</span>
+                                        <span className="text-[10px] text-zinc-500">Cinematic AI animations</span>
+                                    </div>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                    onClick={() => navigate('/creator/studio?view=create&mode=booth')}
+                                    className="flex items-center gap-3 py-3 rounded-xl cursor-pointer focus:bg-card group"
+                                >
+                                    <div className="p-2 rounded-lg bg-amber-500/10 text-amber-500 group-hover:bg-amber-500/20 transition-colors">
+                                        <Camera className="w-4 h-4" />
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <span className="font-bold text-[13px] text-white">Photo Booth</span>
+                                        <span className="text-[10px] text-zinc-500">Real-time AI sessions</span>
+                                    </div>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                    onClick={() => navigate('/creator/chat')}
+                                    className="flex items-center gap-3 py-3 rounded-xl cursor-pointer focus:bg-card group"
+                                >
+                                    <div className="p-2 rounded-lg bg-pink-500/10 text-pink-500 group-hover:bg-pink-500/20 transition-colors">
+                                        <Sparkles className="w-4 h-4" />
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <span className="font-bold text-[13px] text-white">Assistant</span>
+                                        <span className="text-[10px] text-zinc-500">AI Creative Partner</span>
+                                    </div>
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+
+                        <button
+                            onClick={() => navigate('/creator/gallery')}
+                            className={cn(
+                                "text-sm font-bold transition-all duration-300",
+                                location.pathname === '/creator/gallery'
+                                    ? "text-zinc-100"
+                                    : "text-zinc-500 hover:text-white"
+                            )}
+                        >
+                            Gallery
+                        </button>
+                        <button
+                            onClick={() => navigate('/creator/booth')}
+                            className={cn(
+                                "text-sm font-bold transition-all duration-300",
+                                location.pathname === '/creator/booth'
+                                    ? "text-zinc-100"
+                                    : "text-zinc-500 hover:text-white"
+                            )}
+                        >
+                            Booths
+                        </button>
+                        <button
+                            onClick={() => navigate('/creator/templates')}
+                            className={cn(
+                                "text-sm font-bold transition-all duration-300",
+                                location.pathname === '/creator/templates'
+                                    ? "text-zinc-100"
+                                    : "text-zinc-500 hover:text-white"
+                            )}
+                        >
+                            Marketplace
+                        </button>
+                    </div>
+                </div>
+
+                {/* Right side Actions (Credits & Profile) */}
+                <div className="flex items-center gap-2 sm:gap-4 z-50">
+                    {/* Empty div to keep alignment if needed, or just let justifying work */}
+                    <div className="md:hidden w-0 h-0" />
+
                     {/* Credits Pill (Simple Popover) */}
                     <Popover>
                         <PopoverTrigger asChild>
                             <div
-                                className="hidden sm:flex items-center gap-2 bg-card/60 hover:bg-zinc-800/80 backdrop-blur-md border border-white/10 rounded-full px-4 py-2 transition-all cursor-pointer hover:border-amber-500/50"
+                                className="flex items-center gap-1.5 sm:gap-2 bg-card/60 hover:bg-zinc-800/80 backdrop-blur-md border border-white/10 rounded-full px-2.5 py-1 sm:px-4 sm:py-2 transition-all cursor-pointer hover:border-amber-500/50"
                                 title={`${tokens.toLocaleString()} tokens remaining`}
                             >
                                 <Zap className={cn(
                                     "w-4 h-4 fill-current",
                                     (user?.tokens_remaining || 0) <= 20 ? "text-amber-500" : "text-amber-400"
                                 )} />
-                                <span className="text-sm font-bold text-white">
-                                    {user?.tokens_remaining?.toLocaleString() || 0}
+                                <span className="text-xs sm:text-sm font-bold text-white">
+                                    {(user?.tokens_remaining || 0) >= 10000
+                                        ? `${Math.floor((user?.tokens_remaining || 0) / 1000)}k`
+                                        : user?.tokens_remaining?.toLocaleString() || 0}
                                 </span>
                             </div>
                         </PopoverTrigger>
@@ -453,8 +459,8 @@ export function CreatorNavbar({ user }: CreatorNavbarProps) {
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <button className="relative w-10 h-10 rounded-full bg-zinc-800 border-2 border-white/10 overflow-hidden hover:border-white/30 transition-all shadow-lg">
-                                {user?.avatar_url ? (
-                                    <img src={user.avatar_url} alt="Profile" className="w-full h-full object-cover" />
+                                {(user?.avatar_url || user?.image) ? (
+                                    <img src={user.avatar_url || user.image} alt="Profile" className="w-full h-full object-cover" />
                                 ) : (
                                     <span className="w-full h-full flex items-center justify-center text-xs font-bold text-zinc-400">
                                         {user?.username?.substring(0, 2).toUpperCase() || 'ME'}

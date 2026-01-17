@@ -342,7 +342,7 @@ export default function ChatPage() {
 
   return (
     <TooltipProvider delayDuration={400}>
-      <div className="flex flex-col h-[calc(100vh-64px)] bg-[#101112] text-white relative font-sans overflow-hidden">
+      <div className="flex flex-col h-[calc(100dvh-64px)] bg-[#101112] text-white relative font-sans overflow-hidden">
 
         {/* Messages Area */}
         <div ref={messagesContainerRef} className="flex-1 overflow-y-auto scroll-smooth w-full pb-32 scrollbar-hide">
@@ -358,8 +358,8 @@ export default function ChatPage() {
                 </div>
               </div>
 
-              <div className="space-y-2 relative z-10">
-                <h1 className="text-4xl md:text-5xl font-black tracking-tighter uppercase">
+              <div className="space-y-2 relative z-10 px-6">
+                <h1 className="text-3xl md:text-5xl font-black tracking-tighter uppercase">
                   PictureMe <span className="text-[#D1F349]">Assist</span>
                 </h1>
                 <p className="text-zinc-500 font-medium max-w-md mx-auto text-lg">
@@ -428,36 +428,31 @@ export default function ChatPage() {
         </div>
 
         {/* Input Area (Floating at bottom) */}
-        <div className="fixed bottom-0 left-0 right-0 p-4 flex justify-center z-50 pointer-events-auto">
-          <div className="w-full max-w-6xl flex items-center gap-4">
+        <div className="fixed bottom-0 left-0 right-0 p-3 md:p-4 flex justify-center z-50 pointer-events-auto">
+          <div className="w-full max-w-4xl flex flex-col gap-2">
 
-            {/* Mode Switcher Sidebar */}
-            <div
-              className="flex flex-col w-[60px] h-[120px] p-1 rounded-[20px] shadow-[0_12px_8px_0_rgba(0,0,0,0.20),inset_0_0_0_1px_rgba(255,255,255,0.06)] shrink-0"
-              style={{ background: 'var(--selector-bg)' }}
-            >
-              <div className="flex flex-col gap-1 h-full">
+            {/* Top row with Mode Switcher and Frame Selectors (Mobile) */}
+            <div className="flex items-center justify-between w-full px-1">
+              {/* Left: Mode Switcher */}
+              <div
+                className="flex p-1 rounded-2xl shadow-[0_8px_16px_rgba(0,0,0,0.3),inset_0_0_0_1px_rgba(255,255,255,0.05)]"
+                style={{ background: 'var(--selector-bg)' }}
+              >
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <button
                       onClick={() => setMode("image")}
                       className={cn(
-                        "relative flex flex-col items-center justify-center gap-1 flex-1 rounded-2xl transition-all duration-300 group",
-                        mode === "image" ? "text-white" : "text-zinc-500 hover:text-zinc-300"
+                        "flex items-center gap-2 px-3 py-1.5 rounded-xl transition-all duration-300 group",
+                        mode === "image" ? "bg-white/10 text-white shadow-lg" : "text-zinc-500 hover:text-zinc-300"
                       )}
                     >
-                      {mode === "image" && (
-                        <div className="absolute inset-0 bg-white/5 rounded-2xl -z-1" />
-                      )}
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className={cn("transition-transform group-hover:scale-110", mode === "image" ? "text-[#d1fe17]" : "currentColor")}>
-                        <path fillRule="evenodd" clipRule="evenodd" d="M3 4.75C3 3.7835 3.7835 3 4.75 3H19.25C20.2165 3 21 3.7835 21 4.75V19.25C21 20.2165 20.2165 21 19.25 21H4.75C3.7835 21 3 20.2165 3 19.25V4.75ZM4.75 4.5C4.61193 4.5 4.5 4.61193 4.5 4.75V14.4393L6.76256 12.1768C7.44598 11.4934 8.55402 11.4934 9.23744 12.1768L16.5607 19.5H19.25C19.3881 19.5 19.5 19.3881 19.5 19.25V4.75C19.5 4.61193 19.3881 4.5 19.25 4.5H4.75ZM14.4393 19.5L8.17678 13.2374C8.07915 13.1398 7.92085 13.1398 7.82322 13.2374L4.5 16.5607V19.25C4.5 19.3881 4.61193 19.5 4.75 19.5H14.4393Z" fill="currentColor" />
-                        <path d="M13.4255 8.53727C13.4738 8.51308 13.5131 8.47385 13.5373 8.42546L14.2764 6.94721C14.3685 6.76295 14.6315 6.76295 14.7236 6.94721L15.4627 8.42546C15.4869 8.47385 15.5262 8.51308 15.5745 8.53727L17.0528 9.27639C17.237 9.36852 17.237 9.63148 17.0528 9.72361L15.5745 10.4627C15.5262 10.4869 15.4869 10.5262 15.4627 10.5745L14.7236 12.0528C14.6315 12.237 14.3685 12.237 14.2764 12.0528L13.5373 10.5745C13.5131 10.5262 13.4738 10.4869 13.4255 10.4627L11.9472 9.72361C11.763 9.63148 11.763 9.36852 11.9472 9.27639L13.4255 8.53727Z" fill="currentColor" />
-                      </svg>
-                      <span className="text-[10px] font-bold">Image</span>
+                      <ImageIcon className={cn("w-4 h-4", mode === "image" ? "text-[#d1fe17]" : "currentColor")} />
+                      <span className="text-[10px] font-black uppercase tracking-wider">Image</span>
                     </button>
                   </TooltipTrigger>
                   <TooltipContent className="bg-card border-white/10 text-white font-bold text-xs py-2 px-3 rounded-xl">
-                    Image Generation Mode
+                    Image Mode
                   </TooltipContent>
                 </Tooltip>
 
@@ -466,29 +461,58 @@ export default function ChatPage() {
                     <button
                       onClick={() => setMode("video")}
                       className={cn(
-                        "relative flex flex-col items-center justify-center gap-1 flex-1 rounded-2xl transition-all duration-300 group",
-                        mode === "video" ? "text-white" : "text-zinc-500 hover:text-zinc-300"
+                        "flex items-center gap-2 px-3 py-1.5 rounded-xl transition-all duration-300 group",
+                        mode === "video" ? "bg-white/10 text-white shadow-lg" : "text-zinc-500 hover:text-zinc-300"
                       )}
                     >
-                      {mode === "video" && (
-                        <div className="absolute inset-0 bg-white/5 rounded-2xl -z-1" />
-                      )}
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className={cn("transition-transform group-hover:scale-110", mode === "video" ? "text-[#d1fe17]" : "currentColor")}>
-                        <path d="M2.75 5.75C2.75 5.19771 3.19772 4.75 3.75 4.75H14.25C14.8023 4.75 15.25 5.19772 15.25 5.75V18.25C15.25 18.8023 14.8023 19.25 14.25 19.25H3.75C3.19772 19.25 2.75 18.8023 2.75 18.25V5.75Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
-                        <path d="M15.25 10L20.5264 7.3618C20.8588 7.19558 21.25 7.43733 21.25 7.80902V16.191C21.25 16.5627 20.8588 16.8044 20.5264 16.6382L15.25 14V10Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
-                      </svg>
-                      <span className="text-[10px] font-bold">Video</span>
+                      <VideoIcon className={cn("w-4 h-4", mode === "video" ? "text-[#d1fe17]" : "currentColor")} />
+                      <span className="text-[10px] font-black uppercase tracking-wider">Video</span>
                     </button>
                   </TooltipTrigger>
                   <TooltipContent className="bg-card border-white/10 text-white font-bold text-xs py-2 px-3 rounded-xl">
-                    Video Generation Mode
+                    Video Mode
                   </TooltipContent>
                 </Tooltip>
               </div>
+
+              {/* Right: Frame Selectors (Mobile only) */}
+              {mode === "video" && (
+                <div className="flex md:hidden items-center gap-1.5 mb-0.5">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button className="w-11 h-11 rounded-xl bg-[#1c1c1f] border border-white/5 flex flex-col items-center justify-center hover:border-white/20 transition-all active:scale-95 group">
+                        <Plus className="w-3 h-3 text-zinc-500 group-hover:text-zinc-300 mb-0.5" />
+                        <div className="flex flex-col items-center -space-y-0.5">
+                          <span className="text-[7px] font-black text-zinc-500 uppercase tracking-tighter group-hover:text-zinc-300">Start</span>
+                          <span className="text-[7px] font-black text-zinc-500 uppercase tracking-tighter group-hover:text-zinc-300">Frame</span>
+                        </div>
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent className="bg-card border-white/10 text-white font-bold text-xs py-2 px-3 rounded-xl">
+                      Start Frame
+                    </TooltipContent>
+                  </Tooltip>
+
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button className="w-11 h-11 rounded-xl bg-[#1c1c1f] border border-white/5 flex flex-col items-center justify-center hover:border-white/20 transition-all active:scale-95 group">
+                        <Plus className="w-3 h-3 text-zinc-500 group-hover:text-zinc-300 mb-0.5" />
+                        <div className="flex flex-col items-center -space-y-0.5">
+                          <span className="text-[7px] font-black text-zinc-500 uppercase tracking-tighter group-hover:text-zinc-300">End</span>
+                          <span className="text-[7px] font-black text-zinc-500 uppercase tracking-tighter group-hover:text-zinc-300">Frame</span>
+                        </div>
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent className="bg-card border-white/10 text-white font-bold text-xs py-2 px-3 rounded-xl">
+                      End Frame
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+              )}
             </div>
 
-            <div className="flex-1 flex flex-col">
-              <div className="premium-panel rounded-[2.5rem] p-2 relative group focus-within:ring-2 focus-within:ring-[#d1fe17]/20 transition-all duration-500">
+            <div className="flex flex-col min-w-0">
+              <div className="premium-panel rounded-[1.5rem] md:rounded-[2.5rem] p-1.5 md:p-2 relative group focus-within:ring-2 focus-within:ring-[#d1fe17]/20 transition-all duration-500">
 
                 {/* Main Interaction Area */}
                 <div className="flex gap-3 p-2">
@@ -496,7 +520,7 @@ export default function ChatPage() {
                   {/* Plus / Upload Button */}
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <button className="w-12 h-12 flex items-center justify-center rounded-2xl bg-[#1c1c1f] text-zinc-400 hover:bg-zinc-700 hover:text-white transition-colors shrink-0 mt-1">
+                      <button className="w-10 h-10 md:w-12 md:h-12 flex items-center justify-center rounded-xl md:rounded-2xl bg-[#1c1c1f] text-zinc-400 hover:bg-zinc-700 hover:text-white transition-colors shrink-0 mt-1">
                         <Plus className="w-5 h-5" />
                       </button>
                     </TooltipTrigger>
@@ -512,7 +536,7 @@ export default function ChatPage() {
                       onChange={(e) => setInput(e.target.value)}
                       onKeyDown={handleKeyDown as any}
                       placeholder={mode === 'image' ? "Describe the scene you imagine..." : "Describe the video you want to generate..."}
-                      className="w-full bg-transparent border-none outline-none text-white placeholder:text-zinc-600 resize-none py-3 focus:ring-0 text-[16px] leading-relaxed max-h-32 scrollbar-hide"
+                      className="w-full bg-transparent border-none outline-none text-white placeholder:text-zinc-600 resize-none py-2 md:py-3 focus:ring-0 text-[16px] leading-relaxed max-h-32 scrollbar-hide"
                       rows={1}
                       disabled={isLoading}
                       autoFocus
@@ -522,7 +546,7 @@ export default function ChatPage() {
                   {/* Action Buttons Group */}
                   <div className="flex gap-2 shrink-0 items-center">
                     {mode === "video" && (
-                      <>
+                      <div className="hidden md:flex gap-2">
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <button className="w-20 h-20 rounded-2xl bg-[#1c1c1f] border border-white/5 flex flex-col items-center justify-center gap-1 hover:border-white/20 transition-all group overflow-hidden relative shadow-sm active:scale-95">
@@ -548,7 +572,7 @@ export default function ChatPage() {
                             Select End Frame
                           </TooltipContent>
                         </Tooltip>
-                      </>
+                      </div>
                     )}
 
                     {/* Send Button */}
@@ -558,17 +582,17 @@ export default function ChatPage() {
                           onClick={() => sendMessage(input)}
                           disabled={isLoading}
                           className={cn(
-                            "transition-all duration-300 flex items-center justify-center gap-1.5 uppercase tracking-tight shrink-0 overflow-hidden relative group font-black h-20 w-32 rounded-2xl",
+                            "transition-all duration-300 flex items-center justify-center gap-1 md:gap-1.5 uppercase tracking-tight shrink-0 overflow-hidden relative group font-black h-12 md:h-20 w-12 md:w-32 rounded-xl md:rounded-2xl",
                             "bg-[#d1fe17] text-black shadow-[0_4px_15px_rgba(209,254,23,0.35)] hover:bg-[#bce615] hover:scale-[1.02] active:scale-[0.98]"
                           )}
                         >
                           {isLoading ? (
                             <Loader2 className="h-5 w-5 animate-spin" />
                           ) : (
-                            <>
-                              <span className="text-[14px] lowercase tracking-tight">send</span>
-                              <Wand2 className="w-3.5 h-3.5 fill-black" />
-                            </>
+                            <div className="flex items-center gap-1 pr-1 md:pr-0">
+                              <span className="text-[12px] md:text-[14px] lowercase tracking-tight hidden md:inline">send</span>
+                              <Wand2 className="w-4 h-4 md:w-3.5 md:h-3.5 fill-black" />
+                            </div>
                           )}
                         </Button>
                       </TooltipTrigger>
@@ -580,7 +604,7 @@ export default function ChatPage() {
                 </div>
 
                 {/* Tools Row */}
-                <div className="flex items-center gap-2 px-2 pb-2 mt-1">
+                <div className="flex items-center gap-2 px-2 pb-2 mt-1 overflow-x-auto scrollbar-hide whitespace-nowrap">
 
                   {/* Model Selector */}
                   <DropdownMenu>
@@ -725,9 +749,6 @@ export default function ChatPage() {
 
               </div>
 
-              <p className="text-center text-[9px] text-zinc-700 mt-4 font-black tracking-[0.2em] uppercase">
-                PictureMe AI Agent • Creative Engine v2.4.5
-              </p>
             </div>
           </div>
         </div>

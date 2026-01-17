@@ -17,13 +17,13 @@ export const TermsPage = () => {
       <nav className="fixed w-full z-50 bg-[#101112]/50 backdrop-blur-lg border-b border-white/10">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
-            <img 
-              src="/assets/akita-logo.png" 
-              alt="Akitá Logo" 
+            <img
+              src="/assets/akita-logo.png"
+              alt="Akitá Logo"
               className="h-8 w-auto mr-2 opacity-90"
             />
             <span className="text-xl font-bold bg-gradient-to-r from-purple-400 via-pink-500 to-red-500 bg-clip-text text-transparent">
-              PictureMe.now
+              PictureMe
             </span>
           </Link>
           <Link to="/">
@@ -47,7 +47,7 @@ export const TermsPage = () => {
               Terms & Conditions
             </h1>
             <div className="text-gray-400 text-lg">
-              PictureMe.now – AI Generative Platform & Photobooth
+              PictureMe – AI Generative Platform & Photobooth
               <br />
               Operated by Akitá LLC
             </div>
@@ -57,9 +57,9 @@ export const TermsPage = () => {
           {/* Introduction */}
           <div className="bg-card/50 border border-white/10 rounded-2xl p-8 backdrop-blur-sm">
             <p className="text-gray-300 leading-relaxed">
-              Welcome to PictureMe.now, a hybrid platform that combines AI-powered visual creation tools with advanced commercial photobooth features for creators, photographers, event planners, and businesses.
+              Welcome to PictureMe, a hybrid platform that combines AI-powered visual creation tools with advanced commercial photobooth features for creators, photographers, event planners, and businesses.
               <br /><br />
-              By using PictureMe.now, you agree to the following Terms & Conditions.
+              By using PictureMe, you agree to the following Terms & Conditions.
             </p>
           </div>
 
@@ -67,7 +67,7 @@ export const TermsPage = () => {
           <div className="space-y-8 text-gray-300">
             <Section number="1" title="Nature of the Service">
               <p>
-                PictureMe.now uses generative Artificial Intelligence to create images, edits, effects, and visual compositions. Due to the nature of AI systems:
+                PictureMe uses generative Artificial Intelligence to create images, edits, effects, and visual compositions. Due to the nature of AI systems:
               </p>
               <ul className="list-disc pl-6 space-y-2 mt-2">
                 <li>Results may vary significantly from one generation to another.</li>
@@ -133,7 +133,7 @@ export const TermsPage = () => {
                     <li>All business accounts require an application and approval.</li>
                     <li>Akitá LLC reserves the right to accept or deny business applications.</li>
                     <li>The business user is responsible for compliance with local image, privacy, and consent laws.</li>
-                    <li>Operating PictureMe.now commercially without approval is strictly prohibited.</li>
+                    <li>Operating PictureMe commercially without approval is strictly prohibited.</li>
                   </ul>
                 </div>
               </div>
@@ -162,7 +162,7 @@ export const TermsPage = () => {
             </Section>
 
             <Section number="7" title="BYOH – Bring Your Own Hardware">
-              <p>If the user operates PictureMe.now using their own hardware (camera, tablet, laptop, router, lighting, etc.):</p>
+              <p>If the user operates PictureMe using their own hardware (camera, tablet, laptop, router, lighting, etc.):</p>
               <ul className="list-disc pl-6 space-y-2 mt-2">
                 <li>Akitá LLC is not liable for hardware failures or incompatibilities.</li>
                 <li>System speed and stability depend on the user's equipment and internet connection.</li>
@@ -173,7 +173,7 @@ export const TermsPage = () => {
 
             <Section number="8" title="Privacy, Photos & Data">
               <ul className="list-disc pl-6 space-y-2">
-                <li>PictureMe.now temporarily stores generated photos for functionality and access.</li>
+                <li>PictureMe temporarily stores generated photos for functionality and access.</li>
                 <li>Business users are responsible for obtaining necessary consent at events.</li>
                 <li>Akitá LLC is not responsible for privacy claims arising from the user's event, setup, or participants.</li>
               </ul>
@@ -226,7 +226,7 @@ export const TermsPage = () => {
 
             <Section number="13" title="Acceptance of Terms">
               <p className="text-lg font-medium text-white">
-                By using PictureMe.now, you confirm that you have read, understood, and agree to these Terms & Conditions.
+                By using PictureMe, you confirm that you have read, understood, and agree to these Terms & Conditions.
               </p>
               <p className="mt-2 text-red-400">
                 If you do not agree, you must stop using the platform immediately.

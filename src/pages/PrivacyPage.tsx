@@ -17,13 +17,13 @@ export const PrivacyPage = () => {
       <nav className="fixed w-full z-50 bg-[#101112]/50 backdrop-blur-lg border-b border-white/10">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
-            <img 
-              src="/assets/akita-logo.png" 
-              alt="Akitá Logo" 
+            <img
+              src="/assets/akita-logo.png"
+              alt="Akitá Logo"
               className="h-8 w-auto mr-2 opacity-90"
             />
             <span className="text-xl font-bold bg-gradient-to-r from-purple-400 via-pink-500 to-red-500 bg-clip-text text-transparent">
-              PictureMe.now
+              PictureMe
             </span>
           </Link>
           <Link to="/">
@@ -47,7 +47,7 @@ export const PrivacyPage = () => {
               Privacy Policy
             </h1>
             <div className="text-gray-400 text-lg">
-              PictureMe.now – AI Generative Platform & Photobooth
+              PictureMe – AI Generative Platform & Photobooth
               <br />
               Operated by Akitá LLC
             </div>
@@ -57,7 +57,7 @@ export const PrivacyPage = () => {
           {/* Introduction */}
           <div className="bg-card/50 border border-white/10 rounded-2xl p-8 backdrop-blur-sm">
             <p className="text-gray-300 leading-relaxed">
-              Your privacy is important to us. This Privacy Policy explains how PictureMe.now ("we", "our", "Akitá LLC") collects, uses, stores, and protects your information when you use our AI generative platform and photobooth services.
+              Your privacy is important to us. This Privacy Policy explains how PictureMe ("we", "our", "Akitá LLC") collects, uses, stores, and protects your information when you use our AI generative platform and photobooth services.
             </p>
           </div>
 
@@ -65,7 +65,7 @@ export const PrivacyPage = () => {
           <div className="space-y-8 text-gray-300">
             <Section number="1" title="Information We Collect">
               <p>We may collect the following types of information:</p>
-              
+
               <div className="mt-4 space-y-4">
                 <div>
                   <h3 className="text-white font-semibold text-lg mb-2">1.1 User-Provided Information</h3>
@@ -171,7 +171,7 @@ export const PrivacyPage = () => {
             </Section>
 
             <Section number="9" title="Children's Privacy">
-              <p>PictureMe.now is not designed for unsupervised use by minors.</p>
+              <p>PictureMe is not designed for unsupervised use by minors.</p>
               <p className="mt-2 font-medium text-white/90">
                 Parents or guardians must ensure appropriate consent when images of minors are uploaded or captured.
               </p>
