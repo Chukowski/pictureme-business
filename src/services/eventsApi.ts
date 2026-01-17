@@ -453,13 +453,14 @@ export async function loginUser(username: string, password: string): Promise<{ t
   }
 
   const data = await response.json();
+  const token = data.token || data.access_token;
 
   // Store token in localStorage
-  localStorage.setItem('auth_token', data.access_token);
+  localStorage.setItem('auth_token', token);
   localStorage.setItem('current_user', JSON.stringify(data.user));
 
   return {
-    token: data.access_token,
+    token: token,
     user: data.user,
   };
 }
@@ -492,13 +493,14 @@ export async function registerUser(
   }
 
   const data = await response.json();
+  const token = data.token || data.access_token;
 
   // Store token in localStorage
-  localStorage.setItem('auth_token', data.access_token);
+  localStorage.setItem('auth_token', token);
   localStorage.setItem('current_user', JSON.stringify(data.user));
 
   return {
-    token: data.access_token,
+    token: token,
     user: data.user,
   };
 }
@@ -582,11 +584,11 @@ export async function getCurrentUserProfile(): Promise<User | null> {
 export function getAuthToken(): string | null {
   // Try auth_token first (set during login)
   const token = localStorage.getItem('auth_token');
-  if (token) return token;
 
-  // Try to get from Better Auth session cookie (fallback)
-  // Note: This won't work for cross-origin requests due to cookie restrictions
-  // The main auth mechanism should be the token stored in localStorage
+  // Safeguard against 'undefined' or 'null' strings which can break requests
+  if (token && token !== 'undefined' && token !== 'null') {
+    return token;
+  }
 
   return null;
 }
@@ -669,16 +671,12 @@ export async function createEvent(eventData: {
  */
 export async function getUserEvents(): Promise<EventConfig[]> {
   const token = getAuthToken();
-  if (!token) {
-    console.warn('No auth token found, returning empty events list');
-    return []; // Return empty array instead of throwing error for new users
-  }
 
   try {
     // Note: trailing slash required to avoid 307 redirect
     const response = await fetch(`${getApiUrl()}/api/events/`, {
       headers: {
-        'Authorization': `Bearer ${token}`,
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
       },
       credentials: 'include', // Include cookies for Better Auth
     });
@@ -707,16 +705,14 @@ export async function getUserEvents(): Promise<EventConfig[]> {
  */
 export async function updateEvent(eventId: string, eventData: Partial<EventConfig>): Promise<EventConfig> {
   const token = getAuthToken();
-  if (!token) {
-    throw new Error('Not authenticated');
-  }
 
   const response = await fetch(`${getApiUrl()}/api/events/${eventId}`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`,
+      ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
     },
+    credentials: 'include',
     body: JSON.stringify(eventData),
   });
 
@@ -733,15 +729,13 @@ export async function updateEvent(eventId: string, eventData: Partial<EventConfi
  */
 export async function deleteEvent(eventId: string): Promise<void> {
   const token = getAuthToken();
-  if (!token) {
-    throw new Error('Not authenticated');
-  }
 
   const response = await fetch(`${getApiUrl()}/api/events/${eventId}`, {
     method: 'DELETE',
     headers: {
-      'Authorization': `Bearer ${token}`,
+      ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
     },
+    credentials: 'include',
   });
 
   if (!response.ok) {

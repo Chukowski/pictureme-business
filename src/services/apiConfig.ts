@@ -40,12 +40,23 @@ export function getApiUrl(endpoint?: string): string {
  * Fetch wrapper that automatically routes to correct backend
  */
 export async function apiFetch(endpoint: string, options?: RequestInit) {
-  const url = `${getApiUrl(endpoint)}${endpoint.startsWith('/') ? '' : '/'}${endpoint}`;
+  const baseUrl = getApiUrl(endpoint);
+  const isGoBackend = baseUrl.includes(':3002') || baseUrl.includes('go.pictureme.now');
 
-  // Add /api/v2 prefix for Go endpoints
-  const finalUrl = url.includes(':3002') && !endpoint.includes('/api/v2')
-    ? url.replace(endpoint, `/api/v2${endpoint}`)
-    : url;
+  // Ensure endpoint starts with a slash for consistent path joining
+  const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+
+  // Determine the correct prefix (/api or /api/v2)
+  let prefix = '/api';
+  if (isGoBackend && !cleanEndpoint.includes('/api/v2')) {
+    prefix = '/api/v2';
+  }
+
+  // Build the final URL
+  // If the endpoint already contains /api, don't add another prefix
+  const finalUrl = cleanEndpoint.startsWith('/api')
+    ? `${baseUrl}${cleanEndpoint}`
+    : `${baseUrl}${prefix}${cleanEndpoint}`;
 
   console.log(`📡 API Request: ${finalUrl}`);
 
