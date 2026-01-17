@@ -63,12 +63,12 @@ export function CreatorLayout() {
       "bg-[#101112] text-white flex flex-col",
       isFullBleed ? "h-screen overflow-hidden" : "min-h-screen"
     )}>
-      {/* Desktop Navigation Bar - Hidden on mobile */}
-      <div className="hidden md:block">
+      {/* Top Navigation Bar - Now visible on all screens */}
+      <div>
         <CreatorNavbar user={user} />
       </div>
 
-      {/* Mobile Floating Navigation - Hidden on desktop */}
+      {/* Mobile Bottom Navigation - Hidden on desktop */}
       <div className="md:hidden">
         {!location.pathname.includes('/studio') && <CreatorBottomNav />}
       </div>

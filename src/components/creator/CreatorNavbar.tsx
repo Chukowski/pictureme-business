@@ -13,10 +13,24 @@ import {
     Zap,
     ChevronDown,
     ImageIcon,
-    Video
+    Video,
+    Menu,
+    X,
+    Home,
+    GalleryHorizontal,
+    Bot
 } from "lucide-react";
 import { logoutUser, User } from "@/services/eventsApi";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import {
+    Sheet,
+    SheetContent,
+    SheetHeader,
+    SheetTitle,
+    SheetTrigger,
+    SheetClose,
+} from "@/components/ui/sheet";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -201,8 +215,157 @@ export function CreatorNavbar({ user }: CreatorNavbarProps) {
                     </div>
                 </div>
 
-                {/* User Profile & Credits */}
-                <div className="flex items-center gap-4 z-50">
+                {/* Desktop View Right side / Mobile Hamburger Trigger */}
+                <div className="flex items-center gap-2 sm:gap-4 z-50">
+                    {/* Mobile Hamburger Menu */}
+                    <div className="md:hidden">
+                        <Sheet>
+                            <SheetTrigger asChild>
+                                <Button variant="ghost" size="icon" className="text-white hover:bg-white/10 h-10 w-10">
+                                    <Menu className="w-6 h-6" />
+                                </Button>
+                            </SheetTrigger>
+                            <SheetContent side="left" className="bg-[#101112]/95 backdrop-blur-xl border-white/5 text-white p-0">
+                                <div className="flex flex-col h-full pt-16">
+                                    <div className="px-6 py-4 space-y-6 flex-1 overflow-y-auto">
+                                        {/* Featured Section */}
+                                        <div className="space-y-3">
+                                            <h3 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest px-1">Creators Tools</h3>
+                                            <SheetClose asChild>
+                                                <button
+                                                    onClick={() => { navigate('/creator/chat'); }}
+                                                    className="w-full flex items-center justify-between p-4 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 hover:bg-indigo-500/20 transition-all text-left"
+                                                >
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="w-10 h-10 rounded-xl bg-indigo-500 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+                                                            <Bot className="w-6 h-6 text-white" />
+                                                        </div>
+                                                        <div>
+                                                            <h4 className="text-sm font-bold text-white">AI Assistant</h4>
+                                                            <p className="text-[10px] text-zinc-400">Your creative companion</p>
+                                                        </div>
+                                                    </div>
+                                                    <ChevronDown className="w-4 h-4 text-zinc-600 -rotate-90" />
+                                                </button>
+                                            </SheetClose>
+
+                                            <SheetClose asChild>
+                                                <button
+                                                    onClick={() => { navigate('/creator/templates'); }}
+                                                    className="w-full flex items-center justify-between p-4 rounded-2xl bg-zinc-800/40 border border-white/5 hover:bg-zinc-800/60 transition-all text-left"
+                                                >
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="w-10 h-10 rounded-xl bg-zinc-700 flex items-center justify-center">
+                                                            <ShoppingBag className="w-5 h-5 text-white" />
+                                                        </div>
+                                                        <div>
+                                                            <h4 className="text-sm font-bold text-white">Marketplace</h4>
+                                                            <p className="text-[10px] text-zinc-400">Discover AI templates</p>
+                                                        </div>
+                                                    </div>
+                                                    <ChevronDown className="w-4 h-4 text-zinc-600 -rotate-90" />
+                                                </button>
+                                            </SheetClose>
+                                        </div>
+
+                                        {/* Main Navigation */}
+                                        <div className="space-y-1">
+                                            <h3 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest px-1 mb-3">Navigation</h3>
+                                            <SheetClose asChild>
+                                                <button
+                                                    onClick={() => navigate('/creator/dashboard')}
+                                                    className={cn(
+                                                        "w-full flex items-center gap-4 p-3 rounded-xl transition-all",
+                                                        location.pathname === '/creator/dashboard' ? "bg-white/5 text-white" : "text-zinc-400 hover:text-white"
+                                                    )}
+                                                >
+                                                    <Home className="w-5 h-5" />
+                                                    <span className="text-sm font-medium">Explore Home</span>
+                                                </button>
+                                            </SheetClose>
+                                            <SheetClose asChild>
+                                                <button
+                                                    onClick={() => navigate('/creator/studio')}
+                                                    className={cn(
+                                                        "w-full flex items-center gap-4 p-3 rounded-xl transition-all",
+                                                        location.pathname === '/creator/studio' ? "bg-white/5 text-white" : "text-zinc-400 hover:text-white"
+                                                    )}
+                                                >
+                                                    <Sparkles className="w-5 h-5" />
+                                                    <span className="text-sm font-medium">Creator Studio</span>
+                                                </button>
+                                            </SheetClose>
+                                            <SheetClose asChild>
+                                                <button
+                                                    onClick={() => navigate('/creator/gallery')}
+                                                    className={cn(
+                                                        "w-full flex items-center gap-4 p-3 rounded-xl transition-all",
+                                                        location.pathname === '/creator/gallery' ? "bg-white/5 text-white" : "text-zinc-400 hover:text-white"
+                                                    )}
+                                                >
+                                                    <GalleryHorizontal className="w-5 h-5" />
+                                                    <span className="text-sm font-medium">My Gallery</span>
+                                                </button>
+                                            </SheetClose>
+                                            <SheetClose asChild>
+                                                <button
+                                                    onClick={() => navigate('/creator/booth')}
+                                                    className={cn(
+                                                        "w-full flex items-center gap-4 p-3 rounded-xl transition-all",
+                                                        location.pathname === '/creator/booth' ? "bg-white/5 text-white" : "text-zinc-400 hover:text-white"
+                                                    )}
+                                                >
+                                                    <Camera className="w-5 h-5" />
+                                                    <span className="text-sm font-medium">Booth Events</span>
+                                                </button>
+                                            </SheetClose>
+                                        </div>
+
+                                        {/* Bottom Actions */}
+                                        <div className="pt-6 border-t border-white/5 space-y-2">
+                                            <SheetClose asChild>
+                                                <button
+                                                    onClick={() => navigate('/creator/settings')}
+                                                    className="w-full h-12 flex items-center gap-4 px-3 rounded-xl text-zinc-400 hover:text-white transition-all text-sm font-medium"
+                                                >
+                                                    <Settings className="w-5 h-5" />
+                                                    Settings
+                                                </button>
+                                            </SheetClose>
+                                            <SheetClose asChild>
+                                                <button
+                                                    onClick={handleLogout}
+                                                    className="w-full h-12 flex items-center gap-4 px-3 rounded-xl text-red-400 hover:bg-red-500/10 transition-all text-sm font-medium"
+                                                >
+                                                    <LogOut className="w-5 h-5" />
+                                                    Sign out
+                                                </button>
+                                            </SheetClose>
+                                        </div>
+                                    </div>
+
+                                    {/* User Section at bottom */}
+                                    <div className="p-6 bg-white/5 border-t border-white/5">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 rounded-full bg-zinc-800 overflow-hidden border border-white/10">
+                                                {user?.avatar_url ? (
+                                                    <img src={user.avatar_url} alt="Profile" className="w-full h-full object-cover" />
+                                                ) : (
+                                                    <div className="w-full h-full flex items-center justify-center text-xs font-bold text-zinc-500">
+                                                        {user?.username?.substring(0, 2).toUpperCase()}
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-sm font-bold text-white truncate">{user?.full_name || user?.username}</p>
+                                                <p className="text-xs text-zinc-500 truncate">{user?.email}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </SheetContent>
+                        </Sheet>
+                    </div>
 
                     {/* Credits Pill (Simple Popover) */}
                     <Popover>
@@ -333,77 +496,6 @@ export function CreatorNavbar({ user }: CreatorNavbarProps) {
             <TopUpModal open={showTopUp} onClose={() => setShowTopUp(false)} />
             <UpgradePlanModal open={showUpgradeModal} onClose={() => setShowUpgradeModal(false)} />
 
-            {/* Mobile Navigation (Horizontal Scroll) */}
-            <div className="md:hidden border-t border-white/5 p-2 flex justify-center overflow-hidden">
-                <div className="bg-card/50 p-1 rounded-full border border-white/10 flex items-center overflow-x-auto no-scrollbar max-w-full">
-                    <button
-                        onClick={() => navigate('/creator/dashboard')}
-                        className={cn(
-                            "px-4 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap shrink-0",
-                            location.pathname === '/creator/dashboard'
-                                ? "bg-zinc-800 text-white shadow-sm border border-white/5"
-                                : "text-zinc-500 hover:text-zinc-300"
-                        )}
-                    >
-                        Explore
-                    </button>
-                    <button
-                        onClick={() => navigate('/creator/studio?view=create')}
-                        className={cn(
-                            "px-4 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap shrink-0",
-                            location.pathname === '/creator/studio' && ((location.state as any)?.view === 'create' || new URLSearchParams(location.search).get('view') === 'create' || !new URLSearchParams(location.search).get('view'))
-                                ? "bg-zinc-800 text-white shadow-sm border border-white/5"
-                                : "text-zinc-500 hover:text-zinc-300"
-                        )}
-                    >
-                        Studio
-                    </button>
-                    <button
-                        onClick={() => navigate('/creator/gallery')}
-                        className={cn(
-                            "px-4 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap shrink-0",
-                            location.pathname === '/creator/gallery'
-                                ? "bg-zinc-800 text-white shadow-sm border border-white/5"
-                                : "text-zinc-500 hover:text-zinc-300"
-                        )}
-                    >
-                        Gallery
-                    </button>
-                    <button
-                        onClick={() => navigate('/creator/booth')}
-                        className={cn(
-                            "px-4 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap shrink-0",
-                            location.pathname === '/creator/booth'
-                                ? "bg-zinc-800 text-white shadow-sm border border-white/5"
-                                : "text-zinc-500 hover:text-zinc-300"
-                        )}
-                    >
-                        Booths
-                    </button>
-                    {/* <button
-                        onClick={() => navigate('/creator/models')}
-                        className={cn(
-                            "px-4 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap shrink-0",
-                            location.pathname === '/creator/models'
-                                ? "bg-zinc-800 text-white shadow-sm border border-white/5"
-                                : "text-zinc-500 hover:text-zinc-300"
-                        )}
-                    >
-                        Models
-                    </button> */}
-                    <button
-                        onClick={() => navigate('/creator/templates')}
-                        className={cn(
-                            "px-4 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap shrink-0",
-                            location.pathname === '/creator/templates'
-                                ? "bg-zinc-800 text-white shadow-sm border border-white/5"
-                                : "text-zinc-500 hover:text-zinc-300"
-                        )}
-                    >
-                        Marketplace
-                    </button>
-                </div>
-            </div>
         </header>
     );
 }

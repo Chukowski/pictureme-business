@@ -137,10 +137,8 @@ export function useSSE(options: UseSSEOptions = {}): UseSSEReturn {
 
         // CIRCUIT BREAKER: If unauthorized, don't retry burst. 
         // This prevents the 401 infinite loop when token is expired.
-        // Look for 401 status in the event or assume if auth token is present but we get error
-        // since browsers don't always expose the status code in EventSource error events,
-        // we can check if it looks like an auth issue.
-        const isUnauthorized = event?.status === 401 || (event?.target as any)?.readyState === 2;
+        // Look for 401 status in the event.
+        const isUnauthorized = event?.status === 401;
 
         if (isUnauthorized) {
           console.warn('🛑 SSE: Circuit breaker triggered due to unauthorized error. Stopping retries and logging out.');
