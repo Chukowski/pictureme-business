@@ -105,7 +105,7 @@ export function EventTemplates({ formData, setFormData, onPreviewModeChange, var
   // Load marketplace templates
   useEffect(() => {
     if (variant === 'creator') {
-      getMarketplaceTemplates().then(setMarketplaceTemplates).catch(console.error);
+      getMarketplaceTemplates().then(data => setMarketplaceTemplates(data as any)).catch(console.error);
     }
   }, [variant]);
 
@@ -649,7 +649,7 @@ export function EventTemplates({ formData, setFormData, onPreviewModeChange, var
           <SheetContent
             side="right"
             className={cn(
-              "p-0 border-l border-white/10 shadow-2xl transition-all duration-500 h-full flex flex-col overflow-hidden",
+              "p-0 border-l border-white/10 shadow-2xl transition-all duration-500 h-[100dvh] flex flex-col overflow-hidden [-webkit-overflow-scrolling:touch]",
               variant === 'creator' ? "bg-[#101112]" : "bg-[#18181b]",
               isExpanded ? "w-screen sm:max-w-none inset-0" : "w-full sm:max-w-xl"
             )}
@@ -706,12 +706,12 @@ export function EventTemplates({ formData, setFormData, onPreviewModeChange, var
                 )}>
                   {/* Scrollable Form Content */}
                   <div className={cn(
-                    "flex-1 overflow-y-auto p-8 space-y-10 custom-scrollbar",
+                    "flex-1 overflow-y-auto p-8 space-y-10 custom-scrollbar [-webkit-overflow-scrolling:touch]",
                     isExpanded && "max-w-2xl border-r border-white/5"
                   )} ref={scrollRef}>
                     {/* Internal Navigation for Mobile/Collapsed or Quick Jumps */}
                     {!isExpanded && (
-                      <div className="flex gap-2 overflow-x-auto pb-4 no-scrollbar border-b border-white/5 mb-6">
+                      <div className="flex gap-2 overflow-x-auto pb-4 no-scrollbar border-b border-white/5 mb-6 [-webkit-overflow-scrolling:touch]">
                         {['Config', 'Prompts', 'Assets', 'Overlay', 'Rules'].map(tag => (
                           <Badge key={tag} variant="outline" className="px-3 py-1 bg-white/5 border-white/10 text-zinc-400 font-medium">
                             {tag}

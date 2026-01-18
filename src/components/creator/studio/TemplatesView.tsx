@@ -3,7 +3,7 @@ import { Store, Plus } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 
 export const TemplatesView = () => (
-    <div className="flex-1 bg-[#101112] p-8 overflow-y-auto w-full">
+    <div className="flex-1 bg-[#101112] p-8 overflow-y-auto w-full [webkit-overflow-scrolling:touch]">
         <div className="max-w-6xl mx-auto">
             <div className="flex items-center justify-between mb-8">
                 <div>

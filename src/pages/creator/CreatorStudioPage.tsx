@@ -974,7 +974,7 @@ function CreatorStudioPageContent({ defaultView }: CreatorStudioPageProps) {
                 {activeView === "templates" ? (
                     <TemplatesView />
                 ) : activeView === "booths" ? (
-                    <div className="flex-1 bg-[#101112] flex flex-col overflow-hidden"><BoothDashboard /></div>
+                    <div className="flex-1 bg-[#101112] flex flex-col overflow-y-auto [webkit-overflow-scrolling:touch]"><BoothDashboard /></div>
                 ) : (activeView === "gallery" || activeView === "home") ? (
                     <GalleryView
                         history={history}

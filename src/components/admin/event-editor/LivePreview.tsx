@@ -601,7 +601,7 @@ export function LivePreview({ formData, currentStep, currentUser, previewMode, o
   );
 
   return (
-    <div className={`min-h-full w-full flex flex-col ${showBadgePreview || showBadgeProPreview ? 'bg-card' : bgStyle} transition-colors duration-300 relative overflow-hidden`}>
+    <div className={`h-full w-full flex flex-col ${showBadgePreview || showBadgeProPreview ? 'bg-card' : bgStyle} transition-colors duration-300 relative overflow-hidden`}>
       {/* Mobile Status Bar Mock (only for non-badge modes) */}
       {!(showBadgePreview || showBadgeProPreview) && (
         <div className="h-6 w-full flex items-center justify-between px-4 text-[10px] font-medium text-zinc-500 shrink-0 z-50">

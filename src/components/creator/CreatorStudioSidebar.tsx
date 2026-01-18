@@ -396,7 +396,7 @@ export function CreatorStudioSidebar({
             </nav>
 
             {/* --- SCROLLABLE CONTENT --- */}
-            <div className="flex-1 overflow-y-auto px-4 py-4 scrollbar-hide">
+            <div className="flex-1 overflow-y-auto px-4 py-4 scrollbar-thin scrollbar-thumb-zinc-800 scrollbar-track-transparent [webkit-overflow-scrolling:touch]">
                 {mode === 'booth' ? (
                     <div className="flex flex-col gap-4">
                         {!selectedBooth ? (

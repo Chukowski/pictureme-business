@@ -59,7 +59,7 @@ export const GalleryView = ({
     return (
         <div className="h-full bg-[#101112] overflow-hidden w-full">
             {/* Main Scroll Container - Header sits inside to share scrollbar width alignment */}
-            <div className="h-full overflow-y-scroll w-full">
+            <div className="h-full overflow-y-scroll w-full [webkit-overflow-scrolling:touch]">
                 <GalleryHeader
                     showActions={showActions}
                     setShowActions={setShowActions}

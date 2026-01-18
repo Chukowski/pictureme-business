@@ -1,4 +1,4 @@
-import { ReactNode, useState, useEffect } from "react";
+import { ReactNode, useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -57,9 +57,28 @@ export function EventEditorLayout({
   const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(true);
   const [isPreviewFullscreen, setIsPreviewFullscreen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const lastInteraction = useRef(Date.now());
 
   useEffect(() => {
-    const checkMobile = () => setIsMobile(window.innerWidth < 1024);
+    const handleInactivity = () => {
+      if (Date.now() - lastInteraction.current > 3000) {
+        window.dispatchEvent(new CustomEvent('navbar-visibility', { detail: { visible: false } }));
+      }
+    };
+    const interval = setInterval(handleInactivity, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleInteraction = useCallback(() => {
+    lastInteraction.current = Date.now();
+    window.dispatchEvent(new CustomEvent('navbar-visibility', { detail: { visible: true } }));
+  }, []);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      const mobile = window.innerWidth < 1024;
+      setIsMobile(mobile);
+    };
     checkMobile();
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
@@ -85,13 +104,17 @@ export function EventEditorLayout({
           Event Configuration
         </h2>
       </div>
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto [webkit-overflow-scrolling:touch] min-h-0">
         <div className="p-2 space-y-0.5">
           {steps.map((step) => (
             <button
               key={step.id}
               onClick={() => {
                 onStepChange(step.id);
+                if (isMobile) {
+                  setIsSidebarOpen(false);
+                  setIsRightSidebarOpen(false);
+                }
                 setIsMobileMenuOpen(false);
               }}
               className={cn(
@@ -139,7 +162,7 @@ export function EventEditorLayout({
   );
 
   return (
-    <div className="h-screen w-full flex flex-col bg-[#09090b] overflow-hidden font-sans selection:bg-indigo-500/30">
+    <div className="h-screen h-[100dvh] w-full flex flex-col bg-[#09090b] overflow-hidden font-sans selection:bg-indigo-500/30 fixed inset-0">
       {/* Sticky Header */}
       <header className="h-14 border-b border-white/10 bg-card/80 backdrop-blur-xl flex items-center justify-between px-4 shrink-0 z-50">
         <div className="flex items-center gap-2">
@@ -165,13 +188,16 @@ export function EventEditorLayout({
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                  className="text-zinc-500 hover:text-white h-8 w-8 hidden md:flex"
+                  onClick={() => { setIsSidebarOpen(!isSidebarOpen); handleInteraction(); }}
+                  className={cn(
+                    "text-zinc-500 hover:text-white h-8 w-8 hidden md:flex",
+                    isSidebarOpen && "bg-white/5 text-white"
+                  )}
                 >
                   <Layout className={cn("w-4 h-4 transition-transform duration-300", !isSidebarOpen && "rotate-180")} />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>{isSidebarOpen ? 'Collapse Sidebar' : 'Expand Sidebar'}</TooltipContent>
+              <TooltipContent>{isSidebarOpen ? 'Toggle Config Sidebar' : 'Show Config Sidebar'}</TooltipContent>
             </Tooltip>
           </TooltipProvider>
 
@@ -186,7 +212,7 @@ export function EventEditorLayout({
 
           <Separator orientation="vertical" className="h-5 bg-white/10 hidden md:block" />
 
-          <div className="flex items-center gap-2 text-xs">
+          <div className="flex items-center gap-2 text-xs" onClick={handleInteraction}>
             <span
               className="text-zinc-500 cursor-pointer hover:text-white transition-colors hidden md:inline"
               onClick={() => navigate('/admin/events')}
@@ -198,11 +224,11 @@ export function EventEditorLayout({
           </div>
         </div>
 
-        <div className="flex items-center gap-2 md:gap-3">
+        <div className="flex items-center gap-2 md:gap-3" onClick={handleInteraction}>
           {/* Status Toggle */}
           <div className="hidden sm:flex items-center gap-1 bg-[#050505]/40 p-1 rounded-lg border border-white/5">
             <button
-              onClick={() => onStatusChange?.('draft')}
+              onClick={() => { onStatusChange?.('draft'); handleInteraction(); }}
               className={cn(
                 "px-3 py-1 text-[10px] font-bold rounded-md transition-all",
                 status === 'draft'
@@ -213,7 +239,7 @@ export function EventEditorLayout({
               Draft
             </button>
             <button
-              onClick={() => onStatusChange?.('active')}
+              onClick={() => { onStatusChange?.('active'); handleInteraction(); }}
               className={cn(
                 "px-3 py-1 text-[10px] font-bold rounded-md transition-all flex items-center gap-1.5",
                 status === 'active'
@@ -227,7 +253,7 @@ export function EventEditorLayout({
           </div>
 
           <Button
-            onClick={onSave}
+            onClick={() => { onSave(); handleInteraction(); }}
             disabled={isSaving}
             size="sm"
             className="h-8 bg-indigo-600 hover:bg-indigo-500 text-white px-4 font-bold rounded-lg shadow-lg shadow-indigo-500/10"
@@ -246,7 +272,7 @@ export function EventEditorLayout({
             )}
           </Button>
 
-          <Separator orientation="vertical" className="h-5 bg-white/10 hidden lg:block" />
+          <Separator orientation="vertical" className="h-5 bg-white/10" />
 
           <TooltipProvider>
             <Tooltip>
@@ -254,9 +280,9 @@ export function EventEditorLayout({
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={() => setIsRightSidebarOpen(!isRightSidebarOpen)}
+                  onClick={() => { setIsRightSidebarOpen(!isRightSidebarOpen); handleInteraction(); }}
                   className={cn(
-                    "text-zinc-500 hover:text-white h-8 w-8 hidden lg:flex",
+                    "text-zinc-500 hover:text-white h-8 w-8",
                     isRightSidebarOpen && "bg-white/5 text-white"
                   )}
                 >
@@ -270,7 +296,7 @@ export function EventEditorLayout({
       </header>
 
       {/* Main Layout */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex overflow-hidden min-h-0">
         {/* LEFT SIDEBAR */}
         <AnimatePresence mode="wait">
           {isSidebarOpen && (
@@ -283,17 +309,24 @@ export function EventEditorLayout({
             >
               <SidebarContent />
             </motion.aside>
-          )}
+          )
+          }
         </AnimatePresence>
 
         {/* MAIN CONTENT AREA */}
-        <div className="flex-1 flex overflow-hidden bg-card/30 relative">
+        <div className="flex-1 flex overflow-hidden bg-card/30 relative min-h-0">
           {/* Form Scroll Area */}
-          <div className="flex-1 flex flex-col min-w-0 relative z-10">
-            <div className="flex-1 overflow-y-auto scrollbar-hide">
+          <div className="flex-1 flex flex-col min-w-0 relative z-10 min-h-0">
+            <div
+              className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-zinc-800 scrollbar-track-transparent [-webkit-overflow-scrolling:touch] min-h-0"
+              style={{ touchAction: 'pan-y' }}
+              onScroll={handleInteraction}
+              onClick={handleInteraction}
+            >
               <div className="max-w-4xl mx-auto p-4 md:p-10 pb-32">
                 <motion.div
                   key={currentStep}
+                  className="h-auto min-h-full w-full"
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3 }}
@@ -449,7 +482,7 @@ export function EventEditorLayout({
                           "w-full h-full max-w-[1280px] max-h-[800px] rounded-2xl"
                     )}>
                       {/* Preview Content */}
-                      <div className="w-full h-full bg-card overflow-y-auto scrollbar-hide">
+                      <div className="w-full h-full bg-card overflow-y-auto scrollbar-thin scrollbar-thumb-zinc-800 scrollbar-track-transparent [webkit-overflow-scrolling:touch]">
                         {preview}
                       </div>
                     </div>

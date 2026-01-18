@@ -155,7 +155,7 @@ export function EventDesign({ formData, setFormData, currentUser }: EditorSectio
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           {/* Brand Colors */}
-          <Card className="bg-card/50 border-white/10 backdrop-blur-sm h-full">
+          <Card className="bg-card/50 border-white/10 backdrop-blur-sm">
             <CardHeader>
               <CardTitle className="text-white text-base flex items-center gap-2">
                 <Palette className="w-5 h-5 text-indigo-400" />
@@ -217,7 +217,7 @@ export function EventDesign({ formData, setFormData, currentUser }: EditorSectio
           </Card>
 
           {/* Theme Options */}
-          <Card className="bg-card/50 border-white/10 backdrop-blur-sm h-full">
+          <Card className="bg-card/50 border-white/10 backdrop-blur-sm">
             <CardHeader>
               <CardTitle className="text-white text-base flex items-center gap-2">
                 <Layers className="w-5 h-5 text-blue-400" />
@@ -329,6 +329,120 @@ export function EventDesign({ formData, setFormData, currentUser }: EditorSectio
                     </button>
                   ))}
                 </div>
+
+                <Separator className="border-white/5 my-6" />
+
+                {/* Landing Page Background Images (Slideshow) */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h5 className="text-xs font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2">
+                        <Globe className="w-3.5 h-3.5 text-emerald-400" />
+                        Landing Page Slideshow
+                      </h5>
+                      <p className="text-[10px] text-zinc-500 mt-0.5">Showcase your templates as a background loop</p>
+                    </div>
+                    <Switch
+                      checked={(formData.branding as any)?.backgroundSlideshow?.enabled || false}
+                      onCheckedChange={(checked) => updateBranding({
+                        backgroundSlideshow: { ...((formData.branding as any)?.backgroundSlideshow || {}), enabled: checked }
+                      } as any)}
+                      className="data-[state=checked]:bg-emerald-600 scale-75"
+                    />
+                  </div>
+
+                  {((formData.branding as any)?.backgroundSlideshow?.enabled) && (
+                    <div className="space-y-4 animate-in fade-in slide-in-from-top-2">
+                      <div className="p-4 rounded-xl bg-[#101112]/40 border border-white/5 space-y-3">
+                        <Label className="text-[10px] text-zinc-400 uppercase tracking-widest font-bold">Select Images from Templates</Label>
+                        <div className="grid grid-cols-4 sm:grid-cols-6 gap-2 max-h-[160px] overflow-y-auto p-1 scrollbar-thin scrollbar-thumb-zinc-800 scrollbar-track-transparent">
+                          {/* Get all images from templates */}
+                          {Array.from(new Set(
+                            (formData.templates || []).flatMap(t => t.images || [])
+                          )).map((imgUrl, idx) => (
+                            <div
+                              key={idx}
+                              onClick={() => {
+                                const current = (formData.branding as any)?.backgroundSlideshow?.images || [];
+                                const isSelected = current.includes(imgUrl);
+                                updateBranding({
+                                  backgroundSlideshow: {
+                                    ...((formData.branding as any)?.backgroundSlideshow || {}),
+                                    images: isSelected
+                                      ? current.filter((u: string) => u !== imgUrl)
+                                      : [...current, imgUrl]
+                                  }
+                                });
+                              }}
+                              className={cn(
+                                "aspect-[3/4] rounded-lg overflow-hidden cursor-pointer border-2 transition-all",
+                                ((formData.branding as any)?.backgroundSlideshow?.images || []).includes(imgUrl)
+                                  ? "border-indigo-500 ring-2 ring-indigo-500/30"
+                                  : "border-transparent hover:border-white/20"
+                              )}
+                            >
+                              <img src={imgUrl} alt="" className="w-full h-full object-cover" />
+                            </div>
+                          ))}
+                          {(formData.templates || []).flatMap(t => t.images || []).length === 0 && (
+                            <div className="col-span-full text-center py-4 text-zinc-600 text-[10px] italic">
+                              Add templates with images first
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-1.5">
+                          <Label className="text-[10px] text-zinc-300 uppercase tracking-widest font-bold">Transition (s)</Label>
+                          <div className="flex items-center gap-3">
+                            <Slider
+                              value={[((formData.branding as any)?.backgroundSlideshow?.duration || 5)]}
+                              min={2}
+                              max={15}
+                              step={1}
+                              onValueChange={([val]) => updateBranding({
+                                backgroundSlideshow: { ...((formData.branding as any)?.backgroundSlideshow || {}), duration: val }
+                              } as any)}
+                              className="flex-1"
+                            />
+                            <span className="text-[10px] font-mono text-zinc-400 w-10">{((formData.branding as any)?.backgroundSlideshow?.duration || 5)}s</span>
+                          </div>
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label className="text-[10px] text-zinc-300 uppercase tracking-widest font-bold">Overlay</Label>
+                          <span className="text-[10px] text-zinc-500 block">Darkness/Medium/Light</span>
+                          <Select
+                            value={String((formData.branding as any)?.backgroundSlideshow?.overlayOpacity || 60)}
+                            onValueChange={(val) => updateBranding({
+                              backgroundSlideshow: { ...((formData.branding as any)?.backgroundSlideshow || {}), overlayOpacity: parseInt(val) }
+                            })}
+                          >
+                            <SelectTrigger className="h-8 bg-[#101112]/40 border-white/10 text-[10px]">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent className="bg-card border-zinc-800 text-white">
+                              <SelectItem value="40">Light (40%)</SelectItem>
+                              <SelectItem value="60">Medium (60%)</SelectItem>
+                              <SelectItem value="80">Dark (80%)</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] text-zinc-400 uppercase tracking-widest font-bold">Apply Blur</span>
+                        <Switch
+                          checked={(formData.branding as any)?.backgroundSlideshow?.blur !== false}
+                          onCheckedChange={(c) => updateBranding({
+                            backgroundSlideshow: { ...((formData.branding as any)?.backgroundSlideshow || {}), blur: c }
+                          } as any)}
+                          className="scale-75 data-[state=checked]:bg-indigo-600"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -393,10 +507,10 @@ export function EventDesign({ formData, setFormData, currentUser }: EditorSectio
                       </>
                     )}
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex flex-col sm:flex-row gap-2">
                     <Dialog>
                       <DialogTrigger asChild>
-                        <Button variant="outline" size="sm" className="flex-1 h-8 border-white/10 text-xs">
+                        <Button variant="outline" size="sm" className="w-full sm:flex-1 h-8 border-white/10 text-xs">
                           <ImageIcon className="w-3.5 h-3.5 mr-2" />
                           Media Library
                         </Button>
@@ -414,7 +528,7 @@ export function EventDesign({ formData, setFormData, currentUser }: EditorSectio
                     <Button
                       variant="outline"
                       size="sm"
-                      className="flex-1 h-8 border-white/10 text-xs"
+                      className="w-full sm:flex-1 h-8 border-white/10 text-xs"
                       onClick={() => document.getElementById('logo-upload')?.click()}
                     >
                       <Upload className="w-3.5 h-3.5 mr-2" />
@@ -473,10 +587,10 @@ export function EventDesign({ formData, setFormData, currentUser }: EditorSectio
                       </>
                     )}
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex flex-col sm:flex-row gap-2">
                     <Dialog>
                       <DialogTrigger asChild>
-                        <Button variant="outline" size="sm" className="flex-1 h-8 border-white/10 text-xs">
+                        <Button variant="outline" size="sm" className="w-full sm:flex-1 h-8 border-white/10 text-xs">
                           <ImageIcon className="w-3.5 h-3.5 mr-2" />
                           Media Library
                         </Button>
@@ -494,7 +608,7 @@ export function EventDesign({ formData, setFormData, currentUser }: EditorSectio
                     <Button
                       variant="outline"
                       size="sm"
-                      className="flex-1 h-8 border-white/10 text-xs"
+                      className="w-full sm:flex-1 h-8 border-white/10 text-xs"
                       onClick={() => document.getElementById('footer-upload')?.click()}
                     >
                       <Upload className="w-3.5 h-3.5 mr-2" />
@@ -549,118 +663,6 @@ export function EventDesign({ formData, setFormData, currentUser }: EditorSectio
               </div>
             </div>
 
-            <Separator className="border-white/5 my-6" />
-
-            {/* Background Slideshow (Landing Page) */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h4 className="text-sm font-bold text-white flex items-center gap-2">
-                    <Globe className="w-4 h-4 text-emerald-400" />
-                    Landing Page Slideshow
-                  </h4>
-                  <p className="text-[10px] text-zinc-500 mt-0.5">Showcase your templates as a background loop</p>
-                </div>
-                <Switch
-                  checked={(formData.branding as any)?.backgroundSlideshow?.enabled || false}
-                  onCheckedChange={(checked) => updateBranding({
-                    backgroundSlideshow: { ...((formData.branding as any)?.backgroundSlideshow || {}), enabled: checked }
-                  } as any)}
-                  className="data-[state=checked]:bg-emerald-600"
-                />
-              </div>
-
-              {((formData.branding as any)?.backgroundSlideshow?.enabled) && (
-                <div className="space-y-4 animate-in fade-in slide-in-from-top-2">
-                  <div className="p-4 rounded-xl bg-[#101112]/40 border border-white/5 space-y-3">
-                    <Label className="text-xs text-zinc-400 uppercase tracking-widest">Select Images from Templates</Label>
-                    <div className="grid grid-cols-4 sm:grid-cols-6 gap-2 max-h-[200px] overflow-y-auto p-1">
-                      {/* Get all images from templates */}
-                      {Array.from(new Set(
-                        (formData.templates || []).flatMap(t => t.images || [])
-                      )).map((imgUrl, idx) => (
-                        <div
-                          key={idx}
-                          onClick={() => {
-                            const current = (formData.branding as any)?.backgroundSlideshow?.images || [];
-                            const isSelected = current.includes(imgUrl);
-                            updateBranding({
-                              backgroundSlideshow: {
-                                ...((formData.branding as any)?.backgroundSlideshow || {}),
-                                images: isSelected
-                                  ? current.filter((u: string) => u !== imgUrl)
-                                  : [...current, imgUrl]
-                              }
-                            });
-                          }}
-                          className={cn(
-                            "aspect-[3/4] rounded-lg overflow-hidden cursor-pointer border-2 transition-all",
-                            ((formData.branding as any)?.backgroundSlideshow?.images || []).includes(imgUrl)
-                              ? "border-indigo-500 ring-2 ring-indigo-500/30"
-                              : "border-transparent hover:border-white/20"
-                          )}
-                        >
-                          <img src={imgUrl} alt="" className="w-full h-full object-cover" />
-                        </div>
-                      ))}
-                      {(formData.templates || []).flatMap(t => t.images || []).length === 0 && (
-                        <div className="col-span-full text-center py-6 text-zinc-600 text-xs italic">
-                          Add templates with images first
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
-                      <Label className="text-xs text-zinc-300">Transition Duration (s)</Label>
-                      <div className="flex items-center gap-3">
-                        <Slider
-                          value={[((formData.branding as any)?.backgroundSlideshow?.duration || 5)]}
-                          min={2}
-                          max={15}
-                          step={1}
-                          onValueChange={([val]) => updateBranding({
-                            backgroundSlideshow: { ...((formData.branding as any)?.backgroundSlideshow || {}), duration: val }
-                          } as any)}
-                          className="flex-1"
-                        />
-                        <span className="text-[10px] font-mono text-zinc-400 w-10">{((formData.branding as any)?.backgroundSlideshow?.duration || 5)}s</span>
-                      </div>
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label className="text-xs text-zinc-300">Overlay Opacity</Label>
-                      <Select
-                        value={String((formData.branding as any)?.backgroundSlideshow?.overlayOpacity || 60)}
-                        onValueChange={(val) => updateBranding({
-                          backgroundSlideshow: { ...((formData.branding as any)?.backgroundSlideshow || {}), overlayOpacity: parseInt(val) }
-                        })}
-                      >
-                        <SelectTrigger className="h-8 bg-[#101112]/40 border-white/10 text-xs">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent className="bg-card border-zinc-800 text-white">
-                          <SelectItem value="40">Light (40%)</SelectItem>
-                          <SelectItem value="60">Medium (60%)</SelectItem>
-                          <SelectItem value="80">Dark (80%)</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between pt-2">
-                    <span className="text-xs text-zinc-300">Apply Blur Effect</span>
-                    <Switch
-                      checked={(formData.branding as any)?.backgroundSlideshow?.blur !== false}
-                      onCheckedChange={(c) => updateBranding({
-                        backgroundSlideshow: { ...((formData.branding as any)?.backgroundSlideshow || {}), blur: c }
-                      } as any)}
-                      className="scale-75 data-[state=checked]:bg-indigo-600"
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
 
             <Separator className="border-white/5 my-6" />
 

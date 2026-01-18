@@ -617,8 +617,8 @@ export default function CreatorBoothEditor() {
                                 <div className="space-y-4">
                                     <Label className="text-muted-foreground text-[10px] uppercase tracking-wider font-bold">Booth Visuals</Label>
                                     <div className="flex flex-col gap-4">
-                                        <div className="flex items-start gap-4 p-4 rounded-xl bg-card/40 border border-white/5">
-                                            <div className="w-20 h-20 rounded-lg bg-zinc-900 border border-dashed border-white/10 flex items-center justify-center overflow-hidden shrink-0 relative group">
+                                        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 p-4 rounded-xl bg-card/40 border border-white/5">
+                                            <div className="w-24 h-24 rounded-lg bg-zinc-900 border border-dashed border-white/10 flex items-center justify-center overflow-hidden shrink-0 relative group">
                                                 {formData.branding?.logoPath ? (
                                                     <>
                                                         <img src={formData.branding.logoPath} alt="Logo" className="w-full h-full object-contain p-2" />
@@ -637,15 +637,15 @@ export default function CreatorBoothEditor() {
                                                     <Palette className="w-8 h-8 text-white/10" />
                                                 )}
                                             </div>
-                                            <div className="flex-1 space-y-3">
+                                            <div className="flex-1 space-y-3 w-full text-center sm:text-left">
                                                 <div>
                                                     <Label className="text-xs">Booth Logo</Label>
                                                     <p className="text-[10px] text-muted-foreground">Upload a photo to be displayed in your booth</p>
                                                 </div>
-                                                <div className="flex items-center gap-2">
+                                                <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
                                                     <Dialog>
                                                         <DialogTrigger asChild>
-                                                            <Button variant="secondary" size="sm" className="h-9">
+                                                            <Button variant="secondary" size="sm" className="h-9 w-full sm:w-auto">
                                                                 <ImageIcon className="w-3.5 h-3.5 mr-2" />
                                                                 Logo Library
                                                             </Button>
@@ -668,7 +668,7 @@ export default function CreatorBoothEditor() {
                                                     <Button
                                                         variant="outline"
                                                         size="sm"
-                                                        className="shrink-0 h-9"
+                                                        className="shrink-0 h-9 w-full sm:w-auto"
                                                         disabled={isUploading}
                                                         onClick={() => document.getElementById('logo-upload')?.click()}
                                                     >
@@ -735,17 +735,6 @@ export default function CreatorBoothEditor() {
                                 <Separator className="border-border/40" />
 
                                 <div className="space-y-4">
-                                    <div className="space-y-2">
-                                        <Label>Logo URL</Label>
-                                        <Input
-                                            value={formData.branding?.logoPath || ""}
-                                            placeholder="https://your-logo-url"
-                                            onChange={(e) => setFormData({
-                                                ...formData,
-                                                branding: { ...formData.branding, logoPath: e.target.value }
-                                            })}
-                                        />
-                                    </div>
                                     <div className="flex items-center justify-between">
                                         <Label className="text-sm">Show Logo in Booth</Label>
                                         <Switch
@@ -1274,7 +1263,7 @@ export default function CreatorBoothEditor() {
                 />
             )}
         >
-            <div className="h-full overflow-y-auto p-6">
+            <div className="p-6 pb-32">
                 <div className="max-w-3xl mx-auto">
                     {renderStepContent()}
                     <div className="mt-8 flex items-center justify-between pt-6 border-t border-border/40">

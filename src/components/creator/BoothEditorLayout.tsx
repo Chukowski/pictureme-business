@@ -60,7 +60,14 @@ export function BoothEditorLayout({
     const [isMobile, setIsMobile] = useState(false);
 
     useEffect(() => {
-        const checkMobile = () => setIsMobile(window.innerWidth < 1024);
+        const checkMobile = () => {
+            const mobile = window.innerWidth < 1024;
+            setIsMobile(mobile);
+            if (mobile) {
+                setIsSidebarOpen(false);
+                setIsRightSidebarOpen(false);
+            }
+        };
         checkMobile();
         window.addEventListener('resize', checkMobile);
         return () => window.removeEventListener('resize', checkMobile);
@@ -100,7 +107,7 @@ export function BoothEditorLayout({
                     Booth Configuration
                 </h2>
             </div>
-            <div className="flex-1 overflow-y-auto">
+            <div className="flex-1 overflow-y-auto [webkit-overflow-scrolling:touch]">
                 <div className="p-2 space-y-0.5">
                     {steps.map((step) => (
                         <button
@@ -276,10 +283,10 @@ export function BoothEditorLayout({
                 </AnimatePresence>
 
                 {/* MAIN CONTENT - SPLIT VIEW */}
-                <div className="flex-1 flex flex-col md:flex-row overflow-hidden bg-card relative">
+                <div className="flex-1 flex flex-col md:flex-row overflow-hidden bg-card relative min-h-0">
                     {/* Center Panel - Form */}
-                    <div className="flex-1 flex flex-col min-w-0 bg-card relative z-10 shadow-2xl border-r border-white/5">
-                        <div className="flex-1 overflow-y-auto">
+                    <div className="flex-1 flex flex-col min-w-0 bg-card relative z-10 shadow-2xl border-r border-white/5 min-h-0">
+                        <div className="flex-1 overflow-y-auto [webkit-overflow-scrolling:touch] scrollbar-thin scrollbar-thumb-zinc-800 scrollbar-track-transparent min-h-0">
                             <div className="w-full pb-32">
                                 {children}
                             </div>
@@ -461,7 +468,7 @@ export function BoothEditorLayout({
                                 </div>
 
                                 {/* Preview Canvas */}
-                                <div className="flex-1 relative overflow-auto bg-gradient-to-br from-zinc-900 via-[#101112] to-zinc-950 scrollbar-hide">
+                                <div className="flex-1 relative overflow-auto bg-gradient-to-br from-zinc-900 via-[#101112] to-zinc-950 scrollbar-thin scrollbar-thumb-zinc-800 scrollbar-track-transparent [webkit-overflow-scrolling:touch]">
                                     {showGrid && (
                                         <div
                                             className="absolute inset-0 opacity-10 pointer-events-none"
