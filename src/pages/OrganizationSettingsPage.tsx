@@ -21,13 +21,13 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { 
-  Loader2, 
-  UserPlus, 
-  Building2, 
-  Users, 
-  Crown, 
-  Shield, 
+import {
+  Loader2,
+  UserPlus,
+  Building2,
+  Users,
+  Crown,
+  Shield,
   User,
   Trash2,
   Edit2,
@@ -46,16 +46,16 @@ export default function OrganizationSettingsPage() {
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState<'staff' | 'admin'>('staff');
   const [isInviting, setIsInviting] = useState(false);
-  
+
   // Edit org name state
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState('');
   const [isSavingName, setIsSavingName] = useState(false);
-  
+
   // Remove member dialog
   const [memberToRemove, setMemberToRemove] = useState<OrganizationMember | null>(null);
   const [isRemoving, setIsRemoving] = useState(false);
-  
+
   // Current user info
   const [currentUserId, setCurrentUserId] = useState<number | null>(null);
   const [isOwner, setIsOwner] = useState(false);
@@ -68,7 +68,7 @@ export default function OrganizationSettingsPage() {
       try {
         const user = JSON.parse(userStr);
         setCurrentUserId(user.id);
-      } catch {}
+      } catch { }
     }
   }, []);
 
@@ -124,7 +124,7 @@ export default function OrganizationSettingsPage() {
   const handleSaveName = async () => {
     if (!selectedOrg || !editedName.trim()) return;
     setIsSavingName(true);
-    
+
     try {
       const token = localStorage.getItem('auth_token');
       const headers: HeadersInit = {
@@ -142,10 +142,10 @@ export default function OrganizationSettingsPage() {
       });
 
       if (!res.ok) throw new Error('Failed to update');
-      
+
       toast.success('Organization name updated');
       setIsEditingName(false);
-      
+
       // Update local state
       setSelectedOrg({ ...selectedOrg, name: editedName.trim() });
       setOrgs(orgs.map(o => o.id === selectedOrg.id ? { ...o, name: editedName.trim() } : o));
@@ -158,7 +158,7 @@ export default function OrganizationSettingsPage() {
 
   const handleUpdateRole = async (member: OrganizationMember, newRole: string) => {
     if (!selectedOrg) return;
-    
+
     try {
       const token = localStorage.getItem('auth_token');
       const headers: HeadersInit = {
@@ -176,7 +176,7 @@ export default function OrganizationSettingsPage() {
       });
 
       if (!res.ok) throw new Error('Failed to update role');
-      
+
       toast.success('Member role updated');
       loadMembers(selectedOrg.id);
     } catch (error) {
@@ -187,7 +187,7 @@ export default function OrganizationSettingsPage() {
   const handleRemoveMember = async () => {
     if (!selectedOrg || !memberToRemove) return;
     setIsRemoving(true);
-    
+
     try {
       const token = localStorage.getItem('auth_token');
       const headers: HeadersInit = {
@@ -204,7 +204,7 @@ export default function OrganizationSettingsPage() {
       });
 
       if (!res.ok) throw new Error('Failed to remove member');
-      
+
       toast.success('Member removed');
       setMemberToRemove(null);
       loadMembers(selectedOrg.id);
@@ -259,7 +259,7 @@ export default function OrganizationSettingsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-8">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-8 pb-32 md:pb-8">
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -278,8 +278,8 @@ export default function OrganizationSettingsPage() {
         {orgs.length > 1 && (
           <div className="flex gap-2 flex-wrap">
             {orgs.map(org => (
-              <Button 
-                key={org.id} 
+              <Button
+                key={org.id}
                 variant={selectedOrg?.id === org.id ? 'default' : 'outline'}
                 onClick={() => setSelectedOrg(org)}
                 className={selectedOrg?.id !== org.id ? 'border-slate-600' : ''}
@@ -326,8 +326,8 @@ export default function OrganizationSettingsPage() {
                           <Save className="w-4 h-4" />
                         )}
                       </Button>
-                      <Button 
-                        variant="outline" 
+                      <Button
+                        variant="outline"
                         onClick={() => {
                           setIsEditingName(false);
                           setEditedName(selectedOrg.name);
@@ -341,8 +341,8 @@ export default function OrganizationSettingsPage() {
                     <div className="flex items-center gap-2">
                       <p className="text-white font-medium">{selectedOrg.name}</p>
                       {isOwner && (
-                        <Button 
-                          variant="ghost" 
+                        <Button
+                          variant="ghost"
                           size="icon"
                           onClick={() => setIsEditingName(true)}
                           className="h-8 w-8"
@@ -404,8 +404,8 @@ export default function OrganizationSettingsPage() {
 
                   {/* Team Members */}
                   {members.map(member => (
-                    <div 
-                      key={member.id} 
+                    <div
+                      key={member.id}
                       className="flex items-center justify-between p-4 bg-slate-700/30 rounded-lg border border-slate-600"
                     >
                       <div className="flex items-center gap-3">
@@ -478,8 +478,8 @@ export default function OrganizationSettingsPage() {
                   </h3>
                   <div className="flex gap-2 flex-wrap sm:flex-nowrap">
                     <div className="flex-1 min-w-[200px]">
-                      <Input 
-                        placeholder="Email address" 
+                      <Input
+                        placeholder="Email address"
                         value={inviteEmail}
                         onChange={e => setInviteEmail(e.target.value)}
                         className="bg-slate-700/50 border-slate-600"
@@ -580,19 +580,19 @@ export default function OrganizationSettingsPage() {
               Remove Team Member
             </DialogTitle>
             <DialogDescription>
-              Are you sure you want to remove this member from your organization? 
+              Are you sure you want to remove this member from your organization?
               They will lose access to all organization events.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => setMemberToRemove(null)}
               className="border-slate-600"
             >
               Cancel
             </Button>
-            <Button 
+            <Button
               variant="destructive"
               onClick={handleRemoveMember}
               disabled={isRemoving}

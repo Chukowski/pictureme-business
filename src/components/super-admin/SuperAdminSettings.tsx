@@ -17,6 +17,7 @@ interface SystemSettings {
     default_user_role: string;
     max_events_per_user: number;
     max_photos_per_event: number;
+    default_booth_template_id?: string;
 }
 
 interface ServiceStatus {
@@ -33,7 +34,8 @@ export default function SuperAdminSettings() {
         free_trial_tokens: 50,
         default_user_role: 'user',
         max_events_per_user: 10,
-        max_photos_per_event: 1000
+        max_photos_per_event: 1000,
+        default_booth_template_id: ''
     });
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
@@ -49,14 +51,14 @@ export default function SuperAdminSettings() {
         try {
             setIsLoading(true);
             const token = localStorage.getItem("auth_token");
-            
+
             const response = await fetch(`${ENV.API_URL}/api/admin/settings`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
-            
+
             if (response.ok) {
                 const data = await response.json();
-                setSettings(data);
+                setSettings(prev => ({ ...prev, ...data }));
             }
         } catch (error) {
             console.error("Error loading settings:", error);
@@ -67,7 +69,7 @@ export default function SuperAdminSettings() {
 
     const checkServices = async () => {
         const token = localStorage.getItem("auth_token");
-        
+
         // Check FAL.ai
         let falStatus: ServiceStatus = { name: 'FAL.ai', status: 'disconnected' };
         try {
@@ -120,7 +122,7 @@ export default function SuperAdminSettings() {
         setIsSaving(true);
         try {
             const token = localStorage.getItem("auth_token");
-            
+
             const response = await fetch(`${ENV.API_URL}/api/admin/settings`, {
                 method: 'PUT',
                 headers: {
@@ -184,8 +186,8 @@ export default function SuperAdminSettings() {
                     <h1 className="text-3xl font-bold tracking-tight mb-2">System Settings</h1>
                     <p className="text-zinc-400">Configure global system parameters and integrations.</p>
                 </div>
-                <Button 
-                    variant="outline" 
+                <Button
+                    variant="outline"
                     onClick={() => { loadSettings(); checkServices(); }}
                     className="border-white/10 bg-card/50"
                 >
@@ -235,31 +237,31 @@ export default function SuperAdminSettings() {
                     <CardContent className="space-y-4">
                         <div className="space-y-2">
                             <Label className="text-zinc-400">FAL.ai API Key</Label>
-                            <Input 
-                                type={showApiKeys ? "text" : "password"} 
-                                value="************************" 
+                            <Input
+                                type={showApiKeys ? "text" : "password"}
+                                value="************************"
                                 disabled
-                                className="bg-card border-white/10" 
+                                className="bg-card border-white/10"
                             />
                             <p className="text-xs text-zinc-500">Set via FAL_KEY environment variable</p>
                         </div>
                         <div className="space-y-2">
                             <Label className="text-zinc-400">Stripe Secret Key</Label>
-                            <Input 
-                                type={showApiKeys ? "text" : "password"} 
-                                value="************************" 
+                            <Input
+                                type={showApiKeys ? "text" : "password"}
+                                value="************************"
                                 disabled
-                                className="bg-card border-white/10" 
+                                className="bg-card border-white/10"
                             />
                             <p className="text-xs text-zinc-500">Set via STRIPE_SECRET_KEY environment variable</p>
                         </div>
                         <div className="space-y-2">
                             <Label className="text-zinc-400">AWS S3</Label>
-                            <Input 
-                                type={showApiKeys ? "text" : "password"} 
-                                value="************************" 
+                            <Input
+                                type={showApiKeys ? "text" : "password"}
+                                value="************************"
                                 disabled
-                                className="bg-card border-white/10" 
+                                className="bg-card border-white/10"
                             />
                             <p className="text-xs text-zinc-500">Set via AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY</p>
                         </div>
@@ -278,7 +280,7 @@ export default function SuperAdminSettings() {
                                 <Label className="text-base text-white">Maintenance Mode</Label>
                                 <p className="text-sm text-zinc-400">Disable access for all non-admin users.</p>
                             </div>
-                            <Switch 
+                            <Switch
                                 checked={settings.maintenance_mode}
                                 onCheckedChange={(checked) => setSettings({ ...settings, maintenance_mode: checked })}
                             />
@@ -288,7 +290,7 @@ export default function SuperAdminSettings() {
                                 <Label className="text-base text-white">New User Registration</Label>
                                 <p className="text-sm text-zinc-400">Allow new users to sign up.</p>
                             </div>
-                            <Switch 
+                            <Switch
                                 checked={settings.registration_enabled}
                                 onCheckedChange={(checked) => setSettings({ ...settings, registration_enabled: checked })}
                             />
@@ -298,7 +300,7 @@ export default function SuperAdminSettings() {
                                 <Label className="text-base text-white">Free Trial</Label>
                                 <p className="text-sm text-zinc-400">Give tokens to new users automatically.</p>
                             </div>
-                            <Switch 
+                            <Switch
                                 checked={settings.free_trial_enabled}
                                 onCheckedChange={(checked) => setSettings({ ...settings, free_trial_enabled: checked })}
                             />
@@ -343,6 +345,17 @@ export default function SuperAdminSettings() {
                             />
                             <p className="text-xs text-zinc-500">Maximum photos per event (0 = unlimited)</p>
                         </div>
+                        <div className="space-y-2">
+                            <Label className="text-zinc-400">Default Booth Template ID</Label>
+                            <Input
+                                type="text"
+                                value={settings.default_booth_template_id || ''}
+                                onChange={(e) => setSettings({ ...settings, default_booth_template_id: e.target.value })}
+                                className="bg-card border-white/10"
+                                placeholder="Template ID (e.g. from Marketplace)"
+                            />
+                            <p className="text-xs text-zinc-500">ID of the Marketplace Template to use as default for new booths</p>
+                        </div>
                     </CardContent>
                 </Card>
             </div>
@@ -359,7 +372,7 @@ export default function SuperAdminSettings() {
             </div>
 
             <div className="flex justify-end">
-                <Button 
+                <Button
                     onClick={saveSettings}
                     disabled={isSaving}
                     className="bg-indigo-600 hover:bg-indigo-700"

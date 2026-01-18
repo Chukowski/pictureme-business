@@ -192,7 +192,7 @@ export default function AdminDashboard() {
         </div>
 
         {/* Dashboard Content */}
-        <div className="flex-1 min-h-0 overflow-y-auto scrollbar-hide">
+        <div className="flex-1 min-h-0 overflow-y-auto scrollbar-hide pb-24 md:pb-0">
           {(isSuperAdmin ? dashboardMode === 'business' : userRole.startsWith('business')) ? (
             <BusinessDashboard currentUser={displayedUser || currentUser} />
           ) : (

@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 import {
     createBooth,
     updateEvent,
@@ -13,7 +14,7 @@ import {
 } from "@/services/eventsApi";
 import { BoothEditorLayout } from "@/components/creator/BoothEditorLayout";
 import { BoothPhotoManager } from "@/components/creator/BoothPhotoManager";
-import { LivePreview } from "@/components/admin/event-editor/LivePreview";
+import { CreatorBoothPreview } from "@/components/creator/CreatorBoothPreview";
 import { EventFormData, EventTheme } from "@/components/admin/event-editor/types";
 import { hasFeature } from "@/lib/planFeatures";
 import {
@@ -30,9 +31,17 @@ import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { EventTemplates } from "@/components/admin/event-editor/EventTemplates";
-import { DollarSign, Palette, Lock, Settings2, Sparkles, Upload, Copy, ExternalLink, Camera, Globe, Trash2, Image } from "lucide-react";
+import { DollarSign, Palette, Lock, Settings2, Sparkles, Upload, Copy, ExternalLink, Camera, Globe, Trash2, Image as ImageIcon, Loader2 } from "lucide-react";
 import { ENV } from "@/config/env";
 import { getAuthToken } from "@/services/eventsApi";
+import { MediaLibrary } from "@/components/MediaLibrary";
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger
+} from "@/components/ui/dialog";
 
 // Simplified theme preset for creators
 const CREATOR_THEME_PRESET: EventTheme = {
@@ -45,6 +54,7 @@ const CREATOR_THEME_PRESET: EventTheme = {
     mode: "dark",
     cardRadius: "xl",
     buttonStyle: "solid",
+    backgroundAnimation: "grid",
 };
 
 export default function CreatorBoothEditor() {
@@ -341,9 +351,264 @@ export default function CreatorBoothEditor() {
                                         className="h-20 resize-none"
                                     />
                                 </div>
+                            </CardContent>
+                        </Card>
 
-                                <Separator className="bg-border/40" />
+                        {/* Monetization Card */}
+                        <Card className="border-border/40 shadow-sm bg-card/30 backdrop-blur-sm overflow-hidden">
+                            <CardHeader>
+                                <CardTitle className="text-xl flex items-center">
+                                    <DollarSign className="w-5 h-5 mr-2 text-green-500" />
+                                    Monetization
+                                </CardTitle>
+                                <CardDescription>Choose how visitors use your booth</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-6">
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    {/* Free Mode */}
+                                    <div
+                                        className={`p-4 rounded-xl border-2 transition-all cursor-pointer flex flex-col items-center text-center gap-2 ${formData.monetization?.type === 'free' ? 'border-primary bg-primary/10' : 'border-border bg-card/50 hover:border-primary/50'}`}
+                                        onClick={() => setFormData({
+                                            ...formData,
+                                            monetization: { ...formData.monetization!, type: 'free' }
+                                        })}
+                                    >
+                                        <div className="w-12 h-12 rounded-full bg-green-500/10 flex items-center justify-center text-green-500 text-2xl">
+                                            🎁
+                                        </div>
+                                        <div>
+                                            <h3 className="font-bold">Free</h3>
+                                            <p className="text-[10px] text-muted-foreground mt-1">Creator pays tokens. Best for viral sharing.</p>
+                                        </div>
+                                    </div>
 
+                                    {/* Token Mode */}
+                                    <div
+                                        className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center text-center gap-2 relative ${!canTokens ? 'opacity-50 cursor-not-allowed border-border' : formData.monetization?.type === 'tokens' ? 'border-primary bg-primary/10 cursor-pointer' : 'border-border bg-card/50 hover:border-primary/50 cursor-pointer'}`}
+                                        onClick={() => {
+                                            if (!canTokens) return;
+                                            setFormData({
+                                                ...formData,
+                                                monetization: { ...formData.monetization!, type: 'tokens', token_price: 1 }
+                                            });
+                                        }}
+                                    >
+                                        {!canTokens && <Lock className="absolute top-2 right-2 w-3 h-3 text-indigo-500" />}
+                                        <div className="w-12 h-12 rounded-full bg-indigo-500/10 flex items-center justify-center text-indigo-500 text-2xl">
+                                            ⚡
+                                        </div>
+                                        <div>
+                                            <h3 className="font-bold">Tokens</h3>
+                                            <p className="text-[10px] text-muted-foreground mt-1">Users pay tokens. Available on <strong>Spark+</strong>.</p>
+                                        </div>
+                                    </div>
+
+                                    {/* Revenue Mode */}
+                                    <div
+                                        className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center text-center gap-2 relative ${!canRevenue ? 'opacity-50 cursor-not-allowed border-border' : formData.monetization?.type === 'revenue_share' ? 'border-primary bg-primary/10 cursor-pointer' : 'border-border bg-card/50 hover:border-primary/50 cursor-pointer'}`}
+                                        onClick={() => {
+                                            if (!canRevenue) return;
+                                            const split = effectiveTier === 'studio' ? 0.7 : 0.5;
+                                            setFormData({
+                                                ...formData,
+                                                monetization: { ...formData.monetization!, type: 'revenue_share', fiat_price: 1.0, revenue_split: split }
+                                            });
+                                        }}
+                                    >
+                                        {!canRevenue && <Lock className="absolute top-2 right-2 w-3 h-3 text-emerald-500" />}
+                                        <div className="w-12 h-12 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500 text-2xl">
+                                            💰
+                                        </div>
+                                        <div>
+                                            <h3 className="font-bold">Revenue</h3>
+                                            <p className="text-[10px] text-muted-foreground mt-1">Users pay $. Available on <strong>Vibe+</strong>.</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Save to Creator Gallery Toggle (Free Mode Only) */}
+                                {formData.monetization?.type === 'free' && (
+                                    <div className="animate-in fade-in slide-in-from-top-2">
+                                        <div className="p-4 rounded-xl border border-indigo-500/20 bg-indigo-500/5">
+                                            <div className="flex items-center justify-between">
+                                                <div className="space-y-1">
+                                                    <Label className="flex items-center gap-2">
+                                                        <Sparkles className="w-4 h-4 text-indigo-400" />
+                                                        Save Copies to My Gallery
+                                                    </Label>
+                                                    <p className="text-xs text-muted-foreground max-w-[600px]">
+                                                        By default, booth photos belong 100% to the visitor. Enable this to <strong>also</strong> save a copy to your personal gallery.
+                                                    </p>
+                                                </div>
+                                                <Switch
+                                                    checked={formData.settings?.saveToCreatorGallery}
+                                                    onCheckedChange={(checked) => setFormData({
+                                                        ...formData,
+                                                        settings: { ...formData.settings, saveToCreatorGallery: checked }
+                                                    })}
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {formData.monetization?.type === 'tokens' && (
+                                    <div className="space-y-4 animate-in fade-in slide-in-from-top-2">
+                                        <div className="space-y-2">
+                                            <Label>Price per use (Tokens)</Label>
+                                            <Input
+                                                type="number"
+                                                min={1}
+                                                className="w-32"
+                                                value={formData.monetization?.token_price}
+                                                onChange={(e) => setFormData({
+                                                    ...formData,
+                                                    monetization: { ...formData.monetization!, token_price: parseInt(e.target.value) || 1 }
+                                                })}
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+
+                                {formData.monetization?.type === 'revenue_share' && (
+                                    <div className="space-y-6 animate-in fade-in slide-in-from-top-2">
+                                        <div className="space-y-2">
+                                            <Label>Price per use (USD)</Label>
+                                            <div className="relative">
+                                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                                                <Input
+                                                    type="number"
+                                                    step="0.01"
+                                                    min="0.50"
+                                                    className="pl-7 w-32"
+                                                    value={formData.monetization?.fiat_price}
+                                                    onChange={(e) => setFormData({
+                                                        ...formData,
+                                                        monetization: { ...formData.monetization!, fiat_price: parseFloat(e.target.value) || 0 }
+                                                    })}
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-4">
+                                            <div className="flex items-center justify-between">
+                                                <Label>Your Revenue Split</Label>
+                                                <span className="text-xs font-bold text-emerald-500 bg-emerald-500/10 px-2 py-1 rounded">
+                                                    {effectiveTier === 'studio' ? 'Studio Plan' : 'Vibe Plan'}
+                                                </span>
+                                            </div>
+                                            <div className="p-4 rounded-xl bg-card border border-white/5 flex items-center justify-between">
+                                                <div className="space-y-1">
+                                                    <p className="text-xs text-muted-foreground uppercase tracking-wider font-bold">You Earn</p>
+                                                    <p className="text-2xl font-bold text-white">
+                                                        {Math.round((formData.monetization?.revenue_split || (effectiveTier === 'studio' ? 0.7 : 0.5)) * 100)}%
+                                                    </p>
+                                                </div>
+                                                <div className="w-px h-10 bg-white/10" />
+                                                <div className="space-y-1 text-right">
+                                                    <p className="text-xs text-muted-foreground uppercase tracking-wider font-bold">Platform Fee</p>
+                                                    <p className="text-2xl font-bold text-muted-foreground">
+                                                        {100 - Math.round((formData.monetization?.revenue_split || (effectiveTier === 'studio' ? 0.7 : 0.5)) * 100)}%
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+
+                        {isEdit && (
+                            <div className="pt-4 space-y-3">
+                                <Label className="text-muted-foreground text-[10px] uppercase tracking-wider font-bold">Quick Links</Label>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                    <div className="p-3 rounded-xl border bg-card/60 flex items-center justify-between group hover:border-indigo-500/30 transition-colors">
+                                        <div className="flex items-center gap-3">
+                                            <div className="p-2 rounded-lg bg-indigo-500/10 text-indigo-400">
+                                                <Camera className="w-4 h-4" />
+                                            </div>
+                                            <div>
+                                                <p className="text-[11px] font-bold text-white">Public Booth</p>
+                                                <p className="text-[9px] text-muted-foreground truncate max-w-[120px] font-mono">{formData.slug || 'booth'}</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex gap-1">
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-indigo-500/10 hover:text-indigo-400" onClick={() => copyToClipboard(getBoothUrl(), "Booth URL")}>
+                                                <Copy className="w-3.5 h-3.5" />
+                                            </Button>
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-green-500/10 hover:text-green-400" onClick={() => window.open(getBoothUrl(), '_blank')}>
+                                                <ExternalLink className="w-3.5 h-3.5" />
+                                            </Button>
+                                        </div>
+                                    </div>
+                                    <div className="p-3 rounded-xl border bg-card/60 flex items-center justify-between group hover:border-[#D1F349]/30 transition-colors">
+                                        <div className="flex items-center gap-3">
+                                            <div className="p-2 rounded-lg bg-[#D1F349]/10 text-[#D1F349]">
+                                                <Globe className="w-4 h-4" />
+                                            </div>
+                                            <div>
+                                                <p className="text-[11px] font-bold text-white">Live Results</p>
+                                                <p className="text-[9px] text-muted-foreground truncate max-w-[120px] font-mono">{formData.slug || 'booth'}/feed</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex gap-1">
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-[#D1F349]/10 hover:text-[#D1F349]" onClick={() => copyToClipboard(getFeedUrl(), "Feed URL")}>
+                                                <Copy className="w-3.5 h-3.5" />
+                                            </Button>
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-green-500/10 hover:text-green-400" onClick={() => window.open(getFeedUrl(), '_blank')}>
+                                                <ExternalLink className="w-3.5 h-3.5" />
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="space-y-4">
+                            <div className="space-y-2">
+                                <Label>AI Generation Model</Label>
+                                <select
+                                    value={formData.settings?.aiModel || "nano-banana"}
+                                    onChange={(e) => setFormData({
+                                        ...formData,
+                                        settings: { ...formData.settings, aiModel: e.target.value }
+                                    })}
+                                    className="w-full h-10 px-3 rounded-md border border-border bg-background text-sm"
+                                >
+                                    <option value="nano-banana">Nano Banana (Standard)</option>
+                                    <option value="nano-banana-pro">Nano Banana Pro (Premium)</option>
+                                    <option value="flux-realism">Flux Realism (Pro)</option>
+                                    <option value="seedream-v4">Seedream v4 (Standard)</option>
+                                </select>
+                            </div>
+                            <div className="flex items-center justify-between">
+                                <div className="space-y-0.5">
+                                    <Label>Email Sharing</Label>
+                                </div>
+                                <Switch
+                                    checked={formData.sharing?.emailEnabled}
+                                    onCheckedChange={(c) => setFormData({
+                                        ...formData,
+                                        sharing: { ...formData.sharing, emailEnabled: c }
+                                    })}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                );
+
+            case 'design':
+                return (
+                    <div className="space-y-6">
+                        <Card className="border-border/40 shadow-sm bg-card/30 backdrop-blur-sm">
+                            <CardHeader>
+                                <CardTitle className="text-xl flex items-center">
+                                    <Palette className="w-5 h-5 mr-2 text-indigo-500" />
+                                    Branding & Design
+                                </CardTitle>
+                                <CardDescription>Customize your booth's appearance</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-6">
                                 <div className="space-y-4">
                                     <Label className="text-muted-foreground text-[10px] uppercase tracking-wider font-bold">Booth Visuals</Label>
                                     <div className="flex flex-col gap-4">
@@ -370,27 +635,40 @@ export default function CreatorBoothEditor() {
                                             <div className="flex-1 space-y-3">
                                                 <div>
                                                     <Label className="text-xs">Booth Logo</Label>
-                                                    <p className="text-[10px] text-muted-foreground">Upload a PNG/SVG or paste a URL</p>
+                                                    <p className="text-[10px] text-muted-foreground">Upload a photo to be displayed in your booth</p>
                                                 </div>
-                                                <div className="flex gap-2">
-                                                    <Input
-                                                        value={formData.branding?.logoPath}
-                                                        onChange={(e) => setFormData({
-                                                            ...formData,
-                                                            branding: { ...formData.branding, logoPath: e.target.value }
-                                                        })}
-                                                        placeholder="https://..."
-                                                        className="flex-1 h-9 text-xs"
-                                                    />
+                                                <div className="flex items-center gap-2">
+                                                    <Dialog>
+                                                        <DialogTrigger asChild>
+                                                            <Button variant="secondary" size="sm" className="h-9">
+                                                                <ImageIcon className="w-3.5 h-3.5 mr-2" />
+                                                                Logo Library
+                                                            </Button>
+                                                        </DialogTrigger>
+                                                        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto" aria-describedby={undefined}>
+                                                            <DialogHeader>
+                                                                <DialogTitle>Media Library</DialogTitle>
+                                                            </DialogHeader>
+                                                            <MediaLibrary
+                                                                selectedUrl={formData.branding?.logoPath}
+                                                                onSelectMedia={(url) => {
+                                                                    setFormData(prev => ({
+                                                                        ...prev,
+                                                                        branding: { ...prev.branding, logoPath: url }
+                                                                    }));
+                                                                }}
+                                                            />
+                                                        </DialogContent>
+                                                    </Dialog>
                                                     <Button
-                                                        variant="secondary"
+                                                        variant="outline"
                                                         size="sm"
                                                         className="shrink-0 h-9"
                                                         disabled={isUploading}
                                                         onClick={() => document.getElementById('logo-upload')?.click()}
                                                     >
-                                                        {isUploading ? <div className="animate-spin rounded-full h-3 w-3 border-t-2 border-white"></div> : <Upload className="w-3.5 h-3.5 mr-2" />}
-                                                        Upload
+                                                        {isUploading ? <Loader2 className="animate-spin h-3.5 w-3.5" /> : <Upload className="w-3.5 h-3.5 mr-2" />}
+                                                        Upload New
                                                     </Button>
                                                     <input
                                                         id="logo-upload"
@@ -405,62 +683,6 @@ export default function CreatorBoothEditor() {
                                     </div>
                                 </div>
 
-                                {isEdit && (
-                                    <div className="pt-4 space-y-3">
-                                        <Label className="text-muted-foreground text-[10px] uppercase tracking-wider font-bold">Quick Links</Label>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                            <div className="p-3 rounded-xl border bg-card/60 flex items-center justify-between group hover:border-indigo-500/30 transition-colors">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="p-2 rounded-lg bg-indigo-500/10 text-indigo-400">
-                                                        <Camera className="w-4 h-4" />
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-[11px] font-bold text-white">Public Booth</p>
-                                                        <p className="text-[9px] text-muted-foreground truncate max-w-[120px] font-mono">{formData.slug || 'booth'}</p>
-                                                    </div>
-                                                </div>
-                                                <div className="flex gap-1">
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-indigo-500/10 hover:text-indigo-400" onClick={() => copyToClipboard(getBoothUrl(), "Booth URL")}>
-                                                        <Copy className="w-3.5 h-3.5" />
-                                                    </Button>
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-green-500/10 hover:text-green-400" onClick={() => window.open(getBoothUrl(), '_blank')}>
-                                                        <ExternalLink className="w-3.5 h-3.5" />
-                                                    </Button>
-                                                </div>
-                                            </div>
-                                            <div className="p-3 rounded-xl border bg-card/60 flex items-center justify-between group hover:border-[#D1F349]/30 transition-colors">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="p-2 rounded-lg bg-[#D1F349]/10 text-[#D1F349]">
-                                                        <Globe className="w-4 h-4" />
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-[11px] font-bold text-white">Live Results</p>
-                                                        <p className="text-[9px] text-muted-foreground truncate max-w-[120px] font-mono">{formData.slug || 'booth'}/feed</p>
-                                                    </div>
-                                                </div>
-                                                <div className="flex gap-1">
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-[#D1F349]/10 hover:text-[#D1F349]" onClick={() => copyToClipboard(getFeedUrl(), "Feed URL")}>
-                                                        <Copy className="w-3.5 h-3.5" />
-                                                    </Button>
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-green-500/10 hover:text-green-400" onClick={() => window.open(getFeedUrl(), '_blank')}>
-                                                        <ExternalLink className="w-3.5 h-3.5" />
-                                                    </Button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-                            </CardContent>
-                        </Card>
-
-                        <Card className="border-border/40 shadow-sm bg-card/30 backdrop-blur-sm">
-                            <CardHeader>
-                                <CardTitle className="text-xl flex items-center">
-                                    <Palette className="w-5 h-5 mr-2 text-indigo-500" />
-                                    Branding & Settings
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-6">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div className="space-y-2">
                                         <Label>Primary Color</Label>
@@ -528,6 +750,210 @@ export default function CreatorBoothEditor() {
                                                 branding: { ...formData.branding, showLogoInBooth: c }
                                             })}
                                         />
+                                    </div>
+
+                                    <div className="space-y-3 pt-2">
+                                        <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Booth Experience Background</Label>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            {([
+                                                { id: 'none', name: 'Static Black', icon: <div className="w-4 h-4 bg-black rounded-sm border border-white/10" /> },
+                                                { id: 'grid', name: 'Glow Grid', icon: <Sparkles className="w-4 h-4 text-indigo-400" /> },
+                                                { id: 'particles', name: 'Floating Particles', icon: <div className="w-4 h-4 bg-indigo-500/20 rounded-full blur-[2px]" /> },
+                                                { id: 'pulse', name: 'Neon Pulse', icon: <div className="w-4 h-4 bg-indigo-500 animate-pulse rounded-full" /> }
+                                            ] as const).map((anim) => (
+                                                <div
+                                                    key={anim.id}
+                                                    onClick={() => setFormData({
+                                                        ...formData,
+                                                        theme: { ...formData.theme, backgroundAnimation: anim.id }
+                                                    })}
+                                                    className={cn(
+                                                        "p-3 rounded-xl border cursor-pointer transition-all flex items-center gap-3",
+                                                        formData.theme.backgroundAnimation === anim.id
+                                                            ? "bg-indigo-500/10 border-indigo-500 text-indigo-400"
+                                                            : "bg-card/40 border-white/5 text-zinc-400 hover:border-white/20"
+                                                    )}
+                                                >
+                                                    {anim.icon}
+                                                    <span className="text-xs font-medium">{anim.name}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Background Image Slideshow */}
+                                    <div className="space-y-3 pt-2">
+                                        <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Landing Page Background Images</Label>
+                                        <p className="text-[10px] text-zinc-500">Select images from your templates to display as a slideshow background</p>
+
+                                        <div className="flex items-center gap-3 mb-3">
+                                            <Switch
+                                                checked={(formData.branding as any)?.backgroundSlideshow?.enabled || false}
+                                                onCheckedChange={(checked) => setFormData({
+                                                    ...formData,
+                                                    branding: {
+                                                        ...formData.branding,
+                                                        backgroundSlideshow: {
+                                                            ...((formData.branding as any)?.backgroundSlideshow || {}),
+                                                            enabled: checked
+                                                        }
+                                                    } as any
+                                                })}
+                                            />
+                                            <span className="text-xs text-zinc-400">Enable background slideshow</span>
+                                        </div>
+
+                                        {(formData.branding as any)?.backgroundSlideshow?.enabled && (
+                                            <div className="space-y-3">
+                                                <div className="grid grid-cols-4 gap-2 max-h-[200px] overflow-y-auto p-1">
+                                                    {/* Get all images from templates */}
+                                                    {Array.from(new Set(
+                                                        (formData.templates || []).flatMap(t => t.images || [])
+                                                    )).map((imgUrl, idx) => (
+                                                        <div
+                                                            key={idx}
+                                                            onClick={() => {
+                                                                const current = (formData.branding as any)?.backgroundSlideshow?.images || [];
+                                                                const isSelected = current.includes(imgUrl);
+                                                                setFormData({
+                                                                    ...formData,
+                                                                    branding: {
+                                                                        ...formData.branding,
+                                                                        backgroundSlideshow: {
+                                                                            ...((formData.branding as any)?.backgroundSlideshow || {}),
+                                                                            images: isSelected
+                                                                                ? current.filter((u: string) => u !== imgUrl)
+                                                                                : [...current, imgUrl]
+                                                                        }
+                                                                    } as any
+                                                                });
+                                                            }}
+                                                            className={cn(
+                                                                "aspect-[3/4] rounded-lg overflow-hidden cursor-pointer border-2 transition-all",
+                                                                ((formData.branding as any)?.backgroundSlideshow?.images || []).includes(imgUrl)
+                                                                    ? "border-indigo-500 ring-2 ring-indigo-500/30"
+                                                                    : "border-transparent hover:border-white/20"
+                                                            )}
+                                                        >
+                                                            <img src={imgUrl} alt="" className="w-full h-full object-cover" />
+                                                        </div>
+                                                    ))}
+                                                    {(formData.templates || []).flatMap(t => t.images || []).length === 0 && (
+                                                        <div className="col-span-4 text-center py-6 text-zinc-600 text-xs">
+                                                            Add templates with images first
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                <div className="flex items-center gap-4">
+                                                    <div className="flex-1 space-y-1">
+                                                        <Label className="text-[10px] text-zinc-500">Slide Duration (seconds)</Label>
+                                                        <Input
+                                                            type="number"
+                                                            min={2}
+                                                            max={15}
+                                                            value={(formData.branding as any)?.backgroundSlideshow?.duration || 5}
+                                                            onChange={(e) => setFormData({
+                                                                ...formData,
+                                                                branding: {
+                                                                    ...formData.branding,
+                                                                    backgroundSlideshow: {
+                                                                        ...((formData.branding as any)?.backgroundSlideshow || {}),
+                                                                        duration: parseInt(e.target.value) || 5
+                                                                    }
+                                                                } as any
+                                                            })}
+                                                            className="h-8 text-xs"
+                                                        />
+                                                    </div>
+                                                    <div className="flex-1 space-y-1">
+                                                        <Label className="text-[10px] text-zinc-500">Overlay Opacity</Label>
+                                                        <select
+                                                            value={(formData.branding as any)?.backgroundSlideshow?.overlayOpacity || 60}
+                                                            onChange={(e) => setFormData({
+                                                                ...formData,
+                                                                branding: {
+                                                                    ...formData.branding,
+                                                                    backgroundSlideshow: {
+                                                                        ...((formData.branding as any)?.backgroundSlideshow || {}),
+                                                                        overlayOpacity: parseInt(e.target.value)
+                                                                    }
+                                                                } as any
+                                                            })}
+                                                            className="w-full h-8 px-2 rounded-md border border-border bg-background text-xs"
+                                                        >
+                                                            <option value={40}>Light (40%)</option>
+                                                            <option value={60}>Medium (60%)</option>
+                                                            <option value={80}>Dark (80%)</option>
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* CTA Button Customization */}
+                                    <div className="space-y-3 pt-2 border-t border-white/5">
+                                        <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Call-to-Action Button</Label>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div className="space-y-1">
+                                                <Label className="text-[10px] text-zinc-500">Button Text</Label>
+                                                <Input
+                                                    value={(formData.branding as any)?.ctaButtonText || ""}
+                                                    onChange={(e) => setFormData({
+                                                        ...formData,
+                                                        branding: { ...formData.branding, ctaButtonText: e.target.value } as any
+                                                    })}
+                                                    placeholder="Take a Photo"
+                                                    className="h-9 text-xs"
+                                                />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <Label className="text-[10px] text-zinc-500">Secondary Text (optional)</Label>
+                                                <Input
+                                                    value={(formData.branding as any)?.ctaSubtext || ""}
+                                                    onChange={(e) => setFormData({
+                                                        ...formData,
+                                                        branding: { ...formData.branding, ctaSubtext: e.target.value } as any
+                                                    })}
+                                                    placeholder="e.g. It's free!"
+                                                    className="h-9 text-xs"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Profile & Feed Links */}
+                                    <div className="space-y-3 pt-2 border-t border-white/5">
+                                        <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Footer Links</Label>
+                                        <div className="space-y-3">
+                                            <div className="flex items-center justify-between p-3 rounded-xl bg-card/40 border border-white/5">
+                                                <div>
+                                                    <p className="text-xs font-medium text-white">Show Profile Link</p>
+                                                    <p className="text-[10px] text-zinc-500">Link to your public profile/portfolio</p>
+                                                </div>
+                                                <Switch
+                                                    checked={(formData.branding as any)?.showProfileLink !== false}
+                                                    onCheckedChange={(checked) => setFormData({
+                                                        ...formData,
+                                                        branding: { ...formData.branding, showProfileLink: checked } as any
+                                                    })}
+                                                />
+                                            </div>
+                                            <div className="flex items-center justify-between p-3 rounded-xl bg-card/40 border border-white/5">
+                                                <div>
+                                                    <p className="text-xs font-medium text-white">Show Live Feed Link</p>
+                                                    <p className="text-[10px] text-zinc-500">Link to this booth's photo feed</p>
+                                                </div>
+                                                <Switch
+                                                    checked={(formData.branding as any)?.showFeedLink === true}
+                                                    onCheckedChange={(checked) => setFormData({
+                                                        ...formData,
+                                                        branding: { ...formData.branding, showFeedLink: checked } as any
+                                                    })}
+                                                />
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
 
@@ -624,217 +1050,104 @@ export default function CreatorBoothEditor() {
                                                     />
                                                 </div>
                                             </div>
-                                        </div>
-                                    )}
-                                </div>
 
-                                <Separator className="border-border/40" />
-
-                                <div className="space-y-4">
-                                    <div className="space-y-2">
-                                        <Label>AI Generation Model</Label>
-                                        <select
-                                            value={formData.settings?.aiModel || "nano-banana"}
-                                            onChange={(e) => setFormData({
-                                                ...formData,
-                                                settings: { ...formData.settings, aiModel: e.target.value }
-                                            })}
-                                            className="w-full h-10 px-3 rounded-md border border-border bg-background text-sm"
-                                        >
-                                            <option value="nano-banana">Nano Banana (Standard)</option>
-                                            <option value="nano-banana-pro">Nano Banana Pro (Premium)</option>
-                                            <option value="flux-realism">Flux Realism (Pro)</option>
-                                            <option value="seedream-v4">Seedream v4 (Standard)</option>
-                                        </select>
-                                    </div>
-                                    <div className="flex items-center justify-between">
-                                        <div className="space-y-0.5">
-                                            <Label>Email Sharing</Label>
-                                        </div>
-                                        <Switch
-                                            checked={formData.sharing?.emailEnabled}
-                                            onCheckedChange={(c) => setFormData({
-                                                ...formData,
-                                                sharing: { ...formData.sharing, emailEnabled: c }
-                                            })}
-                                        />
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    </div>
-                );
-
-            case 'monetization':
-                return (
-                    <div className="space-y-6">
-                        <Card className="border-border/40 shadow-sm bg-card/30 backdrop-blur-sm overflow-hidden">
-                            <CardHeader>
-                                <CardTitle className="text-xl flex items-center">
-                                    <DollarSign className="w-5 h-5 mr-2 text-green-500" />
-                                    Monetization
-                                </CardTitle>
-                                <CardDescription>Choose how you want to earn from your booth</CardDescription>
-                            </CardHeader>
-                            <CardContent className="space-y-6">
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    {/* Free Mode */}
-                                    <div
-                                        className={`p-4 rounded-xl border-2 transition-all cursor-pointer flex flex-col items-center text-center gap-2 ${formData.monetization?.type === 'free' ? 'border-primary bg-primary/10' : 'border-border bg-card/50 hover:border-primary/50'}`}
-                                        onClick={() => setFormData({
-                                            ...formData,
-                                            monetization: { ...formData.monetization!, type: 'free' }
-                                        })}
-                                    >
-                                        <div className="w-12 h-12 rounded-full bg-green-500/10 flex items-center justify-center text-green-500 text-2xl">
-                                            🎁
-                                        </div>
-                                        <div>
-                                            <h3 className="font-bold">Free</h3>
-                                            <p className="text-[10px] text-muted-foreground mt-1">Creator pays tokens. Best for viral sharing.</p>
-                                        </div>
-                                    </div>
-
-
-                                    {/* Save to Creator Gallery Toggle (Free Mode Only) */}
-                                    {formData.monetization?.type === 'free' && (
-                                        <div className="col-span-1 md:col-span-3 mt-4 animate-in fade-in slide-in-from-top-2">
-                                            <div className="p-4 rounded-xl border border-indigo-500/20 bg-indigo-500/5">
+                                            {/* Bio Links Section */}
+                                            <div className="space-y-3 pt-3 border-t border-white/5">
                                                 <div className="flex items-center justify-between">
-                                                    <div className="space-y-1">
-                                                        <Label className="flex items-center gap-2">
-                                                            <Sparkles className="w-4 h-4 text-indigo-400" />
-                                                            Save Copies to My Gallery
-                                                        </Label>
-                                                        <p className="text-xs text-muted-foreground max-w-[600px]">
-                                                            By default, booth photos belong 100% to the visitor. Enable this to <strong>also</strong> save a copy to your personal gallery.
-                                                            This may consume your storage limits faster.
-                                                        </p>
-                                                    </div>
-                                                    <Switch
-                                                        checked={formData.settings?.saveToCreatorGallery}
-                                                        onCheckedChange={(checked) => setFormData({
-                                                            ...formData,
-                                                            settings: { ...formData.settings, saveToCreatorGallery: checked }
-                                                        })}
-                                                    />
+                                                    <Label className="text-xs">Featured Links</Label>
+                                                    <Button
+                                                        type="button"
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        className="h-7 text-xs text-indigo-400 hover:text-indigo-300"
+                                                        onClick={() => {
+                                                            const currentLinks = (formData.branding as any)?.bioLinks || [];
+                                                            setFormData({
+                                                                ...formData,
+                                                                branding: {
+                                                                    ...formData.branding,
+                                                                    bioLinks: [
+                                                                        ...currentLinks,
+                                                                        { id: `link-${Date.now()}`, title: '', url: '', enabled: true }
+                                                                    ]
+                                                                } as any
+                                                            });
+                                                        }}
+                                                    >
+                                                        + Add Link
+                                                    </Button>
+                                                </div>
+                                                <p className="text-[10px] text-zinc-500">Add links to your portfolio, shop, booking page, etc.</p>
+
+                                                <div className="space-y-2">
+                                                    {((formData.branding as any)?.bioLinks || []).map((link: any, index: number) => (
+                                                        <div key={link.id} className="flex items-center gap-2 p-2 rounded-lg bg-card/40 border border-white/5">
+                                                            <Switch
+                                                                checked={link.enabled}
+                                                                onCheckedChange={(checked) => {
+                                                                    const links = [...((formData.branding as any)?.bioLinks || [])];
+                                                                    links[index] = { ...link, enabled: checked };
+                                                                    setFormData({
+                                                                        ...formData,
+                                                                        branding: { ...formData.branding, bioLinks: links } as any
+                                                                    });
+                                                                }}
+                                                                className="scale-75"
+                                                            />
+                                                            <Input
+                                                                value={link.title}
+                                                                onChange={(e) => {
+                                                                    const links = [...((formData.branding as any)?.bioLinks || [])];
+                                                                    links[index] = { ...link, title: e.target.value };
+                                                                    setFormData({
+                                                                        ...formData,
+                                                                        branding: { ...formData.branding, bioLinks: links } as any
+                                                                    });
+                                                                }}
+                                                                placeholder="Link title"
+                                                                className="h-7 text-xs flex-1"
+                                                            />
+                                                            <Input
+                                                                value={link.url}
+                                                                onChange={(e) => {
+                                                                    const links = [...((formData.branding as any)?.bioLinks || [])];
+                                                                    links[index] = { ...link, url: e.target.value };
+                                                                    setFormData({
+                                                                        ...formData,
+                                                                        branding: { ...formData.branding, bioLinks: links } as any
+                                                                    });
+                                                                }}
+                                                                placeholder="https://..."
+                                                                className="h-7 text-xs flex-1"
+                                                            />
+                                                            <Button
+                                                                type="button"
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                className="h-7 w-7 text-zinc-500 hover:text-red-400"
+                                                                onClick={() => {
+                                                                    const links = ((formData.branding as any)?.bioLinks || []).filter((_: any, i: number) => i !== index);
+                                                                    setFormData({
+                                                                        ...formData,
+                                                                        branding: { ...formData.branding, bioLinks: links } as any
+                                                                    });
+                                                                }}
+                                                            >
+                                                                <Trash2 className="w-3.5 h-3.5" />
+                                                            </Button>
+                                                        </div>
+                                                    ))}
+
+                                                    {((formData.branding as any)?.bioLinks || []).length === 0 && (
+                                                        <div className="text-center py-4 text-zinc-600 text-xs">
+                                                            No featured links yet. Add links to highlight on your booth.
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>
                                     )}
-
-                                    {/* Token Mode */}
-                                    <div
-                                        className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center text-center gap-2 relative ${!canTokens ? 'opacity-50 cursor-not-allowed border-border' : formData.monetization?.type === 'tokens' ? 'border-primary bg-primary/10 cursor-pointer' : 'border-border bg-card/50 hover:border-primary/50 cursor-pointer'}`}
-                                        onClick={() => {
-                                            if (!canTokens) return;
-                                            setFormData({
-                                                ...formData,
-                                                monetization: { ...formData.monetization!, type: 'tokens', token_price: 1 }
-                                            });
-                                        }}
-                                    >
-                                        {!canTokens && <Lock className="absolute top-2 right-2 w-3 h-3 text-indigo-500" />}
-                                        <div className="w-12 h-12 rounded-full bg-indigo-500/10 flex items-center justify-center text-indigo-500 text-2xl">
-                                            ⚡
-                                        </div>
-                                        <div>
-                                            <h3 className="font-bold">Tokens</h3>
-                                            <p className="text-[10px] text-muted-foreground mt-1">Users pay tokens. Available on <strong>Spark+</strong>.</p>
-                                        </div>
-                                    </div>
-
-                                    {/* Revenue Mode */}
-                                    <div
-                                        className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center text-center gap-2 relative ${!canRevenue ? 'opacity-50 cursor-not-allowed border-border' : formData.monetization?.type === 'revenue_share' ? 'border-primary bg-primary/10 cursor-pointer' : 'border-border bg-card/50 hover:border-primary/50 cursor-pointer'}`}
-                                        onClick={() => {
-                                            if (!canRevenue) return;
-                                            const split = effectiveTier === 'studio' ? 0.7 : 0.5;
-                                            setFormData({
-                                                ...formData,
-                                                monetization: { ...formData.monetization!, type: 'revenue_share', fiat_price: 1.0, revenue_split: split }
-                                            });
-                                        }}
-                                    >
-                                        {!canRevenue && <Lock className="absolute top-2 right-2 w-3 h-3 text-emerald-500" />}
-                                        <div className="w-12 h-12 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500 text-2xl">
-                                            💰
-                                        </div>
-                                        <div>
-                                            <h3 className="font-bold">Revenue</h3>
-                                            <p className="text-[10px] text-muted-foreground mt-1">Users pay $. Available on <strong>Vibe+</strong>.</p>
-                                        </div>
-                                    </div>
                                 </div>
-
-                                <Separator className="border-border/40" />
-
-                                {formData.monetization?.type === 'tokens' && (
-                                    <div className="space-y-4 animate-in fade-in slide-in-from-top-2">
-                                        <div className="space-y-2">
-                                            <Label>Price per use (Tokens)</Label>
-                                            <Input
-                                                type="number"
-                                                min={1}
-                                                className="w-32"
-                                                value={formData.monetization?.token_price}
-                                                onChange={(e) => setFormData({
-                                                    ...formData,
-                                                    monetization: { ...formData.monetization!, token_price: parseInt(e.target.value) || 1 }
-                                                })}
-                                            />
-                                        </div>
-                                    </div>
-                                )}
-
-                                {formData.monetization?.type === 'revenue_share' && (
-                                    <div className="space-y-6 animate-in fade-in slide-in-from-top-2">
-                                        <div className="space-y-2">
-                                            <Label>Price per use (USD)</Label>
-                                            <div className="relative">
-                                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
-                                                <Input
-                                                    type="number"
-                                                    step="0.01"
-                                                    min="0.50"
-                                                    className="pl-7 w-32"
-                                                    value={formData.monetization?.fiat_price}
-                                                    onChange={(e) => setFormData({
-                                                        ...formData,
-                                                        monetization: { ...formData.monetization!, fiat_price: parseFloat(e.target.value) || 0 }
-                                                    })}
-                                                />
-                                            </div>
-                                        </div>
-
-                                        <div className="space-y-4">
-                                            <div className="flex items-center justify-between">
-                                                <Label>Your Revenue Split</Label>
-                                                <span className="text-xs font-bold text-emerald-500 bg-emerald-500/10 px-2 py-1 rounded">
-                                                    {effectiveTier === 'studio' ? 'Studio Plan' : 'Vibe Plan'}
-                                                </span>
-                                            </div>
-                                            <div className="p-4 rounded-xl bg-card border border-white/5 flex items-center justify-between">
-                                                <div className="space-y-1">
-                                                    <p className="text-xs text-muted-foreground uppercase tracking-wider font-bold">You Earn</p>
-                                                    <p className="text-2xl font-bold text-white">
-                                                        {Math.round((formData.monetization?.revenue_split || (effectiveTier === 'studio' ? 0.7 : 0.5)) * 100)}%
-                                                    </p>
-                                                </div>
-                                                <div className="w-px h-10 bg-white/10" />
-                                                <div className="space-y-1 text-right">
-                                                    <p className="text-xs text-muted-foreground uppercase tracking-wider font-bold">Platform Fee</p>
-                                                    <p className="text-2xl font-bold text-muted-foreground">
-                                                        {100 - Math.round((formData.monetization?.revenue_split || (effectiveTier === 'studio' ? 0.7 : 0.5)) * 100)}%
-                                                    </p>
-                                                </div>
-                                            </div>
-                                            <p className="text-[10px] text-muted-foreground italic">
-                                                * Fixed split for {effectiveTier.charAt(0).toUpperCase() + effectiveTier.slice(1)} tier.
-                                            </p>
-                                        </div>
-                                    </div>
-                                )}
                             </CardContent>
                         </Card>
                     </div>
@@ -930,10 +1243,10 @@ export default function CreatorBoothEditor() {
     };
 
     const steps = [
-        { id: 'setup', label: '1. Setup', icon: Settings2, description: 'Core details & branding' },
-        { id: 'monetization', label: '2. Monetization', icon: DollarSign, description: 'Earning settings' },
+        { id: 'setup', label: '1. Setup', icon: Settings2, description: 'Core details & monetization' },
+        { id: 'design', label: '2. Design', icon: Palette, description: 'Branding & customization' },
         { id: 'experience', label: '3. Experience', icon: Sparkles, description: 'Templates & AI' },
-        ...(isEdit ? [{ id: 'photos', label: '4. Photos', icon: Image, description: 'Manage gallery' }] : [])
+        ...(isEdit ? [{ id: 'photos', label: '4. Photos', icon: ImageIcon, description: 'Manage gallery' }] : [])
     ];
 
     return (
@@ -947,7 +1260,14 @@ export default function CreatorBoothEditor() {
             currentStep={currentStep}
             onStepChange={setCurrentStep}
             steps={steps}
-            preview={currentStep === 'photos' ? null : <LivePreview formData={formData} currentStep={currentStep} />}
+            preview={currentStep === 'photos' ? null : (
+                <CreatorBoothPreview
+                    formData={formData}
+                    currentStep={currentStep}
+                    creatorName={currentUser?.name || currentUser?.username}
+                    creatorAvatar={currentUser?.avatar_url}
+                />
+            )}
         >
             <div className="h-full overflow-y-auto p-6">
                 <div className="max-w-3xl mx-auto">

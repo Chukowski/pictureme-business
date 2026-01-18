@@ -1,16 +1,20 @@
-import { useState } from "react";
-import { PlaygroundSplitView } from "./PlaygroundSplitView";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Link2, Globe, UserPlus, Camera, Gamepad2, 
-  Images, Copy, Check, ExternalLink, Info, Eye, MapPin, Monitor
+import { Separator } from "@/components/ui/separator";
+import {
+  Link2, Globe, UserPlus, Camera, Gamepad2,
+  Images, Copy, Check, ExternalLink, Info, MapPin,
+  Smartphone, Monitor, Tablet, ZoomIn, ZoomOut, Eye,
+  Maximize2, RefreshCw
 } from "lucide-react";
 import { toast } from "sonner";
 import { User as UserType, EventConfig } from "@/services/eventsApi";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { usePlayground } from "./PlaygroundContext";
+import { cn } from "@/lib/utils";
 
 interface PlaygroundEventPreviewProps {
   events: EventConfig[];
@@ -18,16 +22,21 @@ interface PlaygroundEventPreviewProps {
 }
 
 export function PlaygroundEventPreview({ events, currentUser }: PlaygroundEventPreviewProps) {
+  const { setPreview, setPreviewToolbar, triggerNewAsset } = usePlayground();
   const [selectedEventId, setSelectedEventId] = useState<string>('');
   const [activeStation, setActiveStation] = useState<'main' | 'registration' | 'booth' | 'playground' | 'viewer'>('main');
   const [copiedUrl, setCopiedUrl] = useState<string | null>(null);
+  const [previewDevice, setPreviewDevice] = useState<'mobile' | 'tablet' | 'desktop'>('mobile');
+  const [zoom, setZoom] = useState(100);
+  const [showGrid, setShowGrid] = useState(true);
+  const [previewKey, setPreviewKey] = useState(0); // To force refresh iframe
 
   const selectedEvent = events.find(e => e._id === selectedEventId);
 
   const getStationUrl = (type: string) => {
     if (!selectedEvent || !currentUser) return '';
     const baseUrl = window.location.origin;
-    
+
     switch (type) {
       case 'main':
         return `${baseUrl}/${currentUser.slug}/${selectedEvent.slug}`;
@@ -70,7 +79,10 @@ export function PlaygroundEventPreview({ events, currentUser }: PlaygroundEventP
           <span className="text-base font-medium text-zinc-200">Select Event</span>
         </div>
         <CardContent className="p-6 space-y-6">
-          <Select value={selectedEventId} onValueChange={setSelectedEventId}>
+          <Select value={selectedEventId} onValueChange={(val) => {
+            setSelectedEventId(val);
+            triggerNewAsset(true);
+          }}>
             <SelectTrigger className="h-10 bg-zinc-800 border-zinc-700 text-sm text-zinc-200">
               <SelectValue placeholder="Choose event to preview" />
             </SelectTrigger>
@@ -117,13 +129,12 @@ export function PlaygroundEventPreview({ events, currentUser }: PlaygroundEventP
               const url = getStationUrl(key);
               const isCopied = copiedUrl === url;
               const isActive = activeStation === key;
-              
+
               return (
-                <div 
-                  key={key} 
-                  className={`group flex items-center justify-between p-3 rounded-xl transition-all cursor-pointer border ${
-                    isActive ? 'bg-zinc-800 border-indigo-500/30 shadow-md' : 'bg-transparent border-transparent hover:bg-zinc-800/50 hover:border-white/5'
-                  }`}
+                <div
+                  key={key}
+                  className={`group flex items-center justify-between p-3 rounded-xl transition-all cursor-pointer border ${isActive ? 'bg-zinc-800 border-indigo-500/30 shadow-md' : 'bg-transparent border-transparent hover:bg-zinc-800/50 hover:border-white/5'
+                    }`}
                   onClick={() => setActiveStation(key as any)}
                 >
                   <div className="flex items-center gap-4 flex-1 overflow-hidden">
@@ -135,7 +146,7 @@ export function PlaygroundEventPreview({ events, currentUser }: PlaygroundEventP
                       <span className="text-xs text-zinc-500 block">{desc}</span>
                     </div>
                   </div>
-                  
+
                   <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     <TooltipProvider>
                       <Tooltip>
@@ -155,7 +166,7 @@ export function PlaygroundEventPreview({ events, currentUser }: PlaygroundEventP
                         <TooltipContent>Copy URL</TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
-                    
+
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
@@ -180,7 +191,7 @@ export function PlaygroundEventPreview({ events, currentUser }: PlaygroundEventP
             })
           ) : (
             <div className="text-center py-12 border-2 border-dashed border-zinc-800 rounded-xl bg-card/30">
-               <MapPin className="w-10 h-10 text-zinc-600 mx-auto mb-3" />
+              <MapPin className="w-10 h-10 text-zinc-600 mx-auto mb-3" />
               <p className="text-sm text-zinc-400">Select an event to view stations</p>
             </div>
           )}
@@ -191,7 +202,7 @@ export function PlaygroundEventPreview({ events, currentUser }: PlaygroundEventP
 
   const CanvasOverlay = selectedEvent && (
     <div className="absolute bottom-8 right-8 z-50 pointer-events-auto">
-      <Button 
+      <Button
         onClick={() => openStation(getStationUrl(activeStation))}
         className="bg-white/10 hover:bg-white/20 text-white backdrop-blur-md border border-white/10 shadow-xl rounded-full px-6"
       >
@@ -220,11 +231,73 @@ export function PlaygroundEventPreview({ events, currentUser }: PlaygroundEventP
     </div>
   );
 
+  // --- Right Sidebar Content ---
+  useEffect(() => {
+    const Toolbar = (
+      <div className="flex items-center justify-between w-full px-1">
+        <div className="flex items-center bg-card p-0.5 rounded-lg border border-white/5">
+          <span className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-white">Live Station</span>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <button onClick={() => setPreviewKey(k => k + 1)} className="text-zinc-500 hover:text-white p-1" title="Refresh Preview"><RefreshCw className="w-3.5 h-3.5" /></button>
+          <Separator orientation="vertical" className="h-4 bg-white/10" />
+          <div className="flex items-center bg-card rounded-lg p-0.5 border border-white/5">
+            <button onClick={() => setPreviewDevice('mobile')} className={cn("p-1 rounded", previewDevice === 'mobile' ? "bg-zinc-700 text-white" : "text-zinc-500")}><Smartphone className="w-3.5 h-3.5" /></button>
+            <button onClick={() => setPreviewDevice('tablet')} className={cn("p-1 rounded", previewDevice === 'tablet' ? "bg-zinc-700 text-white" : "text-zinc-500")}><Tablet className="w-3.5 h-3.5" /></button>
+            <button onClick={() => setPreviewDevice('desktop')} className={cn("p-1 rounded", previewDevice === 'desktop' ? "bg-zinc-700 text-white" : "text-zinc-500")}><Monitor className="w-3.5 h-3.5" /></button>
+          </div>
+          <div className="flex items-center gap-1">
+            <button onClick={() => setZoom(z => Math.max(z - 10, 50))} className="text-zinc-500 hover:text-white"><ZoomOut className="w-3.5 h-3.5" /></button>
+            <span className="text-[10px] text-zinc-500 w-8 text-center font-mono">{zoom}%</span>
+            <button onClick={() => setZoom(z => Math.min(z + 10, 150))} className="text-zinc-500 hover:text-white"><ZoomIn className="w-3.5 h-3.5" /></button>
+          </div>
+        </div>
+      </div>
+    );
+
+    const Preview = (
+      <div className="h-full flex flex-col relative group">
+        <div className="flex-1 flex flex-col relative">
+          {CanvasOverlay}
+          <div className={cn(
+            "flex-1 flex items-center justify-center relative overflow-hidden bg-[#050505] transition-all duration-500",
+            showGrid && "bg-[radial-gradient(#333_1px,transparent_1px)] [background-size:20px_20px]"
+          )}>
+            <div
+              className="transition-transform duration-300 ease-out origin-center"
+              style={{ transform: `scale(${zoom / 100})` }}
+            >
+              <div className={cn(
+                "relative bg-[#101112] border-[8px] border-zinc-800 shadow-2xl overflow-hidden transition-all duration-500",
+                previewDevice === 'mobile' ? "w-[375px] h-[812px] rounded-[3.5rem]" :
+                  previewDevice === 'tablet' ? "w-[768px] h-[1024px] rounded-[2rem]" :
+                    "w-[1280px] h-[800px] rounded-xl border-[12px]" // Desktop
+              )}>
+                {/* Notch / Header for Mobile */}
+                {previewDevice === 'mobile' && (
+                  <div className="absolute top-0 left-1/2 -translate-x-1/2 w-36 h-7 bg-zinc-800 rounded-b-2xl z-50 flex items-center justify-center">
+                    <div className="w-16 h-1 rounded-full bg-[#101112]/40" />
+                  </div>
+                )}
+
+                <div className="w-full h-full bg-card overflow-hidden">
+                  {PreviewPanel}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+
+    setPreview(Preview);
+    setPreviewToolbar(Toolbar);
+  }, [setPreview, setPreviewToolbar, PreviewPanel, CanvasOverlay, previewDevice, zoom, showGrid, activeStation, selectedEventId, previewKey]);
+
   return (
-    <PlaygroundSplitView 
-      leftPanel={ControlsPanel} 
-      rightPanel={PreviewPanel} 
-      canvasOverlay={CanvasOverlay}
-    />
+    <div className="max-w-4xl mx-auto p-6 lg:p-10">
+      {ControlsPanel}
+    </div>
   );
 }

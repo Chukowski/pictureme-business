@@ -168,6 +168,7 @@ export interface EventConfig {
     secondaryColor?: string;
     tagline?: string;
     mode?: 'light' | 'dark'; // Theme mode for the photo booth
+    backgroundAnimation?: string;
   };
   templates: Template[];
   branding: {

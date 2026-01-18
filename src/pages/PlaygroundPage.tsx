@@ -7,6 +7,7 @@ import { PlaygroundTemplateTest } from "@/components/playground/PlaygroundTempla
 import { PlaygroundBadgeTest } from "@/components/playground/PlaygroundBadgeTest";
 import { PlaygroundEventPreview } from "@/components/playground/PlaygroundEventPreview";
 import { PlaygroundBoothSimulator } from "@/components/playground/PlaygroundBoothSimulator";
+import { PlaygroundProvider } from "@/components/playground/PlaygroundContext";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 
@@ -14,7 +15,7 @@ export default function PlaygroundPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [currentTab, setCurrentTab] = useState('template');
-  
+
   // Fetch User
   const { data: currentUser, isLoading: isUserLoading, error: userError } = useQuery({
     queryKey: ['currentUser'],
@@ -52,36 +53,38 @@ export default function PlaygroundPage() {
   };
 
   return (
-    <PlaygroundLayout currentTab={currentTab} onTabChange={setCurrentTab}>
-      {currentTab === 'template' && (
-        <PlaygroundTemplateTest 
-          events={events} 
-          currentUser={currentUser} 
-          onReloadEvents={handleReloadEvents}
-        />
-      )}
-      
-      {currentTab === 'badge' && (
-        <PlaygroundBadgeTest
-          events={events}
-          currentUser={currentUser}
-          onReloadEvents={handleReloadEvents}
-        />
-      )}
+    <PlaygroundProvider>
+      <PlaygroundLayout currentTab={currentTab} onTabChange={setCurrentTab}>
+        {currentTab === 'template' && (
+          <PlaygroundTemplateTest
+            events={events}
+            currentUser={currentUser}
+            onReloadEvents={handleReloadEvents}
+          />
+        )}
 
-      {currentTab === 'event' && (
-        <PlaygroundEventPreview
-          events={events}
-          currentUser={currentUser}
-        />
-      )}
+        {currentTab === 'badge' && (
+          <PlaygroundBadgeTest
+            events={events}
+            currentUser={currentUser}
+            onReloadEvents={handleReloadEvents}
+          />
+        )}
 
-      {currentTab === 'booth' && (
-        <PlaygroundBoothSimulator
-          events={events}
-          currentUser={currentUser}
-        />
-      )}
-    </PlaygroundLayout>
+        {currentTab === 'event' && (
+          <PlaygroundEventPreview
+            events={events}
+            currentUser={currentUser}
+          />
+        )}
+
+        {currentTab === 'booth' && (
+          <PlaygroundBoothSimulator
+            events={events}
+            currentUser={currentUser}
+          />
+        )}
+      </PlaygroundLayout>
+    </PlaygroundProvider>
   );
 }

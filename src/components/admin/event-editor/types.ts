@@ -54,6 +54,7 @@ export interface EventTheme extends NonNullable<EventConfig['theme']> {
   accentColor?: string;
   cardRadius?: "none" | "sm" | "md" | "lg" | "xl" | "2xl";
   buttonStyle?: "solid" | "outline" | "ghost";
+  backgroundAnimation?: 'none' | 'grid' | 'particles' | 'pulse';
 }
 
 // Extended Watermark type

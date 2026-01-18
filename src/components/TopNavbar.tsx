@@ -44,6 +44,23 @@ export function TopNavbar() {
   const [tokenStats, setTokenStats] = useState<{ current_tokens: number } | null>(null);
   const [userEvents, setUserEvents] = useState<EventConfig[]>([]);
   const [eventsDropdownOpen, setEventsDropdownOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [isForcedHidden, setIsForcedHidden] = useState(false);
+
+  useEffect(() => {
+    const handleVisibility = (e: any) => {
+      setIsForcedHidden(!e.detail.visible);
+    };
+    window.addEventListener('navbar-visibility', handleVisibility);
+    return () => window.removeEventListener('navbar-visibility', handleVisibility);
+  }, []);
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   const currentUser = getCurrentUser();
   const userRole = currentUser?.role || 'individual';
@@ -242,14 +259,14 @@ export function TopNavbar() {
 
   return (
     <AnimatePresence>
-      {isVisible && (
+      {isVisible && !isForcedHidden && (
         <motion.div
           key="top-navbar"
-          initial={{ opacity: 0, y: -20, x: "-50%" }}
+          initial={{ opacity: 0, y: isMobile ? 20 : -20, x: "-50%" }}
           animate={{ opacity: 1, y: 0, x: "-50%" }}
-          exit={{ opacity: 0, y: -20, x: "-50%" }}
+          exit={{ opacity: 0, y: isMobile ? 20 : -20, x: "-50%" }}
           transition={{ duration: 0.15, ease: "easeOut" }}
-          className="fixed top-4 left-1/2 z-[100] flex items-center justify-center"
+          className="fixed bottom-3 md:top-4 md:bottom-auto left-1/2 z-[100] flex items-center justify-center -translate-x-1/2"
           onMouseEnter={() => {
             setIsHovered(true);
             handleInteraction();
@@ -314,7 +331,12 @@ export function TopNavbar() {
                           <ChevronDown className="w-3 h-3 opacity-50" />
                         </button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="start" className="w-56 bg-card border-white/10 text-white p-2 mt-2">
+                      <DropdownMenuContent
+                        side={isMobile ? "top" : "bottom"}
+                        sideOffset={15}
+                        align="start"
+                        className="w-56 bg-card border-white/10 text-white p-2"
+                      >
                         <DropdownMenuItem
                           onClick={() => {
                             navigate('/admin/events');
@@ -455,7 +477,12 @@ export function TopNavbar() {
                   </div>
                 </div>
               )}
-              <DropdownMenuContent align="end" className="w-56 bg-card border-white/10 text-white p-2 mt-2">
+              <DropdownMenuContent
+                side={isMobile ? "top" : "bottom"}
+                sideOffset={15}
+                align="end"
+                className="w-56 bg-card border-white/10 text-white p-2 mt-2"
+              >
                 <div className="px-2 py-1.5">
                   <p className="text-sm font-medium text-white">{currentUser?.name || currentUser?.full_name || currentUser?.username || 'User'}</p>
                   <p className="text-xs text-zinc-500 truncate">{currentUser?.email}</p>

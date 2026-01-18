@@ -1,11 +1,12 @@
 import { useMemo, useState, useEffect } from "react";
 import { QRCodeSVG } from "qrcode.react";
-import { Download, Mail, RotateCcw, Share2, Copy, CheckCircle, User, ExternalLink, Instagram, Globe, ArrowRight, Heart, Sparkles, Grid3X3 } from "lucide-react";
+import { Download, Mail, RotateCcw, Share2, Copy, CheckCircle, User, ExternalLink, Instagram, Globe, ArrowRight, Heart, Sparkles, Grid3X3, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { getShareUrl } from "@/services/localStorage";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -158,6 +159,15 @@ export const ResultDisplay = ({
 
   const [isPublished, setIsPublished] = useState(false);
   const [isUpdatingPublish, setIsUpdatingPublish] = useState(false);
+  const [testimonial, setTestimonial] = useState("");
+  const [isSavingTestimonial, setIsSavingTestimonial] = useState(false);
+
+  // Auto-publish for free booths
+  useEffect(() => {
+    if (config?.monetization?.type === 'free' && shareCode && !isPublished) {
+      handlePublishToggle(true);
+    }
+  }, [config, shareCode]);
 
   const handlePublishToggle = async (checked: boolean) => {
     if (!shareCode) return;
@@ -175,6 +185,21 @@ export const ResultDisplay = ({
       toast.error("Failed to update settings");
     } finally {
       setIsUpdatingPublish(false);
+    }
+  };
+
+  const handleSaveTestimonial = async () => {
+    if (!shareCode || !testimonial.trim() || isSavingTestimonial) return;
+    setIsSavingTestimonial(true);
+    try {
+      // TODO: Implement API call to save testimonial
+      // await updateBoothPhotoTestimonial(shareCode, testimonial);
+      toast.success("Comment saved!");
+    } catch (error) {
+      console.error("Failed to save testimonial:", error);
+      toast.error("Failed to save comment");
+    } finally {
+      setIsSavingTestimonial(false);
     }
   };
 
@@ -244,22 +269,50 @@ export const ResultDisplay = ({
 
         {/* Feed Publish Toggle (If Feed Enabled) */}
         {config?.settings?.feedEnabled && (
-          <div className="bg-gradient-to-r from-indigo-500/10 to-purple-500/10 border border-indigo-500/20 rounded-2xl p-4 flex items-center justify-between">
-            <div className="flex flex-col gap-1">
-              <Label className="text-white font-bold flex items-center gap-2">
-                <Globe className="w-4 h-4 text-indigo-400" />
-                Publish to Booth Feed
-              </Label>
-              <p className="text-[11px] text-zinc-400 max-w-[280px]">
-                Share your photo on the public feed for this event. You can remove it at any time.
-              </p>
+          <div className="bg-gradient-to-r from-indigo-500/10 to-purple-500/10 border border-indigo-500/20 rounded-2xl p-4 space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex flex-col gap-1">
+                <Label className="text-white font-bold flex items-center gap-2">
+                  <Globe className="w-4 h-4 text-indigo-400" />
+                  Share to Public Feed
+                  {config?.monetization?.type === 'free' && (
+                    <Badge className="bg-green-500/10 text-green-400 border-green-500/20 text-[8px]">
+                      Required
+                    </Badge>
+                  )}
+                </Label>
+                <p className="text-[11px] text-zinc-400 max-w-[280px]">
+                  {config?.monetization?.type === 'free'
+                    ? "Share your photo to support this free booth!"
+                    : "Share your photo on the public feed. You can remove it at any time."}
+                </p>
+              </div>
+              <Switch
+                checked={isPublished || config?.monetization?.type === 'free'}
+                onCheckedChange={handlePublishToggle}
+                disabled={isUpdatingPublish || !shareCode || config?.monetization?.type === 'free'}
+                className="data-[state=checked]:bg-indigo-500"
+              />
             </div>
-            <Switch
-              checked={isPublished}
-              onCheckedChange={handlePublishToggle}
-              disabled={isUpdatingPublish || !shareCode}
-              className="data-[state=checked]:bg-indigo-500"
-            />
+
+            {/* Testimonial Input - Show when publishing */}
+            {(isPublished || config?.monetization?.type === 'free') && (
+              <div className="space-y-2 pt-2 border-t border-white/5">
+                <Label className="text-xs text-zinc-400 flex items-center gap-2">
+                  <MessageCircle className="w-3 h-3" />
+                  Add a comment (optional)
+                </Label>
+                <Input
+                  placeholder="Share your experience..."
+                  value={testimonial}
+                  onChange={(e) => setTestimonial(e.target.value)}
+                  onBlur={handleSaveTestimonial}
+                  className="h-10 rounded-xl text-sm bg-white/5 border-white/10 text-white placeholder:text-zinc-600"
+                  maxLength={200}
+                />
+                <p className="text-[10px] text-zinc-600">{testimonial.length}/200</p>
+              </div>
+            )}
           </div>
         )}
 

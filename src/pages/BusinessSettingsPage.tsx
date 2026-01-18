@@ -107,12 +107,12 @@ export function BusinessSettingsPage() {
   const [activeTab, setActiveTab] = useState(() => searchParams.get('tab') || 'overview');
   const [shouldOpenPlans, setShouldOpenPlans] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  
+
   // Organization data
   const [organization, setOrganization] = useState<Organization | null>(null);
   const [members, setMembers] = useState<OrganizationMember[]>([]);
   const [tokenStats, setTokenStats] = useState<TokenStats | null>(null);
-  
+
   // Modal states
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [showEditOrgModal, setShowEditOrgModal] = useState(false);
@@ -130,11 +130,11 @@ export function BusinessSettingsPage() {
         const orgData = orgs[0]; // Use first org
         setOrganization(orgData);
         setNewOrgName(orgData.name);
-        
+
         const membersData = await getOrganizationMembers(orgData.id);
         setMembers(membersData);
       }
-      
+
       const statsData = await getTokenStats().catch(() => null);
       setTokenStats(statsData);
     } catch (error) {
@@ -149,16 +149,16 @@ export function BusinessSettingsPage() {
   useEffect(() => {
     const userStr = localStorage.getItem('current_user') || localStorage.getItem('user');
     const token = localStorage.getItem('auth_token');
-    
+
     if (!token || !userStr) {
       navigate('/login');
       return;
     }
-    
+
     try {
       const userData = JSON.parse(userStr);
       setUser(userData);
-      
+
       // Check for any business role (business, business_pro, business_starter, etc.)
       const isBusiness = userData.role?.startsWith('business') && userData.role !== 'business_pending';
       if (!isBusiness) {
@@ -166,7 +166,7 @@ export function BusinessSettingsPage() {
         navigate('/admin/settings/creator');
         return;
       }
-      
+
       loadData();
     } catch {
       navigate('/login');
@@ -200,7 +200,7 @@ export function BusinessSettingsPage() {
   // Invite member
   const handleInvite = async () => {
     if (!inviteEmail || !organization) return;
-    
+
     setIsSubmitting(true);
     try {
       await inviteMember(organization.id, inviteEmail, inviteRole);
@@ -219,9 +219,9 @@ export function BusinessSettingsPage() {
   // Remove member
   const handleRemoveMember = async (memberId: string, memberName: string) => {
     if (!organization) return;
-    
+
     if (!confirm(`Remove ${memberName} from the organization?`)) return;
-    
+
     try {
       const res = await fetch(`${ENV.API_URL}/api/organizations/${organization.id}/members/${memberId}`, {
         method: 'DELETE',
@@ -241,7 +241,7 @@ export function BusinessSettingsPage() {
   // Update member role
   const handleRoleChange = async (memberId: string, newRole: 'admin' | 'staff') => {
     if (!organization) return;
-    
+
     try {
       const res = await fetch(`${ENV.API_URL}/api/organizations/${organization.id}/members/${memberId}/role`, {
         method: 'PUT',
@@ -263,7 +263,7 @@ export function BusinessSettingsPage() {
   // Update organization name
   const handleUpdateOrg = async () => {
     if (!organization || !newOrgName) return;
-    
+
     setIsSubmitting(true);
     try {
       const res = await fetch(`${ENV.API_URL}/api/organizations/${organization.id}`, {
@@ -322,7 +322,7 @@ export function BusinessSettingsPage() {
 
   return (
     <div className="min-h-screen bg-card">
-      <div className="container mx-auto px-4 py-8 max-w-6xl">
+      <div className="container mx-auto px-4 py-8 pb-32 md:pb-8 max-w-6xl">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
@@ -576,8 +576,8 @@ export function BusinessSettingsPage() {
           {/* Billing Tab - Full BillingTab Component */}
           <TabsContent value="billing" className="space-y-6">
             {user && (
-              <BillingTab 
-                currentUser={user as unknown as EventsUser} 
+              <BillingTab
+                currentUser={user as unknown as EventsUser}
                 openPlansModal={shouldOpenPlans}
               />
             )}

@@ -56,6 +56,8 @@ const CreatorCreatePage = lazy(() => import("./pages/creator/CreatorCreatePage")
 const BoothDashboard = lazy(() => import("./pages/creator/BoothDashboard"));
 const CreatorBoothPage = lazy(() => import("./pages/creator/CreatorBoothPage"));
 const CreatorBoothEditor = lazy(() => import("./pages/creator/CreatorBoothEditor"));
+const PublicBoothRouter = lazy(() => import("./pages/creator/PublicBoothRouter"));
+const PublicFeedRouter = lazy(() => import("./pages/creator/PublicFeedRouter"));
 const CreatorStudioPage = lazy(() => import("./pages/creator/CreatorStudioPage"));
 const CreatorTemplatesPage = lazy(() => import("./pages/creator/CreatorTemplatesPage"));
 const CreatorBillingPage = lazy(() => import("./pages/creator/CreatorBillingPage"));
@@ -356,7 +358,7 @@ const AppContent = () => {
           } />
           <Route path="/admin/chat" element={
             <BusinessOnly>
-              <div className="min-h-screen bg-black pt-24 px-4 pb-4">
+              <div className="min-h-screen bg-black pt-24 px-4 pb-32 md:pb-4">
                 <div className="max-w-7xl mx-auto">
                   <AdminChatPage />
                 </div>
@@ -397,8 +399,10 @@ const AppContent = () => {
           <Route path="/profile/:username" element={<PublicProfile />} />
 
           {/* Dynamic event routes - no sidebar */}
-          <Route path="/:userSlug/:eventSlug" element={<PhotoBoothPage />} />
-          <Route path="/:userSlug/:eventSlug/feed" element={<EventFeedPage />} />
+          {/* PublicBoothRouter intelligently routes to PublicCreatorBooth (is_booth=true) or PhotoBoothPage */}
+          <Route path="/:userSlug/:eventSlug" element={<PublicBoothRouter />} />
+          {/* PublicFeedRouter routes to CreatorBoothFeed (is_booth=true) or EventFeedPage */}
+          <Route path="/:userSlug/:eventSlug/feed" element={<PublicFeedRouter />} />
           <Route path="/:userSlug/:eventSlug/album/:albumId" element={<AlbumFeedPage />} />
           <Route path="/:userSlug/:eventSlug/staff" element={<StaffDashboard />} />
           <Route path="/:userSlug/:eventSlug/display" element={<Navigate to="../bigscreen" replace />} />

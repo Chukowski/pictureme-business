@@ -1,5 +1,4 @@
-import { useState, useRef } from "react";
-import { PlaygroundSplitView } from "./PlaygroundSplitView";
+import { useState, useRef, useEffect as useReactEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -9,17 +8,23 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  Upload, Sparkles, Loader2, AlertTriangle, 
+import {
+  Upload, Sparkles, Loader2, AlertTriangle,
   MessageSquare, Save, Copy, Download,
-  Image as ImageIcon, User, Users, Info, 
-  RotateCcw, SplitSquareHorizontal, Trash2
+  Image as ImageIcon, User, Users, Info,
+  RotateCcw, SplitSquareHorizontal, Trash2,
+  Smartphone, Monitor, Tablet, Grid3X3, ZoomIn, ZoomOut, History,
+  ChevronDown, ChevronUp, Maximize2, Minimize2, Eraser
 } from "lucide-react";
 import { toast } from "sonner";
 import { User as UserType, EventConfig, updateEvent } from "@/services/eventsApi";
 import { processImageWithAI, downloadImageAsBase64, AI_MODELS, type AIModelKey } from "@/services/aiProcessor";
 import { PromptHelper } from "@/components/PromptHelper";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { usePlayground } from "./PlaygroundContext";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { cn } from "@/lib/utils";
+import { motion, AnimatePresence } from "framer-motion";
 
 // Sample test images
 const SAMPLE_IMAGES_INDIVIDUAL = [
@@ -43,12 +48,14 @@ interface PlaygroundTemplateTestProps {
 }
 
 export function PlaygroundTemplateTest({ events, currentUser, onReloadEvents }: PlaygroundTemplateTestProps) {
+  const { setPreview, setPreviewToolbar, triggerNewAsset } = usePlayground();
+
   // State
   const [selectedEventId, setSelectedEventId] = useState<string>('');
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
   const [selectedAiModel, setSelectedAiModel] = useState<AIModelKey>('nanoBanana');
   const [isGroupPhoto, setIsGroupPhoto] = useState(false);
-  
+
   // Image State
   const [testImage, setTestImage] = useState<string | null>(null);
   const [testImageBase64, setTestImageBase64] = useState<string | null>(null);
@@ -60,13 +67,20 @@ export function PlaygroundTemplateTest({ events, currentUser, onReloadEvents }: 
   const [forceInstructions, setForceInstructions] = useState(false);
   const [customSeed, setCustomSeed] = useState<number | undefined>(undefined);
 
-  // Processing State
+  const [isHudExpanded, setIsHudExpanded] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingProgress, setProcessingProgress] = useState(0);
   const [processingStatus, setProcessingStatus] = useState<'idle' | 'uploading' | 'processing' | 'complete' | 'error'>('idle');
   const [processedResult, setProcessedResult] = useState<string | null>(null);
   const [lastResultSeed, setLastResultSeed] = useState<number | null>(null);
   const [tokensUsed, setTokensUsed] = useState(0);
+  const [history, setHistory] = useState<string[]>([]);
+  const [activeRightTab, setActiveRightTab] = useState<'preview' | 'history'>('preview');
+
+  // Preview Display State (matched BoothEditor)
+  const [previewDevice, setPreviewDevice] = useState<'mobile' | 'tablet' | 'desktop'>('mobile');
+  const [zoom, setZoom] = useState(100);
+  const [showGrid, setShowGrid] = useState(true);
 
   // Derived State
   const selectedEvent = events.find(e => e._id === selectedEventId);
@@ -90,7 +104,7 @@ export function PlaygroundTemplateTest({ events, currentUser, onReloadEvents }: 
   const useSampleImage = async (url: string) => {
     setTestImage(url);
     setTestImageBase64(null); // Reset base64, will fetch on process
-    
+
     // Fetch and convert to base64 immediately for smoother UX
     try {
       const base64 = await downloadImageAsBase64(url);
@@ -121,10 +135,10 @@ export function PlaygroundTemplateTest({ events, currentUser, onReloadEvents }: 
     }, 500);
 
     try {
-      const promptToUse = useCustomPrompt 
-        ? customPrompt 
-        : isGroupPhoto && selectedTemplate.groupPrompt 
-          ? selectedTemplate.groupPrompt 
+      const promptToUse = useCustomPrompt
+        ? customPrompt
+        : isGroupPhoto && selectedTemplate.groupPrompt
+          ? selectedTemplate.groupPrompt
           : selectedTemplate.prompt || '';
 
       const result = await processImageWithAI({
@@ -142,11 +156,11 @@ export function PlaygroundTemplateTest({ events, currentUser, onReloadEvents }: 
         userSlug: selectedEvent.user_slug,
       });
 
-      const outputUrl = result.imageUrl 
-        || (result as any).processedImageUrl 
-        || (result as any).url 
-        || (result as any).images?.[0] 
-        || (result as any).data?.image_url 
+      const outputUrl = result.imageUrl
+        || (result as any).processedImageUrl
+        || (result as any).url
+        || (result as any).images?.[0]
+        || (result as any).data?.image_url
         || (result as any).data?.images?.[0];
 
       if (!outputUrl) {
@@ -154,9 +168,11 @@ export function PlaygroundTemplateTest({ events, currentUser, onReloadEvents }: 
       }
 
       setProcessedResult(outputUrl);
+      setHistory(prev => [outputUrl, ...prev]);
       setLastResultSeed(result.seed);
       setTokensUsed(prev => prev + 1);
       setProcessingStatus('complete');
+      triggerNewAsset(true);
       setProcessingProgress(100);
       toast.success("Image processed successfully!");
     } catch (error: any) {
@@ -241,7 +257,7 @@ export function PlaygroundTemplateTest({ events, currentUser, onReloadEvents }: 
                 onClick={() => fileInputRef.current?.click()}
               >
                 <div className="w-12 h-12 rounded-full bg-zinc-800 flex items-center justify-center mx-auto mb-4 group-hover:bg-purple-500/20 transition-colors">
-                   <Upload className="w-6 h-6 text-zinc-500 group-hover:text-purple-400 transition-colors" />
+                  <Upload className="w-6 h-6 text-zinc-500 group-hover:text-purple-400 transition-colors" />
                 </div>
                 <p className="text-sm font-medium text-zinc-300 group-hover:text-white transition-colors">Click to upload photo</p>
                 <p className="text-xs text-zinc-500 mt-1">or drag and drop</p>
@@ -261,9 +277,8 @@ export function PlaygroundTemplateTest({ events, currentUser, onReloadEvents }: 
                   <button
                     key={i}
                     onClick={() => useSampleImage(url)}
-                    className={`relative aspect-square rounded-xl overflow-hidden border-2 transition-all hover:scale-105 ${
-                      testImage === url ? 'border-purple-500 ring-2 ring-purple-500/20 shadow-lg shadow-purple-500/10' : 'border-transparent hover:border-white/20'
-                    }`}
+                    className={`relative aspect-square rounded-xl overflow-hidden border-2 transition-all hover:scale-105 ${testImage === url ? 'border-purple-500 ring-2 ring-purple-500/20 shadow-lg shadow-purple-500/10' : 'border-transparent hover:border-white/20'
+                      }`}
                   >
                     <img src={url} alt="Sample" className="w-full h-full object-cover" />
                   </button>
@@ -276,9 +291,8 @@ export function PlaygroundTemplateTest({ events, currentUser, onReloadEvents }: 
                   <button
                     key={i}
                     onClick={() => useSampleImage(url)}
-                    className={`relative aspect-square rounded-xl overflow-hidden border-2 transition-all hover:scale-105 ${
-                      testImage === url ? 'border-purple-500 ring-2 ring-purple-500/20 shadow-lg shadow-purple-500/10' : 'border-transparent hover:border-white/20'
-                    }`}
+                    className={`relative aspect-square rounded-xl overflow-hidden border-2 transition-all hover:scale-105 ${testImage === url ? 'border-purple-500 ring-2 ring-purple-500/20 shadow-lg shadow-purple-500/10' : 'border-transparent hover:border-white/20'
+                      }`}
                   >
                     <img src={url} alt="Sample" className="w-full h-full object-cover" />
                   </button>
@@ -365,9 +379,8 @@ export function PlaygroundTemplateTest({ events, currentUser, onReloadEvents }: 
               <button
                 type="button"
                 onClick={() => setIsGroupPhoto(false)}
-                className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-md text-sm font-medium transition-all ${
-                  !isGroupPhoto ? 'bg-zinc-600 text-white shadow-sm' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-700/50'
-                }`}
+                className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-md text-sm font-medium transition-all ${!isGroupPhoto ? 'bg-zinc-600 text-white shadow-sm' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-700/50'
+                  }`}
               >
                 <User className="w-4 h-4" />
                 Individual
@@ -375,9 +388,8 @@ export function PlaygroundTemplateTest({ events, currentUser, onReloadEvents }: 
               <button
                 type="button"
                 onClick={() => setIsGroupPhoto(true)}
-                className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-md text-sm font-medium transition-all ${
-                  isGroupPhoto ? 'bg-zinc-600 text-white shadow-sm' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-700/50'
-                }`}
+                className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-md text-sm font-medium transition-all ${isGroupPhoto ? 'bg-zinc-600 text-white shadow-sm' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-700/50'
+                  }`}
               >
                 <Users className="w-4 h-4" />
                 Group
@@ -396,11 +408,11 @@ export function PlaygroundTemplateTest({ events, currentUser, onReloadEvents }: 
           </div>
           <div className="flex items-center gap-2 bg-[#101112]/20 px-3 py-1.5 rounded-full border border-white/5">
             <Label className="text-[10px] text-zinc-400 uppercase font-semibold tracking-wide cursor-pointer" htmlFor="custom-prompt">Custom</Label>
-            <Switch 
+            <Switch
               id="custom-prompt"
-              checked={useCustomPrompt} 
-              onCheckedChange={setUseCustomPrompt} 
-              className="scale-75 data-[state=checked]:bg-emerald-500" 
+              checked={useCustomPrompt}
+              onCheckedChange={setUseCustomPrompt}
+              className="scale-75 data-[state=checked]:bg-emerald-500"
             />
           </div>
         </div>
@@ -426,8 +438,8 @@ export function PlaygroundTemplateTest({ events, currentUser, onReloadEvents }: 
                   size="sm"
                   onClick={async () => {
                     // Save prompt logic
-                    const updatedTemplates = selectedEvent.templates?.map(t => 
-                      t.id === selectedTemplate.id 
+                    const updatedTemplates = selectedEvent.templates?.map(t =>
+                      t.id === selectedTemplate.id
                         ? { ...t, [isGroupPhoto ? 'groupPrompt' : 'prompt']: customPrompt }
                         : t
                     ) || [];
@@ -457,9 +469,9 @@ export function PlaygroundTemplateTest({ events, currentUser, onReloadEvents }: 
           <div className="grid grid-cols-2 gap-6 pt-4 border-t border-white/5">
             <div className="space-y-2">
               <Label className="text-[10px] text-zinc-500 uppercase tracking-wider">Seed (Optional)</Label>
-              <Input 
-                type="number" 
-                value={customSeed || ''} 
+              <Input
+                type="number"
+                value={customSeed || ''}
                 onChange={e => setCustomSeed(e.target.value ? parseInt(e.target.value) : undefined)}
                 placeholder="Random"
                 className="h-8 text-xs bg-[#101112]/20 border-white/10 text-zinc-300 placeholder:text-zinc-600 font-mono"
@@ -467,22 +479,22 @@ export function PlaygroundTemplateTest({ events, currentUser, onReloadEvents }: 
             </div>
             <div className="flex items-center justify-between pt-6">
               <div className="flex items-center gap-2">
-                 <Label className="text-[10px] text-zinc-500 uppercase tracking-wider">Force Instructions</Label>
-                 <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger>
-                        <Info className="w-3 h-3 text-zinc-600 hover:text-zinc-400" />
-                      </TooltipTrigger>
-                      <TooltipContent className="bg-zinc-800 border-white/10 text-xs">
-                        Stronger adherence to prompt instructions.
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
+                <Label className="text-[10px] text-zinc-500 uppercase tracking-wider">Force Instructions</Label>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <Info className="w-3 h-3 text-zinc-600 hover:text-zinc-400" />
+                    </TooltipTrigger>
+                    <TooltipContent className="bg-zinc-800 border-white/10 text-xs">
+                      Stronger adherence to prompt instructions.
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </div>
-              <Switch 
-                checked={forceInstructions} 
-                onCheckedChange={setForceInstructions} 
-                className="scale-75" 
+              <Switch
+                checked={forceInstructions}
+                onCheckedChange={setForceInstructions}
+                className="scale-75"
               />
             </div>
           </div>
@@ -519,109 +531,156 @@ export function PlaygroundTemplateTest({ events, currentUser, onReloadEvents }: 
 
   // --- Right Panel Content (Canvas Overlay) ---
   const CanvasOverlay = (
-    <>
-      {/* HUD Widget */}
-      <div className="absolute top-4 right-4 pointer-events-auto z-10">
-        <div className="bg-[#101112]/80 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl w-64 overflow-hidden ring-1 ring-white/5">
-           {/* Header */}
-           <div className="px-4 py-3 border-b border-white/5 flex items-center justify-between bg-white/5">
-              <div className="flex items-center gap-2">
-                 <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                 <span className="text-[10px] font-bold text-white/70 uppercase tracking-wider">Live Session</span>
-              </div>
-              <Button 
-                 variant="ghost" 
-                 size="icon" 
-                 className="h-5 w-5 text-zinc-500 hover:text-red-400 hover:bg-white/5 rounded-full" 
-                 title="Reset Session"
-                 onClick={() => {
-                   setProcessedResult(null);
-                   setTestImage(null);
-                   setTestImageBase64(null);
-                   setTokensUsed(0);
-                 }}
+    <div className="absolute inset-0 pointer-events-none z-10">
+      {/* Draggable HUD Widget */}
+      <motion.div
+        drag
+        initial={{ top: 16, right: 16 }}
+        whileDrag={{ scale: 1.02, cursor: "grabbing" }}
+        className="absolute pointer-events-auto z-50"
+      >
+        <div className={cn(
+          "bg-[#101112]/80 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden ring-1 ring-white/5 transition-all duration-300",
+          isHudExpanded ? "w-64" : "w-auto"
+        )}>
+          {/* Header */}
+          <div className={cn(
+            "px-4 py-2 border-b border-white/5 flex items-center justify-between bg-black/40 backdrop-blur-md cursor-grab active:cursor-grabbing hover:bg-white/10 transition-colors",
+            !isHudExpanded && "border-0"
+          )}>
+            <div className="flex items-center gap-3">
+              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse box-glow" />
+              {isHudExpanded && (
+                <span className="text-[10px] font-bold text-white/70 uppercase tracking-widest">Live Session</span>
+              )}
+              {!isHudExpanded && (
+                <div className="flex items-center gap-3 pr-2">
+                  <div className="flex flex-col">
+                    <span className="text-[8px] text-zinc-500 uppercase leading-none">Tokens</span>
+                    <span className="text-xs font-mono font-bold text-white leading-none">{tokensUsed}</span>
+                  </div>
+                  <div className="w-px h-4 bg-white/10" />
+                  <div className="flex flex-col">
+                    <span className="text-[8px] text-zinc-500 uppercase leading-none">Model</span>
+                    <span className="text-xs font-bold text-indigo-400 leading-none">{AI_MODELS[selectedAiModel].name.split(' ')[0]}</span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 text-zinc-500 hover:text-white hover:bg-white/5 rounded-lg"
+                onClick={() => setIsHudExpanded(!isHudExpanded)}
               >
-                <Trash2 className="w-3 h-3" />
+                {isHudExpanded ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
               </Button>
-           </div>
-           
-           <div className="p-4 space-y-4">
+
+              {isHudExpanded && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 text-zinc-500 hover:text-red-400 hover:bg-white/5 rounded-lg"
+                  title="Reset Session"
+                  onClick={() => {
+                    setProcessedResult(null);
+                    setTestImage(null);
+                    setTestImageBase64(null);
+                    setTokensUsed(0);
+                  }}
+                >
+                  <Eraser className="w-3.5 h-3.5" />
+                </Button>
+              )}
+            </div>
+          </div>
+
+          <motion.div
+            initial={false}
+            animate={{ height: isHudExpanded ? "auto" : 0, opacity: isHudExpanded ? 1 : 0 }}
+            className="overflow-hidden"
+          >
+            <div className="p-4 space-y-4">
               {/* Stats Grid */}
               <div className="grid grid-cols-2 gap-3">
-                 <div className="space-y-1">
-                    <span className="text-[10px] font-medium text-zinc-500 uppercase tracking-wide">Tokens</span>
-                    <div className="flex items-baseline gap-1">
-                       <span className="text-lg font-mono font-medium text-white">{tokensUsed}</span>
-                       <span className="text-[10px] text-zinc-600">used</span>
-                    </div>
-                 </div>
-                 <div className="space-y-1">
-                    <span className="text-[10px] font-medium text-zinc-500 uppercase tracking-wide">Model</span>
-                    <div className="text-xs font-medium text-white truncate" title={AI_MODELS[selectedAiModel].name}>
-                       {AI_MODELS[selectedAiModel].name.split('(')[0].trim()}
-                    </div>
-                 </div>
+                <div className="space-y-1">
+                  <span className="text-[10px] font-medium text-zinc-500 uppercase tracking-wide">Tokens</span>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-lg font-mono font-medium text-white">{tokensUsed}</span>
+                    <span className="text-[10px] text-zinc-600">used</span>
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <span className="text-[10px] font-medium text-zinc-500 uppercase tracking-wide">Model</span>
+                  <div className="text-xs font-medium text-white truncate" title={AI_MODELS[selectedAiModel].name}>
+                    {AI_MODELS[selectedAiModel].name.split('(')[0].trim()}
+                  </div>
+                </div>
               </div>
 
               {/* Seed Info */}
               {lastResultSeed && (
                 <div className="pt-3 border-t border-white/5">
-                   <div className="flex items-center justify-between group">
-                      <div className="space-y-0.5">
-                         <span className="text-[10px] font-medium text-zinc-500 uppercase tracking-wide block">Last Seed</span>
-                         <code className="text-xs text-indigo-300 font-mono block">{lastResultSeed}</code>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6 text-zinc-500 hover:text-indigo-400 opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={() => {
-                          setCustomSeed(lastResultSeed);
-                          toast.success("Seed copied to settings");
-                        }}
-                        title="Use this seed"
-                      >
-                         <Copy className="w-3 h-3" />
-                      </Button>
-                   </div>
+                  <div className="flex items-center justify-between group">
+                    <div className="space-y-0.5">
+                      <span className="text-[10px] font-medium text-zinc-500 uppercase tracking-wide block">Last Seed</span>
+                      <code className="text-xs text-indigo-300 font-mono block">{lastResultSeed}</code>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6 text-zinc-500 hover:text-indigo-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={() => {
+                        setCustomSeed(lastResultSeed);
+                        toast.success("Seed copied to settings");
+                      }}
+                      title="Use this seed"
+                    >
+                      <Copy className="w-3 h-3" />
+                    </Button>
+                  </div>
                 </div>
               )}
-           </div>
+            </div>
+          </motion.div>
         </div>
-      </div>
+      </motion.div>
 
       {/* Run Again Bar - Only visible when result exists */}
       {processedResult && (
         <div className="absolute bottom-8 left-1/2 -translate-x-1/2 pointer-events-auto animate-in slide-in-from-bottom-4 fade-in duration-300">
-           <div className="flex items-center gap-2 bg-card/90 backdrop-blur-xl p-2 rounded-full border border-white/10 shadow-2xl ring-1 ring-black/50">
-              <Button 
-                onClick={processWithAI} 
-                disabled={isProcessing}
-                className="rounded-full bg-white text-black hover:bg-zinc-200 h-9 px-4 font-medium"
-              >
-                 <RotateCcw className="w-3.5 h-3.5 mr-2" />
-                 Regenerate
-              </Button>
-              <div className="w-px h-4 bg-white/20 mx-1" />
-              <Button 
-                variant="ghost"
-                onClick={downloadResult}
-                className="rounded-full text-zinc-300 hover:text-white hover:bg-white/10 h-9 w-9 p-0"
-                title="Download"
-              >
-                 <Download className="w-4 h-4" />
-              </Button>
-              <Button 
-                variant="ghost"
-                className="rounded-full text-zinc-300 hover:text-white hover:bg-white/10 h-9 w-9 p-0"
-                title="Compare (Coming Soon)"
-              >
-                 <SplitSquareHorizontal className="w-4 h-4" />
-              </Button>
-           </div>
+          <div className="flex items-center gap-2 bg-card/90 backdrop-blur-xl p-2 rounded-full border border-white/10 shadow-2xl ring-1 ring-black/50">
+            <Button
+              onClick={processWithAI}
+              disabled={isProcessing}
+              className="rounded-full bg-white text-black hover:bg-zinc-200 h-9 px-4 font-medium"
+            >
+              <RotateCcw className="w-3.5 h-3.5 mr-2" />
+              Regenerate
+            </Button>
+            <div className="w-px h-4 bg-white/20 mx-1" />
+            <Button
+              variant="ghost"
+              onClick={downloadResult}
+              className="rounded-full text-zinc-300 hover:text-white hover:bg-white/10 h-9 w-9 p-0"
+              title="Download"
+            >
+              <Download className="w-4 h-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              className="rounded-full text-zinc-300 hover:text-white hover:bg-white/10 h-9 w-9 p-0"
+              title="Compare (Coming Soon)"
+            >
+              <SplitSquareHorizontal className="w-4 h-4" />
+            </Button>
+          </div>
         </div>
-      )}
-    </>
+      )
+      }
+    </div>
   );
 
   // --- Right Panel Content (Inside Phone) ---
@@ -630,23 +689,23 @@ export function PlaygroundTemplateTest({ events, currentUser, onReloadEvents }: 
       {/* Visual Feedback Overlay */}
       {isProcessing && (
         <div className="absolute inset-0 z-50 bg-[#101112]/60 backdrop-blur-sm flex flex-col items-center justify-center text-center p-6 animate-in fade-in duration-300">
-           <div className="relative w-20 h-20 mb-6">
-              <div className="absolute inset-0 rounded-full border-4 border-white/10"></div>
-              <div className="absolute inset-0 rounded-full border-4 border-indigo-500 border-t-transparent animate-spin"></div>
-              <Sparkles className="absolute inset-0 m-auto w-8 h-8 text-indigo-400 animate-pulse" />
-           </div>
-           <h3 className="text-xl font-bold text-white mb-2">Creating Magic</h3>
-           <p className="text-sm text-zinc-400 mb-6">Applying style transfer...</p>
-           <Progress value={processingProgress} className="h-1.5 w-48 bg-white/10" indicatorClassName="bg-indigo-500" />
+          <div className="relative w-20 h-20 mb-6">
+            <div className="absolute inset-0 rounded-full border-4 border-white/10"></div>
+            <div className="absolute inset-0 rounded-full border-4 border-indigo-500 border-t-transparent animate-spin"></div>
+            <Sparkles className="absolute inset-0 m-auto w-8 h-8 text-indigo-400 animate-pulse" />
+          </div>
+          <h3 className="text-xl font-bold text-white mb-2">Creating Magic</h3>
+          <p className="text-sm text-zinc-400 mb-6">Applying style transfer...</p>
+          <Progress value={processingProgress} className="h-1.5 w-48 bg-white/10" indicatorClassName="bg-indigo-500" />
         </div>
       )}
 
       <div className="flex-1 flex items-center justify-center bg-card/50 relative overflow-hidden">
         {processedResult ? (
-          <img 
-            src={processedResult} 
-            alt="Result" 
-            className="w-full h-full object-contain" 
+          <img
+            src={processedResult}
+            alt="Result"
+            className="w-full h-full object-contain"
           />
         ) : (
           <div className="text-center text-zinc-600 p-8">
@@ -661,11 +720,132 @@ export function PlaygroundTemplateTest({ events, currentUser, onReloadEvents }: 
     </div>
   );
 
+  // --- Right Sidebar Content ---
+  useReactEffect(() => {
+    const Toolbar = (
+      <div className="flex items-center justify-between w-full px-1">
+        <div className="flex items-center bg-card p-0.5 rounded-lg border border-white/5">
+          <button
+            onClick={() => setActiveRightTab('preview')}
+            className={cn(
+              "px-3 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all",
+              activeRightTab === 'preview' ? "bg-zinc-800 text-white shadow-sm" : "text-zinc-500 hover:text-zinc-300"
+            )}
+          >
+            Preview
+          </button>
+          <button
+            onClick={() => setActiveRightTab('history')}
+            className={cn(
+              "px-3 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all",
+              activeRightTab === 'history' ? "bg-zinc-800 text-white shadow-sm" : "text-zinc-500 hover:text-zinc-300"
+            )}
+          >
+            Generated Assets
+          </button>
+        </div>
+
+        {activeRightTab === 'preview' && (
+          <div className="flex items-center gap-3">
+            <div className="flex items-center bg-card rounded-lg p-0.5 border border-white/5">
+              <button onClick={() => setPreviewDevice('mobile')} className={cn("p-1 rounded", previewDevice === 'mobile' ? "bg-zinc-700 text-white" : "text-zinc-500")}><Smartphone className="w-3.5 h-3.5" /></button>
+              <button onClick={() => setPreviewDevice('tablet')} className={cn("p-1 rounded", previewDevice === 'tablet' ? "bg-zinc-700 text-white" : "text-zinc-500")}><Tablet className="w-3.5 h-3.5" /></button>
+              <button onClick={() => setPreviewDevice('desktop')} className={cn("p-1 rounded", previewDevice === 'desktop' ? "bg-zinc-700 text-white" : "text-zinc-500")}><Monitor className="w-3.5 h-3.5" /></button>
+            </div>
+            <div className="flex items-center gap-1">
+              <button onClick={() => setZoom(z => Math.max(z - 10, 50))} className="text-zinc-500 hover:text-white"><ZoomOut className="w-3.5 h-3.5" /></button>
+              <span className="text-[10px] text-zinc-500 w-8 text-center font-mono">{zoom}%</span>
+              <button onClick={() => setZoom(z => Math.min(z + 10, 150))} className="text-zinc-500 hover:text-white"><ZoomIn className="w-3.5 h-3.5" /></button>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+
+    const Preview = (
+      <div className="h-full flex flex-col relative group">
+        {activeRightTab === 'preview' ? (
+          <div className="flex-1 flex flex-col relative">
+            {CanvasOverlay}
+            <div className={cn(
+              "flex-1 flex items-center justify-center relative overflow-hidden bg-[#050505] transition-all duration-500",
+              showGrid && "bg-[radial-gradient(#333_1px,transparent_1px)] [background-size:20px_20px]"
+            )}>
+              <div
+                className="transition-transform duration-300 ease-out origin-center"
+                style={{ transform: `scale(${zoom / 100})` }}
+              >
+                <div className={cn(
+                  "relative bg-[#101112] border-[8px] border-zinc-800 shadow-2xl overflow-hidden transition-all duration-500",
+                  previewDevice === 'mobile' ? "w-[375px] h-[812px] rounded-[3.5rem]" :
+                    previewDevice === 'tablet' ? "w-[768px] h-[1024px] rounded-[2rem]" :
+                      "w-[1280px] h-[800px] rounded-xl border-[12px]" // Desktop
+                )}>
+                  {/* Notch / Header for Mobile */}
+                  {previewDevice === 'mobile' && (
+                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-36 h-7 bg-zinc-800 rounded-b-2xl z-50 flex items-center justify-center">
+                      <div className="w-16 h-1 rounded-full bg-[#101112]/40" />
+                    </div>
+                  )}
+
+                  <div className="w-full h-full bg-card overflow-hidden">
+                    {PreviewPanel}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="flex-1 p-6 bg-card overflow-y-auto">
+            <div className="mb-6 flex items-center justify-between">
+              <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                <History className="w-4 h-4 text-purple-400" />
+                Generated Heritage
+              </h3>
+              <span className="text-[10px] text-zinc-500">{history.length} assets created</span>
+            </div>
+
+            {history.length > 0 ? (
+              <div className="grid grid-cols-2 gap-4">
+                {history.map((url, i) => (
+                  <div key={i} className="group relative aspect-[2/3] rounded-xl overflow-hidden bg-zinc-900 border border-white/5 hover:border-purple-500/50 transition-all shadow-lg hover:shadow-purple-500/10">
+                    <img src={url} alt={`Result ${i}`} className="w-full h-full object-cover" />
+                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 p-2">
+                      <Button size="sm" variant="secondary" className="h-8 w-full text-[10px] bg-white text-black hover:bg-zinc-200" onClick={() => {
+                        setProcessedResult(url);
+                        setActiveRightTab('preview');
+                      }}>
+                        View Large
+                      </Button>
+                      <Button size="sm" variant="outline" className="h-8 w-full text-[10px] border-white/20 text-white" onClick={() => window.open(url, '_blank')}>
+                        <Download className="w-3 h-3 mr-1" />
+                        Download
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-[50dvh] text-center px-6">
+                <div className="w-16 h-16 rounded-3xl bg-zinc-800/50 flex items-center justify-center mb-6 border border-white/5">
+                  <ImageIcon className="w-8 h-8 opacity-20" />
+                </div>
+                <h4 className="text-white font-medium mb-1">No Assets Yet</h4>
+                <p className="text-xs text-zinc-500 max-w-[200px]">Your generated magic will appear here as you create it.</p>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    );
+
+    setPreview(Preview);
+    setPreviewToolbar(Toolbar);
+  }, [setPreview, setPreviewToolbar, processedResult, isProcessing, processingProgress, previewDevice, zoom, showGrid, activeRightTab, history, lastResultSeed, tokensUsed]);
+
   return (
-    <PlaygroundSplitView 
-      leftPanel={ControlsPanel} 
-      rightPanel={PreviewPanel} 
-      canvasOverlay={CanvasOverlay}
-    />
+    <div className="max-w-4xl mx-auto p-6 lg:p-10">
+      {ControlsPanel}
+    </div>
   );
 }

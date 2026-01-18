@@ -82,14 +82,14 @@ export function CreatorLayout() {
 
       {/* Mobile Bottom Navigation - Hidden on desktop */}
       <div className="md:hidden">
-        {!location.pathname.includes('/studio') && !location.pathname.includes('/chat') && <CreatorBottomNav />}
+        {!location.pathname.includes('/studio') && !location.pathname.includes('/chat') && !location.pathname.includes('/edit') && <CreatorBottomNav />}
       </div>
 
       {/* Main Content */}
       <main className={cn(
         "flex-1 w-full mx-auto relative",
         isFullBleed
-          ? cn("flex flex-col p-0 pt-16 md:pb-0 overflow-hidden", (!location.pathname.includes('/studio') && !location.pathname.includes('/chat')) ? "pb-32" : "pb-0")
+          ? cn("flex flex-col p-0 pt-16 md:pb-0 overflow-hidden", (!location.pathname.includes('/studio') && !location.pathname.includes('/chat') && !location.pathname.includes('/edit')) ? "pb-32" : "pb-0")
           : "max-w-7xl px-4 sm:px-6 py-8 pt-20 md:pt-24 pb-32 md:pb-8"
       )}>
         <Outlet />

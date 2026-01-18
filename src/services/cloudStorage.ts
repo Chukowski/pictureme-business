@@ -29,6 +29,19 @@ export interface CloudPhoto {
   prompt?: string;
   userSlug?: string;
   eventSlug?: string;
+  meta?: PhotoMeta;
+}
+
+export interface PhotoMeta {
+  model?: string;
+  model_name?: string;
+  template_id?: string;
+  template_name?: string;
+  seed?: number;
+  guidance_scale?: number;
+  num_inference_steps?: number;
+  aspect_ratio?: string;
+  [key: string]: any;
 }
 
 /**
@@ -38,12 +51,13 @@ export interface CloudPhoto {
 export async function savePhotoToCloud(photo: {
   originalImageBase64: string;
   processedImageBase64: string;
-  backgroundId: string;
-  backgroundName: string;
-  prompt: string;
+  backgroundId?: string;
+  backgroundName?: string;
+  prompt?: string;
   userSlug?: string;
   eventSlug?: string;
   visibility?: 'public' | 'private';
+  meta?: PhotoMeta;
 }): Promise<CloudPhoto> {
   try {
     // Note: trailing slash required to avoid 307 redirect
@@ -64,6 +78,7 @@ export async function savePhotoToCloud(photo: {
         userSlug: photo.userSlug,
         eventSlug: photo.eventSlug,
         visibility: photo.visibility,
+        meta: photo.meta,
       }),
     });
 

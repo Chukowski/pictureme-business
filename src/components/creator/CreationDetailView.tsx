@@ -311,18 +311,51 @@ export function CreationDetailView({
 
                             {/* Projected Real Prompt */}
                             <div className="relative group/prompt">
-                                <div
-                                    className={cn(
-                                        "text-white/90 text-sm md:text-base font-bold leading-relaxed drop-shadow-md cursor-pointer transition-all pr-12 md:pr-0",
-                                        !isPromptExpanded && "line-clamp-2"
-                                    )}
-                                    onClick={(e) => { e.stopPropagation(); setIsPromptExpanded(!isPromptExpanded); }}
-                                >
-                                    {item.prompt || "No prompt metadata available"}
-                                </div>
-                                {item.prompt && (
-                                    <div className="mt-1 flex items-center gap-2 opacity-0 group-hover/prompt:opacity-100 transition-opacity">
-                                        <span className="text-[10px] font-black text-[#D1F349] uppercase tracking-widest">Original Prompt</span>
+                                {item.prompt ? (
+                                    <>
+                                        <div
+                                            className={cn(
+                                                "text-white/90 text-sm md:text-base font-bold leading-relaxed drop-shadow-md cursor-pointer transition-all pr-12 md:pr-0",
+                                                !isPromptExpanded && "line-clamp-2"
+                                            )}
+                                            onClick={(e) => { e.stopPropagation(); setIsPromptExpanded(!isPromptExpanded); }}
+                                        >
+                                            {item.prompt}
+                                        </div>
+                                        <div className="mt-1 flex items-center gap-2 opacity-0 group-hover/prompt:opacity-100 transition-opacity">
+                                            <span className="text-[10px] font-black text-[#D1F349] uppercase tracking-widest">Original Prompt</span>
+                                        </div>
+
+                                        {/* Model Parameters - show when expanded */}
+                                        {isPromptExpanded && item.meta?.model_params && (
+                                            <div className="mt-3 flex flex-wrap gap-2">
+                                                {item.meta.model_params.guidance_scale && (
+                                                    <span className="text-[9px] font-bold text-white/50 bg-white/5 px-2 py-1 rounded-full border border-white/10">
+                                                        CFG: {item.meta.model_params.guidance_scale}
+                                                    </span>
+                                                )}
+                                                {item.meta.model_params.num_inference_steps && (
+                                                    <span className="text-[9px] font-bold text-white/50 bg-white/5 px-2 py-1 rounded-full border border-white/10">
+                                                        Steps: {item.meta.model_params.num_inference_steps}
+                                                    </span>
+                                                )}
+                                                {item.meta.model_params.seed && (
+                                                    <span className="text-[9px] font-bold text-white/50 bg-white/5 px-2 py-1 rounded-full border border-white/10">
+                                                        Seed: {item.meta.model_params.seed}
+                                                    </span>
+                                                )}
+                                                {item.meta.template_name && (
+                                                    <span className="text-[9px] font-bold text-[#D1F349]/70 bg-[#D1F349]/10 px-2 py-1 rounded-full border border-[#D1F349]/20">
+                                                        Template: {item.meta.template_name}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        )}
+                                    </>
+                                ) : (
+                                    <div className="flex items-center gap-2 text-white/40">
+                                        <Lock className="w-4 h-4" />
+                                        <span className="text-sm font-medium">Login to view prompt details</span>
                                     </div>
                                 )}
                             </div>

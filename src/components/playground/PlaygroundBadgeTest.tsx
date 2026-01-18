@@ -1,21 +1,26 @@
 import { useState, useRef, useEffect } from "react";
-import { PlaygroundSplitView } from "./PlaygroundSplitView";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Upload, Sparkles, Loader2, 
-  Save, QrCode, Camera, Move, Maximize2,
-  RotateCcw, User, Calendar, Type, Palette
+import {
+  Upload, Sparkles, Loader2,
+  Save, QrCode, Camera, Move, RotateCcw, User, Calendar, Type, Palette,
+  Smartphone, Monitor, Tablet, Grid3X3,
+  ZoomIn, ZoomOut, History, Download, Image as ImageIcon,
+  Eraser, Minimize2, ChevronDown, ChevronUp, Maximize2, PanelRight, X
 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { User as UserType, EventConfig, updateEvent } from "@/services/eventsApi";
 import { processImageWithAI, downloadImageAsBase64 } from "@/services/aiProcessor";
 import { BadgeTemplateConfig, CustomElementPositions, DEFAULT_ELEMENT_POSITIONS } from "@/components/templates/BadgeTemplateEditor";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { usePlayground } from "./PlaygroundContext";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { cn } from "@/lib/utils";
 
 // Constants
 const SAMPLE_IMAGES = [
@@ -32,6 +37,7 @@ interface PlaygroundBadgeTestProps {
 }
 
 export function PlaygroundBadgeTest({ events, currentUser, onReloadEvents }: PlaygroundBadgeTestProps) {
+  const { setPreview, setPreviewToolbar, triggerNewAsset } = usePlayground();
   // State
   const [selectedEventId, setSelectedEventId] = useState<string>('');
   const [testImage, setTestImage] = useState<string | null>(null);
@@ -49,18 +55,24 @@ export function PlaygroundBadgeTest({ events, currentUser, onReloadEvents }: Pla
   });
   const [badgeProcessedImage, setBadgeProcessedImage] = useState<string | null>(null);
   const [isBadgeProcessing, setIsBadgeProcessing] = useState(false);
-  
+
   // Visual Editor State
   const [isVisualEditorMode, setIsVisualEditorMode] = useState(false);
   const [elementPositions, setElementPositions] = useState<CustomElementPositions>({ ...DEFAULT_ELEMENT_POSITIONS });
   const [draggingElement, setDraggingElement] = useState<string | null>(null);
   const [isSavingPositions, setIsSavingPositions] = useState(false);
-  
+
   const [textStyles, setTextStyles] = useState({
     nameColor: '#ffffff',
     eventNameColor: 'rgba(255,255,255,0.8)',
     dateTimeColor: 'rgba(255,255,255,0.6)',
   });
+
+  const [history, setHistory] = useState<string[]>([]);
+  const [activeRightTab, setActiveRightTab] = useState<'preview' | 'history'>('preview');
+  const [previewDevice, setPreviewDevice] = useState<'mobile' | 'tablet' | 'desktop'>('mobile');
+  const [zoom, setZoom] = useState(100);
+  const [showGrid, setShowGrid] = useState(true);
 
   // Derived State
   const selectedEvent = events.find(e => e._id === selectedEventId);
@@ -71,7 +83,7 @@ export function PlaygroundBadgeTest({ events, currentUser, onReloadEvents }: Pla
       setElementPositions(selectedEvent.badgeTemplate.positions);
     }
     if (selectedEvent) {
-        setBadgePreview(prev => ({...prev, eventName: selectedEvent.title}));
+      setBadgePreview(prev => ({ ...prev, eventName: selectedEvent.title }));
     }
   }, [selectedEvent]);
 
@@ -107,16 +119,16 @@ export function PlaygroundBadgeTest({ events, currentUser, onReloadEvents }: Pla
       toast.error("Please upload or select a test image first");
       return;
     }
-    
+
     if (!badgeConfig.aiPipeline?.enabled) {
       toast.error("AI Pipeline is not enabled for this badge template");
       return;
     }
-    
+
     setIsBadgeProcessing(true);
     try {
       console.log("🎨 Processing badge with AI, image length:", testImageBase64.length);
-      
+
       const result = await processImageWithAI({
         userPhotoBase64: testImageBase64,
         backgroundPrompt: badgeConfig.aiPipeline.prompt || "Enhance this portrait photo, professional lighting, clear background",
@@ -128,16 +140,18 @@ export function PlaygroundBadgeTest({ events, currentUser, onReloadEvents }: Pla
         userSlug: selectedEvent?.user_slug,
         billingContext: 'playground-badge',
       });
-      
-      const outputUrl = result.imageUrl 
-        || (result as any).processedImageUrl 
+
+      const outputUrl = result.imageUrl
+        || (result as any).processedImageUrl
         || (result as any).url;
-      
+
       if (!outputUrl) {
         throw new Error("AI returned no image URL");
       }
-      
+
       setBadgeProcessedImage(outputUrl);
+      setHistory(prev => [outputUrl, ...prev]);
+      triggerNewAsset(true);
       toast.success("Badge photo enhanced!");
     } catch (error: any) {
       console.error("Badge AI Processing error:", error);
@@ -156,11 +170,11 @@ export function PlaygroundBadgeTest({ events, currentUser, onReloadEvents }: Pla
 
   const handleMouseMove = (e: React.MouseEvent) => {
     if (!draggingElement || !badgeEditorRef.current || !isVisualEditorMode) return;
-    
+
     const rect = badgeEditorRef.current.getBoundingClientRect();
     const x = ((e.clientX - rect.left) / rect.width) * 100;
     const y = ((e.clientY - rect.top) / rect.height) * 100;
-    
+
     setElementPositions(prev => ({
       ...prev,
       [draggingElement]: { x, y }
@@ -244,8 +258,8 @@ export function PlaygroundBadgeTest({ events, currentUser, onReloadEvents }: Pla
         <CardContent className="p-6 space-y-4">
           <div className="space-y-1">
             <Label className="text-xs text-zinc-500 uppercase tracking-wider">Name</Label>
-            <Input 
-              value={badgePreview.name} 
+            <Input
+              value={badgePreview.name}
               onChange={(e) => setBadgePreview(prev => ({ ...prev, name: e.target.value }))}
               className="h-9 text-sm bg-zinc-800 border-zinc-700 text-zinc-200 placeholder:text-zinc-600"
             />
@@ -253,8 +267,8 @@ export function PlaygroundBadgeTest({ events, currentUser, onReloadEvents }: Pla
           {badgeConfig.fields?.customField1 && (
             <div className="space-y-1">
               <Label className="text-xs text-zinc-500 uppercase tracking-wider">{badgeConfig.fields.customField1}</Label>
-              <Input 
-                value={badgePreview.customField1} 
+              <Input
+                value={badgePreview.customField1}
                 onChange={(e) => setBadgePreview(prev => ({ ...prev, customField1: e.target.value }))}
                 className="h-9 text-sm bg-zinc-800 border-zinc-700 text-zinc-200 placeholder:text-zinc-600"
               />
@@ -270,7 +284,7 @@ export function PlaygroundBadgeTest({ events, currentUser, onReloadEvents }: Pla
           <span className="text-base font-medium text-zinc-200">Photo</span>
         </div>
         <CardContent className="p-6 space-y-6">
-          <div 
+          <div
             className="border-2 border-dashed border-zinc-700 rounded-xl p-6 text-center cursor-pointer hover:border-zinc-500 transition-colors"
             onClick={() => fileInputRef.current?.click()}
           >
@@ -279,14 +293,14 @@ export function PlaygroundBadgeTest({ events, currentUser, onReloadEvents }: Pla
             ) : (
               <div className="flex flex-col items-center gap-2">
                 <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center">
-                   <Upload className="w-5 h-5 text-zinc-400" />
+                  <Upload className="w-5 h-5 text-zinc-400" />
                 </div>
                 <span className="text-sm text-zinc-400">Upload photo</span>
               </div>
             )}
             <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
           </div>
-          
+
           <div className="grid grid-cols-4 gap-2">
             {SAMPLE_IMAGES.map((url, i) => (
               <button key={i} onClick={() => useSampleImage(url)} className="aspect-square rounded-lg overflow-hidden border border-transparent hover:border-white/20 hover:scale-105 transition-all">
@@ -296,8 +310,8 @@ export function PlaygroundBadgeTest({ events, currentUser, onReloadEvents }: Pla
           </div>
 
           {badgeConfig.aiPipeline?.enabled && (
-            <Button 
-              onClick={processBadgeWithAI} 
+            <Button
+              onClick={processBadgeWithAI}
               disabled={!testImageBase64 || isBadgeProcessing}
               className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white shadow-lg shadow-purple-900/20"
             >
@@ -311,76 +325,112 @@ export function PlaygroundBadgeTest({ events, currentUser, onReloadEvents }: Pla
   );
 
   // --- Canvas Overlay Controls ---
-  const CanvasOverlay = isVisualEditorMode ? (
-    <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 pointer-events-auto">
-      <Card className="bg-card/90 backdrop-blur-xl border-white/10 shadow-2xl w-[400px]">
-         <div className="p-3 space-y-3">
-           <div className="flex items-center justify-between border-b border-white/5 pb-2">
-              <div className="flex items-center gap-2">
-                 <Move className="w-4 h-4 text-cyan-400" />
-                 <span className="text-xs font-bold text-white uppercase tracking-wider">Visual Editor</span>
-              </div>
-              <div className="flex gap-1">
-                <TooltipProvider>
-                   <Tooltip>
-                     <TooltipTrigger asChild>
-                       <Button size="icon" variant="ghost" onClick={resetPositions} className="h-6 w-6 text-zinc-400 hover:text-white">
-                         <RotateCcw className="w-3 h-3" />
-                       </Button>
-                     </TooltipTrigger>
-                     <TooltipContent>Reset Layout</TooltipContent>
-                   </Tooltip>
-                </TooltipProvider>
-                <Button size="sm" onClick={savePositionsToTemplate} disabled={isSavingPositions} className="h-6 text-[10px] bg-cyan-600 hover:bg-cyan-700 px-2">
-                  {isSavingPositions ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3 mr-1" />}
-                  Save
-                </Button>
-                <Button size="sm" variant="ghost" onClick={() => setIsVisualEditorMode(false)} className="h-6 text-[10px] px-2 text-zinc-400">
-                   Exit
-                </Button>
-              </div>
-           </div>
+  const [isHudExpanded, setIsHudExpanded] = useState(true);
 
-           <div className="grid grid-cols-2 gap-2">
-              <div className="flex items-center gap-2 bg-[#101112]/30 p-1.5 rounded border border-white/5">
-                 <Type className="w-3 h-3 text-zinc-500" />
-                 <span className="text-[10px] text-zinc-400 w-12">Name</span>
-                 <input type="color" value={textStyles.nameColor} onChange={e => setTextStyles(p => ({...p, nameColor: e.target.value}))} className="w-4 h-4 rounded border-0 bg-transparent cursor-pointer flex-1"/>
-              </div>
-              <div className="flex items-center gap-2 bg-[#101112]/30 p-1.5 rounded border border-white/5">
-                 <Calendar className="w-3 h-3 text-zinc-500" />
-                 <span className="text-[10px] text-zinc-400 w-12">Date</span>
-                 <input type="color" value={textStyles.dateTimeColor} onChange={e => setTextStyles(p => ({...p, dateTimeColor: e.target.value}))} className="w-4 h-4 rounded border-0 bg-transparent cursor-pointer flex-1"/>
-              </div>
-              <div className="flex items-center gap-2 bg-[#101112]/30 p-1.5 rounded border border-white/5 col-span-2">
-                 <Palette className="w-3 h-3 text-zinc-500" />
-                 <span className="text-[10px] text-zinc-400 w-12">Event</span>
-                 <input type="color" value={textStyles.eventNameColor} onChange={e => setTextStyles(p => ({...p, eventNameColor: e.target.value}))} className="w-4 h-4 rounded border-0 bg-transparent cursor-pointer flex-1"/>
-              </div>
-           </div>
-           <p className="text-[10px] text-zinc-500 text-center">
-             Drag elements on the badge to reposition.
-           </p>
-         </div>
-      </Card>
+  const CanvasOverlay = (
+    <div className="absolute inset-0 pointer-events-none z-10">
+      <motion.div
+        drag
+        initial={{ top: 16, right: 16 }}
+        whileDrag={{ scale: 1.02, cursor: "grabbing" }}
+        className="absolute pointer-events-auto z-50"
+      >
+        <div className={cn(
+          "bg-[#101112]/90 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden ring-1 ring-white/5 transition-all duration-300",
+          isHudExpanded ? "w-80" : "w-auto"
+        )}>
+          {/* Header */}
+          <div className={cn(
+            "px-4 py-2 flex items-center justify-between bg-black/40 backdrop-blur-md cursor-grab active:cursor-grabbing hover:bg-white/10 transition-colors",
+            !isHudExpanded && "border-0"
+          )}>
+            <div className="flex items-center gap-3">
+              <div className="w-2 h-2 rounded-full bg-cyan-500 animate-pulse" />
+              {isHudExpanded && (
+                <span className="text-[10px] font-bold text-white/70 uppercase tracking-widest">
+                  {isVisualEditorMode ? 'Visual Editor' : 'Live Preview'}
+                </span>
+              )}
+              {!isHudExpanded && (
+                <div className="flex items-center gap-3 pr-2">
+                  <span className="text-[10px] font-bold text-cyan-400 uppercase tracking-widest">Badge Editor</span>
+                  <div className="w-px h-4 bg-white/10" />
+                  <span className="text-[10px] text-zinc-500">{isVisualEditorMode ? 'Editing' : 'Previewing'}</span>
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 text-zinc-500 hover:text-white hover:bg-white/5 rounded-lg"
+                onClick={() => setIsHudExpanded(!isHudExpanded)}
+              >
+                {isHudExpanded ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
+              </Button>
+
+              {isHudExpanded && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className={cn(
+                    "h-6 w-6 rounded-lg",
+                    isVisualEditorMode ? "text-cyan-400 bg-cyan-500/10" : "text-zinc-500 hover:text-white hover:bg-white/5"
+                  )}
+                  onClick={() => setIsVisualEditorMode(!isVisualEditorMode)}
+                  title={isVisualEditorMode ? "Exit Editor" : "Enter Visual Editor"}
+                >
+                  <Move className="w-3.5 h-3.5" />
+                </Button>
+              )}
+            </div>
+          </div>
+
+          <motion.div
+            initial={false}
+            animate={{ height: isHudExpanded ? "auto" : 0, opacity: isHudExpanded ? 1 : 0 }}
+            className="overflow-hidden"
+          >
+            <div className="p-4 space-y-4">
+              {isVisualEditorMode ? (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="flex items-center gap-2 bg-[#101112]/30 p-1.5 rounded border border-white/5">
+                      <Type className="w-3 h-3 text-zinc-500" />
+                      <input type="color" value={textStyles.nameColor} onChange={e => setTextStyles(p => ({ ...p, nameColor: e.target.value }))} className="w-4 h-4 rounded border-0 bg-transparent cursor-pointer flex-1" />
+                    </div>
+                    <div className="flex items-center gap-2 bg-[#101112]/30 p-1.5 rounded border border-white/5">
+                      <Calendar className="w-3 h-3 text-zinc-500" />
+                      <input type="color" value={textStyles.dateTimeColor} onChange={e => setTextStyles(p => ({ ...p, dateTimeColor: e.target.value }))} className="w-4 h-4 rounded border-0 bg-transparent cursor-pointer flex-1" />
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={savePositionsToTemplate} disabled={isSavingPositions} className="flex-1 h-8 text-[10px] bg-cyan-600 hover:bg-cyan-700">
+                      {isSavingPositions ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <Save className="w-3 h-3 mr-1" />}
+                      Save Template
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={resetPositions} className="h-8 w-8 p-0 border-white/10 text-zinc-400">
+                      <RotateCcw className="w-3 h-3" />
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-2">
+                  <p className="text-[10px] text-zinc-500">Live preview of current settings.</p>
+                  <p className="text-[10px] text-zinc-600 mt-1">Enable Editor to adjust layout.</p>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        </div>
+      </motion.div>
     </div>
-  ) : (
-     <div className="absolute top-4 right-4 pointer-events-auto">
-        <Button
-          size="sm"
-          variant="secondary"
-          className="h-8 text-xs bg-white/10 hover:bg-white/20 text-white backdrop-blur-md border border-white/10 shadow-xl"
-          onClick={() => setIsVisualEditorMode(true)}
-        >
-          <Move className="w-3 h-3 mr-2" />
-          Edit Layout
-        </Button>
-     </div>
   );
 
   // --- Right Panel Content (Badge Preview) ---
   const PreviewPanel = (
-    <div 
+    <div
       className="h-full flex flex-col items-center justify-center bg-card/50 relative overflow-hidden"
       onMouseMove={isVisualEditorMode ? handleMouseMove : undefined}
       onMouseUp={isVisualEditorMode ? handleMouseUp : undefined}
@@ -388,7 +438,7 @@ export function PlaygroundBadgeTest({ events, currentUser, onReloadEvents }: Pla
       <div
         ref={badgeEditorRef}
         className={`relative shadow-2xl overflow-hidden transition-all ${isVisualEditorMode ? 'ring-2 ring-cyan-500/50 scale-95' : 'hover:scale-105'} duration-300`}
-        style={{ 
+        style={{
           width: badgeConfig.layout === 'landscape' ? 320 : 240,
           height: badgeConfig.layout === 'landscape' ? 240 : badgeConfig.layout === 'square' ? 240 : 320,
           backgroundColor: badgeConfig.backgroundUrl ? undefined : (badgeConfig.backgroundColor || selectedEvent?.theme?.primaryColor || '#6366F1'),
@@ -501,11 +551,132 @@ export function PlaygroundBadgeTest({ events, currentUser, onReloadEvents }: Pla
     </div>
   );
 
+  // --- Right Sidebar Content ---
+  useEffect(() => {
+    const Toolbar = (
+      <div className="flex items-center justify-between w-full px-1">
+        <div className="flex items-center bg-card p-0.5 rounded-lg border border-white/5">
+          <button
+            onClick={() => setActiveRightTab('preview')}
+            className={cn(
+              "px-3 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all",
+              activeRightTab === 'preview' ? "bg-zinc-800 text-white shadow-sm" : "text-zinc-500 hover:text-zinc-300"
+            )}
+          >
+            Badge Designer
+          </button>
+          <button
+            onClick={() => setActiveRightTab('history')}
+            className={cn(
+              "px-3 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all",
+              activeRightTab === 'history' ? "bg-zinc-800 text-white shadow-sm" : "text-zinc-500 hover:text-zinc-300"
+            )}
+          >
+            Generated Assets
+          </button>
+        </div>
+
+        {activeRightTab === 'preview' && (
+          <div className="flex items-center gap-3">
+            <div className="flex items-center bg-card rounded-lg p-0.5 border border-white/5">
+              <button onClick={() => setPreviewDevice('mobile')} className={cn("p-1 rounded", previewDevice === 'mobile' ? "bg-zinc-700 text-white" : "text-zinc-500")}><Smartphone className="w-3.5 h-3.5" /></button>
+              <button onClick={() => setPreviewDevice('tablet')} className={cn("p-1 rounded", previewDevice === 'tablet' ? "bg-zinc-700 text-white" : "text-zinc-500")}><Tablet className="w-3.5 h-3.5" /></button>
+              <button onClick={() => setPreviewDevice('desktop')} className={cn("p-1 rounded", previewDevice === 'desktop' ? "bg-zinc-700 text-white" : "text-zinc-500")}><Monitor className="w-3.5 h-3.5" /></button>
+            </div>
+            <div className="flex items-center gap-1">
+              <button onClick={() => setZoom(z => Math.max(z - 10, 50))} className="text-zinc-500 hover:text-white"><ZoomOut className="w-3.5 h-3.5" /></button>
+              <span className="text-[10px] text-zinc-500 w-8 text-center font-mono">{zoom}%</span>
+              <button onClick={() => setZoom(z => Math.min(z + 10, 150))} className="text-zinc-500 hover:text-white"><ZoomIn className="w-3.5 h-3.5" /></button>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+
+    const Preview = (
+      <div className="h-full flex flex-col relative group">
+        {activeRightTab === 'preview' ? (
+          <div className="flex-1 flex flex-col relative">
+            {CanvasOverlay}
+            <div className={cn(
+              "flex-1 flex items-center justify-center relative overflow-hidden bg-[#050505] transition-all duration-500",
+              showGrid && "bg-[radial-gradient(#333_1px,transparent_1px)] [background-size:20px_20px]"
+            )}>
+              <div
+                className="transition-transform duration-300 ease-out origin-center"
+                style={{ transform: `scale(${zoom / 100})` }}
+              >
+                <div className={cn(
+                  "relative bg-[#101112] border-[8px] border-zinc-800 shadow-2xl overflow-hidden transition-all duration-500",
+                  previewDevice === 'mobile' ? "w-[375px] h-[812px] rounded-[3.5rem]" :
+                    previewDevice === 'tablet' ? "w-[768px] h-[1024px] rounded-[2rem]" :
+                      "w-[1280px] h-[800px] rounded-xl border-[12px]" // Desktop
+                )}>
+                  {/* Notch / Header for Mobile */}
+                  {previewDevice === 'mobile' && (
+                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-36 h-7 bg-zinc-800 rounded-b-2xl z-50 flex items-center justify-center">
+                      <div className="w-16 h-1 rounded-full bg-[#101112]/40" />
+                    </div>
+                  )}
+
+                  <div className="w-full h-full bg-card overflow-hidden">
+                    {PreviewPanel}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="flex-1 p-6 bg-card overflow-y-auto">
+            <div className="mb-6 flex items-center justify-between">
+              <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                <History className="w-4 h-4 text-cyan-400" />
+                Generated Assets
+              </h3>
+              <span className="text-[10px] text-zinc-500">{history.length} assets created</span>
+            </div>
+
+            {history.length > 0 ? (
+              <div className="grid grid-cols-2 gap-4">
+                {history.map((url, i) => (
+                  <div key={i} className="group relative aspect-square rounded-xl overflow-hidden bg-zinc-900 border border-white/5 hover:border-cyan-500/50 transition-all shadow-lg hover:shadow-cyan-500/10">
+                    <img src={url} alt={`Result ${i}`} className="w-full h-full object-cover" />
+                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 p-2">
+                      <Button size="sm" variant="secondary" className="h-8 w-full text-[10px] bg-white text-black hover:bg-zinc-200" onClick={() => {
+                        setBadgeProcessedImage(url);
+                        setActiveRightTab('preview');
+                      }}>
+                        Apply to Preview
+                      </Button>
+                      <Button size="sm" variant="outline" className="h-8 w-full text-[10px] border-white/20 text-white" onClick={() => window.open(url, '_blank')}>
+                        <Download className="w-3 h-3 mr-1" />
+                        Download
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-[50dvh] text-center px-6">
+                <div className="w-16 h-16 rounded-3xl bg-zinc-800/50 flex items-center justify-center mb-6 border border-white/5">
+                  <ImageIcon className="w-8 h-8 opacity-20" />
+                </div>
+                <h4 className="text-white font-medium mb-1">No Assets Yet</h4>
+                <p className="text-xs text-zinc-500 max-w-[200px]">Enhanced photos will appear here as you generate them.</p>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    );
+
+    setPreview(Preview);
+    setPreviewToolbar(Toolbar);
+  }, [setPreview, setPreviewToolbar, PreviewPanel, CanvasOverlay, previewDevice, zoom, showGrid, activeRightTab, history, badgeConfig]);
+
   return (
-    <PlaygroundSplitView 
-      leftPanel={ControlsPanel} 
-      rightPanel={PreviewPanel} 
-      canvasOverlay={CanvasOverlay}
-    />
+    <div className="max-w-4xl mx-auto p-6 lg:p-10">
+      {ControlsPanel}
+    </div>
   );
 }

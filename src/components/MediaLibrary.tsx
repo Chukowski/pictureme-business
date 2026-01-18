@@ -4,15 +4,19 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Upload, Trash2, Image as ImageIcon, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { ENV } from "@/config/env";
 
-const API_URL = import.meta.env.VITE_API_URL || '';
+const API_URL = ENV.API_URL;
 
 interface MediaItem {
   name: string;
   url: string;
+  path?: string;
   size: number;
-  uploaded_at: string | null;
-  type: string;
+  category?: string;
+  modified?: string;
+  uploaded_at?: string | null; // Legacy field
+  type?: string;
 }
 
 interface MediaLibraryProps {
@@ -36,7 +40,7 @@ export function MediaLibrary({ onSelectMedia, selectedUrl, eventId, templates, o
   const loadMediaLibrary = async () => {
     try {
       setLoading(true);
-      
+
       // If templates are provided, extract images from them (event-specific)
       if (templates && templates.length > 0) {
         const eventImages = new Set<string>();
@@ -47,13 +51,13 @@ export function MediaLibrary({ onSelectMedia, selectedUrl, eventId, templates, o
             }
           });
         });
-        
+
         // Convert to MediaItem format
         const eventMedia: MediaItem[] = Array.from(eventImages).map((url) => {
           // Extract filename from URL for deletion
           const urlParts = url.split('/');
           const filename = urlParts[urlParts.length - 1];
-          
+
           return {
             name: filename,
             url,
@@ -62,12 +66,12 @@ export function MediaLibrary({ onSelectMedia, selectedUrl, eventId, templates, o
             type: 'template-image',
           };
         });
-        
+
         setMedia(eventMedia);
         setLoading(false);
         return;
       }
-      
+
       // Otherwise, load from user's media library
       const token = localStorage.getItem("auth_token");
       if (!token) {
@@ -84,7 +88,8 @@ export function MediaLibrary({ onSelectMedia, selectedUrl, eventId, templates, o
       }
 
       const data = await response.json();
-      setMedia(data.media || []);
+      // Backend returns { items: [...] } but we also support legacy { media: [...] }
+      setMedia(data.items || data.media || []);
     } catch (error) {
       console.error("Error loading media library:", error);
       toast({
@@ -175,7 +180,7 @@ export function MediaLibrary({ onSelectMedia, selectedUrl, eventId, templates, o
         // Parent will handle the toast message
         return;
       }
-      
+
       // Otherwise, delete from user's media library
       const token = localStorage.getItem("auth_token");
       if (!token) {
@@ -257,8 +262,8 @@ export function MediaLibrary({ onSelectMedia, selectedUrl, eventId, templates, o
             <ImageIcon className="h-12 w-12 mx-auto mb-2 opacity-50" />
             <p>{templates && templates.length > 0 ? 'No images in event templates' : 'No media uploaded yet'}</p>
             <p className="text-sm">
-              {templates && templates.length > 0 
-                ? 'Add images to your templates to see them here' 
+              {templates && templates.length > 0
+                ? 'Add images to your templates to see them here'
                 : 'Upload images to reuse them in templates'}
             </p>
           </div>
@@ -267,11 +272,10 @@ export function MediaLibrary({ onSelectMedia, selectedUrl, eventId, templates, o
             {media.map((item) => (
               <div
                 key={item.name}
-                className={`relative group cursor-pointer rounded-lg overflow-hidden border-2 transition-all ${
-                  selectedUrl === item.url
-                    ? "border-primary ring-2 ring-primary"
-                    : "border-transparent hover:border-primary/50"
-                }`}
+                className={`relative group cursor-pointer rounded-lg overflow-hidden border-2 transition-all ${selectedUrl === item.url
+                  ? "border-primary ring-2 ring-primary"
+                  : "border-transparent hover:border-primary/50"
+                  }`}
                 onClick={() => onSelectMedia(item.url)}
               >
                 <img

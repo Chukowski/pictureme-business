@@ -4,7 +4,7 @@
  * Fallback: Browser localStorage
  */
 
-import { savePhotoToCloud, getPhotoByShareCode as getCloudPhoto, getAllPhotosFromCloud, deletePhotoFromCloud } from './cloudStorage';
+import { savePhotoToCloud, getPhotoByShareCode as getCloudPhoto, getAllPhotosFromCloud, deletePhotoFromCloud, PhotoMeta } from './cloudStorage';
 
 export interface ProcessedPhoto {
   id: string;
@@ -20,6 +20,7 @@ export interface ProcessedPhoto {
   userSlug?: string;
   eventSlug?: string;
   visibility?: 'public' | 'private';
+  meta?: PhotoMeta;
 }
 
 const STORAGE_KEY = "photobooth_photos";
@@ -70,6 +71,7 @@ export async function saveProcessedPhoto(photo: Omit<ProcessedPhoto, "id" | "cre
         userSlug: photo.userSlug,
         eventSlug: photo.eventSlug,
         visibility: photo.visibility,
+        meta: photo.meta,
       });
 
       console.log("✅ Photo saved to cloud storage:", cloudPhoto.id);
@@ -84,6 +86,7 @@ export async function saveProcessedPhoto(photo: Omit<ProcessedPhoto, "id" | "cre
         prompt: cloudPhoto.prompt || photo.prompt,
         userSlug: cloudPhoto.userSlug || photo.userSlug,
         eventSlug: cloudPhoto.eventSlug || photo.eventSlug,
+        meta: photo.meta,
       } as ProcessedPhoto;
     }
   } catch (cloudError) {

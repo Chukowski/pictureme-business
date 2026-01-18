@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { EventFormData } from "./types";
-import { QrCode, User, Calendar, PartyPopper, Sparkles, LayoutTemplate, FileDown, FileUp, Camera, ArrowLeft } from "lucide-react";
+import { QrCode, User, Calendar, PartyPopper, Sparkles, LayoutTemplate, FileDown, FileUp, Camera, ArrowLeft, Coins } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ import { CameraCapture } from "@/components/CameraCapture";
 import { ProcessingLoader } from "@/components/ProcessingLoader";
 import { ResultDisplay } from "@/components/ResultDisplay";
 import { EventTitle } from "@/components/EventTitle";
+import ShaderBackground from "@/components/ShaderBackground";
 import { Template } from "@/services/eventsApi";
 
 interface LivePreviewProps {
@@ -334,41 +335,42 @@ export function LivePreview({ formData, currentStep, previewMode, onBadgeChange 
         </div>
       </div>
 
-      <div className="flex-1 flex flex-col overflow-y-auto">
-        {/* Event Header (if configured) */}
-        {(branding?.logoPath || branding?.showLogoInBooth) && (
-          <div className="p-4 flex justify-center shrink-0">
-            {branding.logoPath ? (
-              <img
-                src={branding.logoPath.startsWith('http') ? branding.logoPath : `${window.location.origin}/${branding.logoPath}`}
-                className="h-10 object-contain"
-                alt="Logo"
-              />
-            ) : (
-              <div className={`text-xl font-bold ${textStyle}`}>{theme.brandName || "Brand"}</div>
+      <div className="flex-1 overflow-y-auto relative z-10">
+        <div className="min-h-full flex flex-col items-center justify-center p-6 text-center space-y-8">
+          <EventTitle
+            eventName={title}
+            description={description}
+            brandName={theme?.brandName || "AI Photobooth"}
+            logoUrl={branding?.logoPath}
+          />
+
+          {/* Start Button with Monetization Context */}
+          <div className="w-full flex flex-col items-center gap-4 relative z-20">
+            <button
+              onClick={() => setInternalState('select')}
+              className="w-full max-w-[280px] py-4 rounded-full font-bold text-lg shadow-2xl hover:opacity-90 transition-all transform active:scale-95 hover:scale-[1.02] flex items-center justify-center gap-3"
+              style={primaryBtnStyle}
+            >
+              {formData.monetization?.type === 'tokens' ? (
+                <>
+                  <Coins className="w-5 h-5" />
+                  Start ({formData.monetization.token_price || 1} {formData.monetization.token_price === 1 ? 'Token' : 'Tokens'})
+                </>
+              ) : (
+                "Start Experience"
+              )}
+            </button>
+
+            {formData.monetization?.type === 'revenue_share' && formData.monetization?.fiat_price && (
+              <p className="text-white/60 text-xs font-medium">
+                Only ${formData.monetization.fiat_price.toFixed(2)} per session
+              </p>
             )}
           </div>
-        )}
-
-        {/* Main Content Area */}
-        <div className="flex-1 flex flex-col items-center justify-center p-6 text-center space-y-8">
-          <div className="space-y-3">
-            <h1 className={`text-4xl font-black ${textStyle} tracking-tight`}>{title || "Event Title"}</h1>
-            <p className={`text-base ${subTextStyle} leading-relaxed max-w-xs mx-auto`}>{description || "Welcome to the experience. Ready to create magic?"}</p>
-          </div>
-
-          {/* Start Button */}
-          <button
-            onClick={() => setInternalState('select')}
-            className="w-full max-w-[280px] py-4 rounded-full font-bold text-lg shadow-2xl hover:opacity-90 transition-all transform active:scale-95 hover:scale-[1.02]"
-            style={primaryBtnStyle}
-          >
-            Start Experience
-          </button>
 
           <div className="flex flex-col items-center gap-2">
             <p className={`text-[10px] ${subTextStyle} opacity-40 uppercase tracking-widest font-bold`}>
-              Powered by {theme.brandName || "PictureMe"}
+              Powered by {theme?.brandName || "PictureMe"}
             </p>
           </div>
         </div>
@@ -437,23 +439,65 @@ export function LivePreview({ formData, currentStep, previewMode, onBadgeChange 
           <BadgePreviewContent />
         </div>
       ) : (
-        <div className="flex-1 flex flex-col h-full bg-[#101112]">
-          {internalState === 'start' && <EventPreviewContent />}
+        <div className="flex-1 flex flex-col h-full bg-[#101112] relative">
+          {internalState === 'start' && (
+            <>
+              <EventPreviewContent />
+              {/* Booth Background Animation */}
+              {((theme as any).backgroundAnimation === 'grid' || !(theme as any).backgroundAnimation) && (
+                <div className="absolute bottom-0 left-0 right-0 h-[40vh] pointer-events-none z-0">
+                  <div className="absolute inset-0 [mask-image:linear-gradient(to_top,black_20%,transparent_100%)]">
+                    <ShaderBackground />
+                  </div>
+                </div>
+              )}
+
+              {(theme as any).backgroundAnimation === 'particles' && (
+                <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
+                  <div className="absolute top-1/4 left-1/4 w-32 h-32 bg-indigo-500/10 rounded-full blur-3xl animate-pulse" />
+                  <div className="absolute bottom-1/4 right-1/4 w-48 h-48 bg-purple-500/10 rounded-full blur-3xl animate-pulse delay-1000" />
+                  <div className="absolute top-1/2 left-1/2 w-4 h-4 bg-white/10 rounded-full blur-sm animate-bounce" />
+                  <div className="absolute top-1/3 right-1/4 w-2 h-2 bg-indigo-400/20 rounded-full animate-ping" />
+                </div>
+              )}
+
+              {(theme as any).backgroundAnimation === 'pulse' && (
+                <div className="absolute inset-0 pointer-events-none z-0 bg-gradient-to-t from-indigo-500/5 to-transparent animate-pulse" />
+              )}
+            </>
+          )}
 
           {internalState === 'select' && (
-            <div className="flex-1 flex flex-col">
-              <div className="p-4 flex items-center gap-3">
-                <Button variant="ghost" size="icon" onClick={() => setInternalState('start')} className="h-8 w-8 text-white hover:bg-white/10">
-                  <ArrowLeft className="w-4 h-4" />
-                </Button>
-                <span className="text-sm font-bold text-white uppercase tracking-wider">Select Style</span>
-              </div>
-              <div className="flex-1 overflow-y-auto">
+            <div className="flex-1 flex flex-col relative h-full">
+              <div className="flex-1 overflow-y-auto relative z-10 h-full">
+                <div className="pt-6 pb-2">
+                  <EventTitle
+                    eventName={title}
+                    description={description}
+                    brandName={theme?.brandName || "AI Photobooth"}
+                    logoUrl={branding?.logoPath}
+                  />
+                </div>
                 <BackgroundSelector
                   templates={templates || []}
                   onSelectBackground={handleTemplateSelect}
                 />
               </div>
+              {/* Booth Background Animation in Selection Screen */}
+              {((theme as any).backgroundAnimation === 'grid' || !(theme as any).backgroundAnimation) && (
+                <div className="absolute bottom-0 left-0 right-0 h-[40vh] pointer-events-none z-0">
+                  <div className="absolute inset-0 [mask-image:linear-gradient(to_top,black_20%,transparent_100%)]">
+                    <ShaderBackground />
+                  </div>
+                </div>
+              )}
+
+              {(theme as any).backgroundAnimation === 'particles' && (
+                <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
+                  <div className="absolute top-1/4 left-1/4 w-32 h-32 bg-indigo-500/10 rounded-full blur-3xl animate-pulse" />
+                  <div className="absolute bottom-1/4 right-1/4 w-48 h-48 bg-purple-500/10 rounded-full blur-3xl animate-pulse delay-1000" />
+                </div>
+              )}
             </div>
           )}
 
@@ -484,9 +528,9 @@ export function LivePreview({ formData, currentStep, previewMode, onBadgeChange 
         </div>
       )}
 
-      {/* Preview Context Badge */}
-      <div className="absolute top-4 right-4 px-2 py-0.5 bg-[#101112]/80 backdrop-blur-md rounded border border-white/10 text-[8px] text-white/50 pointer-events-none z-50">
-        LIVE MODE: {internalState.toUpperCase()}
+      {/* Preview Context Badge - Subtle Technical Indicator */}
+      <div className="absolute bottom-20 right-4 px-2 py-0.5 bg-black/40 backdrop-blur-sm rounded border border-white/5 text-[7px] font-medium text-white/20 pointer-events-none z-50 uppercase tracking-tighter">
+        Preview: {internalState}
       </div>
     </div>
   );

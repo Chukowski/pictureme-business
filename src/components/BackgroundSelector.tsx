@@ -90,10 +90,10 @@ export const BackgroundSelector = ({ onSelectBackground, templates }: Background
   const selectedBg = backgroundsToShow.find(bg => bg.id === selectedId);
 
   return (
-    <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 pt-4 sm:pt-6 md:pt-8">
+    <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-6 pt-2 sm:pt-4">
       {/* Hero Section with Selected Preview */}
       {selectedBg && (
-        <div className="mb-8 sm:mb-12 animate-fade-in">
+        <div className="mb-6 sm:mb-10 animate-fade-in">
           <div className="relative rounded-2xl sm:rounded-3xl overflow-hidden shadow-elegant glow-primary">
             <div className="relative aspect-[4/3] sm:aspect-[21/9] md:aspect-[16/7]">
               <img
@@ -143,7 +143,7 @@ export const BackgroundSelector = ({ onSelectBackground, templates }: Background
       <div>
         <div className="flex items-center justify-between mb-4 sm:mb-6">
           <div>
-            <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground mb-1">
+            <h3 className="text-xl sm:text-2xl font-bold text-foreground mb-1">
               {selectedBg ? "Choose Different Scene" : "Select Your Scene"}
             </h3>
             <p className="text-xs sm:text-sm text-muted-foreground">
@@ -152,8 +152,13 @@ export const BackgroundSelector = ({ onSelectBackground, templates }: Background
           </div>
         </div>
 
-        {/* Vertical grid for all screen sizes */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-6 pb-20 px-1">
+        {/* Vertical grid with auto-adjusting columns based on container width */}
+        <div
+          className="grid gap-4 sm:gap-6 pb-20 px-1"
+          style={{
+            gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))'
+          }}
+        >
           {backgroundsToShow.map((bg) => (
             <div key={bg.id} className="w-full">
               <SceneCard

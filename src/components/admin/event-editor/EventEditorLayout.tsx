@@ -5,11 +5,12 @@ import { Separator } from "@/components/ui/separator";
 import {
   ArrowLeft, Smartphone, Monitor, Tablet, Save, ChevronRight,
   Settings2, Palette, Sparkles, Share2, Settings,
-  Grid3X3, ZoomIn, ZoomOut, Rocket
+  Grid3X3, ZoomIn, ZoomOut, Rocket, Menu
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
 
 interface EventEditorLayoutProps {
   children: ReactNode;
@@ -57,23 +58,42 @@ export function EventEditorLayout({
       {/* Sticky Header */}
       <header className="h-14 border-b border-white/10 bg-card flex items-center justify-between px-4 shrink-0 z-50">
         <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate('/admin/events')}
-            className="text-zinc-400 hover:text-white h-8 w-8"
-          >
-            <ArrowLeft className="w-4 h-4" />
-          </Button>
+          <div className="flex items-center gap-2">
+            {/* Mobile Menu */}
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" className="md:hidden text-zinc-400 hover:text-white -ml-2">
+                  <Menu className="w-5 h-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-[85%] max-w-[300px] p-0 bg-[#101112] border-r border-white/10">
+                <SheetTitle className="sr-only">Event Navigation</SheetTitle>
+                <SidebarContent
+                  steps={steps}
+                  currentStep={currentStep}
+                  onStepChange={onStepChange}
+                />
+              </SheetContent>
+            </Sheet>
 
-          <Separator orientation="vertical" className="h-5 bg-white/10" />
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate('/admin/events')}
+              className="text-zinc-400 hover:text-white h-8 w-8 hidden md:flex"
+            >
+              <ArrowLeft className="w-4 h-4" />
+            </Button>
+          </div>
+
+          <Separator orientation="vertical" className="h-5 bg-white/10 hidden md:block" />
 
           <div className="flex items-center gap-2 text-xs">
-            <span className="text-zinc-400 cursor-pointer hover:text-white transition-colors" onClick={() => navigate('/admin/events')}>
+            <span className="text-zinc-400 cursor-pointer hover:text-white transition-colors hidden md:inline" onClick={() => navigate('/admin/events')}>
               Events
             </span>
-            <ChevronRight className="w-3 h-3 text-zinc-600" />
-            <span className="font-semibold text-white">{title || 'New Event'}</span>
+            <ChevronRight className="w-3 h-3 text-zinc-600 hidden md:inline" />
+            <span className="font-semibold text-white truncate max-w-[150px] md:max-w-none">{title || 'New Event'}</span>
           </div>
         </div>
 
@@ -128,73 +148,29 @@ export function EventEditorLayout({
       {/* Main Layout */}
       <div className="flex-1 flex overflow-hidden">
 
-        {/* LEFT SIDEBAR - WORKFLOW */}
-        <aside className="w-64 bg-card border-r border-white/10 flex flex-col shrink-0">
-          <div className="p-4">
-            <h2 className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-4 px-2">Event Configuration</h2>
-            <div className="space-y-1">
-              {steps.map((step) => (
-                <button
-                  key={step.id}
-                  onClick={() => onStepChange(step.id)}
-                  className={cn(
-                    "w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-all duration-200 group text-left relative overflow-hidden",
-                    currentStep === step.id
-                      ? "bg-zinc-800 text-white shadow-lg shadow-black/20"
-                      : "text-zinc-400 hover:text-zinc-200 hover:bg-white/5"
-                  )}
-                >
-                  {/* Active Indicator */}
-                  {currentStep === step.id && (
-                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-indigo-500" />
-                  )}
-
-                  <div className={cn(
-                    "p-2 rounded-lg transition-colors",
-                    currentStep === step.id ? "bg-indigo-500/20 text-indigo-300" : "bg-card text-zinc-500 group-hover:text-zinc-300"
-                  )}>
-                    <step.icon className="w-4 h-4" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="leading-none">{step.label}</div>
-                    <div className="text-[10px] text-zinc-500 mt-1 font-normal opacity-80">{step.description}</div>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Quick Launch Box */}
-          <div className="mt-auto p-4 border-t border-white/5">
-            <div className="bg-gradient-to-br from-indigo-900/20 to-purple-900/20 border border-indigo-500/20 rounded-xl p-4">
-              <h3 className="text-xs font-medium text-indigo-200 mb-1 flex items-center gap-2">
-                <Rocket className="w-3 h-3" />
-                Ready to launch?
-              </h3>
-              <p className="text-[10px] text-indigo-300/70 mb-3 leading-relaxed">
-                Preview your event flow thoroughly before going live.
-              </p>
-              <Button size="sm" variant="secondary" className="w-full h-7 text-[10px] bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 border border-indigo-500/20">
-                Open Launch Checklist
-              </Button>
-            </div>
-          </div>
+        {/* LEFT SIDEBAR - WORKFLOW (Desktop) */}
+        <aside className="w-64 bg-card border-r border-white/10 flex-col shrink-0 hidden md:flex">
+          <SidebarContent
+            steps={steps}
+            currentStep={currentStep}
+            onStepChange={onStepChange}
+          />
         </aside>
 
         {/* MAIN CONTENT - SPLIT VIEW */}
         <div className="flex-1 flex overflow-hidden bg-card">
 
           {/* Center Panel - Form */}
-          <div className="flex-1 flex flex-col min-w-[500px] bg-card relative z-10 shadow-2xl border-r border-white/5">
+          <div className="flex-1 flex flex-col min-w-0 bg-card relative z-10 shadow-2xl border-r border-white/5">
             <ScrollArea className="flex-1">
-              <div className="p-8 max-w-3xl mx-auto w-full pb-32 space-y-8">
+              <div className="p-4 md:p-8 max-w-3xl mx-auto w-full pb-32 space-y-8">
                 {children}
               </div>
             </ScrollArea>
           </div>
 
-          {/* Right Panel - Device Canvas */}
-          <div className="w-[45%] min-w-[450px] max-w-[800px] flex flex-col bg-[#09090b] relative shrink-0">
+          {/* Right Panel - Device Canvas (Hidden on mobile/tablet) */}
+          <div className="w-[45%] min-w-[450px] max-w-[800px] flex-col bg-[#09090b] relative shrink-0 hidden xl:flex">
 
             {/* Canvas Toolbar */}
             <div className="h-14 border-b border-white/5 flex items-center justify-between px-4 bg-card/50 backdrop-blur-sm z-20">
@@ -312,6 +288,62 @@ export function EventEditorLayout({
               </div>
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SidebarContent({ steps, currentStep, onStepChange }: any) {
+  return (
+    <div className="flex flex-col h-full">
+      <div className="p-4">
+        <h2 className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-4 px-2">Event Configuration</h2>
+        <div className="space-y-1">
+          {steps.map((step: any) => (
+            <button
+              key={step.id}
+              onClick={() => onStepChange(step.id)}
+              className={cn(
+                "w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-all duration-200 group text-left relative overflow-hidden",
+                currentStep === step.id
+                  ? "bg-zinc-800 text-white shadow-lg shadow-black/20"
+                  : "text-zinc-400 hover:text-zinc-200 hover:bg-white/5"
+              )}
+            >
+              {/* Active Indicator */}
+              {currentStep === step.id && (
+                <div className="absolute left-0 top-0 bottom-0 w-1 bg-indigo-500" />
+              )}
+
+              <div className={cn(
+                "p-2 rounded-lg transition-colors",
+                currentStep === step.id ? "bg-indigo-500/20 text-indigo-300" : "bg-card text-zinc-500 group-hover:text-zinc-300"
+              )}>
+                <step.icon className="w-4 h-4" />
+              </div>
+              <div className="flex-1">
+                <div className="leading-none">{step.label}</div>
+                <div className="text-[10px] text-zinc-500 mt-1 font-normal opacity-80">{step.description}</div>
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Quick Launch Box */}
+      <div className="mt-auto p-4 border-t border-white/5">
+        <div className="bg-gradient-to-br from-indigo-900/20 to-purple-900/20 border border-indigo-500/20 rounded-xl p-4">
+          <h3 className="text-xs font-medium text-indigo-200 mb-1 flex items-center gap-2">
+            <Rocket className="w-3 h-3" />
+            Ready to launch?
+          </h3>
+          <p className="text-[10px] text-indigo-300/70 mb-3 leading-relaxed">
+            Preview your event flow thoroughly before going live.
+          </p>
+          <Button size="sm" variant="secondary" className="w-full h-7 text-[10px] bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 border border-indigo-500/20">
+            Open Launch Checklist
+          </Button>
         </div>
       </div>
     </div>
