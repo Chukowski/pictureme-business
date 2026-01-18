@@ -1,6 +1,27 @@
 import { useState, useRef, useEffect } from "react";
 import { EventFormData } from "./types";
-import { QrCode, User, Calendar, PartyPopper, Sparkles, LayoutTemplate, FileDown, FileUp, Camera, ArrowLeft, Coins } from "lucide-react";
+import {
+  QrCode,
+  User,
+  Calendar,
+  PartyPopper,
+  Sparkles,
+  LayoutTemplate,
+  FileDown,
+  FileUp,
+  Camera,
+  ArrowLeft,
+  Coins,
+  ChevronDown,
+  Instagram,
+  Twitter,
+  Youtube,
+  Globe,
+  ExternalLink,
+  Link2,
+  Image as ImageIcon,
+  Palette
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,16 +34,25 @@ import { ProcessingLoader } from "@/components/ProcessingLoader";
 import { ResultDisplay } from "@/components/ResultDisplay";
 import { EventTitle } from "@/components/EventTitle";
 import ShaderBackground from "@/components/ShaderBackground";
+import { getAvatarUrl } from "@/services/imgproxy";
+
+// TikTok icon component
+const TikTokIcon = ({ className }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-5.2 1.74 2.89 2.89 0 012.31-4.64 2.93 2.93 0 01.88.13V9.4a6.84 6.84 0 00-1-.05A6.33 6.33 0 005 20.1a6.34 6.34 0 0010.86-4.43v-7a8.16 8.16 0 004.77 1.52v-3.4a4.85 4.85 0 01-1-.1z" />
+  </svg>
+);
 import { Template } from "@/services/eventsApi";
 
 interface LivePreviewProps {
   formData: EventFormData;
   currentStep: string;
+  currentUser?: any;
   previewMode?: 'event' | 'badge' | 'template' | 'badge-pro';
   onBadgeChange?: (config: BadgeTemplateConfig) => void;
 }
 
-export function LivePreview({ formData, currentStep, previewMode, onBadgeChange }: LivePreviewProps) {
+export function LivePreview({ formData, currentStep, currentUser, previewMode, onBadgeChange }: LivePreviewProps) {
   const { theme, title, description, branding, badgeTemplate, templates } = formData;
   const albumCode = (formData as any).slug || 'CODE';
   const layoutImportRef = useRef<HTMLInputElement>(null);
@@ -36,10 +66,26 @@ export function LivePreview({ formData, currentStep, previewMode, onBadgeChange 
   useEffect(() => {
     if (previewMode === 'template' || currentStep === 'experience') {
       setInternalState('select');
-    } else if (currentStep === 'setup') {
+    } else if (currentStep === 'setup' || currentStep === 'design') {
       setInternalState('start');
     }
   }, [currentStep, previewMode]);
+
+  // Background Slideshow Timer
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const slideshowImages = (branding as any)?.backgroundSlideshow?.images || [];
+  const slideshowEnabled = (branding as any)?.backgroundSlideshow?.enabled;
+  const slideshowInterval = ((branding as any)?.backgroundSlideshow?.duration || 5) * 1000;
+
+  useEffect(() => {
+    if (!slideshowEnabled || slideshowImages.length === 0 || internalState !== 'start') return;
+
+    const timer = setInterval(() => {
+      setCurrentSlide(prev => (prev + 1) % slideshowImages.length);
+    }, slideshowInterval);
+
+    return () => clearInterval(timer);
+  }, [slideshowEnabled, slideshowImages.length, slideshowInterval, internalState]);
 
   // Determine what to preview based on explicit mode only
   // Badge preview only shows when explicitly set to 'badge' mode
@@ -322,61 +368,185 @@ export function LivePreview({ formData, currentStep, previewMode, onBadgeChange 
     );
   };
 
-  // Event/Home Preview
-  const EventPreviewContent = () => (
-    <div className="flex-1 flex flex-col">
-      {/* Status Bar Mock */}
-      <div className="h-6 w-full flex items-center justify-between px-4 text-[10px] font-medium text-zinc-500 shrink-0">
-        <span>9:41</span>
-        <div className="flex gap-1">
-          <span className="w-3 h-3 rounded-sm bg-current opacity-50" />
-          <span className="w-3 h-3 rounded-sm bg-current opacity-50" />
-          <span className="w-4 h-3 rounded-sm bg-current opacity-50" />
-        </div>
-      </div>
+  // Event Landing Page Content
+  const EventPreviewContent = () => {
+    const slideshow = (branding as any)?.backgroundSlideshow;
 
-      <div className="flex-1 overflow-y-auto relative z-10">
-        <div className="min-h-full flex flex-col items-center justify-center p-6 text-center space-y-8">
-          <EventTitle
-            eventName={title}
-            description={description}
-            brandName={theme?.brandName || "AI Photobooth"}
-            logoUrl={branding?.logoPath}
-          />
+    // Robust detection across all potential fields
+    const tierIndicators = [
+      (currentUser as any)?.subscription_tier,
+      (currentUser as any)?.role,
+      (currentUser as any)?.tier,
+      (currentUser as any)?.plan_name,
+      (currentUser as any)?.plan_id
+    ].filter(Boolean).map(t => String(t).toLowerCase());
 
-          {/* Start Button with Monetization Context */}
-          <div className="w-full flex flex-col items-center gap-4 relative z-20">
-            <button
-              onClick={() => setInternalState('select')}
-              className="w-full max-w-[280px] py-4 rounded-full font-bold text-lg shadow-2xl hover:opacity-90 transition-all transform active:scale-95 hover:scale-[1.02] flex items-center justify-center gap-3"
-              style={primaryBtnStyle}
+    const isStudio = tierIndicators.some(t =>
+      t.includes('studio') ||
+      t.includes('business') ||
+      t.includes('enterprise') ||
+      t.includes('masters') ||
+      t.includes('pro') ||
+      t.includes('starter') ||
+      t.includes('eventpro')
+    ) || (currentUser as any)?.is_admin || (currentUser as any)?.role === 'superadmin';
+    const displayName = branding?.creatorDisplayName || theme?.brandName || "PictureMe";
+    const avatarUrl = (currentUser as any)?.avatar_url ? getAvatarUrl((currentUser as any).avatar_url, 120) : undefined;
+
+    // Get social links
+    const getSocialLinks = () => {
+      const links = [];
+      if (branding?.socialInstagram) links.push({ icon: Instagram, label: 'Instagram' });
+      if (branding?.socialTikTok) links.push({ icon: TikTokIcon, label: 'TikTok' });
+      if (branding?.socialX) links.push({ icon: Twitter, label: 'X' });
+      if (branding?.socialWebsite) links.push({ icon: Globe, label: 'Website' });
+      return links;
+    };
+
+    const socialLinks = getSocialLinks();
+    const bioLinks = ((branding as any)?.bioLinks || []).filter((l: any) => l.enabled);
+
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center p-6 text-center z-10 overflow-y-auto">
+        {/* Avatar/Logo Section */}
+        <div className="relative mb-6 animate-in zoom-in-50 duration-500">
+          {branding?.logoPath ? (
+            <img
+              src={branding.logoPath}
+              alt={title || 'Booth'}
+              className="w-24 h-24 rounded-2xl object-contain bg-white/5 border border-white/10 p-2 shadow-2xl"
+            />
+          ) : avatarUrl && branding?.showCreatorBrand ? (
+            <img
+              src={avatarUrl}
+              alt={displayName}
+              className="w-24 h-24 rounded-full object-cover border-4 border-white/10 shadow-2xl"
+            />
+          ) : (
+            <div
+              className="w-24 h-24 rounded-2xl flex items-center justify-center shadow-2xl"
+              style={{ backgroundColor: `${theme.primaryColor}20` }}
             >
+              <Camera className="w-10 h-10" style={{ color: theme.primaryColor }} />
+            </div>
+          )}
+
+          {/* Studio Badge */}
+          {branding?.showCreatorBrand && isStudio && (
+            <div
+              className="absolute -bottom-2 -right-2 w-8 h-8 rounded-full flex items-center justify-center border-4 border-[#101112] shadow-xl"
+              style={{ backgroundColor: theme.primaryColor }}
+            >
+              <Sparkles className="w-4 h-4 text-white" />
+            </div>
+          )}
+        </div>
+
+        {/* Text Content */}
+        <div className="space-y-2 mb-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+          <h1 className={`text-2xl font-black tracking-tight ${textStyle} drop-shadow-md`}>
+            {title || "AI Photo Experience"}
+          </h1>
+          {description && (
+            <p className={`text-sm ${subTextStyle} max-w-[280px] mx-auto leading-relaxed`}>
+              {description}
+            </p>
+          )}
+        </div>
+
+        {/* Social Links */}
+        {socialLinks.length > 0 && isStudio && (
+          <div className="flex items-center justify-center gap-3 mb-8 animate-in fade-in slide-in-from-bottom-5 duration-700 delay-150">
+            {socialLinks.map((link, index) => (
+              <div
+                key={index}
+                className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-md border border-white/10 flex items-center justify-center hover:scale-110 transition-transform cursor-pointer"
+                title={link.label}
+              >
+                <link.icon className="w-5 h-5 text-zinc-300" />
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Bio Links */}
+        {bioLinks.length > 0 && isStudio && (
+          <div className="w-full max-w-[280px] space-y-2.5 mb-8 animate-in fade-in slide-in-from-bottom-6 duration-700 delay-300">
+            {bioLinks.map((link: any) => (
+              <div
+                key={link.id}
+                className="w-full py-3 px-4 rounded-2xl bg-white/5 backdrop-blur-md border border-white/10 flex items-center gap-3 text-left hover:bg-white/10 transition-colors cursor-pointer group"
+              >
+                <Link2 className="w-4 h-4 text-zinc-500 shrink-0 group-hover:text-indigo-400 transition-colors" />
+                <span className="text-xs font-semibold text-zinc-300 truncate">{link.title}</span>
+                <ExternalLink className="w-3.5 h-3.5 text-zinc-600 ml-auto shrink-0 opacity-50 group-hover:opacity-100 transition-opacity" />
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* CTA Section */}
+        <div className="w-full flex flex-col items-center gap-4 relative z-20 animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-500">
+          <button
+            onClick={() => setInternalState('select')}
+            className="w-full max-w-[280px] py-5 rounded-3xl font-bold text-lg shadow-2xl hover:opacity-90 transition-all transform active:scale-95 hover:scale-[1.02] flex flex-col items-center justify-center"
+            style={{
+              ...primaryBtnStyle,
+              boxShadow: `0 20px 40px -15px ${theme.primaryColor}50`
+            }}
+          >
+            <div className="flex items-center gap-3 text-white">
               {formData.monetization?.type === 'tokens' ? (
                 <>
-                  <Coins className="w-5 h-5" />
-                  Start ({formData.monetization.token_price || 1} {formData.monetization.token_price === 1 ? 'Token' : 'Tokens'})
+                  <Coins className="w-6 h-6" />
+                  <span>{(branding as any)?.ctaButtonText || "Start"} ({formData.monetization.token_price || 1} {formData.monetization.token_price === 1 ? 'Token' : 'Tokens'})</span>
                 </>
               ) : (
-                "Start Experience"
+                <div className="flex items-center gap-2">
+                  <Camera className="w-5 h-5" />
+                  <span>{(branding as any)?.ctaButtonText || "Start Experience"}</span>
+                </div>
               )}
-            </button>
+            </div>
+            {(branding as any)?.ctaSubtext && (
+              <span className="text-xs opacity-80 font-medium mt-1">{(branding as any).ctaSubtext}</span>
+            )}
+          </button>
 
-            {formData.monetization?.type === 'revenue_share' && formData.monetization?.fiat_price && (
-              <p className="text-white/60 text-xs font-medium">
-                Only ${formData.monetization.fiat_price.toFixed(2)} per session
-              </p>
+          {formData.monetization?.type === 'revenue_share' && formData.monetization?.fiat_price && (
+            <p className="text-white/60 text-[10px] font-bold uppercase tracking-widest">
+              Unlock for only ${formData.monetization.fiat_price.toFixed(2)}
+            </p>
+          )}
+
+          {/* Scroll indicator if content is long */}
+          <div className="mt-4 animate-bounce opacity-20">
+            <ChevronDown className="w-5 h-5 text-white" />
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="mt-auto p-4 text-center border-t border-white/5 space-y-2 animate-in fade-in duration-1000 delay-700">
+          <div className="flex items-center justify-center gap-4">
+            {(branding as any)?.showFeedLink && (
+              <span className="text-[9px] text-zinc-500 flex items-center gap-1.5 uppercase tracking-wider font-bold">
+                <Camera className="w-3 h-3 text-zinc-500" /> Feed
+              </span>
+            )}
+            {(branding as any)?.showProfileLink !== false && (
+              <span className="text-[9px] text-zinc-500 flex items-center gap-1.5 uppercase tracking-wider font-bold">
+                <Globe className="w-3 h-3 text-zinc-500" /> {(branding as any)?.creatorDisplayName || "Website"}
+              </span>
             )}
           </div>
 
-          <div className="flex flex-col items-center gap-2">
-            <p className={`text-[10px] ${subTextStyle} opacity-40 uppercase tracking-widest font-bold`}>
-              Powered by {theme?.brandName || "PictureMe"}
-            </p>
-          </div>
+          <p className="text-[8px] text-zinc-600 font-bold uppercase tracking-[0.2em]">
+            Powered by <span className="text-indigo-400">PictureMe.Now</span>
+          </p>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const handleTemplateSelect = (template: Template) => {
     setSelectedTemplate(template);
@@ -432,6 +602,17 @@ export function LivePreview({ formData, currentStep, previewMode, onBadgeChange 
 
   return (
     <div className={`min-h-full w-full flex flex-col ${showBadgePreview || showBadgeProPreview ? 'bg-card' : bgStyle} transition-colors duration-300 relative overflow-hidden`}>
+      {/* Mobile Status Bar Mock (only for non-badge modes) */}
+      {!(showBadgePreview || showBadgeProPreview) && (
+        <div className="h-6 w-full flex items-center justify-between px-4 text-[10px] font-medium text-zinc-500 shrink-0 z-50">
+          <span>9:41</span>
+          <div className="flex gap-1">
+            <span className="w-3 h-3 rounded-sm bg-current opacity-50" />
+            <span className="w-3 h-3 rounded-sm bg-current opacity-50" />
+            <span className="w-4 h-3 rounded-sm bg-current opacity-50" />
+          </div>
+        </div>
+      )}
       {showBadgeProPreview ? (
         <BadgeProContent />
       ) : showBadgePreview ? (
@@ -442,27 +623,62 @@ export function LivePreview({ formData, currentStep, previewMode, onBadgeChange 
         <div className="flex-1 flex flex-col h-full bg-[#101112] relative">
           {internalState === 'start' && (
             <>
+              {/* Background Slideshow */}
+              {slideshowEnabled && slideshowImages.length > 0 && (
+                <div className="absolute inset-0 z-0">
+                  {slideshowImages.map((img: string, idx: number) => (
+                    <div
+                      key={img}
+                      className={cn(
+                        "absolute inset-0 transition-opacity duration-1000",
+                        idx === currentSlide ? "opacity-100" : "opacity-0"
+                      )}
+                    >
+                      <img
+                        src={img}
+                        alt=""
+                        className={cn(
+                          "w-full h-full object-cover",
+                          (branding as any)?.backgroundSlideshow?.blur && "blur-xl scale-110"
+                        )}
+                      />
+                      <div
+                        className="absolute inset-0 bg-black"
+                        style={{ opacity: ((branding as any)?.backgroundSlideshow?.overlayOpacity || 60) / 100 }}
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+
               <EventPreviewContent />
-              {/* Booth Background Animation */}
-              {((theme as any).backgroundAnimation === 'grid' || !(theme as any).backgroundAnimation) && (
-                <div className="absolute bottom-0 left-0 right-0 h-[40vh] pointer-events-none z-0">
-                  <div className="absolute inset-0 [mask-image:linear-gradient(to_top,black_20%,transparent_100%)]">
-                    <ShaderBackground />
-                  </div>
-                </div>
-              )}
+              {/* Booth Background Animation (Only if slideshow is NOT enabled) */}
+              {!slideshowEnabled && (theme as any).backgroundAnimation !== 'none' && (
+                <div className="absolute inset-0 pointer-events-none z-0">
+                  {((theme as any).backgroundAnimation === 'grid' || !(theme as any).backgroundAnimation) && (
+                    <div className="absolute bottom-0 left-0 right-0 h-[60%] [mask-image:linear-gradient(to_top,black_20%,transparent_100%)] opacity-40">
+                      <ShaderBackground />
+                    </div>
+                  )}
 
-              {(theme as any).backgroundAnimation === 'particles' && (
-                <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
-                  <div className="absolute top-1/4 left-1/4 w-32 h-32 bg-indigo-500/10 rounded-full blur-3xl animate-pulse" />
-                  <div className="absolute bottom-1/4 right-1/4 w-48 h-48 bg-purple-500/10 rounded-full blur-3xl animate-pulse delay-1000" />
-                  <div className="absolute top-1/2 left-1/2 w-4 h-4 bg-white/10 rounded-full blur-sm animate-bounce" />
-                  <div className="absolute top-1/3 right-1/4 w-2 h-2 bg-indigo-400/20 rounded-full animate-ping" />
-                </div>
-              )}
+                  {(theme as any).backgroundAnimation === 'particles' && (
+                    <div className="absolute inset-0 overflow-hidden">
+                      <div className="absolute top-1/4 left-1/4 w-48 h-48 rounded-full blur-[100px] animate-pulse" style={{ backgroundColor: `${theme.primaryColor}20` }} />
+                      <div className="absolute bottom-1/4 right-1/4 w-64 h-64 rounded-full blur-[120px] animate-pulse delay-1000" style={{ backgroundColor: `${theme.primaryColor}15` }} />
+                      <div className="absolute top-1/2 left-1/2 w-4 h-4 bg-white/10 rounded-full blur-sm animate-bounce" />
+                      <div className="absolute top-1/3 right-1/4 w-2 h-2 bg-white/20 rounded-full animate-ping" />
+                    </div>
+                  )}
 
-              {(theme as any).backgroundAnimation === 'pulse' && (
-                <div className="absolute inset-0 pointer-events-none z-0 bg-gradient-to-t from-indigo-500/5 to-transparent animate-pulse" />
+                  {(theme as any).backgroundAnimation === 'pulse' && (
+                    <div
+                      className="absolute inset-0 animate-pulse"
+                      style={{
+                        background: `radial-gradient(circle at 50% 80%, ${theme.primaryColor}20 0%, transparent 70%)`
+                      }}
+                    />
+                  )}
+                </div>
               )}
             </>
           )}
@@ -498,6 +714,10 @@ export function LivePreview({ formData, currentStep, previewMode, onBadgeChange 
                   <div className="absolute bottom-1/4 right-1/4 w-48 h-48 bg-purple-500/10 rounded-full blur-3xl animate-pulse delay-1000" />
                 </div>
               )}
+
+              {(theme as any).backgroundAnimation === 'pulse' && (
+                <div className="absolute inset-0 pointer-events-none z-0 bg-gradient-to-t from-indigo-500/5 to-transparent animate-pulse" />
+              )}
             </div>
           )}
 
@@ -528,9 +748,9 @@ export function LivePreview({ formData, currentStep, previewMode, onBadgeChange 
         </div>
       )}
 
-      {/* Preview Context Badge - Subtle Technical Indicator */}
-      <div className="absolute bottom-20 right-4 px-2 py-0.5 bg-black/40 backdrop-blur-sm rounded border border-white/5 text-[7px] font-medium text-white/20 pointer-events-none z-50 uppercase tracking-tighter">
-        Preview: {internalState}
+      {/* Preview Mode Indicator */}
+      <div className="absolute bottom-16 right-2 px-1.5 py-0.5 bg-black/40 backdrop-blur-sm rounded border border-white/5 text-[6px] font-medium text-white/20 pointer-events-none z-50 uppercase tracking-tighter">
+        {internalState}
       </div>
     </div>
   );

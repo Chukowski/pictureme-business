@@ -390,6 +390,7 @@ function CreatorStudioPageContent({ defaultView }: CreatorStudioPageProps) {
     const [history, setHistory] = useState<GalleryItem[]>([]);
     const [previewItem, setPreviewItem] = useState<GalleryItem | null>(null);
     const [showSaveTemplate, setShowSaveTemplate] = useState(false);
+    const [templatePreviewImage, setTemplatePreviewImage] = useState<string | undefined>(undefined);
     const [isPromptExpanded, setIsPromptExpanded] = useState(false);
 
     // Mobile Floating Rail State
@@ -690,12 +691,13 @@ function CreatorStudioPageContent({ defaultView }: CreatorStudioPageProps) {
     };
 
     const handleUseAsTemplate = (item: GalleryItem) => {
-        if (item.type === "video") return toast.error("Images only");
-        setSelectedTemplate({
-            id: `history-${item.id}`, name: "From history", prompt: item.prompt, images: [item.url],
-            ai_model: item.model, aspectRatio: item.ratio, type: "image"
-        });
-        handleReusePrompt(item);
+        // Set values as if we are about to save this template
+        setPrompt(item.prompt || "");
+        if (item.model) setModel(item.model);
+        if (item.ratio) setAspectRatio(item.ratio);
+        setMode(item.type);
+        setTemplatePreviewImage(item.url);
+        setShowSaveTemplate(true);
     };
 
     const handleDownload = async (item: GalleryItem) => {
@@ -1108,9 +1110,26 @@ function CreatorStudioPageContent({ defaultView }: CreatorStudioPageProps) {
 
             <SaveTemplateModal
                 open={showSaveTemplate}
-                onClose={() => setShowSaveTemplate(false)}
-                defaults={{ prompt: prompt, model: model, aspectRatio: aspectRatio, type: mode === 'booth' ? 'image' : mode }}
-                onSave={(p) => { saveTemplate({ id: crypto.randomUUID(), ...p }); setShowSaveTemplate(false); }}
+                onClose={() => {
+                    setShowSaveTemplate(false);
+                    setTemplatePreviewImage(undefined);
+                }}
+                defaults={{
+                    prompt: prompt,
+                    model: model,
+                    aspectRatio: aspectRatio,
+                    type: mode === 'booth' ? 'image' : mode,
+                    image: templatePreviewImage
+                }}
+                onSave={(p) => {
+                    saveTemplate({
+                        id: crypto.randomUUID(),
+                        ...p,
+                        images: p.image ? [p.image] : []
+                    });
+                    setShowSaveTemplate(false);
+                    setTemplatePreviewImage(undefined);
+                }}
             />
 
             <MobileFloatingRail

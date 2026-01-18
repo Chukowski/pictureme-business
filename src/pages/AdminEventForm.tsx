@@ -29,10 +29,10 @@ export default function AdminEventForm() {
   const currentUser = useMemo(() => getCurrentUser(), []);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  
+
   // Navigation State
   const [currentStep, setCurrentStep] = useState(searchParams.get('step') || 'setup');
-  
+
   // Update URL when step changes
   useEffect(() => {
     if (currentStep) {
@@ -57,7 +57,7 @@ export default function AdminEventForm() {
     is_active: true,
     start_date: "",
     end_date: "",
-    
+
     // Event Mode & Rules
     eventMode: "free",
     rules: {
@@ -75,7 +75,7 @@ export default function AdminEventForm() {
       blurOnUnpaidGallery: true, // Default: blur unpaid photos in gallery
       showPaymentCardOnSharedAlbum: true, // Default: show payment card on shared album
     },
-    
+
     // Theme & Branding
     theme: {
       preset: "classic_dark" as ThemePreset,
@@ -110,7 +110,7 @@ export default function AdminEventForm() {
         pattern: "step_repeat",
       },
     },
-    
+
     // Badge Creator settings (legacy)
     badgeCreator: {
       enabled: false,
@@ -126,10 +126,10 @@ export default function AdminEventForm() {
         customField2: "",
       },
     },
-    
+
     // New Badge Template
     badgeTemplate: { ...DEFAULT_BADGE_CONFIG } as BadgeTemplateConfig,
-    
+
     // Sharing settings
     sharing: {
       emailEnabled: true,
@@ -139,7 +139,7 @@ export default function AdminEventForm() {
       emailAfterBuy: true,
       groupPhotosIntoAlbums: false,
     },
-    
+
     // Album Tracking
     albumTracking: {
       enabled: false,
@@ -161,7 +161,7 @@ export default function AdminEventForm() {
         saveBadgePhotoToAlbum: true, // Save badge photo to album gallery (default: enabled)
       },
     },
-    
+
     // Sharing Overrides
     sharingOverrides: {
       enabled: false,
@@ -169,7 +169,7 @@ export default function AdminEventForm() {
       availableRatios: ["1:1", "4:5", "9:16", "16:9"],
       shareTemplateId: "",
     },
-    
+
     // Legacy settings
     settings: {
       aiModel: "nano-banana",
@@ -213,13 +213,13 @@ export default function AdminEventForm() {
         return {
           ...prev,
           ...event,
-          
+
           // Keep templates exactly as they come from DB (preserve all fields)
           templates: safeEvent.templates || prev.templates,
-          
+
           // Explicitly handle eventMode (camelCase vs snake_case check)
           eventMode: safeEvent.eventMode || safeEvent.event_mode || prev.eventMode,
-          
+
           // Deep merge Pricing configuration
           pricing: safeEvent.pricing ? {
             ...prev.pricing,
@@ -238,9 +238,9 @@ export default function AdminEventForm() {
           } : prev.pricing,
 
           // Deep merge Settings first as it might contain rules/sharing
-          settings: { 
-            ...prev.settings, 
-            ...(safeEvent.settings || {}) 
+          settings: {
+            ...prev.settings,
+            ...(safeEvent.settings || {})
           },
 
           // Restore rules and sharing from settings if available (for persistence)
@@ -257,14 +257,14 @@ export default function AdminEventForm() {
           },
 
           // Deep merge Theme
-          theme: { 
-            ...prev.theme, 
-            ...(safeEvent.theme || {}) 
+          theme: {
+            ...prev.theme,
+            ...(safeEvent.theme || {})
           },
 
           // Deep merge Branding
-          branding: { 
-            ...prev.branding, 
+          branding: {
+            ...prev.branding,
             ...(safeEvent.branding || {}),
             watermark: {
               ...prev.branding?.watermark,
@@ -316,7 +316,7 @@ export default function AdminEventForm() {
 
     try {
       setIsSaving(true);
-      
+
       // Prepare data for API
       // Persist rules and sharing inside settings as expected by backend
       const dataToSave = {
@@ -369,50 +369,52 @@ export default function AdminEventForm() {
       currentStep={currentStep}
       onStepChange={setCurrentStep}
       preview={
-        <LivePreview 
-          formData={formData} 
+        <LivePreview
+          formData={formData}
           currentStep={currentStep}
+          currentUser={currentUser}
           previewMode={previewMode}
           onBadgeChange={(config) => setFormData(prev => ({ ...prev, badgeTemplate: config }))}
         />
       }
     >
       {currentStep === 'setup' && (
-        <EventSetup 
-          formData={formData} 
-          setFormData={setFormData} 
+        <EventSetup
+          formData={formData}
+          setFormData={setFormData}
           currentUser={currentUser}
           isEdit={isEdit}
         />
       )}
-      
+
       {currentStep === 'design' && (
-        <EventDesign 
-          formData={formData} 
-          setFormData={setFormData} 
-        />
-      )}
-      
-      {currentStep === 'experience' && (
-        <EventTemplates 
-          formData={formData} 
+        <EventDesign
+          formData={formData}
           setFormData={setFormData}
           currentUser={currentUser}
+        />
+      )}
+
+      {currentStep === 'experience' && (
+        <EventTemplates
+          formData={formData}
+          setFormData={setFormData}
+          variant="admin"
           onPreviewModeChange={setPreviewMode}
         />
       )}
 
       {currentStep === 'workflow' && (
-        <EventWorkflow 
-          formData={formData} 
-          setFormData={setFormData} 
+        <EventWorkflow
+          formData={formData}
+          setFormData={setFormData}
         />
       )}
-      
+
       {currentStep === 'settings' && (
-        <EventSettings 
-          formData={formData} 
-          setFormData={setFormData} 
+        <EventSettings
+          formData={formData}
+          setFormData={setFormData}
         />
       )}
     </EventEditorLayout>

@@ -281,10 +281,15 @@ export default function CreatorBoothEditor() {
             currentUser?.plan_name
         ].filter(Boolean).map(t => String(t).toLowerCase());
 
-        const isStudio = tierIndicators.some(t => t.includes('studio'));
+        const isStudio = tierIndicators.some(t =>
+            t.includes('studio') ||
+            t.includes('business') ||
+            t.includes('enterprise') ||
+            t.includes('masters')
+        );
         const isVibe = tierIndicators.some(t => t.includes('vibe'));
         const isSpark = tierIndicators.some(t => t.includes('spark') || t.includes('individual'));
-        const isBusiness = tierIndicators.some(t => t.includes('business'));
+        const isBusiness = tierIndicators.some(t => t.includes('business') || t.includes('enterprise') || t.includes('masters'));
 
         // Robust mapping
         const effectiveTier = isStudio ? 'studio' :
@@ -964,7 +969,7 @@ export default function CreatorBoothEditor() {
                                     <div className="flex items-center justify-between">
                                         <Label className="text-muted-foreground text-[10px] uppercase tracking-wider font-bold flex items-center gap-2">
                                             Creator Personal Branding
-                                            {!isStudio && <Badge variant="secondary" className="text-[9px] h-4 bg-indigo-500/10 text-indigo-400 border-indigo-500/20">Studio Only</Badge>}
+                                            {!isStudio && <Badge variant="secondary" className="text-[9px] h-4 bg-indigo-500/10 text-indigo-400 border-indigo-500/20">Studio / Business Only</Badge>}
                                         </Label>
                                         {isStudio && (
                                             <Switch
@@ -984,10 +989,10 @@ export default function CreatorBoothEditor() {
                                             </div>
                                             <div>
                                                 <p className="text-sm font-medium text-white mb-1">Personal Branding Locked</p>
-                                                <p className="text-xs text-muted-foreground max-w-[280px]">Upgrade to <strong>Studio</strong> to display your name, avatar, and social links on this booth.</p>
+                                                <p className="text-xs text-muted-foreground max-w-[280px]">Upgrade to <strong>Studio</strong> or <strong>Business</strong> to display your name, avatar, and social links on this booth.</p>
                                             </div>
                                             <Button variant="outline" size="sm" className="h-8 text-xs border-indigo-500/30 text-indigo-400 hover:bg-indigo-500/10" onClick={() => window.open('/pricing', '_blank')}>
-                                                Upgrade to Studio
+                                                Upgrade to Studio / Business
                                             </Button>
                                         </div>
                                     ) : (
@@ -1159,7 +1164,7 @@ export default function CreatorBoothEditor() {
                         <EventTemplates
                             formData={formData}
                             setFormData={setFormData}
-                            currentUser={currentUser}
+                            variant="creator"
                             onPreviewModeChange={() => { }}
                         />
 

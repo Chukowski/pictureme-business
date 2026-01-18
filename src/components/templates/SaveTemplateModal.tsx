@@ -23,6 +23,7 @@ export interface SaveTemplateModalProps {
     duration?: string;
     tags: string[];
     type: UserTemplateType;
+    image?: string;
   }) => void;
   defaults: {
     prompt: string;
@@ -30,6 +31,7 @@ export interface SaveTemplateModalProps {
     aspectRatio?: string;
     duration?: string;
     type: UserTemplateType;
+    image?: string;
   };
 }
 
@@ -56,6 +58,7 @@ export const SaveTemplateModal = ({
       duration: defaults.duration,
       tags,
       type: defaults.type,
+      image: defaults.image,
     });
     setName("");
     setTagsInput("");
@@ -69,6 +72,13 @@ export const SaveTemplateModal = ({
           <DialogTitle className="text-white">Save as template</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
+          {defaults.image && (
+            <div className="flex justify-center mb-4">
+              <div className="w-32 aspect-[3/4] rounded-xl overflow-hidden border border-white/10 shadow-2xl">
+                <img src={defaults.image} className="w-full h-full object-cover" alt="Template Preview" />
+              </div>
+            </div>
+          )}
           <div className="space-y-2">
             <Label className="text-sm text-zinc-400">Template name</Label>
             <Input

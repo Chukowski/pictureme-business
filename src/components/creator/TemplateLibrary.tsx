@@ -19,6 +19,7 @@ export interface MarketplaceTemplate {
     ai_model?: string;
     aspectRatio?: string;
     type?: "image" | "video";
+    media_type?: "image" | "video";
     category?: string;
     is_public?: boolean;
     tags?: string[];
@@ -78,8 +79,9 @@ export function TemplateLibrary({
 
         let matchesModel = true;
         if (activeModelFilter !== 'all') {
-            if (activeModelFilter === 'video') matchesModel = t.type === 'video';
-            else if (activeModelFilter === 'image') matchesModel = t.type === 'image' || !t.type; // Default to image if undefined
+            const tType = t.type || t.media_type;
+            if (activeModelFilter === 'video') matchesModel = tType === 'video';
+            else if (activeModelFilter === 'image') matchesModel = tType === 'image' || !tType; // Default to image if undefined
             else matchesModel = t.ai_model?.includes(activeModelFilter) || false;
         }
 

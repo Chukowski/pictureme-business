@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { Wand2, Download, LayoutGrid, List, Sparkles, Clock, ChevronRight, Eye, EyeOff, Video, ImageIcon } from 'lucide-react';
+import { Wand2, Download, LayoutGrid, List, Sparkles, Clock, ChevronRight, Eye, EyeOff, Video, ImageIcon, Save } from 'lucide-react';
 import { GalleryItem } from '@/components/creator/CreationDetailView';
 import { getThumbnailUrl } from '@/services/imgproxy';
 import { cn } from '@/lib/utils';
@@ -14,13 +14,15 @@ interface GalleryViewProps {
     setPreviewItem: (item: GalleryItem) => void;
     onReusePrompt: (item: GalleryItem) => void;
     onDownload: (item: GalleryItem) => void;
+    onUseAsTemplate?: (item: GalleryItem) => void;
 }
 
 export const GalleryView = ({
     history,
     setPreviewItem,
     onReusePrompt,
-    onDownload
+    onDownload,
+    onUseAsTemplate
 }: GalleryViewProps) => {
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
     const [zoomLevel, setZoomLevel] = useState([window.innerWidth < 768 ? 2 : 4]);
@@ -122,6 +124,15 @@ export const GalleryView = ({
                                                 >
                                                     <Wand2 className="w-4 h-4 md:w-5 md:h-5" />
                                                 </button>
+                                                {onUseAsTemplate && (
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); onUseAsTemplate(item); }}
+                                                        className="w-9 h-9 md:w-10 md:h-10 rounded-xl bg-white/10 backdrop-blur-xl text-white flex items-center justify-center hover:bg-[#D1F349] hover:text-black transition-all border border-white/10 shadow-lg"
+                                                        title="Save as Template"
+                                                    >
+                                                        <Save className="w-4 h-4 md:w-5 md:h-5" />
+                                                    </button>
+                                                )}
                                                 <button
                                                     onClick={(e) => { e.stopPropagation(); onDownload(item); }}
                                                     className="w-9 h-9 md:w-10 md:h-10 rounded-xl bg-white/10 backdrop-blur-xl text-white flex items-center justify-center hover:bg-white/20 hover:scale-105 active:scale-95 transition-all border border-white/10 shadow-lg"
@@ -238,6 +249,15 @@ export const GalleryView = ({
                                                                 <Wand2 className="w-3.5 h-3.5 mr-2" />
                                                                 Remix
                                                             </Button>
+                                                            {onUseAsTemplate && (
+                                                                <Button
+                                                                    variant="outline"
+                                                                    onClick={(e) => { e.stopPropagation(); onUseAsTemplate(item); }}
+                                                                    className="w-10 h-10 rounded-xl border-white/10 bg-white/5 text-white hover:bg-[#D1F349] hover:text-black transition-all flex items-center justify-center p-0"
+                                                                >
+                                                                    <Save className="w-4 h-4" />
+                                                                </Button>
+                                                            )}
                                                             <Button
                                                                 variant="outline"
                                                                 onClick={(e) => { e.stopPropagation(); onDownload(item); }}

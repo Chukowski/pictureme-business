@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { LOCAL_IMAGE_MODELS, LOCAL_VIDEO_MODELS, LEGACY_MODEL_IDS } from "@/services/aiProcessor";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { GalleryItem } from '@/components/creator/CreationDetailView';
@@ -854,15 +855,32 @@ export function CreatorStudioSidebar({
                                         <ChevronRight className="w-4 h-4 text-zinc-600 transition-transform group-hover:translate-x-0.5" />
                                     </button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width] bg-card border-zinc-900 z-[100]" sideOffset={5}>
+                                <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width] bg-[#1a1a1a] border-white/5 z-[100] p-1.5 shadow-2xl" sideOffset={8}>
                                     {(mode === 'image' ? imageModels : videoModels).map((m) => (
                                         <DropdownMenuItem
                                             key={m.id}
                                             onClick={() => setModel(m.shortId)}
-                                            className="flex items-center justify-between cursor-pointer focus:bg-card text-[12px]"
+                                            className={cn(
+                                                "flex flex-col items-start gap-1 p-3 rounded-xl mb-1 last:mb-0 transition-all cursor-pointer",
+                                                m.shortId === model ? "bg-white/10 border border-white/10" : "hover:bg-white/5 border border-transparent"
+                                            )}
                                         >
-                                            <span className={cn(m.shortId === model && "text-[#D1F349]")}>{m.name}</span>
-                                            {m.shortId === model && <Check className="w-3.5 h-3.5 text-[#D1F349]" />}
+                                            <div className="flex items-center justify-between w-full">
+                                                <div className="flex items-center gap-2">
+                                                    <span className={cn("text-[13px] font-bold", m.shortId === model ? "text-[#D1F349]" : "text-white")}>
+                                                        {m.name}
+                                                    </span>
+                                                    {m.cost && (
+                                                        <Badge variant="outline" className="h-4 px-1 text-[9px] border-[#D1F349]/30 text-[#D1F349] bg-[#D1F349]/5 font-black uppercase tracking-tighter">
+                                                            {m.cost}
+                                                        </Badge>
+                                                    )}
+                                                </div>
+                                                {m.shortId === model && <Check className="w-3.5 h-3.5 text-[#D1F349]" />}
+                                            </div>
+                                            {m.description && (
+                                                <span className="text-[11px] text-zinc-500 line-clamp-1 leading-tight">{m.description}</span>
+                                            )}
                                         </DropdownMenuItem>
                                     ))}
                                 </DropdownMenuContent>
@@ -947,21 +965,19 @@ export function CreatorStudioSidebar({
                 >
                     {isProcessing ? <Loader2 className="animate-spin w-4 h-4" /> : (
                         <div className={cn(
-                            "flex items-center w-full h-full gap-1.5 px-1",
-                            (mode === 'booth' && !selectedBoothTemplate) ? "justify-center" : "justify-between"
+                            "flex items-center w-full h-full justify-between gap-1.5 px-1",
+                            "transition-all"
                         )}>
-                            <span className="text-[10px] uppercase tracking-wide">
-                                Generate
-                            </span>
-                            {!(mode === 'booth' && !selectedBoothTemplate) && (
-                                <div className="flex items-center gap-1 bg-[#101112]/10 px-2.5 py-1 rounded-full border border-black/5 mr-[-2px] shadow-inner h-7">
-                                    <Coins className="w-2.5 h-2.5 stroke-[2.5] opacity-60" />
-                                    <span className="text-[11px] font-bold">
-                                        {(mode === 'booth' && selectedBoothTemplate)
-                                            ? (availableModels?.find(m => m.id === selectedBoothTemplate.pipelineConfig?.imageModel || m.id === selectedBoothTemplate.ai_model)?.cost || 1)
-                                            : ((selectedModelObj as any).cost || 1)
-                                        }
-                                    </span>
+                            <div className="flex items-center gap-2">
+                                {mode === 'video' ? <Video className="w-4 h-4" /> : <Sparkles className="w-4 h-4" />}
+                                <span className="uppercase tracking-[0.1em] text-[11px] leading-none mb-[-2px]">
+                                    {mode === 'booth' ? 'Capture Booth' : mode === 'video' ? 'Animate Scene' : 'Generate'}
+                                </span>
+                            </div>
+                            {selectedModelObj?.cost && (
+                                <div className="flex items-center gap-1.5 px-2.5 py-1 bg-black/10 rounded-full border border-black/5">
+                                    <Coins className="w-3 h-3" />
+                                    <span className="text-[10px] font-black">{selectedModelObj.cost}</span>
                                 </div>
                             )}
                         </div>
@@ -971,5 +987,3 @@ export function CreatorStudioSidebar({
         </div>
     );
 }
-
-

@@ -71,11 +71,32 @@ export interface EventFormData extends Omit<EventConfig, 'id' | '_id' | 'user_id
   theme: EventTheme;
   branding: Omit<EventConfig['branding'], 'watermark'> & {
     watermark?: ExtendedWatermarkConfig;
+    logoPath?: string;
+    footerPath?: string;
     showLogoInBooth?: boolean;
     showLogoInFeed?: boolean;
     showSponsorStrip?: boolean;
     includeLogoOnPrints?: boolean;
     sponsorLogos?: string[];
+    backgroundSlideshow?: {
+      enabled: boolean;
+      interval: number;
+      blur: boolean;
+      images?: string[];
+      duration?: number;
+      overlayOpacity?: number;
+    };
+    ctaButtonText?: string;
+    ctaSubtext?: string;
+    showProfileLink?: boolean;
+    showFeedLink?: boolean;
+    showCreatorBrand?: boolean;
+    creatorDisplayName?: string;
+    socialWebsite?: string;
+    socialInstagram?: string;
+    socialTikTok?: string;
+    socialX?: string;
+    bioLinks?: { id: string; title: string; url: string; enabled: boolean; }[];
   };
 
   eventMode: 'free' | 'lead_capture' | 'pay_per_photo' | 'pay_per_album';
