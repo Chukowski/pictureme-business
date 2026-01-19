@@ -797,17 +797,21 @@ Output a single cohesive image.`;
  */
 function getProxiedUrl(url: string): string {
   // Check if URL is from S3 or MinIO and needs proxying
-  const s3Patterns = [
-    's3.amazonaws.com/pictureme.now',
-    'pictureme.now.s3.amazonaws.com'
+  const proxyPatterns = [
+    's3.amazonaws.com',
+    'pictureme.now.s3.amazonaws.com',
+    'r2.dev',
+    'fal.media',
+    'v3.fal.media'
   ];
 
   // Also check MinIO server URL
   const minioServerUrl = ENV.MINIO_SERVER_URL || '';
   const minioHost = minioServerUrl.replace('https://', '').replace('http://', '');
 
-  const needsProxy = s3Patterns.some(pattern => url.includes(pattern)) ||
-    (minioHost && url.includes(minioHost));
+  const needsProxy = proxyPatterns.some(pattern => url.includes(pattern)) ||
+    (minioHost && url.includes(minioHost)) ||
+    (url.includes('pub-') && url.includes('r2.dev'));
 
   if (needsProxy) {
     const apiUrl = ENV.API_URL || '';
@@ -920,21 +924,17 @@ async function imageUrlToDataUri(url: string, maxSize: number = 2048): Promise<s
 
 /**
  * Download processed image from URL and convert to base64
- * Useful for storing in localStorage
+ * Uses proxy to bypass CORS and handles compression to avoid payload size limits.
  */
 export async function downloadImageAsBase64(url: string): Promise<string> {
   try {
-    const response = await fetch(url);
-    const blob = await response.blob();
-
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result as string);
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
+    return await imageUrlToDataUri(url);
   } catch (error) {
-    console.error("Failed to download image:", error);
+    console.error("Failed to download image from URL:", url, error);
+    // Add context to the error to help with debugging
+    if (error instanceof TypeError && error.message === 'Failed to fetch') {
+      throw new Error(`CORS Error: Failed to fetch image. The server at ${new URL(url).hostname} may not allow requests from this origin. Try using the proxy.`);
+    }
     throw error;
   }
 }

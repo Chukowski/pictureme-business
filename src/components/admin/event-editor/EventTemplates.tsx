@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 // Force HMR update
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -6,8 +6,10 @@ import { Badge } from "@/components/ui/badge";
 import {
   Plus, Sparkles, Image as ImageIcon, Trash2, Copy, Video, Smile, Lock,
   Download, Upload, Monitor, LayoutTemplate, FileJson, FileUp, Dice5,
-  Type, ImagePlus, Stamp, Maximize2, Minimize2, Check, ExternalLink, Settings2, Coins
+  Type, ImagePlus, Stamp, Maximize2, Minimize2, Check, ExternalLink, Settings2, Coins,
+  Layout, Smartphone, Tablet, History, FolderOpen, PanelRight, X
 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -27,11 +29,11 @@ import { uploadTemplateImage } from "@/services/templateStorage";
 import { toast } from "sonner";
 
 import { LOCAL_IMAGE_MODELS, LOCAL_VIDEO_MODELS, AI_MODELS } from "@/services/aiProcessor";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { MediaLibrary } from "@/components/MediaLibrary";
 import { TemplateLibrary, MarketplaceTemplate } from "@/components/creator/TemplateLibrary";
 import { getMarketplaceTemplates } from "@/services/marketplaceApi";
 import { useMyTemplates } from "@/hooks/useMyTemplates";
-import { useEffect } from "react";
 
 interface ExtendedEditorProps extends EditorSectionProps {
   onPreviewModeChange?: (mode: 'event' | 'badge' | 'template') => void;
@@ -93,7 +95,9 @@ function TemplateTokenSummary({ template }: { template: Template }) {
 export function EventTemplates({ formData, setFormData, onPreviewModeChange, variant = 'admin' }: ExtendedEditorProps) {
   const [editingTemplateIndex, setEditingTemplateIndex] = useState<number | null>(null);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [activeDevice, setActiveDevice] = useState<'phone' | 'tablet' | 'desktop'>('phone');
+  const [isMobile, setIsMobile] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [activeTab, setActiveTab] = useState('templates');
   const [showLibrary, setShowLibrary] = useState(false);
@@ -101,6 +105,22 @@ export function EventTemplates({ formData, setFormData, onPreviewModeChange, var
   const { templates: myLibraryTemplates } = useMyTemplates();
   const importInputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 1024);
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
+  // Sync navbar visibility with preview state
+  useEffect(() => {
+    const event = new CustomEvent('navbar-visibility', { detail: { visible: !isPreviewOpen } });
+    window.dispatchEvent(event);
+    return () => {
+      window.dispatchEvent(new CustomEvent('navbar-visibility', { detail: { visible: true } }));
+    };
+  }, [isPreviewOpen]);
 
   // Load marketplace templates
   useEffect(() => {
@@ -175,7 +195,7 @@ export function EventTemplates({ formData, setFormData, onPreviewModeChange, var
     const blob = new Blob([jsonString], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
-    link.download = `template-${template.name.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}.json`;
+    link.download = `template - ${template.name.toLowerCase().replace(/\s+/g, '-')} -${Date.now()}.json`;
     link.href = url;
     link.click();
     URL.revokeObjectURL(url);
@@ -199,7 +219,7 @@ export function EventTemplates({ formData, setFormData, onPreviewModeChange, var
     const blob = new Blob([jsonString], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
-    link.download = `badge-config-${(formData.title || 'event').toLowerCase().replace(/\s+/g, '-')}-${Date.now()}.json`;
+    link.download = `badge - config - ${(formData.title || 'event').toLowerCase().replace(/\s+/g, '-')} -${Date.now()}.json`;
     link.href = url;
     link.click();
     URL.revokeObjectURL(url);
@@ -233,7 +253,7 @@ export function EventTemplates({ formData, setFormData, onPreviewModeChange, var
   const addTemplate = () => {
     const newTemplate: Template = {
       id: crypto.randomUUID(),
-      name: `New Template ${templates.length + 1}`,
+      name: `New Template ${templates.length + 1} `,
       description: "AI Generated Scene",
       images: [],
       prompt: "",
@@ -281,7 +301,7 @@ export function EventTemplates({ formData, setFormData, onPreviewModeChange, var
   const addFromLibrary = (tpl: MarketplaceTemplate) => {
     const newTemplate: Template = {
       id: crypto.randomUUID(),
-      name: tpl.name || `Template ${templates.length + 1}`,
+      name: tpl.name || `Template ${templates.length + 1} `,
       description: tpl.description || 'New visual experience',
       prompt: tpl.prompt || '',
       negativePrompt: '',
@@ -297,7 +317,7 @@ export function EventTemplates({ formData, setFormData, onPreviewModeChange, var
     const newTemplates = [...templates, newTemplate];
     setFormData({ ...formData, templates: newTemplates });
     setShowLibrary(false);
-    toast.success(`Added style: ${tpl.name}`);
+    toast.success(`Added style: ${tpl.name} `);
     setEditingTemplateIndex(newTemplates.length - 1);
   };
 
@@ -643,42 +663,42 @@ export function EventTemplates({ formData, setFormData, onPreviewModeChange, var
           open={isSheetOpen}
           onOpenChange={(open) => {
             setIsSheetOpen(open);
-            if (!open) setIsExpanded(false);
+            if (!open) setIsPreviewOpen(false);
           }}
         >
           <SheetContent
             side="right"
             className={cn(
-              "p-0 border-l border-white/10 shadow-2xl transition-all duration-500 h-[100dvh] flex flex-col overflow-hidden [-webkit-overflow-scrolling:touch]",
+              "p-0 border-l border-white/10 shadow-2xl transition-all duration-[400ms] h-[100dvh] flex flex-col overflow-hidden [-webkit-overflow-scrolling:touch] z-[150]",
               variant === 'creator' ? "bg-[#101112]" : "bg-[#18181b]",
-              isExpanded ? "w-screen sm:max-w-none inset-0" : "w-full sm:max-w-xl"
+              isPreviewOpen ? "w-screen sm:max-w-none inset-0" : "w-full sm:max-w-xl"
             )}
           >
             {currentTemplate && editingTemplateIndex !== null && (
               <>
                 <SheetHeader className={cn(
-                  "p-6 border-b border-white/10 shrink-0",
+                  "p-4 sm:p-6 border-b border-white/10 shrink-0",
                   variant === 'creator' ? "bg-[#101112]" : "bg-card/50"
                 )}>
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
                       <div className={cn(
-                        "w-10 h-10 rounded-xl flex items-center justify-center translate-y-[-2px]",
+                        "w-10 h-10 rounded-xl flex items-center justify-center shrink-0",
                         variant === 'creator' ? "bg-[#D1F349]/10" : "bg-indigo-500/10"
                       )}>
                         <Sparkles className={cn("w-5 h-5", variant === 'creator' ? "text-[#D1F349]" : "text-indigo-400")} />
                       </div>
-                      <div>
-                        <SheetTitle className="text-white text-xl font-black uppercase tracking-tight">
+                      <div className="min-w-0">
+                        <SheetTitle className="text-white text-lg sm:text-xl font-black uppercase tracking-tight truncate">
                           {variant === 'creator' ? 'Scene Designer' : 'Template Architect'}
                         </SheetTitle>
-                        <SheetDescription className="text-zinc-500 text-[10px] uppercase font-bold tracking-widest opacity-60">
+                        <SheetDescription className="text-zinc-500 text-[9px] uppercase font-bold tracking-widest opacity-60 truncate">
                           {variant === 'creator' ? 'Fine-tune your AI scene & visual style' : 'Refine the AI vision & experience'}
                         </SheetDescription>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-4 mr-8">
+                    <div className="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto">
                       <div className="flex items-center gap-2 px-3 py-1.5 bg-white/5 rounded-full border border-white/10">
                         <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">{currentTemplate.active ? 'Status: Live' : 'Status: Draft'}</span>
                         <Switch
@@ -691,26 +711,26 @@ export function EventTemplates({ formData, setFormData, onPreviewModeChange, var
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => setIsExpanded(!isExpanded)}
-                        className="h-9 w-9 text-zinc-400 hover:text-white hover:bg-white/5"
+                        onClick={() => setIsPreviewOpen(!isPreviewOpen)}
+                        className={cn(
+                          "h-9 w-9 text-zinc-400 hover:text-white hover:bg-white/5 transition-all",
+                          isPreviewOpen && "bg-white/5 text-white"
+                        )}
                       >
-                        {isExpanded ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+                        <PanelRight className="w-5 h-5" />
                       </Button>
                     </div>
                   </div>
                 </SheetHeader>
 
-                <div className={cn(
-                  "flex-1 overflow-hidden",
-                  isExpanded ? "flex" : "flex flex-col"
-                )}>
+                <div className="flex-1 flex overflow-hidden relative">
                   {/* Scrollable Form Content */}
                   <div className={cn(
-                    "flex-1 overflow-y-auto p-8 space-y-10 custom-scrollbar [-webkit-overflow-scrolling:touch]",
-                    isExpanded && "max-w-2xl border-r border-white/5"
+                    "flex-1 overflow-y-auto p-4 sm:p-8 space-y-10 custom-scrollbar [-webkit-overflow-scrolling:touch] bg-transparent",
+                    isPreviewOpen && "lg:max-w-2xl border-r border-white/5"
                   )} ref={scrollRef}>
                     {/* Internal Navigation for Mobile/Collapsed or Quick Jumps */}
-                    {!isExpanded && (
+                    {!isPreviewOpen && (
                       <div className="flex gap-2 overflow-x-auto pb-4 no-scrollbar border-b border-white/5 mb-6 [-webkit-overflow-scrolling:touch]">
                         {['Config', 'Prompts', 'Assets', 'Overlay', 'Rules'].map(tag => (
                           <Badge key={tag} variant="outline" className="px-3 py-1 bg-white/5 border-white/10 text-zinc-400 font-medium">
@@ -984,7 +1004,7 @@ export function EventTemplates({ formData, setFormData, onPreviewModeChange, var
                                 <SelectContent className="bg-[#101112] border-white/10 text-white">
                                   <SelectItem value="same">Inherit Primary Engine</SelectItem>
                                   {LOCAL_IMAGE_MODELS.map(m => (
-                                    <SelectItem key={`group-${m.shortId}`} value={m.shortId}>{m.name}</SelectItem>
+                                    <SelectItem key={`group - ${m.shortId} `} value={m.shortId}>{m.name}</SelectItem>
                                   ))}
                                 </SelectContent>
                               </Select>
@@ -1122,8 +1142,40 @@ export function EventTemplates({ formData, setFormData, onPreviewModeChange, var
                             </button>
                           </div>
                         ))}
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <button
+                              className="aspect-square rounded-lg border border-dashed border-white/20 flex flex-col items-center justify-center text-zinc-500 hover:text-zinc-300 hover:bg-white/5 hover:border-white/30 transition-all font-medium"
+                            >
+                              <FolderOpen className="w-6 h-6 mb-1" />
+                              <span className="text-[10px] uppercase tracking-tighter">Library</span>
+                            </button>
+                          </DialogTrigger>
+                          <DialogContent className="max-w-4xl bg-[#101112] border-white/10 text-white">
+                            <DialogHeader>
+                              <DialogTitle>Choose from Media Library</DialogTitle>
+                            </DialogHeader>
+                            <div className="max-h-[60vh] overflow-y-auto pr-2">
+                              <MediaLibrary
+                                onSelectMedia={(url) => {
+                                  const currentImages = currentTemplate.images || [];
+                                  if (!currentImages.includes(url)) {
+                                    updateTemplate(editingTemplateIndex!, {
+                                      images: [...currentImages, url]
+                                    });
+                                    toast.success("Image added from library");
+                                  } else {
+                                    toast.error("Image already in template");
+                                  }
+                                }}
+                                selectedUrl={""} // Focus on recently added if possible
+                              />
+                            </div>
+                          </DialogContent>
+                        </Dialog>
+
                         <button
-                          className="aspect-square rounded-lg border border-dashed border-white/20 flex flex-col items-center justify-center text-zinc-500 hover:text-zinc-300 hover:bg-white/5 hover:border-white/30 transition-all"
+                          className="aspect-square rounded-lg border border-dashed border-white/20 flex flex-col items-center justify-center text-zinc-500 hover:text-zinc-300 hover:bg-white/10 hover:border-white/30 transition-all font-medium"
                           onClick={() => {
                             const input = document.createElement('input');
                             input.type = 'file';
@@ -1134,7 +1186,7 @@ export function EventTemplates({ formData, setFormData, onPreviewModeChange, var
                           }}
                         >
                           <Plus className="w-6 h-6 mb-1" />
-                          <span className="text-xs">{isUploading ? '...' : 'Upload'}</span>
+                          <span className="text-[10px] uppercase tracking-tighter">{isUploading ? '...' : 'Upload'}</span>
                         </button>
                       </div>
                     </div>
@@ -1163,6 +1215,38 @@ export function EventTemplates({ formData, setFormData, onPreviewModeChange, var
                             </button>
                           </div>
                         ))}
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <button
+                              className="aspect-square rounded-lg border border-dashed border-emerald-500/30 flex flex-col items-center justify-center text-zinc-500 hover:text-emerald-400 hover:bg-emerald-500/5 hover:border-emerald-500/50 transition-all font-medium"
+                            >
+                              <FolderOpen className="w-5 h-5 mb-1" />
+                              <span className="text-[10px] uppercase tracking-tighter">Library</span>
+                            </button>
+                          </DialogTrigger>
+                          <DialogContent className="max-w-4xl bg-[#101112] border-white/10 text-white">
+                            <DialogHeader>
+                              <DialogTitle>Choose from Media Library</DialogTitle>
+                            </DialogHeader>
+                            <div className="max-h-[60vh] overflow-y-auto pr-2">
+                              <MediaLibrary
+                                onSelectMedia={(url) => {
+                                  const currentElements = currentTemplate.elementImages || [];
+                                  if (!currentElements.includes(url)) {
+                                    updateTemplate(editingTemplateIndex!, {
+                                      elementImages: [...currentElements, url]
+                                    });
+                                    toast.success("Element added from library");
+                                  } else {
+                                    toast.error("Element already in template");
+                                  }
+                                }}
+                                selectedUrl={""}
+                              />
+                            </div>
+                          </DialogContent>
+                        </Dialog>
+
                         <button
                           className="aspect-square rounded-lg border border-dashed border-emerald-500/30 flex flex-col items-center justify-center text-zinc-500 hover:text-emerald-400 hover:bg-emerald-500/5 hover:border-emerald-500/50 transition-all"
                           onClick={() => {
@@ -1192,7 +1276,7 @@ export function EventTemplates({ formData, setFormData, onPreviewModeChange, var
                           }}
                         >
                           <Plus className="w-4 h-4 mb-1" />
-                          <span className="text-[10px]">Add</span>
+                          <span className="text-[10px] uppercase tracking-tighter">Upload</span>
                         </button>
                       </div>
                       <p className="text-[10px] text-zinc-500">Used by Seedream/Imagen for mixing multiple images into the scene</p>
@@ -1344,78 +1428,141 @@ export function EventTemplates({ formData, setFormData, onPreviewModeChange, var
                     )}
                   </div>
 
-                  {/* Expanded Sidebar Preview */}
-                  {isExpanded && (
-                    <div className="flex-1 overflow-y-auto bg-[#09090b] p-10 flex flex-col">
-                      <div className="max-w-md mx-auto w-full space-y-8">
-                        <div className="flex items-center justify-between">
-                          <h3 className="text-xs font-black text-zinc-500 uppercase tracking-[0.2em]">Preview Mockup</h3>
-                          <Badge className="bg-indigo-500/10 text-indigo-400 border-indigo-500/20 px-2 py-0">Draft View</Badge>
-                        </div>
+                  {/* Sidebar Preview Mechanism */}
+                  <AnimatePresence mode="wait">
+                    {isPreviewOpen && (
+                      <motion.aside
+                        initial={{ opacity: 0, x: "100%" }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: "100%" }}
+                        transition={{ type: "spring", damping: 25, stiffness: 200 }}
+                        className={cn(
+                          "bg-[#09090b] flex flex-col overflow-hidden border-l border-white/10 transition-all",
+                          isMobile ? "fixed inset-0 z-50 pt-14" : "flex-1 relative min-w-0"
+                        )}
+                      >
+                        {/* Mobile Close Toolbar */}
+                        {isMobile && (
+                          <div className="h-14 border-b border-white/10 flex items-center px-4 bg-card/80 backdrop-blur-xl absolute top-0 left-0 right-0 z-20">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => setIsPreviewOpen(false)}
+                              className="mr-2 text-zinc-400 hover:text-white"
+                            >
+                              <X className="w-5 h-5" />
+                            </Button>
+                            <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Template Preview</span>
+                          </div>
+                        )}
 
-                        {/* Mock Phone Preview */}
-                        <div className="relative mx-auto w-full aspect-[9/19.5] max-w-[320px] bg-[#101112] rounded-[2.5rem] border-[8px] border-zinc-900 shadow-2xl overflow-hidden ring-1 ring-white/10">
-                          {/* Screen Content */}
-                          <div className="absolute inset-0 flex flex-col">
-                            {/* Status Bar */}
-                            <div className="h-6 w-full flex items-center justify-between px-6 py-4 text-[10px] text-zinc-500">
-                              <span>9:41</span>
-                              <div className="flex items-center gap-1">
-                                <div className="w-3 h-2 rounded-[1px] bg-zinc-600"></div>
-                                <div className="w-4 h-2 rounded-[1px] bg-zinc-600"></div>
-                              </div>
+                        <div className="flex-1 overflow-y-auto p-6 lg:p-8 flex flex-col">
+                          <div className="max-w-md mx-auto w-full space-y-8 flex flex-col items-center">
+                            {/* Device Toggle */}
+                            <div className="flex bg-[#0D0D0D] p-1 rounded-xl border border-white/5 shadow-2xl overflow-hidden mb-4 shrink-0">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className={cn("h-8 w-8 rounded-lg transition-all", activeDevice === 'phone' ? "bg-white/10 text-white" : "text-zinc-500 hover:text-zinc-300")}
+                                onClick={() => setActiveDevice('phone')}
+                              >
+                                <Smartphone className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className={cn("h-8 w-8 rounded-lg transition-all", activeDevice === 'tablet' ? "bg-white/10 text-white" : "text-zinc-500 hover:text-zinc-300")}
+                                onClick={() => setActiveDevice('tablet')}
+                              >
+                                <Tablet className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className={cn("h-8 w-8 rounded-lg transition-all", activeDevice === 'desktop' ? "bg-white/10 text-white" : "text-zinc-500 hover:text-zinc-300")}
+                                onClick={() => setActiveDevice('desktop')}
+                              >
+                                <Monitor className="w-4 h-4" />
+                              </Button>
                             </div>
 
-                            {/* Hero/Visual */}
-                            <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
-                              <div className="w-20 h-20 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center mb-6 shadow-xl shadow-indigo-500/5">
-                                <Sparkles className="w-10 h-10 text-indigo-400 animate-pulse" />
-                              </div>
-                              <h4 className="text-xl font-black text-white mb-2 leading-tight uppercase tracking-tight">{currentTemplate.name}</h4>
-                              <p className="text-xs text-zinc-400 max-w-[200px] leading-relaxed opacity-80">{currentTemplate.description || "Experimental style"}</p>
+                            <div className="flex items-center justify-between w-full">
+                              <h3 className="text-xs font-black text-zinc-500 uppercase tracking-[0.2em]">Preview Mockup</h3>
+                              <Badge className="bg-indigo-500/10 text-indigo-400 border-indigo-500/20 px-2 py-0">Draft View</Badge>
+                            </div>
 
-                              <div className="mt-8 grid grid-cols-2 gap-2 w-full">
-                                <div className="aspect-square rounded-lg bg-zinc-800/50 border border-white/5 flex items-center justify-center">
-                                  {currentTemplate.images?.[0] ? <img src={currentTemplate.images[0]} className="w-full h-full object-cover rounded-lg" /> : <ImageIcon className="w-4 h-4 text-zinc-600" />}
+                            {/* Dynamic Device Preview */}
+                            <div className={cn(
+                              "relative mx-auto transition-all duration-500 bg-[#101112] shadow-2xl overflow-hidden ring-1 ring-white/10",
+                              activeDevice === 'phone' ? "w-full aspect-[9/19.5] max-w-[320px] rounded-[2.5rem] border-[8px] border-zinc-900" :
+                                activeDevice === 'tablet' ? "w-full aspect-[3/4] max-w-[500px] rounded-[1.5rem] border-[6px] border-zinc-900" :
+                                  "w-full aspect-[16/9] max-w-[650px] rounded-lg border-[4px] border-zinc-900"
+                            )}>
+                              {/* Screen Content */}
+                              <div className="absolute inset-0 flex flex-col">
+                                {/* Status Bar (Phone/Tablet only) */}
+                                {activeDevice !== 'desktop' && (
+                                  <div className="h-6 w-full flex items-center justify-between px-6 py-4 text-[10px] text-zinc-500 shrink-0">
+                                    <span>9:41</span>
+                                    <div className="flex items-center gap-1">
+                                      <div className="w-3 h-2 rounded-[1px] bg-zinc-600"></div>
+                                      <div className="w-4 h-2 rounded-[1px] bg-zinc-600"></div>
+                                    </div>
+                                  </div>
+                                )}
+
+                                {/* Hero/Visual */}
+                                <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
+                                  <div className="w-20 h-20 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center mb-6 shadow-xl shadow-indigo-500/5">
+                                    <Sparkles className="w-10 h-10 text-indigo-400 animate-pulse" />
+                                  </div>
+                                  <h4 className="text-xl font-black text-white mb-2 leading-tight uppercase tracking-tight">{currentTemplate.name}</h4>
+                                  <p className="text-xs text-zinc-400 max-w-[200px] leading-relaxed opacity-80">{currentTemplate.description || "Experimental style"}</p>
+
+                                  <div className="mt-8 grid grid-cols-2 gap-2 w-full">
+                                    <div className="aspect-square rounded-lg bg-zinc-800/50 border border-white/5 flex items-center justify-center">
+                                      {currentTemplate.images?.[0] ? <img src={currentTemplate.images[0]} className="w-full h-full object-cover rounded-lg" /> : <ImageIcon className="w-4 h-4 text-zinc-600" />}
+                                    </div>
+                                    <div className="aspect-square rounded-lg bg-zinc-800/50 border border-white/5 flex items-center justify-center">
+                                      <ImageIcon className="w-4 h-4 text-zinc-600" />
+                                    </div>
+                                  </div>
                                 </div>
-                                <div className="aspect-square rounded-lg bg-zinc-800/50 border border-white/5 flex items-center justify-center">
-                                  <ImageIcon className="w-4 h-4 text-zinc-600" />
+
+                                {/* CTA */}
+                                <div className="p-6">
+                                  <Button className="w-full h-12 bg-indigo-600 rounded-xl font-bold shadow-lg shadow-indigo-600/20">Generate Photo</Button>
                                 </div>
                               </div>
                             </div>
 
-                            {/* CTA */}
-                            <div className="p-6">
-                              <Button className="w-full h-12 bg-indigo-600 rounded-xl font-bold shadow-lg shadow-indigo-600/20">Generate Photo</Button>
+                            {/* Technical Summary */}
+                            <div className="grid grid-cols-2 gap-4">
+                              <div className="p-4 rounded-xl bg-white/5 border border-white/5">
+                                <span className="text-[10px] text-zinc-500 uppercase font-black tracking-widest block mb-1">Ratio</span>
+                                <span className="text-sm font-bold text-white">{currentTemplate.aspectRatio || 'Auto'}</span>
+                              </div>
+                              <div className="p-4 rounded-xl bg-white/5 border border-white/5">
+                                <span className="text-[10px] text-zinc-500 uppercase font-black tracking-widest block mb-1">Model</span>
+                                <span className="text-sm font-bold text-indigo-400 uppercase">{normalizeModelId(currentTemplate.pipelineConfig?.imageModel).split('-')[0]}</span>
+                              </div>
                             </div>
                           </div>
                         </div>
-
-                        {/* Technical Summary */}
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="p-4 rounded-xl bg-white/5 border border-white/5">
-                            <span className="text-[10px] text-zinc-500 uppercase font-black tracking-widest block mb-1">Ratio</span>
-                            <span className="text-sm font-bold text-white">{currentTemplate.aspectRatio || 'Auto'}</span>
-                          </div>
-                          <div className="p-4 rounded-xl bg-white/5 border border-white/5">
-                            <span className="text-[10px] text-zinc-500 uppercase font-black tracking-widest block mb-1">Model</span>
-                            <span className="text-sm font-bold text-indigo-400 uppercase">{normalizeModelId(currentTemplate.pipelineConfig?.imageModel).split('-')[0]}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
+                      </motion.aside>
+                    )}
+                  </AnimatePresence>
                 </div>
                 <SheetFooter className={cn(
                   "p-6 border-t border-white/10 bg-card/50 shrink-0",
-                  isExpanded ? "sm:justify-start" : "sm:justify-center"
+                  isPreviewOpen ? "sm:justify-start" : "sm:justify-center"
                 )}>
                   <Button
                     onClick={() => setIsSheetOpen(false)}
                     className={cn(
                       "font-black text-[13px] uppercase tracking-[0.2em] rounded-xl shadow-xl transition-all hover:scale-[1.01] active:scale-[0.99]",
                       variant === 'creator' ? "bg-[#D1F349] text-black hover:bg-[#c2e13a]" : "bg-white text-black hover:bg-zinc-200",
-                      isExpanded ? "w-auto px-12 h-12" : "w-full h-12"
+                      isPreviewOpen ? "w-auto px-12 h-12" : "w-full h-12"
                     )}
                   >
                     {variant === 'creator' ? 'Finish Designer' : 'Save & Complete Session'}

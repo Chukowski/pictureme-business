@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getCurrentUser, getUserEvents } from "@/services/eventsApi";
 import { PlaygroundLayout } from "@/components/playground/PlaygroundLayout";
@@ -13,8 +13,11 @@ import { Loader2 } from "lucide-react";
 
 export default function PlaygroundPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const queryClient = useQueryClient();
-  const [currentTab, setCurrentTab] = useState('template');
+  const initialImage = searchParams.get('image');
+  const initialTab = searchParams.get('tab') || 'template';
+  const [currentTab, setCurrentTab] = useState(initialTab);
 
   // Fetch User
   const { data: currentUser, isLoading: isUserLoading, error: userError } = useQuery({
@@ -60,6 +63,7 @@ export default function PlaygroundPage() {
             events={events}
             currentUser={currentUser}
             onReloadEvents={handleReloadEvents}
+            initialImage={initialImage}
           />
         )}
 
@@ -68,6 +72,7 @@ export default function PlaygroundPage() {
             events={events}
             currentUser={currentUser}
             onReloadEvents={handleReloadEvents}
+            initialImage={initialImage}
           />
         )}
 

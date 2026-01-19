@@ -305,7 +305,7 @@ export function BoothEditorLayout({
                                 exit={isMobile || isPreviewFullscreen ? { opacity: 0, x: "100%" } : { width: 0, opacity: 0 }}
                                 transition={{ type: "spring", damping: 30, stiffness: 300 }}
                                 className={cn(
-                                    "bg-[#09090b] flex flex-col z-[60] overflow-hidden border-l border-white/10",
+                                    "bg-[#09090b] flex flex-col z-40 overflow-hidden border-l border-white/10",
                                     (isMobile || isPreviewFullscreen) ? "fixed inset-0" : "relative min-w-[450px] max-w-[800px] shrink-0"
                                 )}
                             >

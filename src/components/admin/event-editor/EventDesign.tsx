@@ -112,15 +112,15 @@ export function EventDesign({ formData, setFormData, currentUser }: EditorSectio
         <p className="text-zinc-400 mb-6">Customize the look and feel of your photo booth.</p>
 
         {/* Theme Presets */}
-        <Card className="bg-card/50 border-white/10 backdrop-blur-sm mb-6">
-          <CardHeader>
-            <CardTitle className="text-white text-base flex items-center gap-2">
-              <Palette className="w-5 h-5 text-purple-400" />
+        <Card className="bg-[#101112]/50 border-white/5 backdrop-blur-sm mb-8 overflow-hidden">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-white text-sm font-bold uppercase tracking-wider flex items-center gap-2">
+              <Palette className="w-4 h-4 text-purple-400" />
               Theme Presets
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-4">
               {[
                 { id: 'classic_dark', name: 'Classic Dark', icon: Moon, color: 'bg-indigo-500' },
                 { id: 'clean_light', name: 'Clean Light', icon: Sun, color: 'bg-blue-500' },
@@ -136,17 +136,24 @@ export function EventDesign({ formData, setFormData, currentUser }: EditorSectio
                     preset: theme.id,
                     mode: theme.id === 'clean_light' || theme.id === 'corporate' || theme.id === 'kids_fun' ? 'light' : 'dark'
                   })}
-                  className={`p-4 rounded-xl border text-center transition-all group ${formData.theme.preset === theme.id
-                    ? 'border-indigo-500 bg-indigo-500/10 ring-1 ring-indigo-500'
-                    : 'border-white/10 bg-[#101112]/20 hover:border-white/20'
-                    }`}
+                  className={cn(
+                    "p-4 rounded-2xl border transition-all duration-300 group flex flex-col items-center gap-3 relative overflow-hidden",
+                    formData.theme.preset === theme.id
+                      ? "bg-white/10 border-indigo-500 shadow-[0_0_20px_rgba(99,102,241,0.2)] ring-1 ring-indigo-500/20"
+                      : "bg-[#09090b]/40 border-white/5 hover:border-white/10 hover:bg-white/[0.05]"
+                  )}
                 >
-                  <div className={`w-full aspect-video rounded-lg mb-3 flex items-center justify-center transition-colors ${formData.theme.preset === theme.id ? theme.color + '/20' : 'bg-zinc-800 group-hover:bg-zinc-700'
-                    }`}>
-                    <theme.icon className={`w-6 h-6 ${formData.theme.preset === theme.id ? 'text-white' : 'text-zinc-500 group-hover:text-zinc-300'
-                      }`} />
+                  <div className={cn(
+                    "w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-500",
+                    formData.theme.preset === theme.id ? theme.color + " shadow-lg scale-110" : "bg-zinc-800/50 text-zinc-500 group-hover:bg-zinc-700/50 group-hover:text-zinc-300"
+                  )}>
+                    <theme.icon className={cn("w-6 h-6", formData.theme.preset === theme.id ? "text-white" : "inherit")} />
                   </div>
-                  <span className="text-xs font-medium text-white">{theme.name}</span>
+                  <span className={cn(
+                    "text-[10px] font-black uppercase tracking-[0.15em]",
+                    formData.theme.preset === theme.id ? "text-white" : "text-zinc-500 group-hover:text-zinc-400"
+                  )}>{theme.name}</span>
+                  {formData.theme.preset === theme.id && <div className="absolute bottom-0 left-0 right-0 h-1 bg-indigo-500" />}
                 </button>
               ))}
             </div>
@@ -155,64 +162,39 @@ export function EventDesign({ formData, setFormData, currentUser }: EditorSectio
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           {/* Brand Colors */}
-          <Card className="bg-card/50 border-white/10 backdrop-blur-sm">
+          <Card className="bg-[#101112]/50 border-white/5 backdrop-blur-sm">
             <CardHeader>
-              <CardTitle className="text-white text-base flex items-center gap-2">
-                <Palette className="w-5 h-5 text-indigo-400" />
+              <CardTitle className="text-white text-sm font-bold uppercase tracking-wider flex items-center gap-2">
+                <Palette className="w-4 h-4 text-indigo-400" />
                 Brand Colors
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-3">
-                <Label className="text-zinc-400 text-xs uppercase tracking-wider">Primary Color</Label>
-                <div className="flex gap-3">
-                  <input
-                    type="color"
-                    value={formData.theme.primaryColor}
-                    onChange={(e) => updateTheme({ primaryColor: e.target.value, preset: 'custom' })}
-                    className="w-12 h-12 rounded-lg border border-white/10 cursor-pointer bg-transparent p-1"
-                  />
-                  <Input
-                    value={formData.theme.primaryColor}
-                    onChange={(e) => updateTheme({ primaryColor: e.target.value, preset: 'custom' })}
-                    className="bg-[#101112]/40 border-white/10 text-white font-mono"
-                  />
+            <CardContent className="space-y-6">
+              {[
+                { label: 'Primary Color', value: formData.theme.primaryColor, key: 'primaryColor' },
+                { label: 'Secondary Color', value: formData.theme.secondaryColor || '#F59E0B', key: 'secondaryColor' },
+                { label: 'Accent Color', value: formData.theme.accentColor || '#10B981', key: 'accentColor' }
+              ].map((color) => (
+                <div key={color.key} className="space-y-2">
+                  <Label className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest">{color.label}</Label>
+                  <div className="flex gap-2">
+                    <div className="relative group">
+                      <input
+                        type="color"
+                        value={color.value}
+                        onChange={(e) => updateTheme({ [color.key]: e.target.value, preset: 'custom' })}
+                        className="w-10 h-10 rounded-lg border border-white/5 cursor-pointer bg-transparent p-0 overflow-hidden"
+                      />
+                      <div className="absolute inset-0 rounded-lg border border-white/10 pointer-events-none group-hover:border-white/20 transition-colors" />
+                    </div>
+                    <Input
+                      value={color.value}
+                      onChange={(e) => updateTheme({ [color.key]: e.target.value, preset: 'custom' })}
+                      className="bg-[#09090b]/40 border-white/5 text-white font-mono text-xs uppercase tracking-wider h-10"
+                    />
+                  </div>
                 </div>
-              </div>
-
-              <div className="space-y-3">
-                <Label className="text-zinc-400 text-xs uppercase tracking-wider">Secondary Color</Label>
-                <div className="flex gap-3">
-                  <input
-                    type="color"
-                    value={formData.theme.secondaryColor || '#F59E0B'}
-                    onChange={(e) => updateTheme({ secondaryColor: e.target.value, preset: 'custom' })}
-                    className="w-12 h-12 rounded-lg border border-white/10 cursor-pointer bg-transparent p-1"
-                  />
-                  <Input
-                    value={formData.theme.secondaryColor || '#F59E0B'}
-                    onChange={(e) => updateTheme({ secondaryColor: e.target.value, preset: 'custom' })}
-                    className="bg-[#101112]/40 border-white/10 text-white font-mono"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <Label className="text-zinc-400 text-xs uppercase tracking-wider">Accent Color</Label>
-                <div className="flex gap-3">
-                  <input
-                    type="color"
-                    value={formData.theme.accentColor || '#10B981'}
-                    onChange={(e) => updateTheme({ accentColor: e.target.value, preset: 'custom' })}
-                    className="w-12 h-12 rounded-lg border border-white/10 cursor-pointer bg-transparent p-1"
-                  />
-                  <Input
-                    value={formData.theme.accentColor || '#10B981'}
-                    onChange={(e) => updateTheme({ accentColor: e.target.value, preset: 'custom' })}
-                    className="bg-[#101112]/40 border-white/10 text-white font-mono"
-                  />
-                </div>
-              </div>
+              ))}
             </CardContent>
           </Card>
 
@@ -449,21 +431,24 @@ export function EventDesign({ formData, setFormData, currentUser }: EditorSectio
         </div>
 
         {/* Logos & Assets */}
-        <Card className="bg-card/50 border-white/10 backdrop-blur-sm mb-6">
+        <Card className="bg-[#101112]/50 border-white/5 backdrop-blur-sm mb-8 overflow-hidden">
           <CardHeader>
-            <CardTitle className="text-white text-base flex items-center gap-2">
-              <ImageIcon className="w-5 h-5 text-amber-400" />
+            <CardTitle className="text-white text-sm font-bold uppercase tracking-wider flex items-center gap-2">
+              <ImageIcon className="w-4 h-4 text-amber-400" />
               Logos & Assets
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
               {/* Main Logo */}
-              <div className="space-y-2">
-                <Label className="text-zinc-300">Event Logo</Label>
-                <div className="space-y-3">
+              <div className="space-y-3">
+                <Label className="text-zinc-400 text-[10px] font-bold uppercase tracking-widest pl-1">Event Logo</Label>
+                <div className="relative group">
                   <div
-                    className="border-2 border-dashed border-white/10 rounded-xl p-6 flex flex-col items-center justify-center text-center hover:bg-white/5 transition-colors cursor-pointer min-h-[160px] relative group"
+                    className={cn(
+                      "border-2 border-dashed border-white/5 rounded-2xl p-6 flex flex-col items-center justify-center text-center transition-all bg-[#09090b]/40 aspect-square min-h-[180px]",
+                      !formData.branding.logoPath && "cursor-pointer hover:bg-white/[0.02] hover:border-white/10"
+                    )}
                     onClick={() => !formData.branding.logoPath && document.getElementById('logo-upload')?.click()}
                   >
                     <input
@@ -474,20 +459,17 @@ export function EventDesign({ formData, setFormData, currentUser }: EditorSectio
                       onChange={(e) => handleLogoUpload(e, 'logoPath')}
                     />
                     {formData.branding.logoPath ? (
-                      <div className="relative w-full">
+                      <div className="relative w-full h-full flex items-center justify-center">
                         <img
-                          src={formData.branding.logoPath.startsWith('http')
-                            ? formData.branding.logoPath
-                            : `${window.location.origin}/${formData.branding.logoPath}`
-                          }
+                          src={formData.branding.logoPath.startsWith('http') ? formData.branding.logoPath : `${window.location.origin}/${formData.branding.logoPath}`}
                           alt="Logo"
-                          className="h-20 mx-auto object-contain"
+                          className="max-h-32 object-contain"
                         />
-                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-lg">
+                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-xl gap-2">
                           <Button
                             variant="destructive"
                             size="icon"
-                            className="h-8 w-8"
+                            className="h-9 w-9 rounded-full"
                             onClick={(e) => {
                               e.stopPropagation();
                               updateBranding({ logoPath: "" });
@@ -499,51 +481,55 @@ export function EventDesign({ formData, setFormData, currentUser }: EditorSectio
                       </div>
                     ) : (
                       <>
-                        <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center mb-2">
-                          {isUploading === 'logoPath' ? <Loader2 className="w-5 h-5 animate-spin text-zinc-400" /> : <Upload className="w-5 h-5 text-zinc-400" />}
+                        <div className="w-12 h-12 rounded-full bg-zinc-900 border border-white/5 flex items-center justify-center mb-3">
+                          {isUploading === 'logoPath' ? <Loader2 className="w-5 h-5 animate-spin text-zinc-500" /> : <Upload className="w-5 h-5 text-zinc-500 hover:text-white transition-colors" />}
                         </div>
-                        <p className="text-sm text-zinc-400">Click to upload logo</p>
-                        <p className="text-xs text-zinc-600 mt-1">PNG, SVG (Transparent)</p>
+                        <p className="text-[11px] font-bold text-zinc-400 uppercase tracking-tight">Click to upload logo</p>
+                        <p className="text-[9px] text-zinc-600 mt-1 uppercase tracking-widest">PNG, SVG (Transparent)</p>
                       </>
                     )}
                   </div>
-                  <div className="flex flex-col sm:flex-row gap-2">
-                    <Dialog>
-                      <DialogTrigger asChild>
-                        <Button variant="outline" size="sm" className="w-full sm:flex-1 h-8 border-white/10 text-xs">
-                          <ImageIcon className="w-3.5 h-3.5 mr-2" />
-                          Media Library
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent className="max-w-2xl bg-[#09090b] border-white/10">
-                        <DialogHeader>
-                          <DialogTitle className="text-white">Media Library</DialogTitle>
-                        </DialogHeader>
-                        <MediaLibrary
-                          selectedUrl={formData.branding.logoPath}
-                          onSelectMedia={(url) => updateBranding({ logoPath: url })}
-                        />
-                      </DialogContent>
-                    </Dialog>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full sm:flex-1 h-8 border-white/10 text-xs"
-                      onClick={() => document.getElementById('logo-upload')?.click()}
-                    >
-                      <Upload className="w-3.5 h-3.5 mr-2" />
-                      Upload New
-                    </Button>
-                  </div>
+                </div>
+
+                <div className="flex flex-col sm:flex-row lg:flex-col xl:flex-row gap-2 mt-3">
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button variant="outline" size="sm" className="flex-1 h-9 bg-black/20 border-white/5 text-[10px] font-black uppercase tracking-widest hover:bg-white/5 transition-all">
+                        <ImageIcon className="w-3.5 h-3.5 mr-2 text-indigo-400" />
+                        Library
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-2xl bg-[#09090b] border-white/10 p-0 overflow-hidden">
+                      <DialogHeader className="p-6 border-b border-white/5 bg-zinc-900/50">
+                        <DialogTitle className="text-white text-xs font-black uppercase tracking-widest leading-none">Select from Media Library</DialogTitle>
+                      </DialogHeader>
+                      <MediaLibrary
+                        selectedUrl={formData.branding.logoPath}
+                        onSelectMedia={(url) => updateBranding({ logoPath: url })}
+                      />
+                    </DialogContent>
+                  </Dialog>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 h-9 bg-black/20 border-white/5 text-[10px] font-black uppercase tracking-widest hover:bg-white/5 transition-all"
+                    onClick={() => document.getElementById('logo-upload')?.click()}
+                  >
+                    <Upload className="w-3.5 h-3.5 mr-2 text-indigo-400" />
+                    New
+                  </Button>
                 </div>
               </div>
 
               {/* Footer Logo */}
-              <div className="space-y-2">
-                <Label className="text-zinc-300">Footer Logo</Label>
-                <div className="space-y-3">
+              <div className="space-y-3">
+                <Label className="text-zinc-400 text-[10px] font-black uppercase tracking-widest pl-1">Footer Logo</Label>
+                <div className="relative group">
                   <div
-                    className="border-2 border-dashed border-white/10 rounded-xl p-6 flex flex-col items-center justify-center text-center hover:bg-white/5 transition-colors cursor-pointer min-h-[160px] relative group"
+                    className={cn(
+                      "border-2 border-dashed border-white/5 rounded-2xl p-6 flex flex-col items-center justify-center text-center transition-all bg-[#09090b]/40 aspect-square min-h-[160px] lg:min-h-[180px]",
+                      !formData.branding.footerPath && "cursor-pointer hover:bg-white/[0.02] hover:border-white/10"
+                    )}
                     onClick={() => !formData.branding.footerPath && document.getElementById('footer-upload')?.click()}
                   >
                     <input
@@ -554,20 +540,17 @@ export function EventDesign({ formData, setFormData, currentUser }: EditorSectio
                       onChange={(e) => handleLogoUpload(e, 'footerPath')}
                     />
                     {formData.branding.footerPath ? (
-                      <div className="relative w-full">
+                      <div className="relative w-full h-full flex items-center justify-center">
                         <img
-                          src={formData.branding.footerPath.startsWith('http')
-                            ? formData.branding.footerPath
-                            : `${window.location.origin}/${formData.branding.footerPath}`
-                          }
+                          src={formData.branding.footerPath.startsWith('http') ? formData.branding.footerPath : `${window.location.origin}/${formData.branding.footerPath}`}
                           alt="Footer"
-                          className="h-20 mx-auto object-contain"
+                          className="max-h-24 md:max-h-32 object-contain"
                         />
-                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-lg">
+                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-xl gap-2">
                           <Button
                             variant="destructive"
                             size="icon"
-                            className="h-8 w-8"
+                            className="h-9 w-9 rounded-full"
                             onClick={(e) => {
                               e.stopPropagation();
                               updateBranding({ footerPath: "" });
@@ -579,85 +562,76 @@ export function EventDesign({ formData, setFormData, currentUser }: EditorSectio
                       </div>
                     ) : (
                       <>
-                        <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center mb-2">
-                          {isUploading === 'footerPath' ? <Loader2 className="w-5 h-5 animate-spin text-zinc-400" /> : <Upload className="w-5 h-5 text-zinc-400" />}
+                        <div className="w-12 h-12 rounded-full bg-zinc-900 border border-white/5 flex items-center justify-center mb-3">
+                          {isUploading === 'footerPath' ? <Loader2 className="w-5 h-5 animate-spin text-zinc-500" /> : <Upload className="w-5 h-5 text-zinc-500 hover:text-white transition-colors" />}
                         </div>
-                        <p className="text-sm text-zinc-400">Click to upload footer</p>
-                        <p className="text-xs text-zinc-600 mt-1">PNG, SVG (Transparent)</p>
+                        <p className="text-[11px] font-black text-zinc-400 uppercase tracking-[0.05em]">Click for footer</p>
+                        <p className="text-[9px] text-zinc-600 mt-1 uppercase tracking-widest font-bold">PNG, SVG (Transparent)</p>
                       </>
                     )}
                   </div>
-                  <div className="flex flex-col sm:flex-row gap-2">
-                    <Dialog>
-                      <DialogTrigger asChild>
-                        <Button variant="outline" size="sm" className="w-full sm:flex-1 h-8 border-white/10 text-xs">
-                          <ImageIcon className="w-3.5 h-3.5 mr-2" />
-                          Media Library
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent className="max-w-2xl bg-[#09090b] border-white/10">
-                        <DialogHeader>
-                          <DialogTitle className="text-white">Media Library</DialogTitle>
-                        </DialogHeader>
-                        <MediaLibrary
-                          selectedUrl={formData.branding.footerPath}
-                          onSelectMedia={(url) => updateBranding({ footerPath: url })}
-                        />
-                      </DialogContent>
-                    </Dialog>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full sm:flex-1 h-8 border-white/10 text-xs"
-                      onClick={() => document.getElementById('footer-upload')?.click()}
-                    >
-                      <Upload className="w-3.5 h-3.5 mr-2" />
-                      Upload New
-                    </Button>
-                  </div>
+                </div>
+
+                <div className="flex flex-col sm:flex-row lg:flex-col xl:flex-row gap-2 mt-3">
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button variant="outline" size="sm" className="flex-1 h-9 bg-black/20 border-white/5 text-[10px] font-black uppercase tracking-widest hover:bg-white/5 transition-all">
+                        <ImageIcon className="w-3.5 h-3.5 mr-2 text-amber-400" />
+                        Library
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-2xl bg-[#09090b] border-white/10 p-0 overflow-hidden">
+                      <DialogHeader className="p-6 border-b border-white/5 bg-zinc-900/50">
+                        <DialogTitle className="text-white text-xs font-black uppercase tracking-widest leading-none">Select from Media Library</DialogTitle>
+                      </DialogHeader>
+                      <MediaLibrary
+                        selectedUrl={formData.branding.footerPath}
+                        onSelectMedia={(url) => updateBranding({ footerPath: url })}
+                      />
+                    </DialogContent>
+                  </Dialog>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 h-9 bg-black/20 border-white/5 text-[10px] font-black uppercase tracking-widest hover:bg-white/5 transition-all"
+                    onClick={() => document.getElementById('footer-upload')?.click()}
+                  >
+                    <Upload className="w-3.5 h-3.5 mr-2 text-amber-400" />
+                    New
+                  </Button>
                 </div>
               </div>
 
               {/* Brand Name & Visibility */}
-              <div className="space-y-4">
+              <div className="space-y-6">
                 <div className="space-y-2">
-                  <Label className="text-zinc-300">Brand Name</Label>
+                  <Label className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest pl-1">Brand Identity</Label>
                   <Input
                     value={formData.theme.brandName}
                     onChange={(e) => updateTheme({ brandName: e.target.value })}
                     placeholder="e.g. Acme Corp"
-                    className="bg-[#101112]/40 border-white/10 text-white"
+                    className="bg-[#09090b]/40 border-white/5 text-white h-11 rounded-xl focus:border-indigo-500/50 transition-all font-medium"
                   />
                 </div>
 
-                <div className="space-y-3 pt-2">
-                  <Label className="text-zinc-400 text-xs uppercase tracking-wider">Display Settings</Label>
+                <div className="space-y-3 p-4 rounded-2xl bg-[#09090b]/40 border border-white/5">
+                  <Label className="text-zinc-500 text-[9px] font-black uppercase tracking-[0.2em] mb-2 block">Booth Display Rules</Label>
 
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-zinc-300">Show Logo in Booth</span>
-                      <Switch
-                        checked={formData.branding.showLogoInBooth !== false}
-                        onCheckedChange={(c) => updateBranding({ showLogoInBooth: c })}
-                        className="data-[state=checked]:bg-indigo-600 scale-75"
-                      />
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-zinc-300">Show Logo in Feed</span>
-                      <Switch
-                        checked={formData.branding.showLogoInFeed !== false}
-                        onCheckedChange={(c) => updateBranding({ showLogoInFeed: c })}
-                        className="data-[state=checked]:bg-indigo-600 scale-75"
-                      />
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-zinc-300">Include on Prints</span>
-                      <Switch
-                        checked={formData.branding.includeLogoOnPrints !== false}
-                        onCheckedChange={(c) => updateBranding({ includeLogoOnPrints: c })}
-                        className="data-[state=checked]:bg-indigo-600 scale-75"
-                      />
-                    </div>
+                  <div className="space-y-3">
+                    {[
+                      { label: "Show Logo in Booth", key: "showLogoInBooth", color: "bg-indigo-600" },
+                      { label: "Show Logo in Feed", key: "showLogoInFeed", color: "bg-emerald-600" },
+                      { label: "Include on Prints", key: "includeLogoOnPrints", color: "bg-amber-600" }
+                    ].map((item) => (
+                      <div key={item.key} className="flex items-center justify-between pb-1">
+                        <span className="text-xs font-medium text-zinc-300">{item.label}</span>
+                        <Switch
+                          checked={formData.branding[item.key as keyof typeof formData.branding] !== false}
+                          onCheckedChange={(c) => updateBranding({ [item.key]: c })}
+                          className={`scale-75 data-[state=checked]:${item.color}`}
+                        />
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>

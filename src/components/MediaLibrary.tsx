@@ -2,10 +2,21 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Upload, Trash2, Image as ImageIcon, Loader2 } from "lucide-react";
+import { Upload, Trash2, Image as ImageIcon, Loader2, Play, Layout, Sparkles, Plus, MoreVertical, ExternalLink } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ENV } from "@/config/env";
 import { getImageUrl } from "@/services/cdn";
+import { useNavigate } from "react-router-dom";
+import { getUserEvents, updateEvent, EventConfig, Template } from "@/services/eventsApi";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator
+} from "@/components/ui/dropdown-menu";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 const API_URL = ENV.API_URL;
 
@@ -33,7 +44,12 @@ export function MediaLibrary({ onSelectMedia, selectedUrl, eventId, templates, o
   const [media, setMedia] = useState<MediaItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [userEvents, setUserEvents] = useState<EventConfig[]>([]);
+  const [selectedAsset, setSelectedAsset] = useState<MediaItem | null>(null);
+  const [showEventDialog, setShowEventDialog] = useState(false);
+  const [isProcessingAction, setIsProcessingAction] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   useEffect(() => {
     loadMediaLibrary();
@@ -176,6 +192,70 @@ export function MediaLibrary({ onSelectMedia, selectedUrl, eventId, templates, o
     }
   };
 
+  const handleUseInPlayground = (item: MediaItem) => {
+    // Navigate to playground with image parameter
+    // We encode the URL to be safe
+    const encodedUrl = encodeURIComponent(item.url);
+    navigate(`/admin/playground?image=${encodedUrl}&source=library`);
+  };
+
+  const handleStartUseInTemplate = async (item: MediaItem) => {
+    setSelectedAsset(item);
+    setShowEventDialog(true);
+
+    // Fetch events if not already fetched
+    if (userEvents.length === 0) {
+      try {
+        const events = await getUserEvents();
+        setUserEvents(events);
+      } catch (err) {
+        console.error("Failed to fetch events:", err);
+      }
+    }
+  };
+
+  const handleCreateTemplate = async (event: EventConfig) => {
+    if (!selectedAsset) return;
+
+    setIsProcessingAction(true);
+    try {
+      const newTemplate: Template = {
+        id: `template-${Date.now()}`,
+        name: `Asset Template ${new Date().toLocaleDateString()}`,
+        description: `Created from generated asset: ${selectedAsset.name}`,
+        images: [selectedAsset.url],
+        prompt: "Enhance this asset, professional lighting, cinematic detail",
+        active: true,
+        includeBranding: true,
+        includeTagline: true,
+        pipelineConfig: {
+          imageModel: 'nano-banana',
+        }
+      };
+
+      const updatedTemplates = [...(event.templates || []), newTemplate];
+      await updateEvent(event._id, { templates: updatedTemplates });
+
+      toast({
+        title: "Success",
+        description: `Template added to ${event.title}`,
+      });
+
+      setShowEventDialog(false);
+      // Navigate to event editor after success?
+      navigate(`/admin/events/${event._id}/templates`);
+    } catch (error) {
+      console.error("Failed to create template:", error);
+      toast({
+        title: "Error",
+        description: "Failed to create template",
+        variant: "destructive"
+      });
+    } finally {
+      setIsProcessingAction(false);
+    }
+  };
+
   const handleDelete = async (item: MediaItem) => {
     if (!confirm("Are you sure you want to delete this media?")) return;
 
@@ -293,27 +373,112 @@ export function MediaLibrary({ onSelectMedia, selectedUrl, eventId, templates, o
                     e.currentTarget.src = item.url;
                   }}
                 />
-                <div className="absolute inset-0 bg-[#101112]/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDelete(item);
-                    }}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="secondary" size="icon" className="h-8 w-8 bg-black/60 hover:bg-black/80 border-none">
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-56 bg-[#101112] border-white/10 text-white">
+                      <DropdownMenuItem
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          window.open(item.url, '_blank');
+                        }}
+                        className="flex items-center gap-2 cursor-pointer focus:bg-white/5"
+                      >
+                        <ExternalLink className="h-4 w-4 text-zinc-400" />
+                        Open Original
+                      </DropdownMenuItem>
+
+                      {category === 'assets' && (
+                        <>
+                          <DropdownMenuSeparator className="bg-white/5" />
+                          <DropdownMenuItem
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleUseInPlayground(item);
+                            }}
+                            className="flex items-center gap-2 cursor-pointer focus:bg-white/5"
+                          >
+                            <Play className="h-4 w-4 text-pink-400" />
+                            Use in Playground
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleStartUseInTemplate(item);
+                            }}
+                            className="flex items-center gap-2 cursor-pointer focus:bg-white/5"
+                          >
+                            <Layout className="h-4 w-4 text-indigo-400" />
+                            Use in Template
+                          </DropdownMenuItem>
+                        </>
+                      )}
+
+                      <DropdownMenuSeparator className="bg-white/5" />
+                      <DropdownMenuItem
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDelete(item);
+                        }}
+                        className="flex items-center gap-2 text-red-400 focus:bg-red-500/10 focus:text-red-400 cursor-pointer"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        Delete Asset
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
-                <div className="absolute bottom-0 left-0 right-0 bg-[#101112]/70 text-white text-xs p-1 truncate">
+
+                <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[10px] p-1.5 truncate backdrop-blur-sm">
                   {item.name}
                 </div>
               </div>
             ))}
           </div>
         )}
+
+        <Dialog open={showEventDialog} onOpenChange={setShowEventDialog}>
+          <DialogContent className="max-w-md bg-[#101112] border-white/10 text-white">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Layout className="w-5 h-5 text-indigo-400" />
+                Select Destination Event
+              </DialogTitle>
+              <DialogDescription className="text-zinc-400">
+                Choose which event should receive this new template.
+              </DialogDescription>
+            </DialogHeader>
+            <ScrollArea className="max-h-[300px] mt-4 pr-2">
+              <div className="space-y-2">
+                {userEvents.length === 0 ? (
+                  <div className="text-center py-6 text-zinc-500">
+                    <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
+                    Finding your events...
+                  </div>
+                ) : (
+                  userEvents.map(event => (
+                    <button
+                      key={event._id}
+                      onClick={() => handleCreateTemplate(event)}
+                      disabled={isProcessingAction}
+                      className="w-full flex items-center justify-between p-3 rounded-xl border border-white/5 bg-white/[0.02] hover:bg-white/5 hover:border-indigo-500/30 transition-all text-left"
+                    >
+                      <div>
+                        <div className="text-sm font-medium">{event.title}</div>
+                        <div className="text-xs text-zinc-500">{event.slug}</div>
+                      </div>
+                      <Plus className="w-4 h-4 text-indigo-400" />
+                    </button>
+                  ))
+                )}
+              </div>
+            </ScrollArea>
+          </DialogContent>
+        </Dialog>
       </CardContent>
     </Card>
   );

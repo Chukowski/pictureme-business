@@ -59,6 +59,19 @@ export function EventEditorLayout({
   const [isMobile, setIsMobile] = useState(false);
   const lastInteraction = useRef(Date.now());
 
+  // Notify global navbar to hide when any sidebar is open or in fullscreen
+  useEffect(() => {
+    const shouldHideNavbar = isMobileMenuOpen || (isRightSidebarOpen && isPreviewFullscreen) || (isSidebarOpen && isMobile);
+    window.dispatchEvent(new CustomEvent('navbar-visibility', {
+      detail: { visible: !shouldHideNavbar }
+    }));
+    return () => {
+      window.dispatchEvent(new CustomEvent('navbar-visibility', {
+        detail: { visible: true }
+      }));
+    };
+  }, [isMobileMenuOpen, isRightSidebarOpen, isPreviewFullscreen, isSidebarOpen, isMobile]);
+
   useEffect(() => {
     const handleInactivity = () => {
       if (Date.now() - lastInteraction.current > 3000) {
@@ -349,8 +362,8 @@ export function EventEditorLayout({
                 exit={isMobile || isPreviewFullscreen ? { opacity: 0, x: "100%" } : { width: 0, opacity: 0 }}
                 transition={{ type: "spring", damping: 30, stiffness: 300 }}
                 className={cn(
-                  "bg-[#09090b] flex flex-col overflow-hidden border-l border-white/10 shadow-2xl shadow-black transition-all",
-                  (isPreviewFullscreen || isMobile) ? "fixed inset-0 z-[60]" : "relative min-w-[450px] max-w-[800px] shrink-0 z-40"
+                  "bg-[#09090b] flex flex-col overflow-hidden border-l border-white/10 shadow-2xl transition-all",
+                  (isPreviewFullscreen || isMobile) ? "fixed inset-0 z-[150]" : "relative min-w-[450px] max-w-[800px] shrink-0 z-40"
                 )}
               >
                 {/* Preview Toolbar */}

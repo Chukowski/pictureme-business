@@ -14,8 +14,10 @@ import {
   Image as ImageIcon, User, Users, Info,
   RotateCcw, SplitSquareHorizontal, Trash2,
   Smartphone, Monitor, Tablet, Grid3X3, ZoomIn, ZoomOut, History,
-  ChevronDown, ChevronUp, Maximize2, Minimize2, Eraser
+  ChevronDown, ChevronUp, Maximize2, Minimize2, Eraser, FolderOpen
 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { MediaLibrary } from "@/components/MediaLibrary";
 import { toast } from "sonner";
 import { User as UserType, EventConfig, updateEvent } from "@/services/eventsApi";
 import { processImageWithAI, downloadImageAsBase64, AI_MODELS, type AIModelKey } from "@/services/aiProcessor";
@@ -23,6 +25,7 @@ import { PromptHelper } from "@/components/PromptHelper";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { usePlayground } from "./PlaygroundContext";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { uploadMediaFromUrl } from "@/services/mediaApi";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -45,9 +48,10 @@ interface PlaygroundTemplateTestProps {
   events: EventConfig[];
   currentUser: UserType;
   onReloadEvents: () => Promise<void>;
+  initialImage?: string | null;
 }
 
-export function PlaygroundTemplateTest({ events, currentUser, onReloadEvents }: PlaygroundTemplateTestProps) {
+export function PlaygroundTemplateTest({ events, currentUser, onReloadEvents, initialImage }: PlaygroundTemplateTestProps) {
   const { setPreview, setPreviewToolbar, triggerNewAsset } = usePlayground();
 
   // State
@@ -76,6 +80,7 @@ export function PlaygroundTemplateTest({ events, currentUser, onReloadEvents }: 
   const [tokensUsed, setTokensUsed] = useState(0);
   const [history, setHistory] = useState<string[]>([]);
   const [activeRightTab, setActiveRightTab] = useState<'preview' | 'history'>('preview');
+  const [isSavingToLibrary, setIsSavingToLibrary] = useState(false);
 
   // Preview Display State (matched BoothEditor)
   const [previewDevice, setPreviewDevice] = useState<'mobile' | 'tablet' | 'desktop'>('mobile');
@@ -86,6 +91,24 @@ export function PlaygroundTemplateTest({ events, currentUser, onReloadEvents }: 
   const selectedEvent = events.find(e => e._id === selectedEventId);
   const templates = selectedEvent?.templates || [];
   const selectedTemplate = templates.find(t => t.id === selectedTemplateId);
+
+  // Handle initial image from library
+  useReactEffect(() => {
+    if (initialImage) {
+      setTestImage(initialImage);
+      const loadInitial = async () => {
+        try {
+          const base64 = await downloadImageAsBase64(initialImage);
+          setTestImageBase64(base64);
+          setProcessedResult(null);
+          toast.success("Image loaded from library");
+        } catch (err) {
+          console.error("Failed to load initial image:", err);
+        }
+      };
+      loadInitial();
+    }
+  }, [initialImage]);
 
   // Handlers
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -175,6 +198,21 @@ export function PlaygroundTemplateTest({ events, currentUser, onReloadEvents }: 
       triggerNewAsset(true);
       setProcessingProgress(100);
       toast.success("Image processed successfully!");
+
+      // 4. Auto-save to Media Library for Business Users
+      const isBusiness = currentUser?.role?.startsWith('business');
+      if (isBusiness && outputUrl) {
+        setIsSavingToLibrary(true);
+        try {
+          const filename = `playground-${Date.now()}.jpg`;
+          await uploadMediaFromUrl(outputUrl, filename, 'assets');
+          console.log("✅ Playground result saved to Assets library");
+        } catch (err) {
+          console.error("Failed to auto-save to library:", err);
+        } finally {
+          setIsSavingToLibrary(false);
+        }
+      }
     } catch (error: any) {
       console.error("AI Processing error:", error);
       setProcessingStatus('error');
@@ -252,15 +290,55 @@ export function PlaygroundTemplateTest({ events, currentUser, onReloadEvents }: 
                 </div>
               </div>
             ) : (
-              <div
-                className="border-2 border-dashed border-zinc-700 rounded-xl p-8 text-center cursor-pointer hover:border-purple-500/50 transition-all bg-[#101112]/20 hover:bg-[#101112]/30 group"
-                onClick={() => fileInputRef.current?.click()}
-              >
-                <div className="w-12 h-12 rounded-full bg-zinc-800 flex items-center justify-center mx-auto mb-4 group-hover:bg-purple-500/20 transition-colors">
-                  <Upload className="w-6 h-6 text-zinc-500 group-hover:text-purple-400 transition-colors" />
+              <div className="flex flex-col gap-3">
+                <div
+                  className="border-2 border-dashed border-zinc-700 rounded-xl p-8 text-center cursor-pointer hover:border-purple-500/50 transition-all bg-[#101112]/20 hover:bg-[#101112]/30 group"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <div className="w-12 h-12 rounded-full bg-zinc-800 flex items-center justify-center mx-auto mb-4 group-hover:bg-purple-500/20 transition-colors">
+                    <Upload className="w-6 h-6 text-zinc-500 group-hover:text-purple-400 transition-colors" />
+                  </div>
+                  <p className="text-sm font-medium text-zinc-300 group-hover:text-white transition-colors">Click to upload photo</p>
+                  <p className="text-xs text-zinc-500 mt-1">or drag and drop</p>
                 </div>
-                <p className="text-sm font-medium text-zinc-300 group-hover:text-white transition-colors">Click to upload photo</p>
-                <p className="text-xs text-zinc-500 mt-1">or drag and drop</p>
+
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="w-full h-11 border-white/5 bg-zinc-800/50 hover:bg-zinc-800 text-zinc-300 flex items-center justify-center gap-2 rounded-xl transition-all hover:border-indigo-500/30"
+                    >
+                      <FolderOpen className="w-4 h-4 text-indigo-400" />
+                      Pick from Media Library
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-4xl bg-[#101112] border-white/10 text-white">
+                    <DialogHeader>
+                      <DialogTitle className="flex items-center gap-2">
+                        <FolderOpen className="w-5 h-5 text-indigo-400" />
+                        Choose Source Image
+                      </DialogTitle>
+                      <div className="text-sm text-zinc-500">
+                        Select a previous asset from your library to test with this template.
+                      </div>
+                    </DialogHeader>
+                    <div className="max-h-[60vh] overflow-y-auto pr-2">
+                      <MediaLibrary
+                        onSelectMedia={async (url) => {
+                          setTestImage(url);
+                          try {
+                            const base64 = await downloadImageAsBase64(url);
+                            setTestImageBase64(base64);
+                            toast.success("Image selected from library");
+                          } catch (err) {
+                            console.error("Failed to load image from library:", err);
+                            toast.error("Failed to load selected image");
+                          }
+                        }}
+                      />
+                    </div>
+                  </DialogContent>
+                </Dialog>
               </div>
             )}
           </div>

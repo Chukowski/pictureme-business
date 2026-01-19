@@ -33,6 +33,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { MediaLibrary } from "@/components/MediaLibrary";
 import { ENV } from "@/config/env";
 
 export function TopNavbar() {
@@ -46,6 +53,7 @@ export function TopNavbar() {
   const [eventsDropdownOpen, setEventsDropdownOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [isForcedHidden, setIsForcedHidden] = useState(false);
+  const [isAssetsOpen, setIsAssetsOpen] = useState(false);
 
   useEffect(() => {
     const handleVisibility = (e: any) => {
@@ -533,6 +541,16 @@ export function TopNavbar() {
                   </DropdownMenuItem>
                 )}
 
+                {isBusinessUser && (
+                  <DropdownMenuItem
+                    onClick={() => navigate('/admin/studio?view=assets')}
+                    className="flex items-center gap-2 px-2 py-1.5 cursor-pointer hover:bg-white/5 rounded-md focus:bg-white/5 focus:text-white"
+                  >
+                    <Image className="w-4 h-4 text-zinc-400" />
+                    <span>Assets</span>
+                  </DropdownMenuItem>
+                )}
+
                 <DropdownMenuItem
                   onClick={() => window.open('https://discord.gg/pictureme', '_blank')}
                   className="flex items-center gap-2 px-2 py-1.5 cursor-pointer hover:bg-white/5 rounded-md focus:bg-white/5 focus:text-white"
@@ -552,10 +570,10 @@ export function TopNavbar() {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-
           </div>
         </motion.div>
       )}
+
     </AnimatePresence>
   );
 }

@@ -313,7 +313,7 @@ export function CreatorStudioSidebar({
 
     return (
         <div className={cn(
-            "fixed z-[60] flex flex-col text-white font-sans overflow-hidden transition-all duration-300",
+            "fixed z-40 flex flex-col text-white font-sans overflow-hidden transition-all duration-300",
             // Mobile: Full screen drawer
             "inset-0 bg-[#09090b] h-[100dvh] md:h-auto",
             // Desktop: Extra compact floating fixed card (90% scaling feel)
