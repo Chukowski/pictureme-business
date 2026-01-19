@@ -233,7 +233,7 @@ export default function LandingPage() {
           <div className="mt-24 relative max-w-5xl mx-auto h-[400px] hidden md:block">
             <div className="absolute left-0 top-10 w-64 h-80 bg-card rounded-2xl border border-white/10 overflow-hidden shadow-2xl rotate-[-6deg] hover:rotate-0 transition-all duration-500 z-10">
               <img
-                src={getImageUrl("https://images.unsplash.com/photo-1534528741775-53994a69daeb", { width: 400, quality: 80 })}
+                src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&q=80&fit=crop&auto=format"
                 alt="AI-enhanced portrait demonstration showing cinematic lighting"
                 className="w-full h-full object-cover opacity-80 hover:opacity-100 transition-opacity"
                 loading="lazy"
@@ -242,7 +242,7 @@ export default function LandingPage() {
             </div>
             <div className="absolute right-0 top-10 w-64 h-80 bg-card rounded-2xl border border-white/10 overflow-hidden shadow-2xl rotate-[6deg] hover:rotate-0 transition-all duration-500 z-10">
               <img
-                src={getImageUrl("https://images.unsplash.com/photo-1531746020798-e6953c6e8e04", { width: 400, quality: 80 })}
+                src="https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=400&q=80&fit=crop&auto=format"
                 alt="High-fashion AI style transformation example"
                 className="w-full h-full object-cover opacity-80 hover:opacity-100 transition-opacity"
                 loading="lazy"
@@ -251,7 +251,7 @@ export default function LandingPage() {
             </div>
             <div className="absolute left-1/2 -translate-x-1/2 top-0 w-[500px] h-[350px] bg-card rounded-2xl border border-white/10 overflow-hidden shadow-2xl z-20 hover:scale-105 transition-transform duration-500">
               <img
-                src={getImageUrl("https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe", { width: 800, quality: 90 })}
+                src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&q=90&fit=crop&auto=format"
                 alt="Surreal abstract AI-generated background"
                 className="w-full h-full object-cover"
                 loading="eager"
