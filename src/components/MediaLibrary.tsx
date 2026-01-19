@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Upload, Trash2, Image as ImageIcon, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ENV } from "@/config/env";
+import { getImageUrl } from "@/services/cdn";
 
 const API_URL = ENV.API_URL;
 
@@ -279,9 +280,13 @@ export function MediaLibrary({ onSelectMedia, selectedUrl, eventId, templates, o
                 onClick={() => onSelectMedia(item.url)}
               >
                 <img
-                  src={item.url}
+                  src={getImageUrl(item.url, { preset: 'thumbnail' })}
                   alt={item.name}
                   className="w-full h-32 object-cover"
+                  onError={(e) => {
+                    // Fallback to original URL if CDN fails
+                    e.currentTarget.src = item.url;
+                  }}
                 />
                 <div className="absolute inset-0 bg-[#101112]/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                   <Button
