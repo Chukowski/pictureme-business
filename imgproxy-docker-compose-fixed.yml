@@ -1,0 +1,62 @@
+version: "3.9"
+
+services:
+  imgproxy:
+    image: darthsim/imgproxy:latest
+    networks:
+      - dokploy-network
+    deploy:
+      mode: replicated
+      replicas: 3
+      placement:
+        constraints:
+          - node.role == manager
+
+    volumes:
+      - imgproxy-cache:/imgproxy/cache
+      - ./presets.yml:/etc/imgproxy/presets.yml:ro
+    environment:
+      IMGPROXY_BIND: ":8080"
+
+      # ===== Sources (R2 + External) =====
+      IMGPROXY_ALLOWED_SOURCES: "*"
+      IMGPROXY_USE_S3: "true"
+      AWS_ACCESS_KEY_ID: "f9c543c0a01f6373f9313baf638901a9"
+      AWS_SECRET_ACCESS_KEY: "9fe86b109b1d9387193bc2bdf284e19aecda1cc868b452b134910aa539f229a7"
+      IMGPROXY_S3_REGION: "auto"
+      # CRITICAL: Use R2 endpoint, NOT S3!
+      IMGPROXY_S3_ENDPOINT: "https://aa0d986df11ee95023439cbfcffc3937.r2.cloudflarestorage.com"
+
+      # ===== Persistent CACHE (critical) =====
+      IMGPROXY_CACHE: "true"
+      IMGPROXY_CACHE_DIR: "/imgproxy/cache"
+      IMGPROXY_CACHE_SIZE: "10000"
+      IMGPROXY_CACHE_CONTROL_PUBLIC: "true"
+      IMGPROXY_CACHE_CONTROL_MAX_AGE: "31536000"
+      IMGPROXY_SET_AS_IMMUTABLE: "true"
+      IMGPROXY_USE_ETAG: "true"
+      IMGPROXY_USE_LAST_MODIFIED: "true"
+
+      # ===== Performance =====
+      IMGPROXY_CONCURRENCY: "50"
+      IMGPROXY_MAX_CLIENTS: "2048"
+      IMGPROXY_MAX_SRC_RESOLUTION: "50"
+      IMGPROXY_TIMEOUT: "30"
+      IMGPROXY_DOWNLOAD_TIMEOUT: "20"
+
+      # ===== Formats =====
+      IMGPROXY_AUTO_WEBP: "true"
+      IMGPROXY_AUTO_AVIF: "true"
+      IMGPROXY_PREFERRED_FORMATS: "avif,webp,jpeg,png"
+      IMGPROXY_PRESETS_FILE: "/etc/imgproxy/presets.yml"
+      
+      # ===== Client Hints =====
+      IMGPROXY_ENABLE_WEBP_DETECTION: "true"
+      IMGPROXY_ENABLE_CLIENT_HINTS: "true"
+
+volumes:
+  imgproxy-cache:
+
+networks:
+  dokploy-network:
+    external: true

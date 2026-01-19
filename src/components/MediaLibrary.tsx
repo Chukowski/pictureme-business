@@ -26,9 +26,10 @@ interface MediaLibraryProps {
   eventId?: string; // Filter media by event
   templates?: Array<{ images: string[] }>; // Show only images from event templates
   onDeleteMedia?: (url: string) => void; // Callback when media is deleted from template
+  category?: string; // Filter by category (e.g., 'assets')
 }
 
-export function MediaLibrary({ onSelectMedia, selectedUrl, eventId, templates, onDeleteMedia }: MediaLibraryProps) {
+export function MediaLibrary({ onSelectMedia, selectedUrl, eventId, templates, onDeleteMedia, category }: MediaLibraryProps) {
   const [media, setMedia] = useState<MediaItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -36,7 +37,7 @@ export function MediaLibrary({ onSelectMedia, selectedUrl, eventId, templates, o
 
   useEffect(() => {
     loadMediaLibrary();
-  }, [eventId, templates]);
+  }, [eventId, templates, category]);
 
   const loadMediaLibrary = async () => {
     try {
@@ -78,7 +79,10 @@ export function MediaLibrary({ onSelectMedia, selectedUrl, eventId, templates, o
       if (!token) {
         throw new Error("No authentication token found");
       }
-      const response = await fetch(`${API_URL}/api/media/library`, {
+      const url = new URL(`${API_URL}/api/media/library`);
+      if (category) url.searchParams.append("category", category);
+
+      const response = await fetch(url.toString(), {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -135,6 +139,7 @@ export function MediaLibrary({ onSelectMedia, selectedUrl, eventId, templates, o
       }
       const formData = new FormData();
       formData.append("file", file);
+      if (category) formData.append("category", category);
 
       const response = await fetch(`${API_URL}/api/media/upload`, {
         method: "POST",
@@ -220,8 +225,8 @@ export function MediaLibrary({ onSelectMedia, selectedUrl, eventId, templates, o
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
           <span className="flex items-center gap-2">
-            <ImageIcon className="h-5 w-5" />
-            {templates && templates.length > 0 ? 'Event Images' : 'Media Library'}
+            <ImageIcon className="h-5 w-5 text-indigo-400" />
+            {templates && templates.length > 0 ? 'Event Images' : category === 'assets' ? 'Generated Assets' : 'Media Library'}
           </span>
           <label htmlFor="media-upload">
             <Button

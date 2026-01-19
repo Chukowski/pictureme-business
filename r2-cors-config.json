@@ -1,0 +1,25 @@
+[
+  {
+    "allowed_origins": [
+      "http://localhost:8080",
+      "http://localhost:3000",
+      "https://pictureme.now",
+      "https://www.pictureme.now",
+      "https://img.pictureme.now",
+      "https://r2.pictureme.now"
+    ],
+    "allowed_methods": [
+      "GET",
+      "HEAD"
+    ],
+    "allowed_headers": [
+      "*"
+    ],
+    "expose_headers": [
+      "ETag",
+      "Content-Length",
+      "Content-Type"
+    ],
+    "max_age_seconds": 3600
+  }
+]

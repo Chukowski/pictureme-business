@@ -51,7 +51,7 @@ export const PrivacyPage = () => {
               <br />
               Operated by Akitá LLC
             </div>
-            <p className="text-sm text-gray-500">Updated: 2025</p>
+            <p className="text-sm text-gray-500">Updated: January 19, 2026</p>
           </div>
 
           {/* Introduction */}
@@ -103,8 +103,22 @@ export const PrivacyPage = () => {
             </Section>
 
             <Section number="3" title="Storage & Retention of Photos">
+              <div className="bg-purple-500/10 border border-purple-500/30 rounded-xl p-6 mb-4 backdrop-blur-sm">
+                <h3 className="text-white font-semibold text-lg mb-3">📅 Photo Retention Policy</h3>
+                <p className="mb-3">When you upload a photo for AI processing:</p>
+                <ul className="list-disc pl-6 space-y-2">
+                  <li><strong className="text-white">Your original photo</strong> is automatically deleted after <strong className="text-purple-400">30 days</strong></li>
+                  <li><strong className="text-white">AI-generated results</strong> remain in your account until you delete them</li>
+                  <li>You can download your photos at any time before deletion</li>
+                  <li>You can request immediate deletion by contacting support</li>
+                </ul>
+                <p className="mt-3 text-sm text-gray-400 italic">
+                  This policy ensures we only retain your biometric data for as long as necessary to provide our service, complying with GDPR and CCPA requirements.
+                </p>
+              </div>
+              
               <ul className="list-disc pl-6 space-y-2">
-                <li>Photos are stored temporarily to allow viewing, downloading, or sharing.</li>
+                <li>Photos are stored securely on Cloudflare R2 infrastructure with zero egress fees.</li>
                 <li>Storage duration may vary depending on your event settings or account type.</li>
                 <li>Business/event hosts are responsible for obtaining consent from participants.</li>
                 <li>We do not use event photos for training AI models unless explicitly permitted.</li>
