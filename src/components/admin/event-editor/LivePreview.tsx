@@ -34,7 +34,8 @@ import { ProcessingLoader } from "@/components/ProcessingLoader";
 import { ResultDisplay } from "@/components/ResultDisplay";
 import { EventTitle } from "@/components/EventTitle";
 import ShaderBackground from "@/components/ShaderBackground";
-import { getAvatarUrl } from "@/services/imgproxy";
+// CDN service for public content (Cloudflare Image Resizing)
+import { getAvatarUrl } from "@/services/cdn";
 
 // TikTok icon component
 const TikTokIcon = ({ className }: { className?: string }) => (

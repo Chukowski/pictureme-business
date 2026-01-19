@@ -3,7 +3,8 @@ import { Sparkles, Loader2, Wand2, Download, History, BookOpen, ImageIcon, Video
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { GalleryItem } from '@/components/creator/CreationDetailView';
-import { getThumbnailUrl } from "@/services/imgproxy";
+// CDN service for public content (Cloudflare Image Resizing)
+import { getThumbnailUrl, getVideoUrl } from "@/services/cdn";
 import { cn } from "@/lib/utils";
 import { Slider } from "@/components/ui/slider";
 
@@ -364,7 +365,7 @@ export const TimelineView = ({
                                                                     alt={item.prompt}
                                                                 />
                                                             ) : (
-                                                                <video src={item.url} className="w-full h-full object-contain" controls />
+                                                                <video src={getVideoUrl(item.url)} className="w-full h-full object-contain" controls />
                                                             )
                                                         ) : (
                                                             <div className="flex flex-col items-center gap-3 text-zinc-600">
@@ -470,7 +471,7 @@ export const TimelineView = ({
                                                                 alt={item.prompt}
                                                             />
                                                         ) : (
-                                                            <video src={item.url} className={cn("w-full h-full", fitToScreen ? "object-contain bg-[#101112]" : "object-cover")} />
+                                                            <video src={getVideoUrl(item.url)} className={cn("w-full h-full", fitToScreen ? "object-contain bg-[#101112]" : "object-cover")} />
                                                         )
                                                     ) : (
                                                         <div className="w-full h-full flex flex-col items-center justify-center bg-card/50 text-zinc-700 gap-3">

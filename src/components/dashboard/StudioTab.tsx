@@ -16,7 +16,10 @@ import {
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogTrigger, DialogClose } from "@/components/ui/dialog";
 import { ENV } from "@/config/env";
-import { getThumbnailUrl, getOptimizedUrl, getDownloadUrl, getProxyDownloadUrl } from "@/services/imgproxy";
+// CDN service for public content (Cloudflare Image Resizing)
+import { getThumbnailUrl, getViewUrl as getOptimizedUrl, getDownloadUrl, getVideoUrl } from "@/services/cdn";
+// Keep imgproxy for authenticated downloads
+import { getProxyDownloadUrl } from "@/services/imgproxy";
 import { useUserTier } from "@/services/userTier";
 
 // AI Models Data
@@ -551,7 +554,7 @@ export default function StudioTab({ currentUser }: StudioTabProps) {
                                     {item.type === 'image' ? (
                                         <img src={getThumbnailUrl(item.url, 400)} alt="Generated" className="w-full h-full object-cover" />
                                     ) : (
-                                        <video src={item.url} className="w-full h-full object-cover" />
+                                        <video src={getVideoUrl(item.url)} className="w-full h-full object-cover" />
                                     )}
                                     <div className="absolute inset-0 bg-[#101112]/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                         <MonitorPlay className="w-8 h-8 text-white drop-shadow-lg" />
@@ -576,7 +579,7 @@ export default function StudioTab({ currentUser }: StudioTabProps) {
                                 {selectedHistoryItem.type === 'image' ? (
                                     <img src={getOptimizedUrl(selectedHistoryItem.url, 1200)} alt="Detail" className="max-w-full max-h-full object-contain" />
                                 ) : (
-                                    <video src={selectedHistoryItem.url} controls autoPlay loop className="max-w-full max-h-full object-contain" />
+                                    <video src={getVideoUrl(selectedHistoryItem.url)} controls autoPlay loop className="max-w-full max-h-full object-contain" />
                                 )}
                             </div>
 

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { getOptimizedUrl, getThumbnailUrl, getAvatarUrl } from "@/services/imgproxy";
+// CDN service for public content (Cloudflare Image Resizing)
+import { getViewUrl as getOptimizedUrl, getThumbnailUrl, getAvatarUrl } from "@/services/cdn";
 import {
     X, Copy, RefreshCw, Save, Download,
     ChevronDown, Trash2, Maximize2, Wand2,

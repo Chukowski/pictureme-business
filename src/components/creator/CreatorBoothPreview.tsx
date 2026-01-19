@@ -22,7 +22,8 @@ import {
     ExternalLink,
     Link2
 } from "lucide-react";
-import { getAvatarUrl } from "@/services/imgproxy";
+// CDN service for public content (Cloudflare Image Resizing)
+import { getAvatarUrl } from "@/services/cdn";
 import ShaderBackground from "@/components/ShaderBackground";
 
 // TikTok icon component

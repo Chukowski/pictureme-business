@@ -21,7 +21,10 @@ import { ENV } from "@/config/env";
 import { getCurrentUser, toggleLike } from "@/services/eventsApi";
 import { toast } from "sonner";
 import { CreationDetailView, GalleryItem } from "@/components/creator/CreationDetailView";
-import { getAvatarUrl, getOptimizedUrl, getThumbnailUrl, getDownloadUrl, getProcessingUrl, getProxyDownloadUrl } from "@/services/imgproxy";
+// CDN service for public content (Cloudflare Image Resizing)
+import { getAvatarUrl, getViewUrl as getOptimizedUrl, getThumbnailUrl, getDownloadUrl } from "@/services/cdn";
+// Keep imgproxy for authenticated downloads
+import { getProcessingUrl, getProxyDownloadUrl } from "@/services/imgproxy";
 import { useUserTier } from "@/services/userTier";
 
 

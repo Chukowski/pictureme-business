@@ -17,7 +17,10 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { getAvatarUrl, getThumbnailUrl, getOptimizedUrl, getDownloadUrl, getProxyDownloadUrl } from '@/services/imgproxy';
+// CDN service for public content (Cloudflare Image Resizing)
+import { getAvatarUrl, getThumbnailUrl, getViewUrl, getDownloadUrl } from '@/services/cdn';
+// Keep imgproxy proxy download for authenticated downloads
+import { getProxyDownloadUrl } from '@/services/imgproxy';
 import { getPublicUserProfile, User, toggleLike, getCurrentUser } from '@/services/eventsApi';
 import { cn } from '@/lib/utils';
 import { SEO } from '@/components/SEO';
@@ -445,7 +448,7 @@ export default function CreatorBoothFeed() {
                     const remixState = {
                         prompt: item.prompt || '',
                         selectedTemplate: item.template || null,
-                        sourceImageUrl: getOptimizedUrl(item.url, 2048),
+                        sourceImageUrl: getViewUrl(item.url),
                         remixFrom: item.id,
                         remixFromUsername: item.creator_username,
                         view: 'create'

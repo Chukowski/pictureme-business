@@ -1,7 +1,8 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { Wand2, Download, LayoutGrid, List, Sparkles, Clock, ChevronRight, Eye, EyeOff, Video, ImageIcon, Save } from 'lucide-react';
 import { GalleryItem } from '@/components/creator/CreationDetailView';
-import { getThumbnailUrl } from '@/services/imgproxy';
+// CDN service for public content (Cloudflare Image Resizing)
+import { getThumbnailUrl } from '@/services/cdn';
 import { cn } from '@/lib/utils';
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';

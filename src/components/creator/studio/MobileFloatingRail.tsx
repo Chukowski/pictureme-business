@@ -14,7 +14,8 @@ import {
 import { cn } from '@/lib/utils';
 import { MainView } from './AppRail';
 import { User } from '@/services/eventsApi';
-import { getThumbnailUrl } from '@/services/imgproxy';
+// CDN service for public content (Cloudflare Image Resizing)
+import { getThumbnailUrl } from '@/services/cdn';
 
 interface MobileFloatingRailProps {
     isOpen: boolean;

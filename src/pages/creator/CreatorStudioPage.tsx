@@ -57,7 +57,10 @@ import { ENV } from "@/config/env";
 import { SaveTemplateModal } from "@/components/templates/SaveTemplateModal";
 import { useMyTemplates, UserTemplate } from "@/hooks/useMyTemplates";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { getThumbnailUrl, getProcessingUrl, getDownloadUrl, getProxyDownloadUrl } from "@/services/imgproxy";
+// CDN service for public content (Cloudflare Image Resizing)
+import { getThumbnailUrl, getDownloadUrl } from "@/services/cdn";
+// Keep imgproxy for authenticated/processing operations
+import { getProcessingUrl, getProxyDownloadUrl } from "@/services/imgproxy";
 import { cn } from "@/lib/utils";
 import { CreatorStudioSidebar, SidebarMode } from "@/components/creator/CreatorStudioSidebar";
 import { TemplateLibrary, MarketplaceTemplate } from "@/components/creator/TemplateLibrary";

@@ -49,7 +49,8 @@ import { ProcessingLoader } from "@/components/ProcessingLoader";
 import { ResultDisplay } from "@/components/ResultDisplay";
 import { processImageWithAI, downloadImageAsBase64 } from "@/services/aiProcessor";
 import { saveProcessedPhoto } from "@/services/localStorage";
-import { getAvatarUrl } from "@/services/imgproxy";
+// CDN service for public content (Cloudflare Image Resizing)
+import { getAvatarUrl } from "@/services/cdn";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { BoothGate } from "@/components/auth/BoothGate";
