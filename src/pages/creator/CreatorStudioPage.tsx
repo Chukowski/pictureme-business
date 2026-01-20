@@ -1017,7 +1017,9 @@ function CreatorStudioPageContent({ defaultView }: CreatorStudioPageProps) {
                                 setIsPublic={setIsPublic}
                                 isFreeTier={isFreeTier}
                                 onCloseMobile={() => {
-                                    if (window.history.length > 2) {
+                                    if (activeView === 'create') {
+                                        setActiveView('gallery');
+                                    } else if (window.history.length > 2) {
                                         navigate(-1);
                                     } else {
                                         navigate('/creator/dashboard');
@@ -1087,16 +1089,13 @@ function CreatorStudioPageContent({ defaultView }: CreatorStudioPageProps) {
 
 
             {/* Mobile Create Mode Header */}
-            {/* Mobile Bottom Navigation (Hidden in Create Mode) */}
-            {
-                activeView !== "create" && (
-                    <CreatorBottomNav
-                        onOpenCreate={() => setActiveView("create")}
-                        onLibraryClick={() => setActiveView("gallery")}
-                        activeTab={activeView}
-                    />
-                )
-            }
+            {/* Mobile Bottom Navigation */}
+            <CreatorBottomNav
+                onOpenCreate={() => setActiveView("create")}
+                onLibraryClick={() => setActiveView("gallery")}
+                onHomeClick={() => navigate('/creator/dashboard')}
+                activeTab={activeView}
+            />
 
             {/* immersive vertical navigation detail view */}
             <CreationDetailView

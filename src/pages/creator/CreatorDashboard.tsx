@@ -281,7 +281,6 @@ export default function CreatorDashboard() {
   const [content, setContent] = useState<HomeContentResponse | null>(null);
   const [marketplaceTemplates, setMarketplaceTemplates] = useState<MarketplaceTemplate[]>([]);
   const [creations, setCreations] = useState<UserCreation[]>([]);
-  const [pendingJobs, setPendingJobs] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   // Community Feed Pagination State
@@ -325,18 +324,14 @@ export default function CreatorDashboard() {
 
       const token = localStorage.getItem("auth_token");
 
-      const [homeContent, templates, tokenStats, creationsData, pendingData] = await Promise.all([
+      const [homeContent, templates, tokenStats, creationsData] = await Promise.all([
         getHomeContent('personal').catch(() => null),
         getMarketplaceTemplates({ limit: 10 }).catch(() => []),
         getTokenStats().catch(() => null),
-        // Fetch user's creations from API
-        token ? fetch(`${ENV.API_URL}/api/creations`, {
+        // Fetch user's creations from API (limit to 20 most recent)
+        token ? fetch(`${ENV.API_URL}/api/creations?limit=20&sort=desc`, {
           headers: { "Authorization": `Bearer ${token}` }
-        }).then(r => r.ok ? r.json() : { creations: [] }).catch(() => ({ creations: [] })) : { creations: [] },
-        // Fetch pending generations
-        token ? fetch(`${ENV.API_URL}/api/generate/pending`, {
-          headers: { "Authorization": `Bearer ${token}` }
-        }).then(r => r.ok ? r.json() : { pending: [] }).catch(() => ({ pending: [] })) : { pending: [] }
+        }).then(r => r.ok ? r.json() : { creations: [] }).catch(() => ({ creations: [] })) : { creations: [] }
       ]);
 
       if (tokenStats) {
@@ -366,7 +361,6 @@ export default function CreatorDashboard() {
 
       setMarketplaceTemplates(filteredTemplates);
       setCreations(creationsData.creations || []);
-      setPendingJobs(pendingData.pending || []);
     } catch (error) {
       console.error("Failed to load dashboard", error);
     } finally {
@@ -442,7 +436,6 @@ export default function CreatorDashboard() {
           homeState={homeState}
           publicCreations={publicCreations.slice(0, 6)}
           navigate={navigate}
-          pendingJobs={pendingJobs}
         />
 
         {/* ========================= */}
@@ -638,7 +631,7 @@ export default function CreatorDashboard() {
 // =======================
 // HERO SECTION
 // =======================
-function HeroSection({ user, homeState, publicCreations, navigate, pendingJobs = [] }: { user: User | null; homeState: CreatorHomeState; publicCreations: any[]; navigate: (path: string) => void; pendingJobs?: any[] }) {
+function HeroSection({ user, homeState, publicCreations, navigate }: { user: User | null; homeState: CreatorHomeState; publicCreations: any[]; navigate: (path: string) => void }) {
   return (
     <div className="flex flex-col gap-3 mt-4 md:mt-0">
       <div className="relative w-full aspect-[2/1] md:aspect-[4/1] rounded-3xl overflow-hidden group bg-[#080808] shadow-2xl shadow-black/50 border border-white/5">
@@ -728,31 +721,6 @@ function HeroSection({ user, homeState, publicCreations, navigate, pendingJobs =
         </div>
       </div>
 
-      {/* GENERATION BAR (Appears when jobs are active) */}
-      {pendingJobs.length > 0 && (
-        <div className="w-full bg-indigo-500/10 border border-indigo-500/20 rounded-2xl p-3 flex items-center justify-between animate-in slide-in-from-top-2">
-          <div className="flex items-center gap-3">
-            <div className="relative">
-              <div className="w-8 h-8 rounded-full border-2 border-indigo-500/20 border-t-indigo-400 animate-spin"></div>
-              <Wand2 className="absolute inset-0 m-auto w-4 h-4 text-indigo-400 animate-pulse" />
-            </div>
-            <div>
-              <p className="text-xs font-bold text-white leading-none mb-1">
-                {pendingJobs.length} {pendingJobs.length === 1 ? 'Generation' : 'Generations'} in progress
-              </p>
-              <p className="text-[10px] text-indigo-300/70 font-medium">Your masterpieces will be ready in seconds</p>
-            </div>
-          </div>
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => navigate('/creator/studio')}
-            className="text-[10px] h-8 px-4 text-indigo-400 hover:text-indigo-300 hover:bg-indigo-500/10 font-bold"
-          >
-            View in Studio <ChevronRight className="w-3 h-3 ml-1" />
-          </Button>
-        </div>
-      )}
     </div>
   );
 }

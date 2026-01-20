@@ -313,9 +313,9 @@ export function CreatorStudioSidebar({
 
     return (
         <div className={cn(
-            "fixed z-40 flex flex-col text-white font-sans overflow-hidden transition-all duration-300",
-            // Mobile: Full screen drawer
-            "inset-0 bg-[#09090b] h-[100dvh] md:h-auto",
+            "fixed flex flex-col text-white font-sans overflow-hidden transition-all duration-300",
+            // Mobile: Full screen drawer, must be above navbar (z-100)
+            "inset-0 bg-[#09090b] h-[100dvh] z-[110] md:h-auto",
             // Desktop: Extra compact floating fixed card (90% scaling feel)
             "md:z-20 md:top-[80px] md:left-[12px] md:bottom-8 md:w-[325px] md:bg-[#1A1A1A] md:rounded-[1rem] md:border md:border-white/5 md:shadow-[0_20px_50px_rgba(0,0,0,0.5)] md:right-auto"
         )}>
