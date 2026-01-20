@@ -310,6 +310,9 @@ function buildR2CloudflareImageUrl(sourceUrl: string, options: CloudflareImageOp
     }
   }
   
+  // Clean up path: remove /pictureme-media/ prefix if present (old URLs)
+  imagePath = imagePath.replace('/pictureme-media/', '/');
+  
   // Build transformation parameters
   const params: string[] = [];
   
