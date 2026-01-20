@@ -471,25 +471,31 @@ export function getImageUrl(sourceUrl: string, options: MediaUrlOptions = {}): s
     options = { ...presetOptions, ...options };
   }
   
-  // R2 images - use Cloudflare Image Resizing on r2.pictureme.now
-  // This gives us 98%+ compression with zero egress fees!
+  // R2 images - use public R2 domain with Cloudflare Image Resizing
+  // For visualization: use public .r2.dev URLs (no auth needed)
+  // For downloads: use backend endpoint with auth (handled separately)
   if (isR2Origin(sourceUrl)) {
-    // For downloads with tier or watermark, use imgproxy
-    if (options.tier || options.watermark) {
-      const tierPresets: Record<string, string> = {
-        free: 'free_download',
-        spark: 'spark_download',
-        vibe: 'vibe_download',
-        studio: 'studio_download',
-        business: 'studio_download',
-      };
-      const preset = options.watermark ? 'watermark' : tierPresets[options.tier] || 'studio_download';
-      return buildImgproxyUrl(sourceUrl, preset);
+    // Convert r2.pictureme.now URLs to public .r2.dev URLs
+    let publicUrl = sourceUrl;
+    if (sourceUrl.includes('r2.pictureme.now')) {
+      // Extract path and convert to public domain
+      try {
+        const url = new URL(sourceUrl);
+        let path = url.pathname;
+        // Remove bucket name if present
+        if (path.startsWith('/pictureme-media/')) {
+          path = path.substring('/pictureme-media/'.length);
+        } else if (path.startsWith('/')) {
+          path = path.substring(1);
+        }
+        publicUrl = `${R2_DEV_URL}/${path}`;
+      } catch {
+        // Fallback to original URL
+      }
     }
     
-    // Use Cloudflare Image Resizing on R2 custom domain
-    // Convert r2.dev URLs to r2.pictureme.now for CF Image Resizing
-    return buildR2CloudflareImageUrl(sourceUrl, options);
+    // Use Cloudflare Image Resizing on public R2 URL
+    return buildR2CloudflareImageUrl(publicUrl, options);
   }
   
   // Determine which service to use

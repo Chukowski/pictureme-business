@@ -705,26 +705,55 @@ function CreatorStudioPageContent({ defaultView }: CreatorStudioPageProps) {
 
     const handleDownload = async (item: GalleryItem) => {
         try {
-            if (item.type === 'video') {
-                // Videos proxy too just to be safe with headers/CORS
-                const proxyUrl = getProxyDownloadUrl(item.url, `creation-${item.id}.mp4`);
-                window.location.href = proxyUrl;
+            // Extract the path from the R2 URL
+            // URL format: https://r2.pictureme.now/pictureme-media/creations/...
+            let path = '';
+            try {
+                const url = new URL(item.url);
+                path = url.pathname;
+                // Remove leading slash and bucket name if present
+                if (path.startsWith('/pictureme-media/')) {
+                    path = path.substring('/pictureme-media/'.length);
+                } else if (path.startsWith('/')) {
+                    path = path.substring(1);
+                }
+            } catch {
+                toast.error("Invalid image URL");
                 return;
             }
 
-            // 1. Get the optimized imgproxy URL based on tier
-            const optimizedUrl = getDownloadUrl(item.url, userTier);
+            // Use backend endpoint to download with authentication
+            const token = localStorage.getItem('auth_token');
+            const apiUrl = ENV.API_URL || 'http://localhost:3002';
+            const filename = item.type === 'video' ? `creation-${item.id}.mp4` : `creation-${item.id}.png`;
+            const downloadUrl = `${apiUrl}/api/media/private/${path}?download=${encodeURIComponent(filename)}`;
 
-            // 2. Wrap it in our backend proxy to force download header and bypass CORS
-            const proxyUrl = getProxyDownloadUrl(optimizedUrl, `creation-${item.id}.webp`);
+            // Fetch with auth token
+            const response = await fetch(downloadUrl, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
 
-            // 3. Simply navigate to it - the Content-Disposition header will trigger save
-            window.location.href = proxyUrl;
+            if (!response.ok) {
+                throw new Error(`Download failed: ${response.status}`);
+            }
+
+            // Create blob and download
+            const blob = await response.blob();
+            const blobUrl = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = blobUrl;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(blobUrl);
 
             toast.success("Download started");
         } catch (e) {
             console.error("Download failed", e);
-            window.open(item.url, '_blank');
+            toast.error("Download failed. Please try again.");
         }
     };
 
