@@ -471,31 +471,67 @@ export function getImageUrl(sourceUrl: string, options: MediaUrlOptions = {}): s
     options = { ...presetOptions, ...options };
   }
   
-  // R2 images - use public R2 domain with Cloudflare Image Resizing
-  // For visualization: use public .r2.dev URLs (no auth needed)
-  // For downloads: use backend endpoint with auth (handled separately)
+  // R2 images - serve directly from public R2 domain
+  // No Cloudflare Image Resizing needed - R2 serves fast enough
+  // Downloads are handled separately via backend endpoint
   if (isR2Origin(sourceUrl)) {
     // Convert r2.pictureme.now URLs to public .r2.dev URLs
     let publicUrl = sourceUrl;
+    
+    // Handle custom domain (r2.pictureme.now)
     if (sourceUrl.includes('r2.pictureme.now')) {
-      // Extract path and convert to public domain
       try {
         const url = new URL(sourceUrl);
         let path = url.pathname;
+        
+        // Remove /cdn-cgi/image/... if present (cleanup from old URLs)
+        if (path.includes('/cdn-cgi/image/')) {
+          const parts = path.split('/cdn-cgi/image/');
+          if (parts.length > 1) {
+            // The actual path is after the transformation params
+            const afterParams = parts[1];
+            const slashIndex = afterParams.indexOf('/');
+            if (slashIndex > -1) {
+              path = afterParams.substring(slashIndex);
+            }
+          }
+        }
+        
         // Remove bucket name if present
         if (path.startsWith('/pictureme-media/')) {
           path = path.substring('/pictureme-media/'.length);
         } else if (path.startsWith('/')) {
           path = path.substring(1);
         }
+        
         publicUrl = `${R2_DEV_URL}/${path}`;
       } catch {
         // Fallback to original URL
       }
     }
     
-    // Use Cloudflare Image Resizing on public R2 URL
-    return buildR2CloudflareImageUrl(publicUrl, options);
+    // Handle .r2.dev URLs - clean up any double paths
+    if (publicUrl.includes('.r2.dev/')) {
+      try {
+        const url = new URL(publicUrl);
+        let path = url.pathname;
+        
+        // Remove bucket name if accidentally included
+        if (path.startsWith('/pictureme-media/')) {
+          path = path.substring('/pictureme-media/'.length);
+        } else if (path.startsWith('/')) {
+          path = path.substring(1);
+        }
+        
+        publicUrl = `${R2_DEV_URL}/${path}`;
+      } catch {
+        // Fallback
+      }
+    }
+    
+    // Return direct R2 URL (no resizing - images are served as-is)
+    // For thumbnails, we'll use simpler approach later
+    return publicUrl;
   }
   
   // Determine which service to use
