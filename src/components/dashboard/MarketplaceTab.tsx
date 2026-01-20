@@ -51,6 +51,8 @@ import {
   Zap,
   Settings2,
   Clock,
+  Maximize2,
+  Minimize2,
 } from "lucide-react";
 import { User } from "@/services/eventsApi";
 import { ENV } from "@/config/env";
@@ -158,9 +160,20 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
   const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [sortBy, setSortBy] = useState('popular');
-  const [typeFilter, setTypeFilter] = useState<'all' | 'individual' | 'business'>('all');
+  const [typeFilter, setTypeFilter] = useState<'all' | 'individual' | 'business' | 'video' | 'image'>('all');
   const [selectedTemplate, setSelectedTemplate] = useState<MarketplaceTemplate | null>(null);
+  const [isInfoExpanded, setIsInfoExpanded] = useState(false);
+  const [actionPhrase, setActionPhrase] = useState("Ready?");
   const [isPurchasing, setIsPurchasing] = useState(false);
+
+  const ACTION_PHRASES = ["Do it!", "Ready?", "Go for it!", "Good one", "Let's go!", "Perfect Choice", "Apply Style", "Looks Fire!"];
+
+  const getModelDisplayName = (modelId: string | undefined) => {
+    if (!modelId) return "Nano Banana";
+    const model = Object.values(AI_MODELS).find(m => m.id === modelId || m.shortId === modelId);
+    if (model) return model.name;
+    return modelId.replace('fal-ai/', '').split('/').shift()?.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || "Nano Banana";
+  };
 
   // View Controls State (Internal)
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -516,7 +529,14 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
     const matchesSearch = template.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       template.description.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory = selectedCategory === 'All' || template.category === selectedCategory;
-    const matchesType = typeFilter === 'all' || template.template_type === typeFilter;
+
+    let matchesType = true;
+    if (typeFilter !== 'all') {
+      if (typeFilter === 'business') matchesType = template.template_type === 'business';
+      else if (typeFilter === 'individual') matchesType = template.template_type === 'individual';
+      else if (typeFilter === 'video') matchesType = template.media_type === 'video';
+      else if (typeFilter === 'image') matchesType = template.media_type === 'image' || !template.media_type;
+    }
 
     if (template.template_type === 'business' && !isBusiness) return false;
 
@@ -582,80 +602,107 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
 
         {/* Templates Section Filters */}
         {activeSection === 'templates' && (
-          <div className="flex flex-col sm:flex-row gap-3 items-center bg-[#18181b] p-3 rounded-[1.5rem] md:rounded-[2rem] border border-white/5 w-full shadow-xl">
-            <div className="relative w-full md:w-[280px]">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
-              <input
-                placeholder="Search templates..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full h-11 md:h-10 pl-10 pr-4 bg-card/50 rounded-xl border-none text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-[#D1F349]/50"
-              />
-            </div>
-
-            <div className="flex w-full sm:w-auto gap-2">
-              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                <SelectTrigger className="flex-1 sm:w-[140px] h-12 md:h-10 bg-card/50 border-none rounded-2xl text-zinc-300 text-sm focus:ring-0">
-                  <SelectValue placeholder="Category" />
-                </SelectTrigger>
-                <SelectContent className="bg-[#18181b] border-white/10 rounded-xl">
-                  {CATEGORIES.map(cat => (
-                    <SelectItem key={cat} value={cat} className="text-zinc-300 focus:bg-zinc-800 focus:text-white rounded-lg cursor-pointer">
-                      {cat}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              <Select value={sortBy} onValueChange={setSortBy}>
-                <SelectTrigger className="flex-1 sm:w-[140px] h-12 md:h-10 bg-card/50 border-none rounded-2xl text-zinc-300 text-sm focus:ring-0">
-                  <SelectValue placeholder="Sort by" />
-                </SelectTrigger>
-                <SelectContent className="bg-[#18181b] border-white/10 rounded-xl">
-                  <SelectItem value="popular" className="text-zinc-300 focus:bg-zinc-800 focus:text-white rounded-lg cursor-pointer">Most Popular</SelectItem>
-                  <SelectItem value="newest" className="text-zinc-300 focus:bg-zinc-800 focus:text-white rounded-lg cursor-pointer">Newest</SelectItem>
-                  <SelectItem value="price-low" className="text-zinc-300 focus:bg-zinc-800 focus:text-white rounded-lg cursor-pointer">Price: Low to High</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="w-full sm:w-px h-px sm:h-6 bg-white/5 mx-1" />
-
-            {/* View Controls (Integrated) */}
-            <div className="flex items-center justify-between sm:justify-start w-full sm:w-auto gap-2">
-              <div className="h-12 md:h-9 px-3 hidden sm:flex flex-1 sm:flex-none items-center bg-card/50 rounded-2xl min-w-[100px]">
-                <Slider
-                  value={gridColumns}
-                  onValueChange={setZoomLevel}
-                  min={2}
-                  max={6}
-                  step={1}
-                  disabled={viewMode === 'list'}
-                  className={`w-full sm:w-24 [&_.bg-primary]:bg-[#D1F349] [&_.border-primary]:border-[#D1F349] ${viewMode === 'list' ? 'opacity-30' : ''}`}
+          <div className="flex flex-col gap-2 w-full">
+            {/* Main Search & Selects Bar */}
+            <div className="flex flex-col sm:flex-row gap-2 items-center bg-[#18181b] p-2 md:p-3 rounded-[1.5rem] md:rounded-[2rem] border border-white/5 w-full shadow-xl">
+              <div className="relative w-full md:w-[280px]">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+                <input
+                  placeholder="Search templates..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full h-11 md:h-10 pl-10 pr-4 bg-card/50 rounded-xl border-none text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-[#D1F349]/50"
                 />
               </div>
-              <div className="flex items-center gap-1 p-1 bg-card/50 rounded-2xl w-full sm:w-auto">
-                <button
-                  onClick={() => setViewMode('list')}
-                  className={cn(
-                    "flex-1 sm:flex-none flex items-center justify-center h-10 md:w-8 md:h-8 rounded-xl transition-all",
-                    viewMode === 'list' ? "bg-[#333333] text-white shadow-md" : "text-zinc-500 hover:text-zinc-300"
-                  )}
-                  title="List View"
-                >
-                  <ListIcon className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => setViewMode('grid')}
-                  className={cn(
-                    "flex-1 sm:flex-none flex items-center justify-center h-10 md:w-8 md:h-8 rounded-xl transition-all",
-                    viewMode === 'grid' ? "bg-[#D1F349] text-black shadow-md" : "text-zinc-500 hover:text-zinc-300"
-                  )}
-                  title="Grid View"
-                >
-                  <LayoutGrid className="w-4 h-4" />
-                </button>
+
+              <div className="flex w-full sm:w-auto gap-2">
+                <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                  <SelectTrigger className="flex-1 sm:w-[130px] h-10 bg-white/[0.02] border border-white/5 rounded-xl text-zinc-400 text-[10px] md:text-sm focus:ring-0 focus:border-white/20 hover:bg-white/[0.05] transition-all">
+                    <SelectValue placeholder="Category" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-zinc-950/90 backdrop-blur-2xl border-white/10 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.8)]">
+                    {CATEGORIES.map(cat => (
+                      <SelectItem key={cat} value={cat} className="text-zinc-400 focus:bg-[#D1F349] focus:text-black rounded-lg cursor-pointer transition-colors m-1 font-medium">
+                        {cat}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <Select value={sortBy} onValueChange={setSortBy}>
+                  <SelectTrigger className="flex-1 sm:w-[130px] h-10 bg-white/[0.02] border border-white/5 rounded-xl text-zinc-400 text-[10px] md:text-sm focus:ring-0 focus:border-white/20 hover:bg-white/[0.05] transition-all">
+                    <SelectValue placeholder="Sort by" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-zinc-950/90 backdrop-blur-2xl border-white/10 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.8)]">
+                    <SelectItem value="popular" className="text-zinc-400 focus:bg-[#D1F349] focus:text-black rounded-lg cursor-pointer transition-colors m-1 font-medium">Most Popular</SelectItem>
+                    <SelectItem value="newest" className="text-zinc-400 focus:bg-[#D1F349] focus:text-black rounded-lg cursor-pointer transition-colors m-1 font-medium">Newest</SelectItem>
+                    <SelectItem value="price-low" className="text-zinc-400 focus:bg-[#D1F349] focus:text-black rounded-lg cursor-pointer transition-colors m-1 font-medium">Price: Low to High</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
+
+              <div className="w-full sm:w-px h-px sm:h-6 bg-white/5 mx-1" />
+
+              {/* View Controls (Integrated) */}
+              <div className="flex items-center justify-between sm:justify-start w-full sm:w-auto gap-2">
+                <div className="h-12 md:h-9 px-3 hidden sm:flex flex-1 sm:flex-none items-center bg-card/50 rounded-2xl min-w-[100px]">
+                  <Slider
+                    value={gridColumns}
+                    onValueChange={setZoomLevel}
+                    min={2}
+                    max={6}
+                    step={1}
+                    disabled={viewMode === 'list'}
+                    className={`w-full sm:w-24 [&_.bg-primary]:bg-[#D1F349] [&_.border-primary]:border-[#D1F349] ${viewMode === 'list' ? 'opacity-30' : ''}`}
+                  />
+                </div>
+                <div className="flex items-center gap-1 p-1 bg-card/50 rounded-2xl w-full sm:w-auto">
+                  <button
+                    onClick={() => setViewMode('list')}
+                    className={cn(
+                      "flex-1 sm:flex-none flex items-center justify-center h-10 md:w-8 md:h-8 rounded-xl transition-all",
+                      viewMode === 'list' ? "bg-[#333333] text-white shadow-md" : "text-zinc-500 hover:text-zinc-300"
+                    )}
+                    title="List View"
+                  >
+                    <ListIcon className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => setViewMode('grid')}
+                    className={cn(
+                      "flex-1 sm:flex-none flex items-center justify-center h-10 md:w-8 md:h-8 rounded-xl transition-all",
+                      viewMode === 'grid' ? "bg-[#D1F349] text-black shadow-md" : "text-zinc-500 hover:text-zinc-300"
+                    )}
+                    title="Grid View"
+                  >
+                    <LayoutGrid className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Kind/Type Filters (Moved below) */}
+            <div className="flex items-center gap-0.5 md:gap-1 p-1 bg-[#18181b]/50 backdrop-blur-md rounded-2xl border border-white/5 mx-auto overflow-x-auto max-w-full no-scrollbar">
+              {[
+                { id: 'all', label: 'All', icon: Sparkles },
+                { id: 'image', label: 'Image Gen', icon: ImageIcon },
+                { id: 'video', label: 'Video Gen', icon: Video },
+                { id: 'business', label: 'Booth', icon: Building2 },
+              ].map((f) => (
+                <button
+                  key={f.id}
+                  onClick={() => setTypeFilter(f.id as any)}
+                  className={cn(
+                    "flex items-center gap-1 md:gap-2 px-2 md:px-4 py-1.5 md:py-2 rounded-xl text-[8px] md:text-[10px] font-black uppercase tracking-wider transition-all whitespace-nowrap",
+                    typeFilter === f.id
+                      ? "bg-[#D1F349] text-black shadow-lg shadow-[#D1F349]/20"
+                      : "text-zinc-500 hover:text-white hover:bg-white/5"
+                  )}
+                >
+                  <f.icon className="w-2.5 h-2.5 md:w-3.5 md:h-3.5" />
+                  {f.label}
+                </button>
+              ))}
             </div>
           </div>
         )}
@@ -691,87 +738,59 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
                   {filteredTemplates.map((template) => (
                     <div
                       key={template.id}
-                      className={`group relative bg-[#18181b] rounded-3xl overflow-hidden border border-white/5 hover:border-[#D1F349]/30 transition-all duration-500 hover:shadow-2xl hover:shadow-[#D1F349]/5 ${viewMode === 'list' ? 'flex flex-row h-40 md:h-48' : ''}`}
-                      onClick={() => setSelectedTemplate(template)}
+                      className={cn(
+                        "group relative bg-[#18181b] rounded-[32px] overflow-hidden border transition-all duration-500 hover:shadow-2xl hover:shadow-[#D1F349]/5",
+                        selectedTemplate?.id === template.id ? "border-[#D1F349] ring-2 ring-[#D1F349]/50" : "border-white/5",
+                        viewMode === 'list' ? 'flex flex-row h-40 md:h-48' : 'aspect-[3/4]'
+                      )}
+                      onClick={() => {
+                        setSelectedTemplate(template);
+                        setIsInfoExpanded(false);
+                      }}
                     >
                       {/* Image Area */}
-                      <div className={`relative overflow-hidden bg-card ${viewMode === 'list' ? 'w-40 md:w-64 aspect-auto h-full shrink-0' : 'aspect-square'}`}>
+                      <div className={cn(
+                        "relative overflow-hidden bg-card",
+                        viewMode === 'list' ? 'w-40 md:w-64 aspect-auto h-full shrink-0' : 'h-full w-full'
+                      )}>
                         <img
                           src={getTemplateImage(template)}
                           alt={template.name}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                           onError={(e) => {
                             (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400';
                           }}
                         />
-                        <div className="absolute inset-0 bg-gradient-to-t from-[#18181b] via-transparent to-transparent opacity-80" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent opacity-60" />
 
                         {/* Status Badges */}
-                        <div className="absolute top-3 left-3 flex flex-wrap gap-2">
+                        <div className="absolute top-4 left-4 flex flex-wrap gap-2">
                           {template.price === 0 && (
-                            <span className="px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-400 text-[10px] font-bold uppercase tracking-wide border border-emerald-500/20 backdrop-blur-md">
+                            <span className="px-2.5 py-1 rounded-lg bg-emerald-500 text-black text-[10px] font-black uppercase tracking-wider shadow-lg">
                               Free
                             </span>
                           )}
-                          {template.template_type === 'business' && (
-                            <span className="px-2.5 py-1 rounded-lg bg-purple-500/20 text-purple-400 text-[10px] font-bold uppercase tracking-wide border border-purple-500/20 backdrop-blur-md">
-                              Business
-                            </span>
-                          )}
                           {(template.is_owned || isInLibrary(template.id)) && (
-                            <span className="px-2.5 py-1 rounded-lg bg-[#D1F349] text-black text-[10px] font-bold uppercase tracking-wide shadow-lg shadow-[#D1F349]/20">
-                              Owned
-                            </span>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Content Area */}
-                      <div className={`p-3 md:p-5 relative ${viewMode === 'list' ? 'flex-1 flex flex-col justify-between' : ''}`}>
-                        <div className="flex flex-col md:flex-row md:justify-between md:items-start mb-2 gap-1 md:gap-4">
-                          <div className="min-w-0 flex-1">
-                            <h3 className="font-black text-white text-base md:text-xl leading-[1.1] truncate group-hover:text-[#D1F349] transition-colors uppercase tracking-tight">{template.name}</h3>
-                            <p className="text-[10px] md:text-xs text-zinc-500 font-bold mt-0.5 md:mt-1 uppercase">{template.category}</p>
-                          </div>
-                          {template.price > 0 && (
-                            <div className="flex items-center gap-1 bg-white/5 px-2 py-0.5 md:py-1 rounded-lg border border-white/5 shrink-0 self-start">
-                              <Coins className="w-3 h-3 text-[#D1F349]" />
-                              <span className="text-[10px] md:text-xs font-bold text-white">{template.price}</span>
+                            <div className="w-7 h-7 rounded-full bg-[#D1F349] flex items-center justify-center shadow-lg animate-in zoom-in-50 duration-300">
+                              <Check className="w-4 h-4 text-black stroke-[3]" />
                             </div>
                           )}
                         </div>
 
-                        <p className={`text-xs md:text-sm text-zinc-400 line-clamp-2 leading-relaxed ${viewMode === 'list' ? 'mb-auto block' : 'hidden sm:block mb-3 h-10'}`}>
-                          {template.description}
-                        </p>
-
-                        <div className="flex items-center gap-2 mt-auto">
-                          <Button
-                            className={`flex-1 rounded-2xl h-10 md:h-11 text-xs md:text-sm font-black uppercase tracking-wide transition-all ${(template.is_owned || isInLibrary(template.id))
-                              ? 'bg-zinc-800 text-zinc-500'
-                              : 'bg-[#D1F349] text-black hover:bg-[#b0cc3d] shadow-lg shadow-[#D1F349]/10'
-                              }`}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if (template.is_owned || isInLibrary(template.id)) {
-                                setActiveSection('library');
-                              } else {
-                                handlePurchase(template);
-                              }
-                            }}
-                          >
-                            {(template.is_owned || isInLibrary(template.id)) ? 'Owned' : (template.price === 0 ? 'Add' : 'Get')}
-                          </Button>
-
-                          <button
-                            className="w-10 h-10 md:w-11 md:h-11 rounded-2xl bg-white/5 flex items-center justify-center text-zinc-400 hover:text-white transition-colors border border-white/5 shrink-0"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedTemplate(template);
-                            }}
-                          >
-                            <Eye className="w-5 h-5" />
-                          </button>
+                        {/* Info Overlay */}
+                        <div className="absolute inset-x-0 bottom-0 p-5 transform transition-transform duration-500">
+                          <h3 className="text-white font-black text-sm uppercase tracking-wider mb-1 group-hover:text-[#D1F349] transition-colors line-clamp-1">
+                            {template.name}
+                          </h3>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-tighter">
+                              {template.category}
+                            </span>
+                            <span className="w-1 h-1 rounded-full bg-zinc-800" />
+                            <span className="text-[9px] font-bold text-[#D1F349] uppercase tracking-tighter">
+                              {template.price === 0 ? 'Free Style' : `${template.price} Tokens`}
+                            </span>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -912,164 +931,132 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
         )}
       </div>
 
-      {/* Template Preview Dialog */}
-      <Dialog open={!!selectedTemplate} onOpenChange={() => setSelectedTemplate(null)}>
-        <DialogContent className="bg-[#18181b] border-white/5 text-white max-w-4xl p-0 overflow-hidden gap-0 rounded-[2rem] shadow-2xl">
-          {selectedTemplate && (
-            <div className="flex flex-col md:flex-row h-[85vh] md:h-auto md:max-h-[85vh]">
-              {/* Left: Image */}
-              <div className="w-full md:w-1/2 bg-[#101112] relative max-h-[40vh] md:max-h-none overflow-hidden group">
-                <img
-                  src={getTemplateImage(selectedTemplate)}
-                  alt={selectedTemplate.name}
-                  className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity duration-700"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400';
-                  }}
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#18181b] via-transparent to-transparent opacity-60 md:hidden" />
+      {/* Floating Info Panel & Action Button (TemplateLibrary Style) */}
+      <div className={cn(
+        "fixed inset-0 z-50 pointer-events-none transition-all duration-500",
+        selectedTemplate ? "opacity-100" : "opacity-0"
+      )} onClick={() => setSelectedTemplate(null)} />
 
-                <div className="absolute top-4 left-4 flex flex-wrap gap-2">
-                  {selectedTemplate.price === 0 && (
-                    <Badge className="bg-emerald-500/20 text-emerald-400 border-none backdrop-blur-md">FREE</Badge>
-                  )}
-                  {selectedTemplate.template_type === 'business' && (
-                    <Badge className="bg-purple-500/20 text-purple-400 border-none backdrop-blur-md">Business</Badge>
-                  )}
+      <div className={cn(
+        "fixed bottom-0 left-0 right-0 p-6 pb-[env(safe-area-inset-bottom,24px)] z-[60] pointer-events-none flex flex-col items-center gap-4 transition-all duration-700 ease-in-out",
+        selectedTemplate ? "translate-y-0 opacity-100" : "translate-y-full opacity-0"
+      )}>
+        {selectedTemplate && (
+          <div className={cn(
+            "w-full max-w-sm bg-black/80 backdrop-blur-3xl border border-white/10 rounded-[32px] shadow-2xl pointer-events-auto transform transition-all duration-500 scale-100 overflow-hidden flex flex-col mb-2",
+            isInfoExpanded ? "max-h-[600px]" : "max-h-[280px]"
+          )}>
+            {/* Top-bleed Image Preview */}
+            <div className={cn(
+              "relative w-full overflow-hidden transition-all duration-500 ease-in-out shrink-0",
+              isInfoExpanded ? "h-64" : "h-24"
+            )}>
+              <img
+                src={getTemplateImage(selectedTemplate)}
+                alt={selectedTemplate.name}
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+            </div>
+
+            <div className="p-5 flex flex-col">
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex flex-col">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Sparkles className="w-3.5 h-3.5 text-[#D1F349]" />
+                    <h3 className="text-[11px] font-black text-white uppercase tracking-[0.2em] line-clamp-1">
+                      {selectedTemplate.name}
+                    </h3>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[8px] font-bold text-zinc-500 uppercase tracking-tighter flex items-center gap-1">
+                      {selectedTemplate.template_type === 'business' ? <Building2 className="w-2 h-2" /> : selectedTemplate.media_type === 'video' ? <Video className="w-2 h-2" /> : <ImageIcon className="w-2 h-2" />}
+                      {selectedTemplate.template_type === 'business' ? 'Booth Template' : selectedTemplate.media_type === 'video' ? 'Video Template' : 'Image Template'}
+                    </span>
+                    <span className="w-1 h-1 rounded-full bg-zinc-800" />
+                    <span className="text-[8px] font-bold text-[#D1F349] uppercase tracking-tighter">
+                      {selectedTemplate.price === 0 ? 'Free Style' : `${selectedTemplate.price} Tokens`}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setIsInfoExpanded(!isInfoExpanded); }}
+                    className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-zinc-400 hover:text-white transition-colors"
+                  >
+                    {isInfoExpanded ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setSelectedTemplate(null); }}
+                    className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-zinc-400 hover:text-white transition-colors"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
                 </div>
               </div>
 
-              {/* Right: Content */}
-              <div className="flex-1 flex flex-col p-6 md:p-8 overflow-y-auto bg-[#18181b]">
-                <DialogHeader className="mb-6 space-y-1">
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <DialogTitle className="text-3xl font-black uppercase tracking-tight text-white mb-2">{selectedTemplate.name}</DialogTitle>
-                      <DialogDescription className="text-zinc-400 text-base font-medium flex items-center gap-2">
-                        By <span className="text-white border-b border-white/10 pb-0.5">{selectedTemplate.creator?.name || 'PictureMe'}</span>
-                      </DialogDescription>
-                    </div>
-                    <div className="flex flex-col items-end gap-1">
-                      {selectedTemplate.price > 0 && (
-                        <div className="flex items-center gap-1.5 px-3 py-1 bg-white/5 rounded-full border border-white/5">
-                          <Coins className="w-4 h-4 text-[#D1F349]" />
-                          <span className="text-sm font-bold text-white">{selectedTemplate.price} Tokens</span>
-                        </div>
-                      )}
-                    </div>
+              <div className="space-y-3">
+                {selectedTemplate.description && (
+                  <p className={cn(
+                    "text-[10px] text-zinc-400 font-medium leading-relaxed uppercase tracking-tight",
+                    !isInfoExpanded && "line-clamp-2"
+                  )}>
+                    {selectedTemplate.description}
+                  </p>
+                )}
+
+                <div className={cn(
+                  "grid grid-cols-2 gap-2 transition-all duration-300",
+                  isInfoExpanded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none absolute"
+                )}>
+                  <div className="bg-white/5 border border-white/5 rounded-2xl p-3">
+                    <span className="text-[7px] font-black text-zinc-500 uppercase tracking-widest block mb-1">AI Model</span>
+                    <span className="text-[10px] font-bold text-white uppercase">{getModelDisplayName(selectedTemplate.ai_model || selectedTemplate.pipeline_config?.imageModel)}</span>
                   </div>
-                </DialogHeader>
-
-                <div className="space-y-8 flex-1">
-                  {/* Description */}
-                  <div>
-                    <p className="text-zinc-300 leading-relaxed text-sm md:text-base">{selectedTemplate.description}</p>
-                  </div>
-
-                  {/* Pipeline Info */}
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="p-3 rounded-xl bg-card/50 border border-white/5 flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-zinc-800 flex items-center justify-center text-zinc-400">
-                        <ImageIcon className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <p className="text-[10px] uppercase font-bold text-zinc-500 mb-0.5">Model</p>
-                        <p className="text-xs font-bold text-white truncate max-w-[120px]">
-                          {IMAGE_MODELS.find(m => m.value === selectedTemplate.pipeline_config?.imageModel)?.label || 'Standard'}
-                        </p>
-                      </div>
-                    </div>
-
-                    {selectedTemplate.pipeline_config?.faceswapEnabled && (
-                      <div className="p-3 rounded-xl bg-card/50 border border-white/5 flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-zinc-800 flex items-center justify-center text-pink-400">
-                          <Sparkles className="w-5 h-5" />
-                        </div>
-                        <div>
-                          <p className="text-[10px] uppercase font-bold text-zinc-500 mb-0.5">Feature</p>
-                          <p className="text-xs font-bold text-white">Faceswap Enabled</p>
-                        </div>
-                      </div>
-                    )}
-
-                    {selectedTemplate.pipeline_config?.videoEnabled && (
-                      <div className="p-3 rounded-xl bg-card/50 border border-white/5 flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-zinc-800 flex items-center justify-center text-purple-400">
-                          <Video className="w-5 h-5" />
-                        </div>
-                        <div>
-                          <p className="text-[10px] uppercase font-bold text-zinc-500 mb-0.5">Feature</p>
-                          <p className="text-xs font-bold text-white">Video Ready</p>
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="p-3 rounded-xl bg-card/50 border border-white/5 flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-zinc-800 flex items-center justify-center text-yellow-400">
-                        <Star className="w-5 h-5 fill-yellow-400" />
-                      </div>
-                      <div>
-                        <p className="text-[10px] uppercase font-bold text-zinc-500 mb-0.5">Rating</p>
-                        <p className="text-xs font-bold text-white">{selectedTemplate.rating} / 5</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Prompt Preview */}
-                  {selectedTemplate.prompt && (
-                    <div className="space-y-2">
-                      <h4 className="text-xs font-black uppercase tracking-wider text-zinc-500">Prompt Preview</h4>
-                      <div className="bg-[#101112]/40 p-4 rounded-xl border border-white/5 font-mono text-xs text-zinc-400 leading-relaxed max-h-32 overflow-y-auto">
-                        {selectedTemplate.prompt}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Tags */}
-                  <div className="flex flex-wrap gap-2">
-                    {selectedTemplate.tags?.map((tag) => (
-                      <Badge key={tag} variant="secondary" className="bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-white transition-colors">#{tag}</Badge>
-                    ))}
+                  <div className="bg-white/5 border border-white/5 rounded-2xl p-3">
+                    <span className="text-[7px] font-black text-zinc-500 uppercase tracking-widest block mb-1">Cost</span>
+                    <span className="text-[10px] font-bold text-[#D1F349] uppercase">
+                      {selectedTemplate.price === 0 ? 'Free' : `${selectedTemplate.price} Tokens`}
+                    </span>
                   </div>
                 </div>
 
-                <DialogFooter className="mt-8 pt-6 border-t border-white/5">
-                  <div className="w-full flex gap-3">
-                    {(selectedTemplate.is_owned || isInLibrary(selectedTemplate.id)) ? (
-                      <>
-                        <Button className="flex-1 h-12 bg-white text-black font-bold text-base hover:bg-zinc-200 rounded-xl" disabled>
-                          <Check className="w-5 h-5 mr-2" />
-                          Owned
-                        </Button>
-                        <Button className="flex-1 h-12 bg-[#D1F349] text-black font-bold text-base hover:bg-[#b0cc3d] rounded-xl shadow-lg shadow-[#D1F349]/20 transition-all hover:scale-[1.02]">
-                          Use in Studio
-                        </Button>
-                      </>
-                    ) : (
-                      <>
-                        <Button variant="outline" className="h-12 px-6 border-white/10 bg-transparent text-white hover:bg-white/5 hover:text-white rounded-xl">
-                          <Heart className="w-5 h-5" />
-                        </Button>
-                        <Button
-                          className="flex-1 h-12 bg-[#D1F349] text-black font-bold text-base hover:bg-[#b0cc3d] rounded-xl shadow-lg shadow-[#D1F349]/20 transition-all hover:scale-[1.02]"
-                          onClick={() => handlePurchase(selectedTemplate)}
-                          disabled={isPurchasing}
-                        >
-                          {isPurchasing ? <Loader2 className="w-5 h-5 animate-spin" /> : (
-                            <>
-                              {selectedTemplate.price === 0 ? "Add to Library - Free" : `Purchase for ${selectedTemplate.price} Tokens`}
-                            </>
-                          )}
-                        </Button>
-                      </>
-                    )}
+                {isInfoExpanded && selectedTemplate.prompt && (
+                  <div className="bg-[#D1F349]/5 border border-[#D1F349]/10 rounded-2xl p-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
+                    <span className="text-[7px] font-black text-[#D1F349] uppercase tracking-widest block mb-2">Prompt Brief</span>
+                    <p className="text-[10px] text-zinc-300 font-serif italic italic leading-relaxed">
+                      "{selectedTemplate.prompt.split('.').slice(0, 2).join('.') + '...'}"
+                    </p>
                   </div>
-                </DialogFooter>
+                )}
               </div>
             </div>
+          </div>
+        )}
+
+        {/* Main Action Button */}
+        <div className="w-full flex justify-center pt-2">
+          {selectedTemplate && (
+            <Button
+              onClick={() => {
+                if (selectedTemplate.is_owned || isInLibrary(selectedTemplate.id)) {
+                  navigate('/creator/studio?view=create', { state: { selectedTemplateId: selectedTemplate.id } });
+                } else {
+                  handlePurchase(selectedTemplate);
+                }
+              }}
+              disabled={isPurchasing}
+              className="pointer-events-auto rounded-full px-12 py-6 font-black text-xs uppercase tracking-[0.2em] border border-white/10 bg-[#D1F349] text-black hover:bg-white hover:scale-105 active:scale-95 animate-pulse shadow-[0_0_50px_rgba(209,243,73,0.15)]"
+            >
+              {isPurchasing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : (
+                (selectedTemplate.is_owned || isInLibrary(selectedTemplate.id))
+                  ? "Use Template"
+                  : (selectedTemplate.price === 0 ? "Add to Library" : `Get for ${selectedTemplate.price} Tokens`)
+              )}
+            </Button>
           )}
-        </DialogContent>
-      </Dialog>
+        </div>
+      </div>
 
       {/* Create Template Dialog */}
       <Dialog open={showCreateModal} onOpenChange={(open) => {
