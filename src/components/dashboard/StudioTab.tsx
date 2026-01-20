@@ -17,9 +17,7 @@ import { toast } from "sonner";
 import { Dialog, DialogContent, DialogTrigger, DialogClose } from "@/components/ui/dialog";
 import { ENV } from "@/config/env";
 // CDN service for public content (Cloudflare Image Resizing)
-import { getThumbnailUrl, getViewUrl as getOptimizedUrl, getDownloadUrl, getVideoUrl } from "@/services/cdn";
-// Keep imgproxy for authenticated downloads
-import { getProxyDownloadUrl } from "@/services/imgproxy";
+import { getThumbnailUrl, getViewUrl as getOptimizedUrl, getDownloadUrl, getVideoUrl, getProxyDownloadUrl } from "@/services/cdn";
 import { useUserTier } from "@/services/userTier";
 
 // AI Models Data

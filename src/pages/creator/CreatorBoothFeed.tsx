@@ -18,9 +18,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 // CDN service for public content (Cloudflare Image Resizing)
-import { getAvatarUrl, getThumbnailUrl, getViewUrl, getDownloadUrl } from '@/services/cdn';
-// Keep imgproxy proxy download for authenticated downloads
-import { getProxyDownloadUrl } from '@/services/imgproxy';
+import { getAvatarUrl, getThumbnailUrl, getViewUrl, getDownloadUrl, getProxyDownloadUrl } from '@/services/cdn';
 import { getPublicUserProfile, User, toggleLike, getCurrentUser } from '@/services/eventsApi';
 import { cn } from '@/lib/utils';
 import { SEO } from '@/components/SEO';

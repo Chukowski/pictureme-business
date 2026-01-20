@@ -1,12 +1,14 @@
 /**
  * User Tier Hook and Utilities
  * 
- * Provides the current user's subscription tier and maps it to imgproxy quality levels.
+ * Provides the current user's subscription tier for download quality.
  */
 
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { getCurrentUser, User } from './eventsApi';
-import { QualityTier } from './imgproxy';
+
+// Quality tier type (previously from imgproxy)
+export type QualityTier = 'free' | 'spark' | 'vibe' | 'studio' | 'business';
 
 // ============== TIER MAPPING ==============
 

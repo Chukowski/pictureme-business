@@ -20,9 +20,7 @@ import { ENV } from "@/config/env";
 import { toast } from "sonner";
 import { CreationDetailView, GalleryItem } from "@/components/creator/CreationDetailView";
 // CDN service for public content (Cloudflare Image Resizing)
-import { getFeedUrl as getFeedImageUrl, getAvatarUrl, getThumbnailUrl, getViewUrl, getDownloadUrl } from "@/services/cdn";
-// Keep imgproxy for authenticated operations (downloads with tier protection)
-import { getProcessingUrl, getProxyDownloadUrl } from "@/services/imgproxy";
+import { getFeedUrl as getFeedImageUrl, getAvatarUrl, getThumbnailUrl, getViewUrl, getDownloadUrl, getProcessingUrl, getProxyDownloadUrl } from "@/services/cdn";
 import { useUserTier } from "@/services/userTier";
 import { Slider } from "@/components/ui/slider";
 

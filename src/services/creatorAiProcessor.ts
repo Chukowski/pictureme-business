@@ -1,7 +1,7 @@
 import { applyBrandingOverlay } from "./imageOverlay";
 import { ENV } from "../config/env";
 import { resolveModelId, DEFAULT_FAL_MODEL, getImageDimensions, getFluxOptimizedDimensions, getFluxImageSize, ProcessImageResult, chargeTokensForGeneration } from "./aiProcessor";
-import { getProcessingUrl } from "./imgproxy";
+import { getProcessingUrl } from "./cdn";
 import type { JobUpdateData } from "../hooks/useSSE";
 
 /**
@@ -165,8 +165,7 @@ async function compressImage(dataUri: string, maxDimension = 2048, quality = 0.8
 
 /**
  * Convert URL to Data URI (Base64) and compress
- * Handles CORS issues by fetching through proxied endpoint if needed
- * Uses imgproxy for remote URLs to get optimized versions
+ * Uses direct fetch for R2 URLs (no imgproxy needed)
  */
 async function imageUrlToDataUri(url: string): Promise<string> {
     // If already base64, compress it and return
@@ -174,15 +173,15 @@ async function imageUrlToDataUri(url: string): Promise<string> {
         return compressImage(url);
     }
 
-    // For remote URLs, use imgproxy to get optimized version (max 2048px width)
-    const optimizedUrl = getProcessingUrl(url, 2048);
+    // Convert URL to public R2 format if needed
+    const publicUrl = getProcessingUrl(url);
 
     try {
-        // Try direct fetch first (imgproxy URL)
-        console.log("📥 Loading optimized image:", optimizedUrl);
-        const response = await fetch(optimizedUrl, { mode: 'cors' });
+        // Try direct fetch first
+        console.log("📥 Loading image:", publicUrl);
+        const response = await fetch(publicUrl, { mode: 'cors' });
         if (!response.ok) {
-            throw new Error(`Failed to fetch optimized image: ${response.status}`);
+            throw new Error(`Failed to fetch image: ${response.status}`);
         }
         const blob = await response.blob();
         return new Promise((resolve, reject) => {
@@ -194,11 +193,10 @@ async function imageUrlToDataUri(url: string): Promise<string> {
             reader.readAsDataURL(blob);
         });
     } catch (error) {
-        console.warn("⚠️ Imgproxy fetch failed (CORS or error), trying proxy...", error);
+        console.warn("⚠️ Direct fetch failed, trying proxy...", error);
 
-        // Use our API proxy to bypass CORS
+        // Use our API proxy to bypass CORS for external images
         const apiUrl = ENV.API_URL;
-        // Enforce HTTPS for the proxy URL if we are in production
         const safeApiUrl = (apiUrl.startsWith('http://') && !apiUrl.includes('localhost'))
             ? apiUrl.replace('http://', 'https://')
             : apiUrl;
@@ -227,14 +225,15 @@ async function imageUrlToDataUri(url: string): Promise<string> {
 }
 
 /**
- * Check if a URL is already hosted on our platform (S3 or Imgproxy)
+ * Check if a URL is already hosted on our platform (R2 or fal.ai)
  */
 function isInternalUrl(url: string): boolean {
     if (!url) return false;
     const internalDomains = [
+        "r2.dev",
+        "r2.pictureme.now",
         "s3.amazonaws.com/pictureme.now",
         "pictureme.now.s3.amazonaws.com",
-        "img.pictureme.now",
         "v3b.fal.media",
         "fal.media"
     ];
