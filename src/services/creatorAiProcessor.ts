@@ -14,7 +14,7 @@ import type { JobUpdateData } from "../hooks/useSSE";
  * @returns The completed image URL
  * @throws Error if job fails or times out
  */
-async function waitForJobCompletion(jobId: number, apiUrl: string, timeoutMs = 120000): Promise<string> {
+async function waitForJobCompletion(jobId: number, apiUrl: string, timeoutMs = 120000): Promise<{ url: string, urls?: string[] }> {
     return new Promise((resolve, reject) => {
         let resolved = false;
         let pollInterval: NodeJS.Timeout | null = null;
@@ -38,7 +38,7 @@ async function waitForJobCompletion(jobId: number, apiUrl: string, timeoutMs = 1
                     console.log('✅ [CreatorAI] Job completed via SSE:', jobId);
                     resolved = true;
                     cleanup();
-                    resolve(data.url);
+                    resolve({ url: data.url, urls: data.urls });
                 } else if (data.status === 'failed') {
                     console.error('❌ [CreatorAI] Job failed via SSE:', data.error);
                     resolved = true;
@@ -68,7 +68,7 @@ async function waitForJobCompletion(jobId: number, apiUrl: string, timeoutMs = 1
                         console.log('✅ [CreatorAI] Job completed via polling fallback:', jobId);
                         resolved = true;
                         cleanup();
-                        resolve(statusData.url);
+                        resolve({ url: statusData.url, urls: statusData.urls });
                     } else if (statusData.status === 'failed') {
                         console.error('❌ [CreatorAI] Job failed via polling:', statusData.error);
                         resolved = true;
@@ -112,6 +112,8 @@ export interface ProcessCreatorImageOptions {
     // Creator-specific options
     isPublic?: boolean;
     parent_id?: number | null;
+    numImages?: number;
+    resolution?: string;
 
     // Legacy params kept for compatibility if needed internally, but not used by Creator Studio
     includeBranding?: boolean;
@@ -300,7 +302,9 @@ export async function processCreatorImage(
         aspectRatio = '9:16',
         aiModel,
         onProgress,
-        isPublic = true, // Default to public for individuals (unless overridden)
+        isPublic = true,
+        numImages = 1,
+        resolution,
     } = options;
 
     if (!userPhotoBase64) {
@@ -366,7 +370,8 @@ export async function processCreatorImage(
             prompt: finalPrompt,
             model_id: modelToUse,
             image_size: imageSize,
-            num_images: 1,
+            resolution: resolution, // Pass resolution explicitly if provided
+            num_images: numImages,
             image_urls: uploadedUrls,
             image_url: uploadedUrls[0],
             visibility: isPublic ? 'public' : 'private',
@@ -394,17 +399,20 @@ export async function processCreatorImage(
 
         const genResult = await genResponse.json();
         let processedUrl = genResult.image_url;
+        let results: { url: string, urls?: string[] } = { url: processedUrl };
 
-        // 6. Wait for job completion (SSE-driven with polling fallback)
         if (!processedUrl && genResult.job_id) {
             console.log("⏳ [CreatorAI] Waiting for job:", genResult.job_id);
             if (onProgress) onProgress("processing");
 
             // Wait for job completion via SSE or polling fallback
-            processedUrl = await waitForJobCompletion(genResult.job_id, apiUrl, 120000);
+            results = await waitForJobCompletion(genResult.job_id, apiUrl, 120000);
+            processedUrl = results.url;
         }
 
         if (!processedUrl) throw new Error("No image URL returned");
+
+        const finalUrls = results.urls || [processedUrl];
 
         // 7. Apply Branding (Optional for creators, usually disabled)
         // If creators want watermarks, they turn it on.
@@ -416,6 +424,7 @@ export async function processCreatorImage(
             });
             return {
                 url: brandedUrl,
+                urls: results.urls,
                 rawUrl: processedUrl,
                 seed: genResult.seed,
                 contentType: "image/jpeg"
@@ -424,6 +433,7 @@ export async function processCreatorImage(
 
         return {
             url: processedUrl,
+            urls: results.urls,
             rawUrl: processedUrl,
             seed: genResult.seed,
             contentType: "image/jpeg"

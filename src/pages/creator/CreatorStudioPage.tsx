@@ -165,6 +165,8 @@ function CreatorStudioPageContent({ defaultView }: CreatorStudioPageProps) {
     const [aspectRatio, setAspectRatio] = useState("9:16");
     const [duration, setDuration] = useState("5s");
     const [audioOn, setAudioOn] = useState(false);
+    const [resolution, setResolution] = useState("720p");
+    const [numImages, setNumImages] = useState(1);
 
     // Effect 1: Sync URL param -> State
     useEffect(() => {
@@ -883,6 +885,8 @@ function CreatorStudioPageContent({ defaultView }: CreatorStudioPageProps) {
                     aiModel: model,
                     onProgress: setStatusMessage,
                     isPublic,
+                    numImages,
+                    resolution,
                     parent_id: remixFrom
                 });
 
@@ -898,20 +902,26 @@ function CreatorStudioPageContent({ defaultView }: CreatorStudioPageProps) {
                     saveTemplateMeta(result.rawUrl, templateInfo);
                 }
 
-                addToHistory({
-                    id: crypto.randomUUID(),
-                    url: result.url,
-                    type: 'image',
-                    timestamp: Date.now(),
-                    prompt,
-                    model,
-                    ratio: aspectRatio,
-                    status: 'completed',
-                    template: templateInfo,
-                    isPublic,
-                    parent_id: remixFrom,
-                    parent_username: remixFromUsername
-                }, true); // Skip backend save because the backend generation endpoint auto-saves
+                const finalUrls = (result as any).urls && (result as any).urls.length > 0
+                    ? (result as any).urls
+                    : [result.url];
+
+                finalUrls.forEach((url: string) => {
+                    addToHistory({
+                        id: crypto.randomUUID(),
+                        url: url,
+                        type: 'image',
+                        timestamp: Date.now(),
+                        prompt,
+                        model,
+                        ratio: aspectRatio,
+                        status: 'completed',
+                        template: templateInfo,
+                        isPublic,
+                        parent_id: remixFrom,
+                        parent_username: remixFromUsername
+                    }, true); // Skip backend save because the backend generation endpoint auto-saves
+                });
             } else if (mode === "video") {
                 const endpoint = `${ENV.API_URL || "http://localhost:3002"}/api/generate/video`;
                 const resp = await fetch(endpoint, {
@@ -922,6 +932,7 @@ function CreatorStudioPageContent({ defaultView }: CreatorStudioPageProps) {
                         duration: duration.replace("s", ""),
                         aspect_ratio: aspectRatio,
                         audio: audioOn,
+                        resolution: resolution,
                         start_image_url: inputImage,
                         end_image_url: endFrameImage,
                         visibility: isPublic ? 'public' : 'private',
@@ -1030,6 +1041,12 @@ function CreatorStudioPageContent({ defaultView }: CreatorStudioPageProps) {
                                 setAspectRatio={setAspectRatio}
                                 duration={duration}
                                 setDuration={setDuration}
+                                audio={audioOn}
+                                setAudio={setAudioOn}
+                                resolution={resolution}
+                                setResolution={setResolution}
+                                numImages={numImages}
+                                setNumImages={setNumImages}
                                 isProcessing={isProcessing}
                                 onGenerate={handleGenerate}
                                 inputImage={inputImage}
@@ -1079,12 +1096,12 @@ function CreatorStudioPageContent({ defaultView }: CreatorStudioPageProps) {
                         </div>
 
                         {/* COLUMN 3: CANVAS / TIMELINE AREA */}
-                        <div className="flex-1 md:pl-[360px] relative h-full">
+                        <div className="flex-1 md:pl-[410px] relative h-full">
                             {showTemplateLibrary && (
                                 <div className={cn(
-                                    "z-[60] bg-[#101112] flex flex-col animate-in duration-300 shadow-2xl",
+                                    "z-[130] bg-[#101112] flex flex-col animate-in duration-300 shadow-2xl",
                                     "fixed inset-0",
-                                    "md:top-[80px] md:left-[355px] md:right-3 md:bottom-0 md:rounded-t-2xl md:rounded-b-0 md:border md:border-white/5 md:overflow-hidden",
+                                    "md:top-[80px] md:left-[405px] md:right-4 md:bottom-0 md:rounded-t-2xl md:rounded-b-0 md:border md:border-white/5 md:overflow-hidden",
                                     "slide-in-from-bottom-5 md:slide-in-from-right-5"
                                 )}>
                                     <TemplateLibrary

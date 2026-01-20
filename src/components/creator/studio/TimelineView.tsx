@@ -63,7 +63,7 @@ export const TimelineView = ({
             // Vertical alignment: Matches Sidebar exactly (top-100px, bottom-8)
             "md:top-[80px] md:bottom-0",
             // Horizontal alignment: Starts after Sidebar (48px left + 300px width + 16px gap = 364px) and stretches wide
-            "md:left-[355px] md:right-4 gap-2",
+            "md:left-[405px] md:right-4 gap-2",
             // Layout (No Card Styling on wrapper)
             "pointer-events-none"
         )}>

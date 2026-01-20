@@ -454,6 +454,7 @@ export function getFluxImageSize(aspectRatio: AspectRatio = '9:16'): string | { 
 
 export interface ProcessImageResult {
   url: string;
+  urls?: string[];
   rawUrl?: string;
   seed?: number;
   contentType?: string;

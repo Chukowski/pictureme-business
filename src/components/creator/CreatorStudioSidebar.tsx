@@ -12,12 +12,16 @@ import {
     ChevronRight,
     Check,
     Plus,
+    Minus,
     Wand2,
     Coins,
     Globe,
     Lock,
     Pencil,
-    ChevronDown
+    ChevronDown,
+    Diamond,
+    Smartphone,
+    Ratio
 } from 'lucide-react';
 import { LOCAL_IMAGE_MODELS, LOCAL_VIDEO_MODELS, LEGACY_MODEL_IDS } from "@/services/aiProcessor";
 import { Button } from "@/components/ui/button";
@@ -52,6 +56,12 @@ interface CreatorStudioSidebarProps {
     setAspectRatio: (v: string) => void;
     duration: string;
     setDuration: (v: string) => void;
+    audio: boolean;
+    setAudio: (v: boolean) => void;
+    resolution: string;
+    setResolution: (v: string) => void;
+    numImages: number;
+    setNumImages: (v: number) => void;
     isProcessing: boolean;
     onGenerate: () => void;
     inputImage: string | null;
@@ -86,6 +96,9 @@ export function CreatorStudioSidebar({
     model, setModel,
     aspectRatio, setAspectRatio,
     duration, setDuration,
+    audio, setAudio,
+    resolution, setResolution,
+    numImages, setNumImages,
     isProcessing = false,
     onGenerate,
     inputImage,
@@ -118,6 +131,21 @@ export function CreatorStudioSidebar({
     const [activeBoothImageIndex, setActiveBoothImageIndex] = useState(0);
     const [showCamera, setShowCamera] = useState(false);
     const [countdown, setCountdown] = useState<number | null>(null);
+
+    const supportedResolutions = useMemo(() => {
+        if (mode !== 'image') return [];
+        if (model === 'nano-banana-pro') return ["2K", "4K"];
+        if (model.includes('seedream')) return ["2K", "4K"];
+        if (model.includes('flux')) return ["1K", "2K"];
+        return [];
+    }, [model, mode]);
+
+    useEffect(() => {
+        if (mode === 'image' && supportedResolutions.length > 0 && !supportedResolutions.includes(resolution)) {
+            setResolution(supportedResolutions[0]);
+        }
+    }, [model, mode, supportedResolutions, resolution, setResolution]);
+
     const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
     const videoRef = React.useRef<HTMLVideoElement>(null);
     const textareaRef = React.useRef<HTMLTextAreaElement>(null);
@@ -313,17 +341,17 @@ export function CreatorStudioSidebar({
 
     return (
         <div className={cn(
-            "fixed flex flex-col text-white font-sans overflow-hidden transition-all duration-300",
+            "fixed flex flex-col text-white font-sans transition-all duration-300",
             // Mobile: Full screen drawer, must be above navbar (z-100)
-            "inset-0 bg-[#09090b] h-[100dvh] z-[110] md:h-auto",
+            "inset-0 bg-[#09090b] h-[100dvh] z-[110] md:h-auto md:overflow-hidden",
             // Desktop: Extra compact floating fixed card (90% scaling feel)
-            "md:z-20 md:top-[80px] md:left-[12px] md:bottom-8 md:w-[325px] md:bg-[#1A1A1A] md:rounded-[1rem] md:border md:border-white/5 md:shadow-[0_20px_50px_rgba(0,0,0,0.5)] md:right-auto"
+            "md:z-20 md:top-[80px] md:left-[12px] md:bottom-8 md:w-[375px] md:bg-[#1A1A1A] md:rounded-[1rem] md:border md:border-white/5 md:shadow-[0_20px_50px_rgba(0,0,0,0.5)] md:right-auto"
         )}>
 
             {/* --- SIDEBAR HEADER (Mobile) --- */}
             <div className="flex md:hidden items-center justify-between px-4 h-14 border-b border-white/5 flex-shrink-0 bg-[#101112]">
                 <div className="flex items-center gap-2">
-                    <DropdownMenu modal={false}>
+                    <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <button className="flex items-center gap-2 hover:bg-white/5 px-2 py-1.5 rounded-xl transition-all group">
                                 <div className="p-1 rounded-lg bg-[#D1F349]/10">
@@ -339,7 +367,7 @@ export function CreatorStudioSidebar({
                                 <ChevronDown className="w-4 h-4 text-zinc-500 group-hover:text-white transition-colors" />
                             </button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="start" className="w-48 bg-card border-zinc-900 z-[100] p-1.5">
+                        <DropdownMenuContent align="start" className="w-48 bg-card border-zinc-900 z-[200] p-1.5">
                             {[
                                 { id: 'image', label: 'Create Image', icon: ImageIcon },
                                 { id: 'video', label: 'Create Video', icon: Video },
@@ -583,7 +611,7 @@ export function CreatorStudioSidebar({
                                         ) : (inputImages.length > 0 || inputImage) ? (
                                             <>
                                                 {/* If we have images, show the LAST one as preview in the big box, OR just keep the camera view with overlay? 
-                                                User said: "replace the upload button for a grid of squares". 
+                                                User said: "replace upload button for a grid of squares... so user can see and delete if any". 
                                                 The camera component (600 lines long) acts as the 'main display'. 
                                                 If we have an image, typically we show it. 
                                                 Let's show the LATEST image here.
@@ -855,7 +883,7 @@ export function CreatorStudioSidebar({
                                         <ChevronRight className="w-4 h-4 text-zinc-600 transition-transform group-hover:translate-x-0.5" />
                                     </button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width] bg-[#1a1a1a] border-white/5 z-[100] p-1.5 shadow-2xl" sideOffset={8}>
+                                <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width] bg-[#1a1a1a] border-white/5 z-[200] p-1.5 shadow-2xl" sideOffset={8}>
                                     {(mode === 'image' ? imageModels : videoModels).map((m) => (
                                         <DropdownMenuItem
                                             key={m.id}
@@ -886,39 +914,50 @@ export function CreatorStudioSidebar({
                                 </DropdownMenuContent>
                             </DropdownMenu>
 
-                            <div className="grid grid-cols-2 gap-1">
-                                {/* Duration */}
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                        <button className="flex items-center justify-between h-12 px-3 bg-[#0D0D0D]/50 hover:bg-zinc-800/80 rounded-xl border border-white/5 transition-colors group">
-                                            <div className="flex flex-col items-start translate-y-[1px]">
-                                                <span className="text-[10px] font-bold text-white/30 uppercase tracking-tighter">Duration</span>
-                                                <span className="text-[12px] font-bold text-white">{duration}</span>
-                                            </div>
-                                            <ChevronRight className="w-4 h-4 text-zinc-600 transition-transform group-hover:translate-x-0.5" />
-                                        </button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent className="bg-card border-zinc-900 text-white z-[70] min-w-[100px]">
-                                        {["5s", "10s"].map(d => (
-                                            <DropdownMenuItem key={d} onClick={() => setDuration(d)} className="text-[12px] cursor-pointer focus:bg-card">
-                                                {d}
-                                            </DropdownMenuItem>
-                                        ))}
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
+                            <div className={cn(
+                                "grid gap-1",
+                                mode === 'video' ? "grid-cols-2" : (supportedResolutions.length > 0 ? "grid-cols-3" : "grid-cols-2")
+                            )}>
+                                {/* Resolution (Video or Supported Image Models) */}
+                                {(mode === 'video' || (mode === 'image' && supportedResolutions.length > 0)) && (
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <button className="flex items-center justify-between h-12 px-3 bg-[#0D0D0D]/50 hover:bg-zinc-800/80 rounded-xl border border-white/5 transition-colors group">
+                                                <div className="flex flex-col items-start translate-y-[1px]">
+                                                    <span className="text-[10px] font-bold text-white/30 uppercase tracking-tighter">Res</span>
+                                                    <div className="flex items-center gap-1.5">
+                                                        <Diamond className="w-3 h-3 text-[#D1F349]/50" />
+                                                        <span className="text-[12px] font-bold text-white">{resolution}</span>
+                                                    </div>
+                                                </div>
+                                                <ChevronDown className="w-3.5 h-3.5 text-zinc-600 transition-transform group-hover:translate-y-0.5" />
+                                            </button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent className="bg-card border-zinc-900 text-white z-[200] min-w-[100px]">
+                                            {(mode === 'video' ? ["720p", "1080p", "2K", "4K"] : supportedResolutions).map(r => (
+                                                <DropdownMenuItem key={r} onClick={() => setResolution(r)} className="text-[12px] cursor-pointer focus:bg-card">
+                                                    {r}
+                                                </DropdownMenuItem>
+                                            ))}
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                )}
 
-                                {/* Ratio */}
+                                {/* Aspect Ratio */}
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
                                         <button className="flex items-center justify-between h-12 px-3 bg-[#0D0D0D]/50 hover:bg-zinc-800/80 rounded-xl border border-white/5 transition-colors group">
                                             <div className="flex flex-col items-start translate-y-[1px]">
-                                                <span className="text-[10px] font-bold text-white/30 uppercase tracking-tighter">Aspect Ratio</span>
-                                                <span className="text-[12px] font-bold text-white">{aspectRatio}</span>
+                                                <span className="text-[10px] font-bold text-white/30 uppercase tracking-tighter">Ratio</span>
+                                                <div className="flex items-center gap-1.5">
+                                                    <Smartphone className="w-3 h-3 text-white/30" />
+                                                    <span className="text-[12px] font-bold text-white">{aspectRatio}</span>
+                                                </div>
                                             </div>
-                                            <ChevronRight className="w-4 h-4 text-zinc-600 transition-transform group-hover:translate-x-0.5" />
+                                            <ChevronDown className="w-3.5 h-3.5 text-zinc-600 transition-transform group-hover:translate-y-0.5" />
                                         </button>
                                     </DropdownMenuTrigger>
-                                    <DropdownMenuContent className="bg-card border-zinc-900 text-white z-[70] min-w-[100px]">
+                                    <DropdownMenuContent className="bg-card border-zinc-900 text-white z-[200] min-w-[100px]">
                                         {["1:1", "4:5", "16:9", "9:16"].map(r => (
                                             <DropdownMenuItem key={r} onClick={() => setAspectRatio(r)} className="text-[12px] cursor-pointer focus:bg-card">
                                                 {renderRatioVisual(r)} {r}
@@ -926,6 +965,76 @@ export function CreatorStudioSidebar({
                                         ))}
                                     </DropdownMenuContent>
                                 </DropdownMenu>
+
+                                {/* Batch Count (Image mode only) */}
+                                {mode === 'image' && (
+                                    <div className="flex items-center justify-between h-12 px-3 bg-[#0D0D0D]/50 rounded-xl border border-white/5 group">
+                                        <div className="flex flex-col items-start translate-y-[1px]">
+                                            <span className="text-[10px] font-bold text-white/30 uppercase tracking-tighter">Batch</span>
+                                            <div className="flex items-center gap-2">
+                                                <button
+                                                    onClick={() => setNumImages(Math.max(1, numImages - 1))}
+                                                    className="p-1 hover:bg-white/5 rounded-md transition-colors"
+                                                >
+                                                    <Minus className="w-3 h-3 text-zinc-500 hover:text-white" />
+                                                </button>
+                                                <span className="text-[12px] font-black text-white">{numImages}/4</span>
+                                                <button
+                                                    onClick={() => setNumImages(Math.min(4, numImages + 1))}
+                                                    className="p-1 hover:bg-white/5 rounded-md transition-colors"
+                                                >
+                                                    <Plus className="w-3 h-3 text-zinc-500 hover:text-white" />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Duration (Video Only) */}
+                                {mode === 'video' && (
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <button className="flex items-center justify-between h-12 px-3 bg-[#0D0D0D]/50 hover:bg-zinc-800/80 rounded-xl border border-white/5 transition-colors group">
+                                                <div className="flex flex-col items-start translate-y-[1px]">
+                                                    <span className="text-[10px] font-bold text-white/30 uppercase tracking-tighter">Duration</span>
+                                                    <span className="text-[12px] font-bold text-white">{duration}</span>
+                                                </div>
+                                                <ChevronRight className="w-4 h-4 text-zinc-600 transition-transform group-hover:translate-x-0.5" />
+                                            </button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent className="bg-card border-zinc-900 text-white z-[200] min-w-[100px]">
+                                            {["5s", "10s"].map(d => (
+                                                <DropdownMenuItem key={d} onClick={() => setDuration(d)} className="text-[12px] cursor-pointer focus:bg-card">
+                                                    {d}
+                                                </DropdownMenuItem>
+                                            ))}
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                )}
+
+                                {/* Audio Toggle (Video Only) */}
+                                {mode === 'video' && (
+                                    <div className="col-span-2">
+                                        <button
+                                            onClick={() => setAudio(!audio)}
+                                            className="flex items-center justify-between h-12 px-3 w-full bg-[#0D0D0D]/50 hover:bg-zinc-800/80 rounded-xl border border-white/5 transition-colors group"
+                                        >
+                                            <div className="flex flex-col items-start translate-y-[1px]">
+                                                <span className="text-[10px] font-bold text-white/30 uppercase tracking-tighter">Audio</span>
+                                                <span className="text-[12px] font-bold text-white">{audio ? 'Included' : 'No Audio'}</span>
+                                            </div>
+                                            <div className={cn(
+                                                "w-10 h-5 rounded-full relative transition-colors duration-200 border border-white/10",
+                                                audio ? "bg-[#D1F349]" : "bg-[#101112]"
+                                            )}>
+                                                <div className={cn(
+                                                    "absolute top-0.5 bottom-0.5 w-3.5 h-3.5 rounded-full bg-white transition-all transform",
+                                                    audio ? "right-0.5" : "left-0.5"
+                                                )} />
+                                            </div>
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>

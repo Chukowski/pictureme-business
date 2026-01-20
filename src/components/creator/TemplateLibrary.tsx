@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
-import { Search, X, Filter, Sparkles, Zap, Video, Image as ImageIcon } from 'lucide-react';
+import { Search, X, Filter, Sparkles, Zap, Video, Image as ImageIcon, Check } from 'lucide-react';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
-import { AI_MODELS } from "@/services/aiProcessor";
 
 export interface MarketplaceTemplate {
     id: string;
@@ -40,15 +39,10 @@ interface TemplateLibraryProps {
 }
 
 // Group models for the top filter bar
-// Group models for the top filter bar
 const MODEL_FILTERS = [
     { id: 'all', name: 'All', icon: Sparkles },
     { id: 'video', name: 'Video Gen', icon: Video },
     { id: 'image', name: 'Image Gen', icon: ImageIcon },
-];
-
-const CATEGORIES = [
-    "All", "Horror", "Viral", "Camera Control", "Effects", "UGC", "Action Movement", "Emotions", "Commercial"
 ];
 
 export function TemplateLibrary({
@@ -75,7 +69,8 @@ export function TemplateLibrary({
         // Category matching: Case insensitive, handle undefined, check tags as fallback
         const matchesCategory = activeCategory === "All" ||
             (t.category && t.category.toLowerCase() === activeCategory.toLowerCase()) ||
-            (t.tags && t.tags.some(tag => tag.toLowerCase() === activeCategory.toLowerCase()));
+            (t.tags && t.tags.some(tag => tag.toLowerCase() === activeCategory.toLowerCase())) ||
+            (t.name && t.name.toLowerCase().includes(activeCategory.toLowerCase()));
 
         let matchesModel = true;
         if (activeModelFilter !== 'all') {
@@ -90,6 +85,28 @@ export function TemplateLibrary({
 
     const [selectedId, setSelectedId] = useState<string | undefined>(selectedTemplateId);
 
+    // Dynamic Categories based on current tab's templates
+    const dynamicCategories = React.useMemo(() => {
+        const cats = new Set<string>();
+        cats.add("All");
+        templates.forEach(t => {
+            if (t?.category) {
+                const formatted = t.category.charAt(0).toUpperCase() + t.category.slice(1).toLowerCase();
+                cats.add(formatted);
+            }
+            if (t?.tags) {
+                t.tags.forEach(tag => {
+                    const formatted = tag.charAt(0).toUpperCase() + tag.slice(1).toLowerCase();
+                    cats.add(formatted);
+                });
+            }
+        });
+        if (cats.size <= 1) {
+            ["Portrait", "Cinematic", "Fantasy", "Action", "Viral"].forEach(c => cats.add(c));
+        }
+        return Array.from(cats).slice(0, 15);
+    }, [templates]);
+
     const handleCardClick = (t: MarketplaceTemplate) => {
         setSelectedId(t.id);
     };
@@ -102,81 +119,19 @@ export function TemplateLibrary({
     };
 
     return (
-        <div className="flex flex-col h-full bg-card text-white relative z-50">
-            {/* --- HEADER SECTION --- */}
-            <div className="flex-shrink-0 border-b border-white/5 bg-card p-4 space-y-4">
+        <div className="flex flex-col h-full bg-[#09090b] text-white relative z-50 overflow-hidden">
+            {/* --- REFINED PREMIUM HEADER --- */}
+            <div className="flex-shrink-0 bg-[#0c0c0e]/80 backdrop-blur-xl border-b border-white/5 pt-[env(safe-area-inset-top,0px)] sticky top-0 z-50">
+                {/* Row 1: Top Control Bar */}
+                <div className="flex items-center justify-between px-3 h-14">
+                    <div className="w-10"></div>
 
-                {/* 1. Top Bar: Model Filters & Search */}
-                <div className="flex items-center justify-between gap-4">
-                    {/* Model Filters (Scrollable) */}
-                    <div className="flex-1 overflow-x-auto no-scrollbar">
-                        <div className="flex items-center gap-1">
-                            {MODEL_FILTERS.map((m) => (
-                                <button
-                                    key={m.id}
-                                    onClick={() => setActiveModelFilter(m.id)}
-                                    className={cn(
-                                        "flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium transition-all whitespace-nowrap",
-                                        activeModelFilter === m.id
-                                            ? "bg-[#D1F349] text-black"
-                                            : "text-zinc-400 hover:text-white hover:bg-white/5"
-                                    )}
-                                >
-                                    {m.id === activeModelFilter && <m.icon className="w-3 h-3" />}
-                                    {m.name}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Search & Close */}
-                    <div className="flex items-center gap-2">
-                        <div className="relative w-full md:w-64 hidden md:block">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
-                            <Input
-                                placeholder="Search"
-                                className="pl-9 h-9 bg-card border-zinc-800 text-sm focus:border-white/20 rounded-full text-white"
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                            />
-                        </div>
-                        {onClose && (
-                            <Button variant="ghost" size="icon" onClick={onClose} className="h-9 w-9 rounded-full hover:bg-white/10 text-zinc-400">
-                                <X className="w-5 h-5" />
-                            </Button>
-                        )}
-                    </div>
-                </div>
-
-                {/* 2. Secondary Bar: Categories & Tab Switcher */}
-                <div className="flex items-center justify-between gap-4 overflow-hidden">
-                    {/* Categories (Pills) */}
-                    <div className="flex-1 overflow-x-auto no-scrollbar">
-                        <div className="flex items-center gap-2">
-                            {CATEGORIES.map(cat => (
-                                <button
-                                    key={cat}
-                                    onClick={() => setActiveCategory(cat)}
-                                    className={cn(
-                                        "px-3 py-1 rounded-md text-xs font-medium border transition-all whitespace-nowrap",
-                                        activeCategory === cat
-                                            ? "bg-[#D1F349] text-black border-[#D1F349]"
-                                            : "bg-transparent text-zinc-400 border-white/10 hover:border-white/20 hover:text-white"
-                                    )}
-                                >
-                                    {cat}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Library/Marketplace Toggle */}
-                    <div className="flex bg-card rounded-lg p-0.5 border border-white/5 shrink-0 hidden md:flex">
+                    <div className="flex bg-[#1a1a1c] rounded-full p-1 border border-white/5 shadow-inner">
                         <button
                             onClick={() => setActiveTab("marketplace")}
                             className={cn(
-                                "px-3 py-1 text-xs font-medium rounded-md transition-all",
-                                activeTab === "marketplace" ? "bg-zinc-800 text-white shadow-sm" : "text-zinc-500 hover:text-zinc-300"
+                                "px-5 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-full transition-all duration-300",
+                                activeTab === "marketplace" ? "bg-[#D1F349] text-black shadow-lg" : "text-zinc-500 hover:text-zinc-300"
                             )}
                         >
                             Marketplace
@@ -184,26 +139,89 @@ export function TemplateLibrary({
                         <button
                             onClick={() => setActiveTab("library")}
                             className={cn(
-                                "px-3 py-1 text-xs font-medium rounded-md transition-all",
-                                activeTab === "library" ? "bg-zinc-800 text-white shadow-sm" : "text-zinc-500 hover:text-zinc-300"
+                                "px-5 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-full transition-all duration-300",
+                                activeTab === "library" ? "bg-[#D1F349] text-black shadow-lg" : "text-zinc-500 hover:text-zinc-300"
                             )}
                         >
-                            My Library
+                            Library
                         </button>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                        {onClose && (
+                            <Button variant="ghost" size="icon" onClick={onClose} className="h-10 w-10 rounded-full hover:bg-white/10 text-zinc-500 hover:text-white transition-colors">
+                                <X className="w-5 h-5" />
+                            </Button>
+                        )}
+                    </div>
+                </div>
+
+                {/* Row 2: Search Area */}
+                <div className="px-4 pb-4">
+                    <div className="relative group">
+                        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-600 transition-colors group-focus-within:text-[#D1F349]" />
+                        <Input
+                            placeholder={`Search ${activeTab === 'marketplace' ? 'community' : 'my'} styles...`}
+                            className="pl-10 h-11 bg-white/5 border-white/5 text-sm focus:border-[#D1F349]/30 focus:ring-0 rounded-2xl text-white w-full placeholder:text-zinc-600 transition-all font-medium"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                        />
+                    </div>
+                </div>
+
+                {/* Row 3: Horizontal Filter Strip */}
+                <div className="bg-black/20 border-t border-white/5 px-4 py-3 overflow-x-auto no-scrollbar">
+                    <div className="flex items-center gap-3 w-fit">
+                        {/* Model Filters Segment */}
+                        <div className="flex items-center gap-2 pr-3 border-r border-white/10 shrink-0">
+                            {MODEL_FILTERS.map((m) => (
+                                <button
+                                    key={m.id}
+                                    onClick={() => setActiveModelFilter(m.id)}
+                                    className={cn(
+                                        "flex items-center gap-2 px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all whitespace-nowrap border border-transparent",
+                                        activeModelFilter === m.id
+                                            ? "bg-[#D1F349]/10 text-[#D1F349] border-[#D1F349]/10"
+                                            : "text-zinc-500 hover:text-white hover:bg-white/5"
+                                    )}
+                                >
+                                    <m.icon className={cn("w-3 h-3", activeModelFilter === m.id ? "opacity-100" : "opacity-40")} />
+                                    {m.name}
+                                </button>
+                            ))}
+                        </div>
+
+                        {/* Category Segment */}
+                        <div className="flex items-center gap-2 shrink-0">
+                            {dynamicCategories.map(cat => (
+                                <button
+                                    key={cat}
+                                    onClick={() => setActiveCategory(cat)}
+                                    className={cn(
+                                        "px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap border",
+                                        activeCategory.toLowerCase() === cat.toLowerCase()
+                                            ? "bg-white text-black border-white shadow-[0_0_20px_rgba(255,255,255,0.15)] scale-105"
+                                            : "bg-transparent text-zinc-500 border-white/10 hover:border-white/20 hover:text-white"
+                                    )}
+                                >
+                                    {cat}
+                                </button>
+                            ))}
+                        </div>
                     </div>
                 </div>
             </div>
 
             {/* --- CONTENT GRID --- */}
-            <ScrollArea className="flex-1 p-4 md:p-6 pb-24 md:pb-6">
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+            <ScrollArea className="flex-1 p-4 md:p-6 pb-24 md:pb-12 bg-[#09090b]">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
                     {filteredTemplates.map((t) => (
                         <div
                             key={t.id}
                             onClick={() => handleCardClick(t)}
                             className={cn(
-                                "group relative aspect-[3/4] rounded-xl overflow-hidden cursor-pointer bg-card border transition-all",
-                                selectedId === t.id ? "border-[#D1F349] ring-2 ring-[#D1F349]" : "border-transparent ring-0 hover:ring-2 hover:ring-white/20"
+                                "group relative aspect-[3/4] rounded-2xl overflow-hidden cursor-pointer bg-zinc-900 border transition-all duration-500",
+                                selectedId === t.id ? "border-[#D1F349] ring-2 ring-[#D1F349]/50 shadow-[0_0_30px_rgba(209,243,73,0.2)]" : "border-white/5 ring-0 hover:border-white/20"
                             )}
                         >
                             {/* Image */}
@@ -216,43 +234,55 @@ export function TemplateLibrary({
                                 className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                             />
 
-                            {/* Gradient Overlay */}
-                            <div className="absolute inset-0 bg-gradient-to-t from-[#101112] via-[#101112]/20 to-transparent opacity-60 group-hover:opacity-80 transition-opacity" />
-
-                            {/* Content */}
-                            <div className="absolute inset-x-0 bottom-0 p-4">
-                                <h3 className="text-white font-bold text-sm uppercase tracking-wide mb-0.5 line-clamp-2">{t.name}</h3>
-                            </div>
-
-                            {/* Selection Indicator */}
+                            {/* Selection Checkmark */}
                             {selectedId === t.id && (
-                                <div className="absolute top-3 right-3 w-4 h-4 rounded-full bg-[#D1F349] shadow-[0_0_8px_rgba(209,243,73,0.8)] flex items-center justify-center">
-                                    <div className="w-2 h-2 rounded-full bg-[#101112]" />
+                                <div className="absolute top-3 right-3 z-20 w-6 h-6 rounded-full bg-[#D1F349] flex items-center justify-center shadow-lg animate-in zoom-in-50 duration-300">
+                                    <Check className="w-4 h-4 text-black stroke-[3]" />
                                 </div>
                             )}
+
+                            {/* Gradient Overlay */}
+                            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent opacity-60 group-hover:opacity-80 transition-opacity" />
+
+                            {/* Content */}
+                            <div className="absolute inset-x-0 bottom-0 p-4 transform transition-transform duration-500">
+                                <h3 className="text-white font-black text-[12px] uppercase tracking-wider mb-0.5 line-clamp-1 group-hover:line-clamp-none group-hover:text-[#D1F349] transition-colors">
+                                    {t.name}
+                                </h3>
+                                {t.category && (
+                                    <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-tighter">
+                                        {t.category}
+                                    </span>
+                                )}
+                            </div>
                         </div>
                     ))}
 
                     {filteredTemplates.length === 0 && (
-                        <div className="col-span-full h-64 flex flex-col items-center justify-center text-zinc-500">
-                            <Search className="w-8 h-8 opacity-20 mb-2" />
-                            <p>No templates found</p>
+                        <div className="col-span-full h-96 flex flex-col items-center justify-center text-zinc-500 animate-in fade-in duration-1000">
+                            <div className="w-16 h-16 rounded-3xl bg-white/5 flex items-center justify-center mb-4 border border-white/5">
+                                <Search className="w-8 h-8 opacity-20" />
+                            </div>
+                            <h3 className="text-white font-bold mb-1">No styles found</h3>
+                            <p className="text-xs">Try adjusting your filters or search terms</p>
                         </div>
                     )}
                 </div>
             </ScrollArea>
 
-            {/* Sticky Footer for Mobile Next Action */}
-            <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-[#101112] to-transparent z-50 pointer-events-none flex justify-center pb-8 md:pb-4">
+            {/* Sticky Next Button */}
+            <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-[#09090b] via-[#09090b]/80 to-transparent z-[60] pointer-events-none flex justify-center pb-10 md:pb-6">
                 <Button
                     onClick={handleConfirm}
                     disabled={!selectedId}
                     className={cn(
-                        "pointer-events-auto rounded-full px-8 py-6 font-bold text-base shadow-2xl transition-all duration-300 transform",
-                        selectedId ? "translate-y-0 opacity-100 bg-[#D1F349] text-black hover:bg-[#c2e440]" : "translate-y-20 opacity-0"
+                        "pointer-events-auto rounded-full px-12 py-7 font-black text-sm uppercase tracking-widest shadow-[0_20px_50px_rgba(0,0,0,0.5)] transition-all duration-500 transform",
+                        selectedId
+                            ? "translate-y-0 opacity-100 bg-[#D1F349] text-black hover:bg-[#c2e440] hover:scale-105 active:scale-95"
+                            : "translate-y-12 opacity-0"
                     )}
                 >
-                    Next <Sparkles className="w-4 h-4 ml-2" />
+                    Apply Magic Style <Sparkles className="w-4 h-4 ml-3" />
                 </Button>
             </div>
         </div>

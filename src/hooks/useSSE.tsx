@@ -17,6 +17,8 @@ export interface JobUpdateData {
   status: 'queued' | 'processing' | 'completed' | 'failed';
   progress?: number;
   url?: string;
+  urls?: string[];
+  results?: any[];
   error?: string;
 }
 
