@@ -187,6 +187,8 @@ const MODEL_ID_MAP: Record<string, string> = {
   'seedream-v4.5': 'fal-ai/bytedance/seedream/v4.5/edit',
   'flux-realism': 'fal-ai/flux-realism',
   'flux-2-pro': 'fal-ai/flux-2-pro/edit',
+  'flux-klein': 'fal-ai/flux-2/klein/9b/base/edit/lora',
+  'flux-klein-t2i': 'fal-ai/flux-2/klein/9b/base/lora',
   // Video models
   'wan-v2': 'fal-ai/wan/v2.2-a14b/image-to-video',
   'kling-2.6-pro': 'fal-ai/kling-video/v2.6/pro/image-to-video',
@@ -262,14 +264,14 @@ export const AI_MODELS = {
     type: "image",
     cost: 3,
   },
-  flux: {
-    id: "fal-ai/flux/dev",
-    shortId: "flux-dev",
-    name: "Flux Dev",
-    description: "High-quality photorealistic generation (text-to-image only)",
-    speed: "slow",
+  fluxKlein: {
+    id: "fal-ai/flux-2/klein/9b/base/edit/lora",
+    shortId: "flux-klein",
+    name: "Flux Klein",
+    description: "Fast & efficient - balance between Schnell speed and Dev quality",
+    speed: "fast",
     type: "image",
-    cost: 2,
+    cost: 1,
   },
   // Video Models
   kling26Pro: {
@@ -432,6 +434,7 @@ export function getFluxOptimizedDimensions(aspectRatio: AspectRatio = '9:16'): {
 
 /**
  * Get Flux image_size enum value when available, or custom dimensions
+ * Flux 2 Pro supports: square, portrait_4_3, portrait_16_9, landscape_4_3, landscape_16_9
  */
 export function getFluxImageSize(aspectRatio: AspectRatio = '9:16'): string | { width: number; height: number } {
   // Use Flux's built-in presets when they match our aspect ratios
@@ -439,7 +442,8 @@ export function getFluxImageSize(aspectRatio: AspectRatio = '9:16'): string | { 
     case '1:1':
       return 'square'; // 1024x1024
     case '4:5':
-      return 'portrait_4_3'; // Close enough, 768x1024
+      // No exact preset for 4:5, use custom dimensions
+      return { width: 816, height: 1020 };
     case '16:9':
       return 'landscape_16_9'; // 1024x576
     case '9:16':
@@ -486,8 +490,12 @@ export async function processImageWithAI(
 
 
   // Validate required parameters
-  if (!userPhotoBase64) {
-    throw new Error("User photo is required but was not provided.");
+  if (!userPhotoBase64 && !modelToUse.includes("lora")) {
+    // If no user photo, we need to make sure we're using a text-to-image model
+    // or that we have at least some input images
+    if (!backgroundImageUrl && (!backgroundImageUrls || backgroundImageUrls.length === 0)) {
+      throw new Error("No input provided. Please upload a photo or select a template.");
+    }
   }
 
   if (!backgroundPrompt || backgroundPrompt.trim() === '') {
@@ -504,7 +512,13 @@ export async function processImageWithAI(
 
   // Use provided model or default, and resolve short IDs to full FAL.ai IDs
   const requestedModel = aiModel || DEFAULT_FAL_MODEL;
-  const modelToUse = resolveModelId(requestedModel);
+  let modelToUse = resolveModelId(requestedModel);
+
+  // Switch to Text-to-Image if no user photo is provided for Flux Klein
+  if (!userPhotoBase64 && modelToUse === 'fal-ai/flux-2/klein/9b/base/edit/lora') {
+    modelToUse = 'fal-ai/flux-2/klein/9b/base/lora';
+    console.log("📝 No user photo provided, switching to Text-to-Image model");
+  }
 
   console.log("═══════════════════════════════════════════════════════════");
   console.log("🚀 AI PROCESSING STARTED");
@@ -519,8 +533,10 @@ export async function processImageWithAI(
     // Prepare image URLs array - user photo + all background images
     const imageUrls: string[] = [];
 
-    // 1. Add user photo as data URI (base64)
-    imageUrls.push(userPhotoBase64);
+    // 1. Add user photo as data URI (base64) if provided
+    if (userPhotoBase64) {
+      imageUrls.push(userPhotoBase64);
+    }
 
     // 2. Add background images (support both single and multiple)
     const bgImages = backgroundImageUrls || (backgroundImageUrl ? [backgroundImageUrl] : []);
@@ -695,31 +711,28 @@ Output a single cohesive image.`;
     // The previous code was combining user photo + backgrounds into `imageUrls`.
 
     // Let's send the request to Go.
-    const payload = {
+    const payload: any = {
       prompt: finalPrompt,
       model_id: modelToUse,
       image_size: imageSize,
-      // If imageSize is object, we might need to handle it. Go backend expects string for ImageSize?
-      // The Go struct has `ImageSize string`.
-      // If it's an object {width, height}, we might need to serialize it or pass it differently.
-      // FAL accepts {width, height} object.
-      // We might need to send it as JSON string if Go expects string, or update Go.
-
       num_images: 1,
-      image_urls: uploadedUrls, // Send all uploaded images
-      image_url: uploadedUrls[0], // Backward compatibility
     };
 
-    // If we have multiple images, we are in trouble with the current Go backend signature.
-    // BUT, I can try to pass the other images in the prompt or maybe the backend handles it?
-    // No, the backend is explicit.
+    // Add specific parameters for Flux Klein models
+    if (modelToUse.includes('klein')) {
+      payload.guidance_scale = 5;
+      payload.num_inference_steps = 28;
+      payload.acceleration = "regular";
+      payload.enable_safety_checker = true;
+      payload.output_format = "png";
+    }
 
-    // WORKAROUND: I will send the request to the Go backend.
-    // If the user needs multiple images (backgrounds), this might be a limitation of the current migration.
-    // However, for the "Standard" flow (user photo only), this works.
-    // For "Background" flow, we need to support multiple.
+    if (uploadedUrls.length > 0) {
+      payload.image_urls = uploadedUrls;
+      payload.image_url = uploadedUrls[0];
+    }
 
-    console.log("🚀 Sending generation request...");
+    // console.log("🚀 Sending generation request...");
     const genResponse = await fetch(`${apiUrl}/api/generate/image`, {
       method: 'POST',
       headers: {
