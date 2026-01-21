@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo, useRef } from "react";
+import React, { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import BoothDashboard from "./BoothDashboard";
 import {
@@ -73,8 +73,6 @@ import { TemplatesView } from "@/components/creator/studio/TemplatesView";
 import { TimelineView } from "@/components/creator/studio/TimelineView";
 import { GalleryView } from "@/components/creator/studio/GalleryView";
 import { MobileFloatingRail } from "@/components/creator/studio/MobileFloatingRail";
-import { MagicGeneratingButton } from "@/components/creator/studio/MagicGeneratingButton";
-import { AnimatePresence } from "framer-motion";
 
 // --- Categories for browsing ---
 const CATEGORIES = ["All", "Fantasy", "Portrait", "Cinematic", "Product", "UGC"];
@@ -277,6 +275,18 @@ function CreatorStudioPageContent({ defaultView }: CreatorStudioPageProps) {
         // Default to free
         return true;
     }, [currentUser]);
+
+    const maxImages = useMemo(() => {
+        switch (userTier) {
+            case 'business':
+            case 'studio':
+                return 4;
+            case 'vibe':
+                return 2;
+            default:
+                return 1;
+        }
+    }, [userTier]);
 
     // Default visibility: Free tier = public (forced), Paid tier = private (can toggle)
     const [isPublic, setIsPublic] = useState(false);
@@ -512,121 +522,127 @@ function CreatorStudioPageContent({ defaultView }: CreatorStudioPageProps) {
 
 
     // Load history logic
+    const loadHistory = useCallback(async () => {
+        if (!currentUser?.id) return;
+        const token = localStorage.getItem("auth_token");
+        if (!token) return;
+        try {
+            const cb = Date.now();
+            console.log("📥 [Studio] Loading history for user:", currentUser.id);
+            const completedRes = await fetch(`${ENV.API_URL}/api/creations?cb=${cb}`, { headers: { "Authorization": `Bearer ${token}` } });
+            let allItems: GalleryItem[] = [];
+
+            if (completedRes.ok) {
+                const data = await completedRes.json();
+                console.log(`📥 [Studio] Fetched ${data.creations?.length || 0} completed items`);
+                if (data.creations && Array.isArray(data.creations)) {
+                    allItems = data.creations.map((c: any) => {
+                        const realId = c.id.toString();
+                        const ts = new Date(c.created_at).getTime();
+                        return {
+                            id: realId,
+                            url: c.url,
+                            previewUrl: c.thumbnail_url || c.url,
+                            type: c.type || 'image',
+                            timestamp: isNaN(ts) ? Date.now() : ts,
+                            prompt: c.prompt,
+                            model: c.model_id || c.model,
+                            ratio: c.aspect_ratio,
+                            isPublic: c.is_published || c.visibility === 'public',
+                            status: 'completed',
+                            isOwner: true,
+                            template: getTemplateMeta([realId, c.url])
+                        };
+                    });
+                }
+            }
+
+            const pendingRes = await fetch(`${ENV.API_URL}/api/generate/pending?cb=${cb}`, { headers: { "Authorization": `Bearer ${token}` } });
+            if (pendingRes.ok) {
+                const pData = await pendingRes.json();
+                const rawPending = pData.pending || pData.pending_generations;
+
+                if (rawPending && Array.isArray(rawPending)) {
+                    console.log(`📥 [Studio] Fetched ${rawPending.length} pending items`);
+                    const pendingItems = rawPending.map((p: any) => {
+                        const ts = new Date(p.created_at).getTime();
+                        return {
+                            id: `pending-${p.id}`, url: '', previewUrl: '', type: p.type || 'image',
+                            timestamp: isNaN(ts) ? Date.now() : ts, prompt: p.prompt, model: p.model_id,
+                            ratio: p.aspect_ratio, status: p.status, jobId: p.id,
+                            error: p.error_message,
+                            template: getTemplateMeta([p.id.toString(), `pending-${p.id}`, p.request_id])
+                        };
+                    });
+                    allItems = [...pendingItems, ...allItems];
+                }
+            }
+            // Sort combined items by timestamp DESC before putting into uniqueMap
+            // to ensure easiest deduplication and final order
+            allItems.sort((a, b) => b.timestamp - a.timestamp);
+
+            const uniqueMap = new Map<string, GalleryItem>();
+            allItems.forEach(item => {
+                const realId = item.id.toString().replace('pending-', '');
+
+                // If we have both real and pending, the sort might put them in either order.
+                // But generally completed items have slightly different timestamps than pending ones.
+                // We prefer the completed item if both exist.
+                if (uniqueMap.has(realId)) {
+                    const existing = uniqueMap.get(realId);
+                    if (existing.status !== 'completed' && item.status === 'completed') {
+                        uniqueMap.set(realId, item);
+                    }
+                } else {
+                    uniqueMap.set(realId, item);
+                }
+            });
+
+            // Convert map back to array and sort one last time to be absolute
+            const finalItems = Array.from(uniqueMap.values()).sort((a, b) => b.timestamp - a.timestamp);
+            setHistory(finalItems);
+        } catch (e) { console.error(e); }
+    }, [currentUser?.id]);
+
+    // Dispatch creating count for Navbar
+    useEffect(() => {
+        const creatingCount = history.filter(item => item.status !== 'completed' && item.status !== 'failed').length;
+        window.dispatchEvent(new CustomEvent('creating-count-updated', { detail: { count: creatingCount } }));
+    }, [history]);
+
     useEffect(() => {
         if (!currentUser?.id) {
             navigate("/admin/auth");
             return;
         }
-        const loadHistory = async () => {
-            const token = localStorage.getItem("auth_token");
-            if (!token) return;
-            try {
-                const completedRes = await fetch(`${ENV.API_URL}/api/creations`, { headers: { "Authorization": `Bearer ${token}` } });
-                let allItems: GalleryItem[] = [];
 
-                if (completedRes.ok) {
-                    const data = await completedRes.json();
-                    if (data.creations && Array.isArray(data.creations)) {
-                        allItems = data.creations.map((c: any) => {
-                            const realId = c.id.toString();
-                            return {
-                                id: realId,
-                                url: c.url,
-                                previewUrl: c.thumbnail_url || c.url,
-                                type: c.type || 'image',
-                                timestamp: new Date(c.created_at).getTime(),
-                                prompt: c.prompt,
-                                model: c.model_id || c.model,
-                                ratio: c.aspect_ratio,
-                                isPublic: c.is_published || c.visibility === 'public',
-                                status: 'completed',
-                                isOwner: true,  // User's own creations - enables delete and visibility toggle
-                                template: getTemplateMeta([realId, c.url]) // Hydrate from ID or URL lookup
-                            };
-                        });
-                    }
-                }
-
-                const pendingRes = await fetch(`${ENV.API_URL}/api/generate/pending`, { headers: { "Authorization": `Bearer ${token}` } });
-                if (pendingRes.ok) {
-                    const pData = await pendingRes.json();
-                    if (pData.pending && Array.isArray(pData.pending)) {
-                        const pendingItems = pData.pending.map((p: any) => ({
-                            id: `pending-${p.id}`, url: '', previewUrl: '', type: p.type || 'image',
-                            timestamp: new Date(p.created_at).getTime(), prompt: p.prompt, model: p.model_id,
-                            ratio: p.aspect_ratio, status: p.status, jobId: p.id
-                        }));
-                        allItems = [...pendingItems, ...allItems];
-                    }
-                }
-
-                // Deduplicate by ID to prevent ghost items
-                const uniqueMap = new Map();
-
-                // First add all items, normalizing IDs
-                allItems.forEach(item => {
-                    const realId = item.id.toString().replace('pending-', '');
-
-                    // If we already have a completed version (id without pending-), keep it
-                    // If the current item is pending and we have a completed one, skip
-                    if (item.id.toString().startsWith('pending-') && uniqueMap.has(realId)) {
-                        return;
-                    }
-
-                    // If we have a pending version and now find a completed version, replace it
-                    if (uniqueMap.has(realId)) {
-                        const existing = uniqueMap.get(realId);
-                        if (existing.id.toString().startsWith('pending-')) {
-                            // Replace pending with real
-                            uniqueMap.set(realId, item);
-                        }
-                        // If both are real (shouldn't happen with Map), overwrite is fine
-                    } else {
-                        // New item
-                        uniqueMap.set(realId, item);
-                    }
-                });
-
-                setHistory(Array.from(uniqueMap.values()));
-            } catch (e) { console.error(e); }
-        };
-        loadHistory();
-
-        // Initial load
         loadHistory();
 
         // 1. EVENT-BASED UPDATES (SSE)
         const handleJobUpdate = (event: any) => {
             const data = event.detail;
             console.log("🔔 [Studio] Job update received:", data.job_id, data.status);
-
-            // Refresh history immediately when a job status changes
             loadHistory();
         };
 
         const handleTokensUpdate = () => {
-            // Refresh token stats if needed (usually handled by dashboard but good for studio)
             loadHistory();
         };
 
         window.addEventListener('job-updated', handleJobUpdate);
         window.addEventListener('tokens-updated', handleTokensUpdate);
 
-        // 2. FALLBACK POLLING (Slower, only when pending)
+        // 2. FALLBACK POLLING
         const interval = setInterval(() => {
-            const hasPending = history.some(item => item.status !== 'completed' && item.status !== 'failed');
-            // If history is empty, we might be a new user or still loading
-            if (hasPending || history.length === 0) {
-                loadHistory();
-            }
-        }, 30000); // 30s instead of 10s
+            loadHistory();
+        }, 15000); // 15s fallback
 
         return () => {
             window.removeEventListener('job-updated', handleJobUpdate);
             window.removeEventListener('tokens-updated', handleTokensUpdate);
             clearInterval(interval);
         };
-    }, [currentUser?.id, navigate, history.length]);
+    }, [loadHistory, navigate, currentUser?.id]);
 
     // Handlers
     const handleDeleteHistory = async (id: string) => {
@@ -867,7 +883,12 @@ function CreatorStudioPageContent({ defaultView }: CreatorStudioPageProps) {
             }
             return;
         }
-        if (mode === "image" && !inputImage) return toast.error("Upload image first");
+
+        // Relax check for Text-to-Image models
+        const selectedModelObj = Object.values(AI_MODELS).find(m => m.shortId === model || m.id === model);
+        const isT2I = model.includes("-t2i") || (selectedModelObj && (selectedModelObj as any).capabilities?.includes('t2i'));
+
+        if (mode === "image" && !inputImage && !isT2I) return toast.error("Upload image first");
         if (mode === "video" && !inputImage && !prompt) return toast.error("Provide a start frame or prompt"); // Relaxed for video
 
         setIsProcessing(true);
@@ -876,7 +897,7 @@ function CreatorStudioPageContent({ defaultView }: CreatorStudioPageProps) {
             if (mode === "image") {
                 const templateBgs = selectedTemplate?.images || selectedTemplate?.backgrounds || [];
                 const result = await processCreatorImage({
-                    userPhotoBase64: inputImage!,
+                    userPhotoBase64: inputImage || "", // Can be empty for T2I
                     backgroundPrompt: prompt || selectedTemplate?.prompt || "portrait",
                     backgroundImageUrls: [...referenceImages, ...templateBgs],
                     aspectRatio: aspectRatio as "auto" | "1:1" | "4:5" | "3:2" | "16:9" | "9:16",
@@ -885,7 +906,8 @@ function CreatorStudioPageContent({ defaultView }: CreatorStudioPageProps) {
                     isPublic,
                     numImages,
                     resolution,
-                    parent_id: remixFrom
+                    parent_id: remixFrom,
+                    skipWait: true
                 });
 
                 const templateInfo = selectedTemplate ? {
@@ -894,32 +916,21 @@ function CreatorStudioPageContent({ defaultView }: CreatorStudioPageProps) {
                     image: selectedTemplate.preview_images?.[0] || selectedTemplate.images?.[0] || ""
                 } : undefined;
 
-                // CRITICAL: Save template metadata using the RAW FAL URL (if available) 
-                // because that is what the backend auto-saves. This ensures hydration works on refresh.
-                if (result.rawUrl && templateInfo) {
-                    saveTemplateMeta(result.rawUrl, templateInfo);
+                // CRITICAL: Save template metadata using both Job ID and RAW FAL URL (if available) 
+                // because the task moves between these states. This ensures hydration works at every stage.
+                if (templateInfo) {
+                    if (result.rawUrl) saveTemplateMeta(result.rawUrl, templateInfo);
+                    if (result.jobId) saveTemplateMeta(result.jobId.toString(), templateInfo);
                 }
 
-                const finalUrls = (result as any).urls && (result as any).urls.length > 0
-                    ? (result as any).urls
-                    : [result.url];
-
-                finalUrls.forEach((url: string) => {
-                    addToHistory({
-                        id: crypto.randomUUID(),
-                        url: url,
-                        type: 'image',
-                        timestamp: Date.now(),
-                        prompt,
-                        model,
-                        ratio: aspectRatio,
-                        status: 'completed',
-                        template: templateInfo,
-                        isPublic,
-                        parent_id: remixFrom,
-                        parent_username: remixFromUsername
-                    }, true); // Skip backend save because the backend generation endpoint auto-saves
+                console.log("🏁 [CreatorAI] Generation complete, task queued", {
+                    jobId: result.jobId,
+                    count: (result as any).urls?.length || 1
                 });
+
+                // Small delay to ensure DB persistence indexing if needed, then await refresh
+                await new Promise(r => setTimeout(r, 500));
+                await loadHistory();
             } else if (mode === "video") {
                 const endpoint = `${ENV.API_URL || "http://localhost:3002"}/api/generate/video`;
                 const resp = await fetch(endpoint, {
@@ -939,21 +950,9 @@ function CreatorStudioPageContent({ defaultView }: CreatorStudioPageProps) {
                 });
                 if (!resp.ok) throw new Error("Failed");
                 const data = await resp.json();
-                addToHistory({
-                    id: crypto.randomUUID(),
-                    url: data.url,
-                    type: 'video',
-                    timestamp: Date.now(),
-                    prompt,
-                    model,
-                    ratio: aspectRatio,
-                    status: 'completed',
-                    isPublic,
-                    parent_id: remixFrom,
-                    parent_username: remixFromUsername
-                });
+                loadHistory();
             }
-            toast.success("Created!");
+            toast.success("in progress!");
         } catch (e) { toast.error("Failed"); } finally { setIsProcessing(false); }
     };
 
@@ -1045,6 +1044,7 @@ function CreatorStudioPageContent({ defaultView }: CreatorStudioPageProps) {
                                 setResolution={setResolution}
                                 numImages={numImages}
                                 setNumImages={setNumImages}
+                                maxImages={maxImages}
                                 isProcessing={isProcessing}
                                 onGenerate={handleGenerate}
                                 inputImage={inputImage}
@@ -1203,12 +1203,6 @@ function CreatorStudioPageContent({ defaultView }: CreatorStudioPageProps) {
                 </div>
             )}
 
-            <AnimatePresence>
-                <MagicGeneratingButton
-                    count={history.filter(item => item.status !== 'completed' && item.status !== 'failed').length}
-                    onClick={() => setActiveView('gallery')}
-                />
-            </AnimatePresence>
         </div>
     );
 }

@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { Sparkles, Loader2, Wand2, Download, History, BookOpen, ImageIcon, Video, CheckCircle2, Maximize2, LayoutGrid, List, Clock } from 'lucide-react';
+import { Sparkles, Loader2, Wand2, Download, History, BookOpen, ImageIcon, Video, CheckCircle2, Maximize2, LayoutGrid, List, Clock, X } from 'lucide-react';
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { GalleryItem } from '@/components/creator/CreationDetailView';
 // CDN service for public content (Cloudflare Image Resizing)
-import { getThumbnailUrl, getVideoUrl } from "@/services/cdn";
+import { getThumbnailUrl, getVideoUrl, getDownloadUrl } from "@/services/cdn";
 import { cn } from "@/lib/utils";
 import { Slider } from "@/components/ui/slider";
 
@@ -469,10 +469,37 @@ export const TimelineView = ({
                                                                 loading={isHero ? "eager" : "lazy"}
                                                                 decoding="async"
                                                                 alt={item.prompt}
+                                                                onError={(e) => {
+                                                                    const target = e.target as HTMLImageElement;
+                                                                    const currentSrc = target.src;
+                                                                    const rawUrl = getDownloadUrl(item.url);
+
+                                                                    // Step 1: If we haven't tried cache-buster yet, try it
+                                                                    if (!currentSrc.includes('?cb=') && currentSrc.includes('/cdn-cgi/')) {
+                                                                        const cacheBusterUrl = currentSrc + '?cb=' + Date.now();
+                                                                        console.log('[CDN] Retrying with cache-buster');
+                                                                        target.src = cacheBusterUrl;
+                                                                        return;
+                                                                    }
+
+                                                                    // Step 2: Fall back to raw R2 URL
+                                                                    if (target.src !== rawUrl) {
+                                                                        console.log('[CDN] Falling back to raw R2 URL');
+                                                                        target.src = rawUrl;
+                                                                    }
+                                                                }}
                                                             />
                                                         ) : (
                                                             <video src={getVideoUrl(item.url)} className={cn("w-full h-full", fitToScreen ? "object-contain bg-[#101112]" : "object-cover")} />
                                                         )
+                                                    ) : item.status === 'failed' ? (
+                                                        <div className="w-full h-full flex flex-col items-center justify-center bg-red-950/20 text-red-500 gap-2 p-4 text-center">
+                                                            <div className="w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center mb-1">
+                                                                <X className="w-5 h-5 text-red-500" />
+                                                            </div>
+                                                            <span className="text-[10px] font-black uppercase tracking-tighter">Generation Failed</span>
+                                                            <p className="text-[9px] line-clamp-3 text-red-400/80 leading-tight">{item.error || 'Something went wrong while processing your image.'}</p>
+                                                        </div>
                                                     ) : (
                                                         <div className="w-full h-full flex flex-col items-center justify-center bg-card/50 text-zinc-700 gap-3">
                                                             <Loader2 className="animate-spin w-8 h-8" />

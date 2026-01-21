@@ -14,10 +14,27 @@ import type { JobUpdateData } from "../hooks/useSSE";
  * @returns The completed image URL
  * @throws Error if job fails or times out
  */
-async function waitForJobCompletion(jobId: number, apiUrl: string, timeoutMs = 120000): Promise<{ url: string, urls?: string[] }> {
+/**
+ * Wait for a generation job to complete using SSE events with polling fallback.
+ * This eliminates aggressive polling while maintaining reliability.
+ * 
+ * @param jobId - The job ID to wait for
+ * @param apiUrl - The API base URL
+ * @param expectedImages - Number of images expected (for multi-image gen)
+ * @param timeoutMs - Maximum time to wait in milliseconds (default: 120000 = 2 minutes)
+ * @returns The completed image URLs
+ * @throws Error if job fails or times out
+ */
+async function waitForJobCompletion(
+    jobId: number,
+    apiUrl: string,
+    expectedImages = 1,
+    timeoutMs = 120000
+): Promise<{ url: string, urls: string[] }> {
     return new Promise((resolve, reject) => {
         let resolved = false;
         let pollInterval: NodeJS.Timeout | null = null;
+        const results: string[] = [];
 
         // Cleanup function
         const cleanup = () => {
@@ -35,10 +52,18 @@ async function waitForJobCompletion(jobId: number, apiUrl: string, timeoutMs = 1
 
             if (data.job_id === jobId) {
                 if (data.status === 'completed' && data.url) {
-                    console.log('✅ [CreatorAI] Job completed via SSE:', jobId);
-                    resolved = true;
-                    cleanup();
-                    resolve({ url: data.url, urls: data.urls });
+                    console.log(`✅ [CreatorAI] Received image ${results.length + 1}/${expectedImages} via SSE:`, jobId);
+
+                    if (!results.includes(data.url)) {
+                        results.push(data.url);
+                    }
+
+                    // If we have all expected images
+                    if (results.length >= expectedImages) {
+                        resolved = true;
+                        cleanup();
+                        resolve({ url: results[0], urls: results });
+                    }
                 } else if (data.status === 'failed') {
                     console.error('❌ [CreatorAI] Job failed via SSE:', data.error);
                     resolved = true;
@@ -51,8 +76,7 @@ async function waitForJobCompletion(jobId: number, apiUrl: string, timeoutMs = 1
         // Listen for SSE job update events
         window.addEventListener('job-updated', handleJobUpdate as EventListener);
 
-        // Set up polling as fallback (every 3 seconds instead of 1 second)
-        // SSE should deliver updates faster, but polling ensures we don't miss anything
+        // Set up polling as fallback
         const pollForStatus = async () => {
             if (resolved) return;
 
@@ -64,11 +88,14 @@ async function waitForJobCompletion(jobId: number, apiUrl: string, timeoutMs = 1
 
                 if (statusRes.ok) {
                     const statusData = await statusRes.json();
-                    if (statusData.status === 'completed' && statusData.url) {
-                        console.log('✅ [CreatorAI] Job completed via polling fallback:', jobId);
+                    if (statusData.status === 'completed' && (statusData.url || (statusData.urls && statusData.urls.length > 0))) {
+                        console.log(`✅ [CreatorAI] Job completed via polling fallback: ${jobId} (${statusData.urls?.length || 1} images)`);
+
+                        const fallbackUrls = statusData.urls || [statusData.url];
+
                         resolved = true;
                         cleanup();
-                        resolve({ url: statusData.url, urls: statusData.urls });
+                        resolve({ url: statusData.url || fallbackUrls[0], urls: fallbackUrls });
                     } else if (statusData.status === 'failed') {
                         console.error('❌ [CreatorAI] Job failed via polling:', statusData.error);
                         resolved = true;
@@ -81,18 +108,23 @@ async function waitForJobCompletion(jobId: number, apiUrl: string, timeoutMs = 1
             }
         };
 
-        // Start polling fallback (less frequent since SSE is primary)
         pollInterval = setInterval(pollForStatus, 3000);
-
-        // Also do an immediate poll
         pollForStatus();
 
-        // Set timeout
+        // Set timeout safeguard
         setTimeout(() => {
             if (!resolved) {
-                console.error('❌ [CreatorAI] Job timed out:', jobId);
-                cleanup();
-                reject(new Error('Generation timed out - check pending jobs later'));
+                if (results.length > 0) {
+                    // If we have some images but not all, resolve with what we have
+                    console.warn(`⏳ [CreatorAI] Timeout: resolving with ${results.length}/${expectedImages} images`);
+                    resolved = true;
+                    cleanup();
+                    resolve({ url: results[0], urls: results });
+                } else {
+                    console.error('❌ [CreatorAI] Job timed out:', jobId);
+                    cleanup();
+                    reject(new Error('Generation timed out - check pending jobs later'));
+                }
             }
         }, timeoutMs);
     });
@@ -114,6 +146,7 @@ export interface ProcessCreatorImageOptions {
     parent_id?: number | null;
     numImages?: number;
     resolution?: string;
+    skipWait?: boolean;
 
     // Legacy params kept for compatibility if needed internally, but not used by Creator Studio
     includeBranding?: boolean;
@@ -232,8 +265,6 @@ function isInternalUrl(url: string): boolean {
     const internalDomains = [
         "r2.dev",
         "r2.pictureme.now",
-        "s3.amazonaws.com/pictureme.now",
-        "pictureme.now.s3.amazonaws.com",
         "v3b.fal.media",
         "fal.media"
     ];
@@ -306,20 +337,14 @@ export async function processCreatorImage(
         resolution,
     } = options;
 
-    if (!userPhotoBase64) {
-        throw new Error("User photo is required.");
-    }
     if (!backgroundPrompt?.trim()) {
         throw new Error("Prompt is required.");
     }
 
-    // Use provided model or default, and resolve short IDs to full FAL.ai IDs
-    const requestedModel = aiModel || "fal-ai/nano-banana/edit"; // Default hardcoded for safety
-    const modelToUse = resolveModelId(requestedModel);
+    // console.log("🤖 Model requested:", aiModel || "(default)"); // Hidden for privacy
 
-    console.log("🎨 [CreatorAI] Processing started");
+    console.log("🎨 [CreatorAI] Processing started", { aiModel, isPublic });
     console.log("📝 Prompt:", backgroundPrompt.substring(0, 50) + "...");
-    console.log("🖼️ Public Feed:", isPublic);
 
     try {
         // 1. Prepare Backend-Ready URLs
@@ -331,9 +356,11 @@ export async function processCreatorImage(
         console.log("📤 [CreatorAI] Preparing assets...");
         const uploadedUrls: string[] = [];
 
-        // Primary Input
-        const mainUrl = await ensureBackendUrl(userPhotoBase64, apiUrl);
-        uploadedUrls.push(mainUrl);
+        // Primary Input - Only prepare if provided
+        if (userPhotoBase64) {
+            const mainUrl = await ensureBackendUrl(userPhotoBase64, apiUrl);
+            uploadedUrls.push(mainUrl);
+        }
 
         // Reference Images / Backgrounds
         const bgImages = backgroundImageUrls || (backgroundImageUrl ? [backgroundImageUrl] : []);
@@ -342,7 +369,29 @@ export async function processCreatorImage(
             uploadedUrls.push(resolvedBgUrl);
         }
 
-        // 3. Prompt Construction
+        // 3. Resolve Model ID and handle auto-switching for T2I
+        let modelToUse = resolveModelId(aiModel);
+
+        // Auto-switch to Text-to-Image version if no user photo is provided
+        // This makes it seamless for the user
+        if (!userPhotoBase64 && modelToUse === 'fal-ai/flux-2/klein/9b/base/edit/lora') {
+            modelToUse = 'fal-ai/flux-2/klein/9b/base/lora';
+            console.log("📝 No user photo provided, switching to Text-to-Image model (T2I)");
+        }
+        if (!userPhotoBase64 && modelToUse === 'fal-ai/bytedance/seedream/v4.5/edit') {
+            modelToUse = 'fal-ai/bytedance/seedream/v4.5';
+            console.log("📝 No user photo provided, switching to Seedream T2I");
+        }
+        if (!userPhotoBase64 && modelToUse === 'fal-ai/nano-banana/edit') {
+            modelToUse = 'fal-ai/nano-banana';
+            console.log("📝 No user photo provided, switching to Nano Banana T2I");
+        }
+        if (!userPhotoBase64 && modelToUse === 'fal-ai/nano-banana-pro/edit') {
+            modelToUse = 'fal-ai/nano-banana-pro';
+            console.log("📝 No user photo provided, switching to Nano Banana Pro T2I");
+        }
+
+        // 4. Prepare Generation Strategy
         const isSeedream = modelToUse.includes("seedream");
         let finalPrompt = backgroundPrompt;
         let imageSize: string | { width: number; height: number } | undefined;
@@ -365,20 +414,32 @@ export async function processCreatorImage(
         }
 
         // 5. Send Generation Request
-        const payload = {
+        const isT2I = !userPhotoBase64;
+
+        const payload: any = {
             prompt: finalPrompt,
             model_id: modelToUse,
             image_size: imageSize,
             resolution: resolution, // Pass resolution explicitly if provided
             num_images: numImages,
-            image_urls: uploadedUrls,
-            image_url: uploadedUrls[0],
             visibility: isPublic ? 'public' : 'private',
             billing_context: 'personal',
             parent_id: options.parent_id
         };
 
-        console.log("🚀 [CreatorAI] Sending request:", payload.visibility, payload.model_id);
+        // Only add image inputs if we are NOT in T2I mode OR if the model specifically supports them
+        // For most T2I models, sending image_urls might cause an error
+        if (!isT2I) {
+            payload.image_urls = uploadedUrls;
+            payload.image_url = uploadedUrls[0];
+        }
+
+        console.log("🚀 [CreatorAI] Sending request:", {
+            model: payload.model_id,
+            isT2I,
+            images: uploadedUrls.length,
+            visibility: payload.visibility
+        });
 
         const genResponse = await fetch(`${apiUrl}/api/generate/image`, {
             method: 'POST',
@@ -398,32 +459,42 @@ export async function processCreatorImage(
 
         const genResult = await genResponse.json();
         let processedUrl = genResult.image_url;
-        let results: { url: string, urls?: string[] } = { url: processedUrl };
+        let finalUrls: string[] = [];
 
         if (!processedUrl && genResult.job_id) {
+            if (options.skipWait) {
+                console.log("⏩ [CreatorAI] skipWait: true. Returning job_id:", genResult.job_id);
+                return {
+                    url: '',
+                    urls: [],
+                    jobId: genResult.job_id,
+                    status: 'processing'
+                };
+            }
+
             console.log("⏳ [CreatorAI] Waiting for job:", genResult.job_id);
             if (onProgress) onProgress("processing");
 
             // Wait for job completion via SSE or polling fallback
-            results = await waitForJobCompletion(genResult.job_id, apiUrl, 120000);
+            const results = await waitForJobCompletion(genResult.job_id, apiUrl, numImages, 120000);
             processedUrl = results.url;
+            finalUrls = results.urls;
+        } else if (processedUrl) {
+            finalUrls = [processedUrl];
         }
 
-        if (!processedUrl) throw new Error("No image URL returned");
-
-        const finalUrls = results.urls || [processedUrl];
+        if (!processedUrl && !options.skipWait) throw new Error("No image URL returned");
 
         // 7. Apply Branding (Optional for creators, usually disabled)
         // If creators want watermarks, they turn it on.
         if (options.includeBranding && options.watermark) {
-            // Re-use logic if needed, but for now return raw.
             if (onProgress) onProgress("applying_branding");
             const brandedUrl = await applyBrandingOverlay(processedUrl, {
                 watermark: options.watermark
             });
             return {
                 url: brandedUrl,
-                urls: results.urls,
+                urls: finalUrls,
                 rawUrl: processedUrl,
                 seed: genResult.seed,
                 contentType: "image/jpeg"
@@ -432,7 +503,7 @@ export async function processCreatorImage(
 
         return {
             url: processedUrl,
-            urls: results.urls,
+            urls: finalUrls,
             rawUrl: processedUrl,
             seed: genResult.seed,
             contentType: "image/jpeg"

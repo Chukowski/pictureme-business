@@ -9,6 +9,7 @@ export function CreatorLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const [user, setUser] = useState<User | null>(null);
+  const [creatingCount, setCreatingCount] = useState(0);
 
   useEffect(() => {
     const loadUser = async () => {
@@ -39,10 +40,12 @@ export function CreatorLayout() {
     const handleTokensUpdated = (event: any) => {
       const { newBalance } = event.detail;
       console.log("🪙 [Layout] Token update received:", newBalance);
-      setUser(prev => prev ? ({
-        ...prev,
-        tokens_remaining: newBalance
-      }) : null);
+      setUser(prev => prev ? ({ ...prev, tokens_remaining: newBalance }) : null);
+    };
+
+    const handleCreatingCountUpdated = (event: any) => {
+      const { count } = event.detail;
+      setCreatingCount(count);
     };
 
     const handleAuthChange = () => {
@@ -53,11 +56,13 @@ export function CreatorLayout() {
     loadUser();
 
     window.addEventListener('tokens-updated', handleTokensUpdated);
+    window.addEventListener('creating-count-updated', handleCreatingCountUpdated);
     window.addEventListener('auth-change', handleAuthChange);
     window.addEventListener('storage', handleAuthChange);
 
     return () => {
       window.removeEventListener('tokens-updated', handleTokensUpdated);
+      window.removeEventListener('creating-count-updated', handleCreatingCountUpdated);
       window.removeEventListener('auth-change', handleAuthChange);
       window.removeEventListener('storage', handleAuthChange);
     };
@@ -77,7 +82,7 @@ export function CreatorLayout() {
     )}>
       {/* Top Navigation Bar - Now visible on all screens */}
       <div>
-        <CreatorNavbar user={user} />
+        <CreatorNavbar user={user} creatingCount={creatingCount} />
       </div>
 
       {/* Mobile Bottom Navigation - Hidden on desktop */}

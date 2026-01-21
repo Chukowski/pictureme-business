@@ -182,7 +182,9 @@ async function waitForJobCompletion(jobId: number, apiUrl: string, timeoutMs = 1
 const MODEL_ID_MAP: Record<string, string> = {
   // Image models - short names to full FAL.ai IDs
   'nano-banana': 'fal-ai/nano-banana/edit',
+  'nano-banana-t2i': 'fal-ai/nano-banana',
   'nano-banana-pro': 'fal-ai/nano-banana-pro/edit',
+  'nano-banana-pro-t2i': 'fal-ai/nano-banana-pro',
   'seedream-v4': 'fal-ai/bytedance/seedream/v4/edit',
   'seedream-v4.5': 'fal-ai/bytedance/seedream/v4.5/edit',
   'flux-realism': 'fal-ai/flux-realism',
@@ -227,15 +229,17 @@ export const AI_MODELS = {
     speed: "fast",
     type: "image",
     cost: 1,
+    capabilities: ['i2i', 't2i'] as const,
   },
   nanoBananaPro: {
     id: "fal-ai/nano-banana-pro/edit",
     shortId: "nano-banana-pro",
-    name: "Nano Banana Pro (Gemini 3 Pro)",
-    description: "Premium quality with advanced reasoning",
+    name: "Nano Banana Pro (New)",
+    description: "Google's state-of-the-art generation & editing model",
     speed: "medium",
     type: "image",
     cost: 4,
+    capabilities: ['i2i', 't2i'] as const,
   },
   seedream: {
     id: "fal-ai/bytedance/seedream/v4/edit",
@@ -245,6 +249,7 @@ export const AI_MODELS = {
     speed: "medium",
     type: "image",
     cost: 1,
+    capabilities: ['i2i'] as const,
   },
   seedream45: {
     id: "fal-ai/bytedance/seedream/v4.5/edit",
@@ -254,6 +259,7 @@ export const AI_MODELS = {
     speed: "medium",
     type: "image",
     cost: 2,
+    capabilities: ['i2i', 't2i'] as const,
   },
   flux2Pro: {
     id: "fal-ai/flux-2-pro/edit",
@@ -263,6 +269,7 @@ export const AI_MODELS = {
     speed: "medium",
     type: "image",
     cost: 3,
+    capabilities: ['i2i'] as const,
   },
   fluxKlein: {
     id: "fal-ai/flux-2/klein/9b/base/edit/lora",
@@ -272,25 +279,28 @@ export const AI_MODELS = {
     speed: "fast",
     type: "image",
     cost: 1,
+    capabilities: ['i2i', 't2i'] as const,
   },
   // Video Models
   kling26Pro: {
     id: "fal-ai/kling-video/v2.6/pro/image-to-video",
     shortId: "kling-2.6-pro",
-    name: "Kling 2.6 Pro (Image to Video)",
+    name: "Kling 2.6 Pro (I2V)",
     description: "Top-tier cinematic visuals with fluid motion and audio",
     speed: "slow",
     type: "video",
     cost: 150,
+    capabilities: ['i2v'] as const,
   },
   kling26Text: {
     id: "fal-ai/kling-video/v2.6/pro/text-to-video",
     shortId: "kling-2.6-text",
-    name: "Kling 2.6 Pro (Text to Video)",
+    name: "Kling 2.6 Pro (T2V)",
     description: "Generate video from text with cinematic quality",
     speed: "slow",
     type: "video",
     cost: 150,
+    capabilities: ['t2v'] as const,
   },
   klingO1Edit: {
     id: "fal-ai/kling-video/o1/video-to-video/edit",
@@ -300,6 +310,7 @@ export const AI_MODELS = {
     speed: "slow",
     type: "video",
     cost: 100,
+    capabilities: ['v2v'] as const,
   },
   veo31: {
     id: "fal-ai/google/veo-3-1/image-to-video",
@@ -309,6 +320,7 @@ export const AI_MODELS = {
     speed: "slow",
     type: "video",
     cost: 200,
+    capabilities: ['i2v'] as const,
   },
 } as const;
 
@@ -385,6 +397,7 @@ export interface ProcessImageOptions {
   skipTokenCharge?: boolean;
   eventSlug?: string;
   userSlug?: string;
+  numImages?: number;
 }
 
 /**
@@ -462,6 +475,8 @@ export interface ProcessImageResult {
   rawUrl?: string;
   seed?: number;
   contentType?: string;
+  jobId?: number;
+  status?: string;
 }
 
 /**
@@ -482,12 +497,17 @@ export async function processImageWithAI(
     aspectRatio = '9:16',
     aiModel,
     onProgress,
+    numImages = 1,
   } = options;
 
   // Load config from backend if not available
   await loadConfig();
 
 
+
+  // Use provided model or default, and resolve short IDs to full FAL.ai IDs
+  const requestedModel = aiModel || DEFAULT_FAL_MODEL;
+  let modelToUse = resolveModelId(requestedModel);
 
   // Validate required parameters
   if (!userPhotoBase64 && !modelToUse.includes("lora")) {
@@ -497,22 +517,6 @@ export async function processImageWithAI(
       throw new Error("No input provided. Please upload a photo or select a template.");
     }
   }
-
-  if (!backgroundPrompt || backgroundPrompt.trim() === '') {
-    console.error("❌ VALIDATION ERROR: backgroundPrompt is missing or empty");
-    console.error("📋 Options received:", JSON.stringify({
-      hasUserPhoto: !!userPhotoBase64,
-      backgroundPrompt: backgroundPrompt,
-      backgroundImageUrl: backgroundImageUrl,
-      backgroundImageUrls: backgroundImageUrls,
-      aiModel: aiModel,
-    }, null, 2));
-    throw new Error("Prompt is required but was not provided. Please ensure the template has a prompt configured.");
-  }
-
-  // Use provided model or default, and resolve short IDs to full FAL.ai IDs
-  const requestedModel = aiModel || DEFAULT_FAL_MODEL;
-  let modelToUse = resolveModelId(requestedModel);
 
   // Switch to Text-to-Image if no user photo is provided for Flux Klein
   if (!userPhotoBase64 && modelToUse === 'fal-ai/flux-2/klein/9b/base/edit/lora') {
@@ -715,7 +719,7 @@ Output a single cohesive image.`;
       prompt: finalPrompt,
       model_id: modelToUse,
       image_size: imageSize,
-      num_images: 1,
+      num_images: numImages,
     };
 
     // Add specific parameters for Flux Klein models

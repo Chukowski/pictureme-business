@@ -39,6 +39,7 @@ export interface GalleryItem {
     shareCode?: string;
     isPublic?: boolean;
     status?: 'completed' | 'processing' | 'failed';
+    error?: string;
     jobId?: number;
     template?: {
         id: string;

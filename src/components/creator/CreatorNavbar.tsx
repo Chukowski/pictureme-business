@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
     LayoutDashboard,
@@ -18,7 +18,8 @@ import {
     X,
     Home,
     GalleryHorizontal,
-    Bot
+    Bot,
+    CheckCircle2
 } from "lucide-react";
 import { logoutUser, User } from "@/services/eventsApi";
 import { cn } from "@/lib/utils";
@@ -48,13 +49,26 @@ import { UpgradePlanModal } from "@/components/billing/UpgradePlanModal";
 
 interface CreatorNavbarProps {
     user: User | null;
+    creatingCount?: number;
 }
 
-export function CreatorNavbar({ user }: CreatorNavbarProps) {
+export function CreatorNavbar({ user, creatingCount = 0 }: CreatorNavbarProps) {
     const navigate = useNavigate();
     const location = useLocation();
     const [showTopUp, setShowTopUp] = useState(false);
     const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+    const [showCompleted, setShowCompleted] = useState(false);
+    const prevCreatingCount = useRef(creatingCount);
+
+    // Track when jobs complete to show the "Done" indicator
+    useEffect(() => {
+        if (prevCreatingCount.current > creatingCount && creatingCount === 0) {
+            setShowCompleted(true);
+            const timer = setTimeout(() => setShowCompleted(false), 5000); // Show for 5 seconds
+            return () => clearTimeout(timer);
+        }
+        prevCreatingCount.current = creatingCount;
+    }, [creatingCount]);
 
     const handleLogout = () => {
         logoutUser();
@@ -370,6 +384,88 @@ export function CreatorNavbar({ user }: CreatorNavbarProps) {
                 <div className="flex items-center gap-2 sm:gap-4 z-50">
                     {/* Empty div to keep alignment if needed, or just let justifying work */}
                     <div className="md:hidden w-0 h-0" />
+
+                    {/* Minimal Generation Indicator (Desktop Only) */}
+                    {(creatingCount > 0 || showCompleted) && (
+                        <div
+                            className={cn(
+                                "hidden md:flex items-center gap-2.5 px-3 py-1.5 rounded-full transition-all duration-500 cursor-pointer overflow-hidden",
+                                creatingCount > 0
+                                    ? "bg-white/5 border border-white/10 text-[#D1F349]"
+                                    : "bg-green-500/10 border border-green-500/20 text-green-400"
+                            )}
+                            onClick={() => navigate('/creator/studio?view=gallery')}
+                        >
+                            {creatingCount > 0 ? (
+                                <>
+                                    <div className="w-4 h-4">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24">
+                                            <rect width="7.33" height="7.33" x="1" y="1" fill="currentColor">
+                                                <animate id="SVGzjrPLenI" attributeName="x" begin="0;SVGXAURnSRI.end+0.2s" dur="0.6s" values="1;4;1" />
+                                                <animate attributeName="y" begin="0;SVGXAURnSRI.end+0.2s" dur="0.6s" values="1;4;1" />
+                                                <animate attributeName="width" begin="0;SVGXAURnSRI.end+0.2s" dur="0.6s" values="7.33;1.33;7.33" />
+                                                <animate attributeName="height" begin="0;SVGXAURnSRI.end+0.2s" dur="0.6s" values="7.33;1.33;7.33" />
+                                            </rect>
+                                            <rect width="7.33" height="7.33" x="8.33" y="1" fill="currentColor">
+                                                <animate attributeName="x" begin="SVGzjrPLenI.begin+0.1s" dur="0.6s" values="8.33;11.33;8.33" />
+                                                <animate attributeName="y" begin="SVGzjrPLenI.begin+0.1s" dur="0.6s" values="1;4;1" />
+                                                <animate attributeName="width" begin="SVGzjrPLenI.begin+0.1s" dur="0.6s" values="7.33;1.33;7.33" />
+                                                <animate attributeName="height" begin="SVGzjrPLenI.begin+0.1s" dur="0.6s" values="7.33;1.33;7.33" />
+                                            </rect>
+                                            <rect width="7.33" height="7.33" x="1" y="8.33" fill="currentColor">
+                                                <animate attributeName="x" begin="SVGzjrPLenI.begin+0.1s" dur="0.6s" values="1;4;1" />
+                                                <animate attributeName="y" begin="SVGzjrPLenI.begin+0.1s" dur="0.6s" values="8.33;11.33;8.33" />
+                                                <animate attributeName="width" begin="SVGzjrPLenI.begin+0.1s" dur="0.6s" values="7.33;1.33;7.33" />
+                                                <animate attributeName="height" begin="SVGzjrPLenI.begin+0.1s" dur="0.6s" values="7.33;1.33;7.33" />
+                                            </rect>
+                                            <rect width="7.33" height="7.33" x="15.66" y="1" fill="currentColor">
+                                                <animate attributeName="x" begin="SVGzjrPLenI.begin+0.2s" dur="0.6s" values="15.66;18.66;15.66" />
+                                                <animate attributeName="y" begin="SVGzjrPLenI.begin+0.2s" dur="0.6s" values="1;4;1" />
+                                                <animate attributeName="width" begin="SVGzjrPLenI.begin+0.2s" dur="0.6s" values="7.33;1.33;7.33" />
+                                                <animate attributeName="height" begin="SVGzjrPLenI.begin+0.2s" dur="0.6s" values="7.33;1.33;7.33" />
+                                            </rect>
+                                            <rect width="7.33" height="7.33" x="8.33" y="8.33" fill="currentColor">
+                                                <animate attributeName="x" begin="SVGzjrPLenI.begin+0.2s" dur="0.6s" values="8.33;11.33;8.33" />
+                                                <animate attributeName="y" begin="SVGzjrPLenI.begin+0.2s" dur="0.6s" values="8.33;11.33;8.33" />
+                                                <animate attributeName="width" begin="SVGzjrPLenI.begin+0.2s" dur="0.6s" values="7.33;1.33;7.33" />
+                                                <animate attributeName="height" begin="SVGzjrPLenI.begin+0.2s" dur="0.6s" values="7.33;1.33;7.33" />
+                                            </rect>
+                                            <rect width="7.33" height="7.33" x="1" y="15.66" fill="currentColor">
+                                                <animate attributeName="x" begin="SVGzjrPLenI.begin+0.2s" dur="0.6s" values="1;4;1" />
+                                                <animate attributeName="y" begin="SVGzjrPLenI.begin+0.2s" dur="0.6s" values="15.66;18.66;15.66" />
+                                                <animate attributeName="width" begin="SVGzjrPLenI.begin+0.2s" dur="0.6s" values="7.33;1.33;7.33" />
+                                                <animate attributeName="height" begin="SVGzjrPLenI.begin+0.2s" dur="0.6s" values="7.33;1.33;7.33" />
+                                            </rect>
+                                            <rect width="7.33" height="7.33" x="15.66" y="8.33" fill="currentColor">
+                                                <animate attributeName="x" begin="SVGzjrPLenI.begin+0.3s" dur="0.6s" values="15.66;18.66;15.66" />
+                                                <animate attributeName="y" begin="SVGzjrPLenI.begin+0.3s" dur="0.6s" values="8.33;11.33;8.33" />
+                                                <animate attributeName="width" begin="SVGzjrPLenI.begin+0.3s" dur="0.6s" values="7.33;1.33;7.33" />
+                                                <animate attributeName="height" begin="SVGzjrPLenI.begin+0.3s" dur="0.6s" values="7.33;1.33;7.33" />
+                                            </rect>
+                                            <rect width="7.33" height="7.33" x="8.33" y="15.66" fill="currentColor">
+                                                <animate attributeName="x" begin="SVGzjrPLenI.begin+0.3s" dur="0.6s" values="8.33;11.33;8.33" />
+                                                <animate attributeName="y" begin="SVGzjrPLenI.begin+0.3s" dur="0.6s" values="15.66;18.66;15.66" />
+                                                <animate attributeName="width" begin="SVGzjrPLenI.begin+0.3s" dur="0.6s" values="7.33;1.33;7.33" />
+                                                <animate attributeName="height" begin="SVGzjrPLenI.begin+0.3s" dur="0.6s" values="7.33;1.33;7.33" />
+                                            </rect>
+                                            <rect width="7.33" height="7.33" x="15.66" y="15.66" fill="currentColor">
+                                                <animate id="SVGXAURnSRI" attributeName="x" begin="SVGzjrPLenI.begin+0.4s" dur="0.6s" values="15.66;18.66;15.66" />
+                                                <animate attributeName="y" begin="SVGzjrPLenI.begin+0.4s" dur="0.6s" values="15.66;18.66;15.66" />
+                                                <animate attributeName="width" begin="SVGzjrPLenI.begin+0.4s" dur="0.6s" values="7.33;1.33;7.33" />
+                                                <animate attributeName="height" begin="SVGzjrPLenI.begin+0.4s" dur="0.6s" values="7.33;1.33;7.33" />
+                                            </rect>
+                                        </svg>
+                                    </div>
+                                    <span className="text-[11px] font-black uppercase tracking-widest">{creatingCount} Creating</span>
+                                </>
+                            ) : (
+                                <>
+                                    <CheckCircle2 className="w-4 h-4" />
+                                    <span className="text-[11px] font-black uppercase tracking-widest">Done</span>
+                                </>
+                            )}
+                        </div>
+                    )}
 
                     {/* Credits Pill (Simple Popover) */}
                     <Popover>

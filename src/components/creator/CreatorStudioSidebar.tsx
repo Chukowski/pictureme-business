@@ -21,7 +21,8 @@ import {
     ChevronDown,
     Diamond,
     Smartphone,
-    Ratio
+    Ratio,
+    Type
 } from 'lucide-react';
 import { LOCAL_IMAGE_MODELS, LOCAL_VIDEO_MODELS, LEGACY_MODEL_IDS } from "@/services/aiProcessor";
 import { Button } from "@/components/ui/button";
@@ -62,6 +63,7 @@ interface CreatorStudioSidebarProps {
     setResolution: (v: string) => void;
     numImages: number;
     setNumImages: (v: number) => void;
+    maxImages?: number;
     isProcessing: boolean;
     onGenerate: () => void;
     inputImage: string | null;
@@ -99,6 +101,7 @@ export function CreatorStudioSidebar({
     audio, setAudio,
     resolution, setResolution,
     numImages, setNumImages,
+    maxImages = 1,
     isProcessing = false,
     onGenerate,
     inputImage,
@@ -262,10 +265,11 @@ export function CreatorStudioSidebar({
                 id: bm.id,
                 shortId: bm.id,
                 name: bm.name || (local ? local.name : bm.id),
-                type: 'image',
+                type: bm.type || 'image',
                 cost: bm.cost || (local ? local.cost : 1),
                 speed: local ? local.speed : 'medium',
-                description: bm.description || (local ? local.description : '')
+                description: bm.description || (local ? local.description : ''),
+                capabilities: local?.capabilities || []
             };
         });
 
@@ -293,7 +297,8 @@ export function CreatorStudioSidebar({
                 type: 'video',
                 cost: bm.cost || (local ? local.cost : 150),
                 speed: local ? local.speed : 'slow',
-                description: bm.description || (local ? local.description : '')
+                description: bm.description || (local ? local.description : ''),
+                capabilities: local?.capabilities || []
             };
         });
 
@@ -898,6 +903,13 @@ export function CreatorStudioSidebar({
                                                     <span className={cn("text-[13px] font-bold", m.shortId === model ? "text-[#D1F349]" : "text-white")}>
                                                         {m.name}
                                                     </span>
+                                                    <div className="flex items-center gap-1.5 ml-1">
+                                                        {(m as any).capabilities?.includes('t2i') && <Type className="w-3 h-3 text-zinc-500" />}
+                                                        {(m as any).capabilities?.includes('i2i') && <ImageIcon className="w-3 h-3 text-zinc-500" />}
+                                                        {(m as any).capabilities?.includes('t2v') && <Type className="w-3 h-3 text-zinc-500" />}
+                                                        {(m as any).capabilities?.includes('i2v') && <ImageIcon className="w-3 h-3 text-zinc-500" />}
+                                                        {(m as any).capabilities?.includes('v2v') && <Video className="w-3 h-3 text-zinc-500" />}
+                                                    </div>
                                                     {m.cost && (
                                                         <Badge variant="outline" className="h-4 px-1 text-[9px] border-[#D1F349]/30 text-[#D1F349] bg-[#D1F349]/5 font-black uppercase tracking-tighter">
                                                             {m.cost}
@@ -974,14 +986,16 @@ export function CreatorStudioSidebar({
                                             <div className="flex items-center gap-2">
                                                 <button
                                                     onClick={() => setNumImages(Math.max(1, numImages - 1))}
-                                                    className="p-1 hover:bg-white/5 rounded-md transition-colors"
+                                                    className="p-1 hover:bg-white/5 rounded-md transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                                                    disabled={numImages <= 1}
                                                 >
                                                     <Minus className="w-3 h-3 text-zinc-500 hover:text-white" />
                                                 </button>
-                                                <span className="text-[12px] font-black text-white">{numImages}/4</span>
+                                                <span className="text-[12px] font-black text-white">{numImages}/{maxImages}</span>
                                                 <button
-                                                    onClick={() => setNumImages(Math.min(4, numImages + 1))}
-                                                    className="p-1 hover:bg-white/5 rounded-md transition-colors"
+                                                    onClick={() => setNumImages(Math.min(maxImages, numImages + 1))}
+                                                    className="p-1 hover:bg-white/5 rounded-md transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                                                    disabled={numImages >= maxImages}
                                                 >
                                                     <Plus className="w-3 h-3 text-zinc-500 hover:text-white" />
                                                 </button>
