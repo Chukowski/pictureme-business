@@ -180,22 +180,29 @@ async function waitForJobCompletion(jobId: number, apiUrl: string, timeoutMs = 1
 
 // Map short model IDs to full FAL.ai model IDs
 const MODEL_ID_MAP: Record<string, string> = {
-  // Image models - short names to full FAL.ai IDs
+  // Image models
   'nano-banana': 'fal-ai/nano-banana/edit',
-  'nano-banana-t2i': 'fal-ai/nano-banana',
   'nano-banana-pro': 'fal-ai/nano-banana-pro/edit',
-  'nano-banana-pro-t2i': 'fal-ai/nano-banana-pro',
-  'seedream-v4': 'fal-ai/bytedance/seedream/v4/edit',
   'seedream-v4.5': 'fal-ai/bytedance/seedream/v4.5/edit',
+  'flux-dev': 'fal-ai/flux/dev',
   'flux-realism': 'fal-ai/flux-realism',
   'flux-2-pro': 'fal-ai/flux-2-pro/edit',
   'flux-klein': 'fal-ai/flux-2/klein/9b/base/edit/lora',
-  'flux-klein-t2i': 'fal-ai/flux-2/klein/9b/base/lora',
+
+  // Backwards compatibility / variations
+  'nano-banana-base': 'fal-ai/nano-banana',
+  'nano-banana-pro-base': 'fal-ai/nano-banana-pro',
+  'flux-pro': 'fal-ai/flux-2-pro/edit',
+  'flux-2-dev': 'fal-ai/flux/dev',
+
   // Video models
-  'wan-v2': 'fal-ai/wan/v2.2-a14b/image-to-video',
   'kling-2.6-pro': 'fal-ai/kling-video/v2.6/pro/image-to-video',
-  'kling-o1-edit': 'fal-ai/kling-video/o1/video-to-video/edit',
-  'veo-3.1': 'fal-ai/google/veo-3-1/image-to-video',
+  'kling-v2.5-i2v': 'fal-ai/kling-video/v2.5-turbo/pro/image-to-video',
+  'wan-v2': 'fal-ai/wan/v2.2-a14b/image-to-video',
+  'ltx-video': 'fal-ai/ltx-video',
+  'veo-3.1-i2v': 'fal-ai/veo3.1/image-to-video',
+  'veo-3.1-fast': 'fal-ai/veo3.1/fast',
+  'google-video': 'fal-ai/google/veo-3-1/image-to-video',
 };
 
 /**
@@ -218,117 +225,372 @@ export function resolveModelId(modelId: string): string {
   return modelId;
 }
 
+/**
+ * Normalize a model ID from full FAL.ai path to short ID
+ * used for UI selection and consistency
+ */
+export function normalizeModelId(modelId: string): string {
+  if (!modelId) return '';
+
+  const clean = (s: string) => s.toLowerCase().replace(/\s+/g, '').replace(/\/edit$/, '').replace(/\/lora$/, '').replace(/\/text-to-image$/, '').replace(/\/image-to-video$/, '');
+  const lowerId = clean(modelId);
+
+  // 1. Try to find inverse mapping in MODEL_ID_MAP
+  for (const [shortId, fullId] of Object.entries(MODEL_ID_MAP)) {
+    if (fullId === modelId || clean(fullId) === lowerId || shortId === modelId || clean(shortId) === lowerId) {
+      return shortId;
+    }
+  }
+
+  // 2. Try to find in AI_MODELS definitions (by technical ID or display name)
+  for (const modelData of Object.values(AI_MODELS) as any[]) {
+    const model = modelData as { id: string; shortId: string; name: string; variants?: any[] };
+    const modelShortLower = clean(model.shortId);
+    const modelNameLower = clean(model.name);
+
+    if (model.id === modelId || clean(model.id) === lowerId || modelShortLower === lowerId || modelNameLower === lowerId) {
+      return model.shortId;
+    }
+
+    // Check variants too
+    if (model.variants) {
+      for (const variant of model.variants) {
+        const variantNameLower = clean(variant.name);
+        const variantShortLower = clean(variant.id);
+        if (variant.id === modelId || variantShortLower === lowerId || variantNameLower === lowerId) {
+          return variant.id;
+        }
+      }
+    }
+  }
+
+  // 3. Fallback: If it's already a known short ID (doesn't start with fal-ai/), return it
+  if (!modelId.startsWith('fal-ai/')) return modelId;
+
+  // 4. Return as-is if no mapping found
+  return modelId;
+}
+
 // Available AI models for selection
 export const AI_MODELS = {
-  // Image Editing Models
+  // --- GOOGLE ---
+  // --- GOOGLE ---
+  veo31: {
+    id: "fal-ai/google/veo-3-1/image-to-video",
+    shortId: "veo-3.1",
+    name: "Veo 3.1",
+    brand: "Google",
+    description: "Google's state-of-the-art video generation",
+    speed: "slow",
+    type: "video",
+    cost: 100,
+    capabilities: ['i2v', 't2v'] as const,
+    variants: [
+      { id: "veo-3.1", name: "Standard (I2V)", description: "Premium quality I2V", cost: 100 },
+      { id: "veo-3.1-fast", name: "Fast", description: "Lightning-fast generation", cost: 100 },
+      { id: "veo-3.1-frames", name: "Frames", description: "Interpolate between frames", cost: 100 },
+      { id: "veo-3.1-extend", name: "Extend", description: "Seamlessly extend video", cost: 100 }
+    ]
+  },
+  veo31Fast: {
+    id: "fal-ai/veo3.1/fast",
+    shortId: "veo-3.1-fast",
+    name: "Veo 3.1 Fast",
+    brand: "Google",
+    description: "Lightning-fast video generation from Google DeepMind",
+    speed: "fast",
+    type: "video",
+    cost: 100,
+    capabilities: ['t2v'] as const,
+    isVariant: true
+  },
+  veo31I2V: {
+    id: "fal-ai/veo3.1/image-to-video",
+    shortId: "veo-3.1-i2v",
+    name: "Veo 3.1 Premium",
+    brand: "Google",
+    description: "Google's premium image-to-video model",
+    speed: "slow",
+    type: "video",
+    cost: 100,
+    capabilities: ['i2v'] as const,
+    isVariant: true
+  },
+  veo31Frames: {
+    id: "fal-ai/veo3.1/fast/first-last-frame-to-video",
+    shortId: "veo-3.1-frames",
+    name: "Veo 3.1 Frames",
+    brand: "Google",
+    description: "Interpolate between two frames",
+    speed: "fast",
+    type: "video",
+    cost: 100,
+    capabilities: ['i2v'] as const,
+    isVariant: true
+  },
+  veo31Extend: {
+    id: "fal-ai/veo3.1/fast/extend-video",
+    shortId: "veo-3.1-extend",
+    name: "Veo 3.1 Extend",
+    brand: "Google",
+    description: "Extend videos seamlessly",
+    speed: "fast",
+    type: "video",
+    cost: 100,
+    capabilities: ['v2v'] as const,
+    isVariant: true
+  },
   nanoBanana: {
     id: "fal-ai/nano-banana/edit",
     shortId: "nano-banana",
-    name: "Nano Banana (Fast)",
-    description: "Fast, high-quality image editing",
+    name: "Nano Banana",
+    brand: "Google",
+    description: "Google Nano Banana - Fast image editing",
     speed: "fast",
     type: "image",
     cost: 1,
     capabilities: ['i2i', 't2i'] as const,
+    variants: [
+      { id: "nano-banana", name: "Standard", description: "Fast image editing", cost: 1 },
+      { id: "nano-banana-pro", name: "Pro", description: "Premium quality", cost: 15 }
+    ]
   },
   nanoBananaPro: {
     id: "fal-ai/nano-banana-pro/edit",
     shortId: "nano-banana-pro",
-    name: "Nano Banana Pro (New)",
-    description: "Google's state-of-the-art generation & editing model",
+    name: "Nano Banana Pro",
+    brand: "Google",
+    description: "Google Nano Banana Pro - Premium quality",
+    speed: "medium",
+    type: "image",
+    cost: 15,
+    capabilities: ['i2i', 't2i'] as const,
+    isVariant: true
+  },
+  googleVideo: {
+    id: "fal-ai/google/veo-3-1/image-to-video",
+    shortId: "google-video",
+    name: "Google Video (Legacy)",
+    brand: "Google",
+    description: "Legacy Google video model",
+    speed: "slow",
+    type: "video",
+    cost: 100,
+    capabilities: ['i2v'] as const,
+    isVariant: true
+  },
+
+  // --- KLING ---
+  kling26Pro: {
+    id: "fal-ai/kling-video/v2.6/pro/image-to-video",
+    shortId: "kling-2.6-pro",
+    name: "Kling 2.6",
+    brand: "Kling",
+    description: "Fluid motion and cinematic realism",
+    speed: "slow",
+    type: "video",
+    cost: 100,
+    capabilities: ['i2v', 't2v'] as const,
+    variants: [
+      { id: "kling-2.6-pro", name: "Pro", description: "Highest quality cinematic motion", cost: 100 },
+      { id: "kling-v2.6-motion", name: "Motion Control", description: "Precise camera and subject control", cost: 100 },
+      { id: "kling-v2.6-motion-std", name: "Standard Motion", description: "Optimized motion control", cost: 100 },
+      { id: "kling-o1-edit", name: "O1 Edit", description: "Edit video with instructions", cost: 100 }
+    ]
+  },
+  kling25I2V: {
+    id: "fal-ai/kling-video/v2.5-turbo/pro/image-to-video",
+    shortId: "kling-v2.5-i2v",
+    name: "Kling 2.5",
+    brand: "Kling",
+    description: "Premium performance with Kling Turbo",
+    speed: "medium",
+    type: "video",
+    cost: 100,
+    capabilities: ['i2v', 't2v'] as const,
+    variants: [
+      { id: "kling-v2.5-i2v", name: "Turbo I2V", description: "Fast image-to-video", cost: 100 },
+      { id: "kling-v2.5-t2v", name: "Turbo T2V", description: "Fast text-to-video", cost: 100 }
+    ]
+  },
+  kling25T2V: {
+    id: "fal-ai/kling-video/v2.5-turbo/pro/text-to-video",
+    shortId: "kling-v2.5-t2v",
+    name: "Kling Turbo T2V",
+    brand: "Kling",
+    description: "Fast, high-quality text-to-video generation",
+    speed: "medium",
+    type: "video",
+    cost: 100,
+    capabilities: ['t2v'] as const,
+    isVariant: true
+  },
+  kling26Motion: {
+    id: "fal-ai/kling-video/v2.6/pro/motion-control",
+    shortId: "kling-v2.6-motion",
+    name: "Kling 2.6 Motion",
+    brand: "Kling",
+    description: "Precise motion control and camera movement",
+    speed: "slow",
+    type: "video",
+    cost: 100,
+    capabilities: ['i2v'] as const,
+    isVariant: true
+  },
+  kling26MotionStd: {
+    id: "fal-ai/kling-video/v2.6/standard/motion-control",
+    shortId: "kling-v2.6-motion-std",
+    name: "Kling 2.6 Standard Motion",
+    brand: "Kling",
+    description: "Standard motion control for Kling v2.6",
+    speed: "medium",
+    type: "video",
+    cost: 100,
+    capabilities: ['i2v'] as const,
+    isVariant: true
+  },
+  klingO1Edit: {
+    id: "fal-ai/kling-video/o1/video-to-video/edit",
+    shortId: "kling-o1-edit",
+    name: "Kling O1 Edit",
+    brand: "Kling",
+    description: "Edit existing video with instructions",
+    speed: "slow",
+    type: "video",
+    cost: 100,
+    capabilities: ['v2v'] as const,
+    isVariant: true
+  },
+
+  // --- WAN ---
+  wanV2: {
+    id: "fal-ai/wan/v2.2-a14b/image-to-video",
+    shortId: "wan-v2",
+    name: "Wan V2.2 (I2V)",
+    brand: "Wan",
+    description: "Excellent motion and realism for image-to-video",
+    speed: "medium",
+    type: "video",
+    cost: 100,
+    capabilities: ['i2v'] as const,
+  },
+
+  // --- LTX ---
+  ltxVideo: {
+    id: "fal-ai/ltx-video",
+    shortId: "ltx-video",
+    name: "LTX Video",
+    brand: "LTX",
+    description: "Fast, high-quality cinematic video generation",
+    speed: "medium",
+    type: "video",
+    cost: 10,
+    capabilities: ['t2v', 'i2v'] as const,
+  },
+
+  // --- FLUX ---
+  flux2Pro: {
+    id: "fal-ai/flux-2-pro/edit",
+    shortId: "flux-2-pro",
+    name: "Flux Models",
+    brand: "Flux",
+    description: "Professional image generation and editing",
     speed: "medium",
     type: "image",
     cost: 4,
     capabilities: ['i2i', 't2i'] as const,
-  },
-  seedream: {
-    id: "fal-ai/bytedance/seedream/v4/edit",
-    shortId: "seedream-v4",
-    name: "Seedream v4",
-    description: "Best for LEGO-style and artistic transformations",
-    speed: "medium",
-    type: "image",
-    cost: 1,
-    capabilities: ['i2i'] as const,
-  },
-  seedream45: {
-    id: "fal-ai/bytedance/seedream/v4.5/edit",
-    shortId: "seedream-v4.5",
-    name: "Seedream 4.5",
-    description: "Latest ByteDance model - unified generation and editing",
-    speed: "medium",
-    type: "image",
-    cost: 2,
-    capabilities: ['i2i', 't2i'] as const,
-  },
-  flux2Pro: {
-    id: "fal-ai/flux-2-pro/edit",
-    shortId: "flux-2-pro",
-    name: "Flux 2 Pro Edit",
-    description: "Professional-grade image editing with excellent prompt adherence",
-    speed: "medium",
-    type: "image",
-    cost: 3,
-    capabilities: ['i2i'] as const,
+    variants: [
+      { id: "flux-2-pro", name: "Pro", description: "Flux 2 Pro - Professional editing", cost: 4 },
+      { id: "flux-dev", name: "Dev", description: "Flux Dev", cost: 3 },
+      { id: "flux-klein", name: "Klein", description: "Flux Klein - Fast efficient", cost: 1 },
+      { id: "flux-realism", name: "Realism", description: "Flux Realism", cost: 2 }
+    ]
   },
   fluxKlein: {
     id: "fal-ai/flux-2/klein/9b/base/edit/lora",
     shortId: "flux-klein",
     name: "Flux Klein",
-    description: "Fast & efficient - balance between Schnell speed and Dev quality",
+    brand: "Flux",
+    description: "Fast & efficient image generation",
     speed: "fast",
     type: "image",
     cost: 1,
     capabilities: ['i2i', 't2i'] as const,
+    isVariant: true
   },
-  // Video Models
-  kling26Pro: {
-    id: "fal-ai/kling-video/v2.6/pro/image-to-video",
-    shortId: "kling-2.6-pro",
-    name: "Kling 2.6 Pro (I2V)",
-    description: "Top-tier cinematic visuals with fluid motion and audio",
-    speed: "slow",
-    type: "video",
-    cost: 150,
-    capabilities: ['i2v'] as const,
+  fluxDev: {
+    id: "fal-ai/flux/dev",
+    shortId: "flux-dev",
+    name: "Flux Dev",
+    brand: "Flux",
+    description: "Flux Dev",
+    speed: "medium",
+    type: "image",
+    cost: 3,
+    capabilities: ['t2i'] as const,
+    isVariant: true
   },
-  kling26Text: {
-    id: "fal-ai/kling-video/v2.6/pro/text-to-video",
-    shortId: "kling-2.6-text",
-    name: "Kling 2.6 Pro (T2V)",
-    description: "Generate video from text with cinematic quality",
-    speed: "slow",
-    type: "video",
-    cost: 150,
-    capabilities: ['t2v'] as const,
+  fluxRealism: {
+    id: "fal-ai/flux-realism",
+    shortId: "flux-realism",
+    name: "Flux Realism",
+    brand: "Flux",
+    description: "Flux Realism",
+    speed: "medium",
+    type: "image",
+    cost: 2,
+    capabilities: ['t2i'] as const,
+    isVariant: true
   },
-  klingO1Edit: {
-    id: "fal-ai/kling-video/o1/video-to-video/edit",
-    shortId: "kling-o1-edit",
-    name: "Kling O1 Video Edit",
-    description: "Edit existing video with natural language instructions",
-    speed: "slow",
-    type: "video",
-    cost: 100,
-    capabilities: ['v2v'] as const,
+
+  // --- BYTEDANCE ---
+  seedream: {
+    id: "fal-ai/bytedance/seedream/v4.5/edit",
+    shortId: "seedream-v4.5",
+    name: "Seedream",
+    brand: "Bytedance",
+    description: "Bytedance Seedream - Multi-modal generation",
+    speed: "medium",
+    type: "image",
+    cost: 2,
+    capabilities: ['i2i', 't2i'] as const,
+    variants: [
+      { id: "seedream-v4.5", name: "v4.5", description: "Bytedance Seedream v4.5", cost: 2 },
+      { id: "seedream-v4", name: "v4", description: "Bytedance Seedream v4", cost: 1 },
+      { id: "seedream-edit", name: "Edit", description: "Bytedance Seedream Edit", cost: 2 },
+      { id: "seedream-t2i", name: "Text-to-Image", description: "Bytedance Seedream Text-to-Image", cost: 2 }
+    ]
   },
-  veo31: {
-    id: "fal-ai/google/veo-3-1/image-to-video",
-    shortId: "veo-3.1",
-    name: "Google Veo 3.1",
-    description: "Generate high-quality video from image with Google's latest model",
-    speed: "slow",
-    type: "video",
-    cost: 200,
-    capabilities: ['i2v'] as const,
+  seedreamEdit: {
+    id: "fal-ai/bytedance/seedream/v4.5/edit",
+    shortId: "seedream-edit",
+    name: "Seedream Edit",
+    brand: "Bytedance",
+    description: "Bytedance Seedream Edit",
+    speed: "medium",
+    type: "image",
+    cost: 2,
+    capabilities: ['i2i'] as const,
+    isVariant: true
   },
+  seedreamT2I: {
+    id: "fal-ai/bytedance/seedream/v4.5/text-to-image",
+    shortId: "seedream-t2i",
+    name: "Seedream T2I",
+    brand: "Bytedance",
+    description: "Bytedance Seedream Text-to-Image",
+    speed: "medium",
+    type: "image",
+    cost: 2,
+    capabilities: ['t2i'] as const,
+  }
 } as const;
 
 export type AIModelKey = keyof typeof AI_MODELS;
 
 // Helper arrays for easier iteration
-export const LOCAL_IMAGE_MODELS = Object.values(AI_MODELS).filter(m => m.type === 'image');
-export const LOCAL_VIDEO_MODELS = Object.values(AI_MODELS).filter(m => m.type === 'video');
+export const LOCAL_IMAGE_MODELS = Object.values(AI_MODELS).filter(m => (m as any).type === 'image');
+export const LOCAL_VIDEO_MODELS = Object.values(AI_MODELS).filter(m => (m as any).type === 'video');
 
 // Legacy models to be hidden from selector but still resolvable if encountered
 export const LEGACY_MODEL_IDS = [

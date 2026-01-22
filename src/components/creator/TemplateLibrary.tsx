@@ -389,8 +389,8 @@ export function TemplateLibrary({
                     "w-full max-w-sm bg-black/80 backdrop-blur-3xl border border-white/10 rounded-[32px] shadow-2xl pointer-events-auto transform transition-all duration-500 scale-100 overflow-hidden flex flex-col mb-2",
                     isInfoExpanded ? "max-h-[600px]" : "max-h-[280px]"
                 )}>
-                    {/* Top-bleed Image Preview (Sphere View only) */}
-                    {isSphereView && selectedTemplate && (
+                    {/* Always show Image Preview */}
+                    {selectedTemplate && (
                         <div className={cn(
                             "relative w-full overflow-hidden transition-all duration-500 ease-in-out shrink-0",
                             isInfoExpanded ? "h-64" : "h-24"

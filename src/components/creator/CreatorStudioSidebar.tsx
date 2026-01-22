@@ -24,7 +24,7 @@ import {
     Ratio,
     Type
 } from 'lucide-react';
-import { LOCAL_IMAGE_MODELS, LOCAL_VIDEO_MODELS, LEGACY_MODEL_IDS } from "@/services/aiProcessor";
+import { LOCAL_IMAGE_MODELS, LOCAL_VIDEO_MODELS, LEGACY_MODEL_IDS, normalizeModelId } from "@/services/aiProcessor";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
@@ -90,6 +90,7 @@ interface CreatorStudioSidebarProps {
     inputImages?: string[];
     onRemoveInputImageObj?: (index: number) => void;
     remixFromUsername?: string | null;
+    ghostPreviewUrl?: string | null;
 }
 
 export function CreatorStudioSidebar({
@@ -127,7 +128,8 @@ export function CreatorStudioSidebar({
     onSelectBoothTemplate,
     onImageCaptured,
     inputImages = [],
-    onRemoveInputImageObj
+    onRemoveInputImageObj,
+    ghostPreviewUrl
 }: CreatorStudioSidebarProps) {
 
     const [enhanceOn, setEnhanceOn] = useState(false);
@@ -253,33 +255,101 @@ export function CreatorStudioSidebar({
         }
     }, [prompt, mode]);
 
+    const BrandLogo = ({ brand, className = "w-4 h-4" }: { brand: string, className?: string }) => {
+        switch (brand) {
+            case 'Google':
+                return (
+                    <svg className={className} viewBox="0 0 20 20">
+                        <path d="M2.55464 6.25768C3.24798 4.87705 4.31161 3.71644 5.62666 2.90557C6.94171 2.0947 8.45636 1.66553 10.0013 1.66602C12.2471 1.66602 14.1338 2.49102 15.5763 3.83685L13.1871 6.22685C12.323 5.40102 11.2246 4.98018 10.0013 4.98018C7.83047 4.98018 5.99297 6.44685 5.3388 8.41602C5.17214 8.91602 5.07714 9.44935 5.07714 9.99935C5.07714 10.5493 5.17214 11.0827 5.3388 11.5827C5.9938 13.5527 7.83047 15.0185 10.0013 15.0185C11.1221 15.0185 12.0763 14.7227 12.823 14.2227C13.2558 13.9377 13.6264 13.5679 13.9123 13.1356C14.1982 12.7033 14.3935 12.2176 14.4863 11.7077H10.0013V8.48435H17.8496C17.948 9.02935 18.0013 9.59768 18.0013 10.1885C18.0013 12.7268 17.093 14.8635 15.5163 16.3135C14.138 17.5868 12.2513 18.3327 10.0013 18.3327C8.90683 18.3331 7.823 18.1179 6.81176 17.6992C5.80051 17.2806 4.88168 16.6668 4.10777 15.8929C3.33386 15.119 2.72005 14.2001 2.30141 13.1889C1.88278 12.1777 1.66753 11.0938 1.66797 9.99935C1.66797 8.65435 1.98964 7.38268 2.55464 6.25768Z" fill="currentColor"></path>
+                    </svg>
+                );
+            case 'Wan':
+                return (
+                    <svg className={className} viewBox="0 0 20 20">
+                        <path d="M19.9361 12.1411L17.6243 8.09523L17.3525 7.61735L18.5771 5.47657C18.6187 5.4023 18.6411 5.32158 18.6411 5.23763C18.6411 5.15367 18.6187 5.07295 18.5771 4.99868L17.215 2.61896C17.1735 2.5447 17.1127 2.48658 17.0424 2.4446C16.972 2.40262 16.8921 2.38002 16.8058 2.38002H11.6323L10.4077 0.236011C10.3245 0.0874804 10.1679 -0.00292969 9.9984 -0.00292969H7.27738C7.19425 -0.00292969 7.11111 0.0196728 7.04077 0.0616489C6.97042 0.103625 6.90967 0.161746 6.86811 0.236011L4.55316 4.28509L4.28138 4.75974H1.83213C1.749 4.75974 1.66587 4.78235 1.59552 4.82432C1.52518 4.8663 1.46443 4.92442 1.42286 4.99868L0.0639488 7.38164C0.0223821 7.4559 0 7.53663 0 7.62058C0 7.70453 0.0223821 7.78525 0.0639488 7.85952L2.65068 12.3833L1.42606 14.5273C1.38449 14.6015 1.36211 14.6823 1.36211 14.7662C1.36211 14.8502 1.38449 14.9309 1.42606 15.0051L2.78817 17.3849C2.82974 17.4591 2.89049 17.5173 2.96083 17.5592C3.03118 17.6012 3.11111 17.6238 3.19744 17.6238H8.36771L9.59233 19.7678C9.67546 19.9163 9.83214 20.0068 10.0016 20.0068H12.7226C12.8058 20.0068 12.8889 19.9842 12.9592 19.9422C13.0296 19.9002 13.0903 19.8421 13.1319 19.7678L15.7186 15.2441H18.1679C18.251 15.2441 18.3341 15.2215 18.4045 15.1795C18.4748 15.1375 18.5356 15.0794 18.5771 15.0051L19.9393 12.6254C19.9808 12.5512 20.0032 12.4704 20.0032 12.3865C20.0032 12.3025 19.9808 12.2218 19.9393 12.1475L19.9361 12.1411ZM7.27738 0.474952L8.63949 2.8579L7.27738 5.23763H18.1679L16.8058 7.61735H6.45883L4.82494 4.75974L7.27738 0.474952ZM8.09273 17.1395H3.19424L4.55636 14.7565H7.27738L1.83213 5.23763H4.55316L5.91527 7.61735L9.72662 14.2851L8.09273 17.1427V17.1395ZM16.8058 12.3768L15.4468 9.99707L10.0016 19.5224L8.63949 17.1427L10.0016 14.763L13.813 8.09523H17.0807L19.53 12.38H16.8058V12.3768Z" fill="currentColor"></path>
+                    </svg>
+                );
+            case 'Kling':
+                return (
+                    <svg className={className} viewBox="0 0 20 20">
+                        <path fillRule="evenodd" clipRule="evenodd" d="M16.7522 2.86984L16.818 2.93745L16.8199 2.93552C18.087 4.25441 17.7236 6.90443 15.8863 9.90864L19.5 13.6567L19.3447 13.9703C18.7372 15.1986 17.9147 16.2992 16.9193 17.216C15.608 18.43 14.0251 19.2853 12.3143 19.7044L12.2522 19.7198L12.1634 19.7417L12.0994 19.7565L11.9584 19.7887L11.8416 19.8126L11.754 19.8299C11.6609 19.8493 11.5634 19.8673 11.4683 19.884L11.3888 19.8963L11.3286 19.904C11.2429 19.916 11.1576 19.9272 11.0727 19.9375C9.64831 20.1036 8.20616 19.9376 6.8516 19.4517C5.49703 18.9658 4.2643 18.1723 3.24348 17.1291L3.18385 17.0692C1.91429 15.7503 2.27391 13.0983 4.11366 10.0922L0.5 6.34416L0.65528 6.03054C1.26118 4.80131 2.0846 3.70115 3.08261 2.78741C4.10242 1.8473 5.28649 1.11848 6.57081 0.640344C6.86894 0.528933 7.18075 0.431691 7.48696 0.34926C7.73931 0.279139 7.9944 0.220054 8.25155 0.172163C8.33851 0.154131 8.43665 0.135456 8.53168 0.118712C10.0139 -0.12084 11.5297 0.00325476 12.9574 0.481036C14.385 0.958817 15.6847 1.77698 16.7522 2.86984ZM15.5304 3.03083H15.5267L15.5304 3.03276C14.3025 2.63864 12.354 3.27555 10.2944 4.68267C11.8615 4.22994 13.377 4.46435 14.3565 5.48057C15.2845 6.44462 15.5385 7.90777 15.187 9.44497C15.1704 9.52697 15.1497 9.61005 15.1248 9.69419C16.8062 7.05706 17.3441 4.58993 16.2795 3.48807C16.262 3.4682 16.2433 3.44949 16.2236 3.43204L16.2155 3.42431L16.2037 3.41336L16.1683 3.38503C16.153 3.37215 16.1371 3.3597 16.1205 3.34768L16.0944 3.32836C15.9242 3.19657 15.7334 3.09594 15.5304 3.03083ZM14.6876 8.95876C14.4708 10.2995 13.7559 11.6545 12.672 12.777C11.5913 13.9001 10.282 14.642 8.98696 14.8687C7.77516 15.0812 6.72981 14.8043 6.04472 14.0959C5.36149 13.3868 5.09441 12.3069 5.29938 11.044C5.51615 9.7045 6.22919 8.3489 7.30807 7.22771C7.30807 7.22771 7.30994 7.22771 7.31429 7.22127L7.31801 7.21483C8.40062 6.09944 9.70497 5.3595 10.9969 5.13539C12.2087 4.92287 13.2516 5.1985 13.9391 5.90818C14.6224 6.61657 14.8894 7.69847 14.6845 8.9594H14.6882L14.6876 8.95876Z" fill="currentColor"></path>
+                    </svg>
+                );
+            case 'LTX':
+                return (
+                    <svg className={className} viewBox="0 0 75 32">
+                        <path d="M0 30.0086V7.50056C0 7.09765 0.154254 6.69973 0.460162 6.43868C0.708822 6.22729 0.987356 6.12029 1.29316 6.12029H8.2339C8.63671 6.12029 9.03463 6.26205 9.31316 6.55307C9.53944 6.79174 9.65133 7.07777 9.65133 7.41345V23.198C9.65133 23.6108 9.98462 23.944 10.3974 23.944H21.4638C21.8666 23.944 22.267 24.0858 22.5431 24.3767C22.7668 24.6155 22.8812 24.9015 22.8812 25.2372V30.5856C22.8812 31.0457 22.6823 31.4982 22.3018 31.7569C22.078 31.9086 21.8244 31.9831 21.5383 31.9831L1.99199 31.9956C0.890348 31.9981 0 31.1078 0 30.0086Z" fill="currentColor" />
+                        <path d="M36.5888 31.9926C34.4062 31.9876 32.492 31.6543 30.8413 30.9878C29.1906 30.3214 27.9103 29.2346 26.998 27.7227C26.0856 26.2132 25.6333 24.2137 25.6382 21.7269L25.6531 13.7194L21.7015 13.7119C21.3486 13.7119 21.0528 13.5876 20.8116 13.3365C20.5704 13.0853 20.4512 12.7819 20.4537 12.4164L20.4635 7.39299C20.4635 7.02744 20.5854 6.72154 20.8265 6.47288C21.0677 6.22422 21.3635 6.09983 21.7165 6.10233L25.668 6.10983L25.6779 1.29066C25.6779 0.925114 25.7998 0.619208 26.041 0.370548C26.282 0.121887 26.5778 0 26.9309 0L33.9065 0.0124913C34.2595 0.0124913 34.5554 0.136772 34.7964 0.387931C35.0376 0.639089 35.1569 0.944995 35.1545 1.30805L35.1445 6.12721L41.2078 6.13959C41.5607 6.13959 41.8566 6.26398 42.0977 6.51514C42.3389 6.76629 42.4582 7.0722 42.4557 7.43525L42.4458 12.4586C42.4458 12.8242 42.3239 13.1301 42.0828 13.3787C41.8417 13.6274 41.5434 13.7518 41.1928 13.7493L35.1296 13.7368L35.1171 20.8988C35.1171 21.8613 35.306 22.6148 35.6914 23.1618C36.0767 23.7089 36.6833 23.985 37.5186 23.985L41.5607 23.9925C41.9138 23.9925 42.2096 24.1168 42.4507 24.368C42.6918 24.6192 42.8112 24.9251 42.8087 25.2881L42.7987 30.7093C42.7987 31.075 42.677 31.3808 42.4358 31.6294C42.1946 31.8782 41.8963 32.0025 41.5459 32L36.5913 31.9901L36.5888 31.9926Z" fill="currentColor" />
+                        <path d="M47.5486 31.985C47.2282 31.985 46.965 31.8682 46.7589 31.6369C46.5503 31.4056 46.4485 31.1395 46.4485 30.841C46.4485 30.7416 46.4634 30.6248 46.4956 30.4929C46.5279 30.3611 46.5925 30.2268 46.6868 30.0951L54.3506 18.9342C54.4647 18.7675 54.4672 18.5462 54.3556 18.3771L47.4543 8.01456C47.3896 7.91516 47.335 7.79827 47.2853 7.66639C47.2382 7.53462 47.2133 7.40035 47.2133 7.26858C47.2133 6.97017 47.3251 6.70402 47.5486 6.47274C47.7721 6.24146 48.0279 6.12457 48.316 6.12457H55.6443C56.0914 6.12457 56.4266 6.23157 56.6501 6.44786C56.8737 6.66426 57.0326 6.85328 57.1294 7.01992L60.3082 11.8169C60.5043 12.1128 60.939 12.1128 61.1352 11.8169L64.3138 7.01992C64.4405 6.85328 64.6093 6.66426 64.8155 6.44786C65.0216 6.23157 65.3494 6.12457 65.7964 6.12457H72.7896C73.0777 6.12457 73.331 6.24146 73.557 6.47274C73.7805 6.70402 73.8922 6.95268 73.8922 7.21882C73.8922 7.38547 73.8748 7.53462 73.8451 7.66639C73.8128 7.79827 73.7482 7.91516 73.6539 8.01456L66.6159 18.3747C66.4992 18.5462 66.5017 18.77 66.6209 18.9392L74.4212 30.0975C74.5181 30.2293 74.5801 30.3636 74.6124 30.4954C74.6447 30.6272 74.6596 30.744 74.6596 30.8435C74.6596 31.142 74.5478 31.4081 74.3244 31.6394C74.1008 31.8707 73.8451 31.9874 73.557 31.9874H65.8933C65.4786 31.9874 65.1756 31.888 64.9844 31.689C64.7932 31.4901 64.6317 31.3086 64.505 31.142L60.9886 25.9544C60.7924 25.671 60.3752 25.6685 60.1765 25.947L56.4118 31.1395C56.3149 31.3061 56.1634 31.4876 55.9573 31.6865C55.7487 31.8855 55.4383 31.985 55.0236 31.985H47.5486Z" fill="currentColor" />
+                    </svg>
+                );
+            case 'Bytedance':
+                return (
+                    <svg className={className} viewBox="0 0 512 512" fillRule="evenodd" clipRule="evenodd">
+                        <path d="M318.805 396.523l-36.352-9.493V213.547l38.912-9.856c21.334-5.419 39.254-9.835 40.107-9.664.683 0 1.195 47.68 1.195 106.07v106.09l-3.755-.17c-2.218 0-20.31-4.417-40.107-9.515v.02z" fill="currentColor" fillRule="nonzero" />
+                        <path d="M149.333 352.896c0-58.368.512-106.24 1.366-106.24.682-.17 18.602 4.267 40.106 9.685l38.742 9.835-.342 86.4-.512 86.379-34.816 9.003c-19.114 4.906-37.034 9.493-39.594 10.005l-4.95 1.195V352.896z" fill="currentColor" fillRule="nonzero" />
+                        <path d="M410.454 266.176c0-192.64.17-202.987 3.072-202.133 1.536.512 16.725 4.416 33.62 8.661 16.897 4.416 33.622 8.64 37.206 9.493l6.315 1.707-.341 182.613-.512 182.785-34.646 8.832c-18.944 4.906-36.864 9.322-39.594 10.026l-5.12 1.174V266.176z" fill="currentColor" fillRule="nonzero" />
+                        <path d="M21.333 266.859c0-99.798.512-181.44 1.366-181.44.682 0 18.602 4.416 39.936 9.685l38.912 9.835v161.75c0 88.746-.342 161.578-.683 161.578-.512 0-18.603 4.587-40.107 10.027l-39.424 9.984v-181.44.02z" fill="currentColor" fillRule="nonzero" />
+                    </svg>
+                );
+            case 'Flux':
+                return (
+                    <div className={cn("flex items-center justify-center font-black italic", className)}>
+                        F
+                    </div>
+                );
+            default:
+                return <Sparkles className={className} />;
+        }
+    };
+
+    const getRobustBrand = (id: string, name?: string, localBrand?: string): string => {
+        if (localBrand && localBrand !== 'Other') return localBrand;
+        const searchStr = (id + (name || '')).toLowerCase();
+        if (searchStr.includes('kling')) return 'Kling';
+        if (searchStr.includes('google') || searchStr.includes('veo') || searchStr.includes('nano-banana')) return 'Google';
+        if (searchStr.includes('flux')) return 'Flux';
+        if (searchStr.includes('seedream') || searchStr.includes('bytedance')) return 'Bytedance';
+        if (searchStr.includes('wan')) return 'Wan';
+        if (searchStr.includes('ltx')) return 'LTX';
+        return 'Other';
+    };
+
     const imageModels = useMemo(() => {
         const backendImageModels = availableModels.filter(m =>
-            (m.type === 'image' || !m.type) &&
+            m.type === 'image' &&
             !LEGACY_MODEL_IDS.includes(m.id)
         );
 
         const merged = backendImageModels.map(bm => {
-            const local = LOCAL_IMAGE_MODELS.find(lm => lm.shortId === bm.id || lm.id === bm.id);
+            const normalizedId = normalizeModelId(bm.id);
+            const local = LOCAL_IMAGE_MODELS.find(lm => lm.shortId === normalizedId || lm.id === bm.id);
             return {
                 id: bm.id,
-                shortId: bm.id,
+                shortId: local ? (local.shortId || local.id) : bm.id,
                 name: bm.name || (local ? local.name : bm.id),
-                type: bm.type || 'image',
-                cost: bm.cost || (local ? local.cost : 1),
+                brand: getRobustBrand(bm.id, bm.name, local?.brand),
+                type: 'image',
+                cost: bm.cost || (local ? local.cost : 15),
                 speed: local ? local.speed : 'medium',
                 description: bm.description || (local ? local.description : ''),
-                capabilities: local?.capabilities || []
+                capabilities: local?.capabilities || [],
+                variants: (local as any)?.variants,
+                isVariant: (local as any)?.isVariant
             };
         });
 
         LOCAL_IMAGE_MODELS.forEach(local => {
             if (!merged.some(m => m.id === local.shortId || m.id === local.id)) {
-                merged.push({ ...local, cost: local.cost || 1 });
+                merged.push({
+                    ...local,
+                    brand: getRobustBrand(local.id, local.name, (local as any).brand),
+                    cost: local.cost || 15
+                });
             }
         });
 
-        return merged;
+        return merged.filter(m => !m.isVariant);
     }, [availableModels]);
 
     const videoModels = useMemo(() => {
@@ -289,40 +359,64 @@ export function CreatorStudioSidebar({
         );
 
         const merged = backendVideoModels.map(bm => {
-            const local = LOCAL_VIDEO_MODELS.find(lm => lm.shortId === bm.id || lm.id === bm.id);
+            const normalizedId = normalizeModelId(bm.id);
+            const local = LOCAL_VIDEO_MODELS.find(lm => lm.shortId === normalizedId || lm.id === bm.id);
             return {
                 id: bm.id,
-                shortId: bm.id,
+                shortId: local ? (local.shortId || local.id) : bm.id,
                 name: bm.name || (local ? local.name : bm.id),
+                brand: getRobustBrand(bm.id, bm.name, local?.brand),
                 type: 'video',
-                cost: bm.cost || (local ? local.cost : 150),
+                cost: bm.cost || (local ? local.cost : 100),
                 speed: local ? local.speed : 'slow',
                 description: bm.description || (local ? local.description : ''),
-                capabilities: local?.capabilities || []
+                capabilities: local?.capabilities || [],
+                variants: (local as any)?.variants,
+                isVariant: (local as any)?.isVariant
             };
         });
 
         LOCAL_VIDEO_MODELS.forEach(local => {
             if (!merged.some(m => m.id === local.shortId || m.id === local.id)) {
-                merged.push({ ...local, cost: local.cost || 150 });
+                merged.push({
+                    ...local,
+                    brand: getRobustBrand(local.id, local.name, (local as any).brand),
+                    cost: local.cost || 100
+                });
             }
         });
 
-        return merged;
+        return merged.filter(m => !m.isVariant);
     }, [availableModels]);
 
     useEffect(() => {
         const validModels = mode === 'image' ? imageModels : videoModels;
-        const isValid = validModels.some(m => m.shortId === model);
+        const normalized = normalizeModelId(model);
+        const isValid = validModels.some(m => m.shortId === normalized || m.id === model) ||
+            validModels.some(m => m.variants?.some((v: any) => v.id === model || v.shortId === normalized));
 
         if (!isValid && validModels.length > 0) {
+            // If the current model is not a base model or a variant, default to the first base model
             setModel(validModels[0].shortId);
         }
     }, [mode, imageModels, videoModels, model, setModel]);
 
     const selectedModelObj = useMemo(() => {
-        if (mode === 'image') return imageModels.find(m => m.shortId === model) || imageModels[0];
-        return videoModels.find(m => m.shortId === model) || videoModels[0];
+        const models = mode === 'image' ? imageModels : videoModels;
+        let foundModel = models.find(m => m.shortId === model);
+
+        if (!foundModel) {
+            // If the current model is a variant, find its parent model
+            for (const m of models) {
+                const variant = m.variants?.find((v: any) => v.id === model || v.shortId === model);
+                if (variant) {
+                    foundModel = { ...m, ...variant, isVariant: true }; // Merge variant properties into the base model
+                    break;
+                }
+            }
+        }
+
+        return foundModel || models[0];
     }, [mode, model, imageModels, videoModels]);
 
     const renderRatioVisual = (r: string) => {
@@ -715,11 +809,17 @@ export function CreatorStudioSidebar({
                             className="group relative aspect-[2.3] w-full shrink-0 rounded-2xl overflow-hidden cursor-pointer border border-white/10 ring-1 ring-white/5 shadow-2xl"
                         >
                             <div className="absolute inset-0 bg-card">
-                                {(selectedTemplate?.images?.[0] || selectedTemplate?.preview_images?.[0]) ? (
+                                {selectedTemplate ? (
                                     <img
-                                        src={selectedTemplate.images?.[0] || selectedTemplate.preview_images?.[0]}
+                                        src={selectedTemplate.preview_url || selectedTemplate.preview_images?.[0] || selectedTemplate.images?.[0]}
                                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                                         alt={selectedTemplate.name}
+                                    />
+                                ) : (inputImage || ghostPreviewUrl) ? (
+                                    <img
+                                        src={(inputImage || ghostPreviewUrl)!}
+                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                                        alt="Current Preview"
                                     />
                                 ) : (
                                     <img
@@ -879,52 +979,103 @@ export function CreatorStudioSidebar({
                             <DropdownMenu modal={false}>
                                 <DropdownMenuTrigger asChild>
                                     <button className="flex items-center justify-between w-full h-12 px-3 bg-[#0D0D0D]/50 hover:bg-zinc-800/80 rounded-xl border border-white/5 transition-colors group">
-                                        <div className="flex flex-col items-start translate-y-[1px]">
-                                            <span className="text-[10px] font-bold text-white/30 uppercase tracking-tighter">Model</span>
-                                            <span className="text-[12px] font-bold text-white group-hover:text-white truncate max-w-[180px]">
-                                                {selectedModelObj?.name || model}
-                                            </span>
+                                        <div className="flex items-center gap-3 translate-y-[1px]">
+                                            <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center border border-white/5 text-[#D1F349]">
+                                                {selectedModelObj?.brand ? <BrandLogo brand={selectedModelObj.brand} className="w-4 h-4" /> : <Sparkles className="w-4 h-4" />}
+                                            </div>
+                                            <div className="flex flex-col items-start min-w-0">
+                                                <span className="text-[10px] font-bold text-white/30 uppercase tracking-tighter">Model</span>
+                                                <span className="text-[12px] font-bold text-white group-hover:text-white truncate max-w-[180px]">
+                                                    {selectedModelObj?.name || model}
+                                                </span>
+                                            </div>
                                         </div>
                                         <ChevronRight className="w-4 h-4 text-zinc-600 transition-transform group-hover:translate-x-0.5" />
                                     </button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width] bg-[#1a1a1a] border-white/5 z-[200] p-1.5 shadow-2xl" sideOffset={8}>
-                                    {(mode === 'image' ? imageModels : videoModels).map((m) => (
-                                        <DropdownMenuItem
-                                            key={m.id}
-                                            onClick={() => setModel(m.shortId)}
-                                            className={cn(
-                                                "flex flex-col items-start gap-1 p-3 rounded-xl mb-1 last:mb-0 transition-all cursor-pointer",
-                                                m.shortId === model ? "bg-white/10 border border-white/10" : "hover:bg-white/5 border border-transparent"
-                                            )}
-                                        >
-                                            <div className="flex items-center justify-between w-full">
-                                                <div className="flex items-center gap-2">
-                                                    <span className={cn("text-[13px] font-bold", m.shortId === model ? "text-[#D1F349]" : "text-white")}>
-                                                        {m.name}
-                                                    </span>
-                                                    <div className="flex items-center gap-1.5 ml-1">
-                                                        {(m as any).capabilities?.includes('t2i') && <Type className="w-3 h-3 text-zinc-500" />}
-                                                        {(m as any).capabilities?.includes('i2i') && <ImageIcon className="w-3 h-3 text-zinc-500" />}
-                                                        {(m as any).capabilities?.includes('t2v') && <Type className="w-3 h-3 text-zinc-500" />}
-                                                        {(m as any).capabilities?.includes('i2v') && <ImageIcon className="w-3 h-3 text-zinc-500" />}
-                                                        {(m as any).capabilities?.includes('v2v') && <Video className="w-3 h-3 text-zinc-500" />}
-                                                    </div>
-                                                    {m.cost && (
-                                                        <Badge variant="outline" className="h-4 px-1 text-[9px] border-[#D1F349]/30 text-[#D1F349] bg-[#D1F349]/5 font-black uppercase tracking-tighter">
-                                                            {m.cost}
-                                                        </Badge>
-                                                    )}
-                                                </div>
-                                                {m.shortId === model && <Check className="w-3.5 h-3.5 text-[#D1F349]" />}
+                                <DropdownMenuContent className="w-[340px] bg-[#1a1a1a] border-white/5 z-[200] p-1.5 shadow-2xl max-h-[400px] overflow-y-auto scrollbar-thin" sideOffset={8}>
+                                    {Object.entries(
+                                        (mode === 'image' ? imageModels : videoModels).reduce((acc, m) => {
+                                            const brand = (m as any).brand || 'Other';
+                                            if (!acc[brand]) acc[brand] = [];
+                                            acc[brand].push(m);
+                                            return acc;
+                                        }, {} as Record<string, typeof imageModels>)
+                                    ).map(([brand, models]) => (
+                                        <div key={brand} className="mb-2 last:mb-0">
+                                            <div className="flex items-center gap-2 px-3 py-1.5 mb-1">
+                                                <BrandLogo brand={brand} className="w-3 h-3 text-zinc-500" />
+                                                <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">{brand}</span>
                                             </div>
-                                            {m.description && (
-                                                <span className="text-[11px] text-zinc-500 line-clamp-1 leading-tight">{m.description}</span>
-                                            )}
-                                        </DropdownMenuItem>
+                                            {models.map((m) => (
+                                                <DropdownMenuItem
+                                                    key={m.id}
+                                                    onClick={() => setModel(m.shortId)}
+                                                    className={cn(
+                                                        "flex flex-col items-start gap-1 p-3 rounded-xl mb-1 last:mb-0 transition-all cursor-pointer",
+                                                        (model === m.shortId || (m.variants && m.variants.some((v: any) => v.id === model))) ? "bg-white/10 border border-white/10" : "hover:bg-white/5 border border-transparent"
+                                                    )}
+                                                >
+                                                    <div className="flex items-center justify-between w-full">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className={cn("text-[13px] font-bold", (model === m.shortId || (m.variants && m.variants.some((v: any) => v.id === model))) ? "text-[#D1F349]" : "text-white")}>
+                                                                {m.name}
+                                                            </span>
+                                                            <div className="flex items-center gap-1.5 ml-1">
+                                                                {(m as any).capabilities?.includes('t2i') && <Type className="w-3 h-3 text-zinc-500" title="Text to Image" />}
+                                                                {(m as any).capabilities?.includes('i2i') && <ImageIcon className="w-3 h-3 text-zinc-500" title="Image to Image" />}
+                                                                {(m as any).capabilities?.includes('t2v') && <Type className="w-3 h-3 text-zinc-500" title="Text to Video" />}
+                                                                {(m as any).capabilities?.includes('i2v') && <Video className="w-3 h-3 text-zinc-500" title="Image to Video" />}
+                                                                {(m as any).capabilities?.includes('v2v') && <Video className="w-3 h-3 text-zinc-500" title="Video to Video" />}
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex items-center gap-1">
+                                                            <span className="text-[10px] font-black text-[#D1F349]/40">{m.cost}</span>
+                                                            <Sparkles className="w-2.5 h-2.5 text-[#D1F349]/40" />
+                                                        </div>
+                                                    </div>
+                                                    {m.description && (
+                                                        <p className="text-[10px] text-zinc-500 line-clamp-1 group-hover:line-clamp-none transition-all">
+                                                            {m.description}
+                                                        </p>
+                                                    )}
+                                                </DropdownMenuItem>
+                                            ))}
+                                        </div>
                                     ))}
                                 </DropdownMenuContent>
                             </DropdownMenu>
+
+                            {/* Variant Selector (if applicable) */}
+                            {selectedModelObj?.variants && (
+                                <div className="flex flex-col gap-2 p-2 bg-white/5 border border-white/5 rounded-xl border-dashed">
+                                    <div className="flex items-center justify-between px-1">
+                                        <span className="text-[9px] font-black text-white/30 uppercase tracking-widest">Select Variant</span>
+                                        <span className="text-[9px] font-bold text-[#D1F349] uppercase tracking-tighter bg-[#D1F349]/10 px-1.5 py-0.5 rounded">Grouped</span>
+                                    </div>
+                                    <div className="flex flex-wrap gap-1.5">
+                                        {selectedModelObj.variants.map((v: any) => (
+                                            <button
+                                                key={v.id}
+                                                onClick={() => setModel(v.id)}
+                                                className={cn(
+                                                    "px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all border",
+                                                    model === v.id
+                                                        ? "bg-[#D1F349] text-black border-[#D1F349] shadow-[0_0_15px_rgba(209,243,73,0.3)]"
+                                                        : "bg-white/5 text-zinc-400 border-white/5 hover:border-white/20 hover:text-white"
+                                                )}
+                                            >
+                                                {v.name}
+                                            </button>
+                                        ))}
+                                    </div>
+                                    {selectedModelObj.variants.find((v: any) => v.id === model)?.description && (
+                                        <p className="px-1 text-[9px] text-zinc-500 font-medium italic">
+                                            "{selectedModelObj.variants.find((v: any) => v.id === model).description}"
+                                        </p>
+                                    )}
+                                </div>
+                            )}
 
                             <div className={cn(
                                 "grid gap-1",

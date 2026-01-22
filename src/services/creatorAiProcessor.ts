@@ -379,7 +379,7 @@ export async function processCreatorImage(
             console.log("📝 No user photo provided, switching to Text-to-Image model (T2I)");
         }
         if (!userPhotoBase64 && modelToUse === 'fal-ai/bytedance/seedream/v4.5/edit') {
-            modelToUse = 'fal-ai/bytedance/seedream/v4.5';
+            modelToUse = 'seedream-v4.5-t2i';
             console.log("📝 No user photo provided, switching to Seedream T2I");
         }
         if (!userPhotoBase64 && modelToUse === 'fal-ai/nano-banana/edit') {

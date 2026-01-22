@@ -7,8 +7,9 @@ import { Button } from "@/components/ui/button";
 import {
   Plus, Image, ShoppingBag, Zap, Sparkles, ArrowRight, Camera,
   Play, RotateCcw, RefreshCw, Wand2, Store, Layout, Clock,
-  TrendingUp, Heart, Eye, ChevronRight, Loader2, X, UserRound
+  TrendingUp, Heart, Eye, ChevronRight, Loader2, X, UserRound, Video
 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { getHomeContent, HomeContentResponse, getPublicCreations, PublicCreation } from "@/services/contentApi";
 import { getMarketplaceTemplates, MarketplaceTemplate } from "@/services/marketplaceApi";
 import { PlanInsightsCard } from "@/components/home/PlanInsightsCard";
@@ -20,7 +21,8 @@ import { ENV } from "@/config/env";
 import { toast } from "sonner";
 import { CreationDetailView, GalleryItem } from "@/components/creator/CreationDetailView";
 // CDN service for public content (Cloudflare Image Resizing)
-import { getFeedUrl as getFeedImageUrl, getAvatarUrl, getThumbnailUrl, getViewUrl, getDownloadUrl, getProcessingUrl, getProxyDownloadUrl } from "@/services/cdn";
+import { getFeedUrl as getFeedImageUrl, getAvatarUrl, getThumbnailUrl, getViewUrl, getDownloadUrl, getProcessingUrl, getProxyDownloadUrl, getMediaPreviewUrl, getMediaFeedUrl, isVideoUrl } from "@/services/cdn";
+import { cn } from "@/lib/utils";
 import { useUserTier } from "@/services/userTier";
 import { Slider } from "@/components/ui/slider";
 
@@ -37,6 +39,20 @@ function MarketplaceFeedCard({ creation, onImageClick, onRemixClick }: { creatio
   const [likes, setLikes] = useState(creation.likes || 0);
   const [isLiked, setIsLiked] = useState(creation.is_liked || false);
   const [isLiking, setIsLiking] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+  const remixRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (expanded && remixRef.current && !remixRef.current.contains(e.target as Node)) {
+        setExpanded(false);
+      }
+    };
+    if (expanded) {
+      document.addEventListener('mousedown', handleOutsideClick);
+    }
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, [expanded]);
 
   const handleLike = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -69,18 +85,41 @@ function MarketplaceFeedCard({ creation, onImageClick, onRemixClick }: { creatio
     }
   };
 
+  // Determine if this is a video and get the proper preview URL
+  const isVideo = creation.type === 'video' || isVideoUrl(creation.image_url || creation.url);
+  const previewUrl = getMediaFeedUrl({
+    url: creation.image_url || creation.url,
+    type: creation.type,
+    thumbnail_url: creation.thumbnail_url,
+    previewUrl: creation.previewUrl
+  }, 600);
+
   return (
     <div
       className="break-inside-avoid group relative rounded-2xl overflow-hidden bg-card border border-white/5 hover:border-white/20 transition-all cursor-pointer shadow-lg aspect-[4/5] h-min"
       onClick={onImageClick}
     >
-      <img
-        src={getFeedImageUrl(creation.image_url || creation.url, 600)}
-        alt={creation.template_name || creation.prompt || ''}
-        className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-500"
-        loading={isHero ? "eager" : "lazy"}
-        decoding="async"
-      />
+      {/* Video indicator badge */}
+      {isVideo && (
+        <div className="absolute top-3 left-3 z-30 px-2 py-1 bg-black/50 backdrop-blur-sm rounded-md">
+          <Play className="w-3 h-3 text-white fill-white" />
+        </div>
+      )}
+
+      {/* Preview image (works for both images and videos) */}
+      {previewUrl ? (
+        <img
+          src={previewUrl}
+          alt={creation.template_name || creation.prompt || ''}
+          className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-500"
+          loading={isHero ? "eager" : "lazy"}
+          decoding="async"
+        />
+      ) : (
+        <div className="w-full h-full bg-zinc-800 flex items-center justify-center">
+          <Play className="w-8 h-8 text-zinc-600" />
+        </div>
+      )}
 
       {/* Gradient Overlay */}
       <div className="absolute inset-0 bg-gradient-to-t from-[#101112]/90 via-[#101112]/20 to-transparent opacity-80 group-hover:opacity-100 transition-opacity duration-300"></div>
@@ -133,20 +172,66 @@ function MarketplaceFeedCard({ creation, onImageClick, onRemixClick }: { creatio
           </div>
         </div>
 
-        {/* Remix Button */}
-        <button
-          className="
-            flex items-center gap-1 px-2 py-1.5
-            bg-white/10 hover:bg-white/20 backdrop-blur-md
-            border border-white/20 rounded-full
-            text-white text-[10px] font-bold uppercase tracking-tight
-            transition-all duration-300 hover:scale-105 group-hover:bg-white/25
-            shrink-0 ml-1.5
-         "
-          onClick={onRemixClick}
+        {/* Dash Actions Group */}
+        <div
+          ref={remixRef}
+          className="flex items-center gap-1.5 p-1 relative z-30 group/remix"
         >
-          Remix <Zap className="w-2.5 h-2.5 fill-yellow-400 text-yellow-400" />
-        </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              if (expanded) {
+                onRemixClick(e);
+              } else {
+                setExpanded(true);
+              }
+            }}
+            className={cn(
+              "w-8 h-8 rounded-lg flex items-center justify-center transition-all shadow-lg",
+              expanded ? "bg-white/10 text-white" : "bg-[#D1F349] text-black"
+            )}
+            title={expanded ? "Full Remix" : "Remix Options"}
+          >
+            {expanded ? <RefreshCw className="w-4 h-4 animate-spin-slow" /> : <Wand2 className="w-4 h-4" />}
+          </button>
+
+          <AnimatePresence>
+            {expanded && (
+              <motion.div
+                initial={{ width: 0, opacity: 0 }}
+                animate={{ width: 'auto', opacity: 1 }}
+                exit={{ width: 0, opacity: 0 }}
+                className="flex items-center gap-1.5 overflow-hidden"
+              >
+                <div className="w-px h-4 bg-white/10 mx-0.5" />
+
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const customEvent = { ...e, remixMode: 'video' } as any;
+                    onRemixClick(customEvent);
+                  }}
+                  className="p-1.5 rounded-lg bg-white/5 text-white/70 hover:bg-white/10 hover:text-white transition-all"
+                  title="Remix to Video"
+                >
+                  <Video className="w-3.5 h-3.5" />
+                </button>
+
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const customEvent = { ...e, remixMode: 'prompt' } as any;
+                    onRemixClick(customEvent);
+                  }}
+                  className="p-1.5 rounded-lg bg-white/5 text-white/70 hover:bg-white/10 hover:text-white transition-all transition-all"
+                  title="Restore Prompt"
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
       </div>
     </div>
   );
@@ -407,6 +492,11 @@ export default function CreatorDashboard() {
   // Compute featured template - Moved up to avoid Rule of Hooks violation
   const featuredTemplate = useMemo(() => getFeaturedTemplate(marketplaceTemplates), [marketplaceTemplates]);
 
+  // Filter public creations for image-only for the hero section
+  const imageOnlyCreations = useMemo(() =>
+    publicCreations.filter(c => c.type !== 'video' && !isVideoUrl(c.image_url))
+    , [publicCreations]);
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -432,7 +522,7 @@ export default function CreatorDashboard() {
         <HeroSection
           user={user}
           homeState={homeState}
-          publicCreations={publicCreations.slice(0, 6)}
+          publicCreations={imageOnlyCreations.slice(0, 6)} // Pass filtered creations
           navigate={navigate}
         />
 
@@ -520,10 +610,18 @@ export default function CreatorDashboard() {
                 sourceImageUrl: optimizedSourceUrl,
                 remixFrom: creation.id,
                 remixFromUsername: creation.creator_username,
+                model: creation.model_id || creation.model,
                 view: 'create' // Intent for Studio to open in create mode
               };
 
-              navigate('/creator/studio?view=create', { state: remixState });
+              // Check for custom remixMode from the expanded buttons
+              if (creation.remixMode === 'video') {
+                navigate('/creator/studio?view=create&mode=video', { state: remixState });
+              } else if (creation.remixMode === 'prompt') {
+                navigate('/creator/studio?view=create&mode=image', { state: { prompt: creation.prompt || '' } });
+              } else {
+                navigate('/creator/studio?view=create', { state: remixState });
+              }
             }}
           />
 
@@ -615,6 +713,7 @@ export default function CreatorDashboard() {
               sourceImageUrl: optimizedSourceUrl,
               remixFrom: item.id,
               remixFromUsername: item.creator_username,
+              model: item.model,
               view: 'create'
             }
           });
@@ -637,32 +736,35 @@ function HeroSection({ user, homeState, publicCreations, navigate }: { user: Use
           <div className="grid grid-cols-4 md:grid-cols-12 grid-rows-2 gap-2 w-full h-full opacity-60 p-2">
             {publicCreations.length > 0 ? (
               <>
-                {/* Image 1: Large Vertical Bento */}
-                <div className="col-span-2 row-span-2 md:col-span-4 md:row-span-2 relative overflow-hidden rounded-2xl">
-                  <img src={getFeedImageUrl(publicCreations[0]?.image_url || publicCreations[0]?.url, 800)} className="w-full h-full object-cover" loading="eager" />
-                </div>
-                {/* Image 2: Wide Top Bento */}
+                {/* Hero Grid PATTERN (Higgs Style) */}
+                {/* Image 1: Top Left Big */}
+                {publicCreations[0] && (
+                  <div className="col-span-2 row-span-2 md:col-span-4 md:row-span-2 relative overflow-hidden rounded-2xl">
+                    <img src={getFeedImageUrl(publicCreations[0]?.image_url, 800)} className="w-full h-full object-cover" />
+                  </div>
+                )}
+                {/* Image 2: Top Right Long */}
                 {publicCreations[1] && (
                   <div className="col-span-2 row-span-1 md:col-span-5 md:row-span-1 relative overflow-hidden rounded-2xl">
-                    <img src={getFeedImageUrl(publicCreations[1]?.image_url || publicCreations[1]?.url, 800)} className="w-full h-full object-cover" />
+                    <img src={getFeedImageUrl(publicCreations[1]?.image_url, 800)} className="w-full h-full object-cover" />
                   </div>
                 )}
-                {/* Image 3: Small Bottom Bento */}
+                {/* Image 3: Center Bottom Block */}
                 {publicCreations[2] && (
-                  <div className="col-span-1 row-span-1 md:col-span-2 md:row-span-1 relative overflow-hidden rounded-2xl">
-                    <img src={getFeedImageUrl(publicCreations[2]?.image_url || publicCreations[2]?.url, 800)} className="w-full h-full object-cover" />
+                  <div className="col-span-2 row-span-1 md:col-span-3 md:row-span-1 relative overflow-hidden rounded-2xl">
+                    <img src={getFeedImageUrl(publicCreations[2]?.image_url, 800)} className="w-full h-full object-cover" />
                   </div>
                 )}
-                {/* Image 4: Tall Right Bento */}
+                {/* Image 4: Right Bento Tile */}
                 {publicCreations[3] && (
                   <div className="hidden md:block md:col-span-3 md:row-span-2 relative overflow-hidden rounded-2xl">
-                    <img src={getFeedImageUrl(publicCreations[3]?.image_url || publicCreations[3]?.url, 800)} className="w-full h-full object-cover" />
+                    <img src={getFeedImageUrl(publicCreations[3]?.image_url, 800)} className="w-full h-full object-cover" />
                   </div>
                 )}
                 {/* Image 5: Remaining Bottom Bento */}
                 {publicCreations[4] && (
                   <div className="col-span-1 row-span-1 md:col-span-3 md:row-span-1 relative overflow-hidden rounded-2xl">
-                    <img src={getFeedImageUrl(publicCreations[4]?.image_url || publicCreations[4]?.url, 800)} className="w-full h-full object-cover" />
+                    <img src={getFeedImageUrl(publicCreations[4]?.image_url, 800)} className="w-full h-full object-cover" />
                   </div>
                 )}
               </>
@@ -872,11 +974,28 @@ function RecentCreationsBento({ creations, hasCreations, navigate }: { creations
 
       {hasCreations ? (
         <div className="grid grid-cols-4 gap-3 h-auto z-10">
-          {creations.slice(0, 4).map(c => (
-            <div key={c.id} onClick={() => navigate('/creator/studio?view=gallery')} className="aspect-square rounded-xl overflow-hidden border border-white/5 cursor-pointer relative group/item hover:scale-[1.02] transition-transform bg-zinc-800 shadow-md">
-              <img src={getThumbnailUrl(c.url, 200)} className="w-full h-full object-cover opacity-90 group-hover/item:opacity-100 transition-opacity" loading="lazy" />
-            </div>
-          ))}
+          {creations.slice(0, 4).map(c => {
+            const isVideo = c.type === 'video' || isVideoUrl(c.url);
+            const previewSrc = getMediaPreviewUrl({ url: c.url, type: c.type as 'image' | 'video', thumbnail_url: c.thumbnail_url }, 200);
+
+            return (
+              <div key={c.id} onClick={() => navigate('/creator/studio?view=gallery')} className="aspect-square rounded-xl overflow-hidden border border-white/5 cursor-pointer relative group/item hover:scale-[1.02] transition-transform bg-zinc-800 shadow-md">
+                {/* Video badge */}
+                {isVideo && (
+                  <div className="absolute top-1.5 left-1.5 z-10 p-1 bg-black/50 backdrop-blur-sm rounded">
+                    <Play className="w-2.5 h-2.5 text-white fill-white" />
+                  </div>
+                )}
+                {previewSrc ? (
+                  <img src={previewSrc} className="w-full h-full object-cover opacity-90 group-hover/item:opacity-100 transition-opacity" loading="lazy" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-zinc-800">
+                    <Play className="w-6 h-6 text-zinc-600" />
+                  </div>
+                )}
+              </div>
+            );
+          })}
           {/* Fillers if less than 4 */}
           {[...Array(Math.max(0, 4 - creations.length))].map((_, i) => (
             <div

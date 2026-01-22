@@ -5,7 +5,7 @@ import {
     X, Copy, RefreshCw, Save, Download,
     ChevronDown, Trash2, Maximize2, Wand2,
     Globe, Lock, Info, ChevronUp, Loader2,
-    User, Cpu
+    User, Cpu, Play, Pause, Volume2, VolumeX, Video, Sparkles
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -30,6 +30,7 @@ export interface GalleryItem {
     id: string | number;
     url: string;
     previewUrl?: string;
+    thumbnail_url?: string; // Video preview thumbnail from backend
     type: 'image' | 'video';
     timestamp?: number;
     prompt?: string;
@@ -64,7 +65,7 @@ interface CreationDetailViewProps {
     open: boolean;
     onClose: () => void;
     onTogglePublic?: (item: GalleryItem) => void;
-    onReusePrompt: (item: GalleryItem) => void;
+    onReusePrompt: (item: GalleryItem, remixMode?: 'full' | 'video' | 'prompt') => void;
     onUseAsTemplate?: (item: GalleryItem) => void;
     onDownload: (item: GalleryItem) => void;
     onDelete?: (id: string | number) => void;
@@ -103,8 +104,34 @@ export function CreationDetailView({
     const [direction, setDirection] = useState(0);
     const [isPromptExpanded, setIsPromptExpanded] = useState(false);
     const [showUI, setShowUI] = useState(true);
+    const [remixExpanded, setRemixExpanded] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
+    const videoRef = useRef<HTMLVideoElement>(null);
+    const remixRef = useRef<HTMLDivElement>(null);
     const touchStartY = useRef(0);
+
+    // Close remix menu when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (remixExpanded && remixRef.current && !remixRef.current.contains(event.target as Node)) {
+                setRemixExpanded(false);
+            }
+        };
+
+        if (remixExpanded) {
+            document.addEventListener('mousedown', handleClickOutside);
+        } else {
+            document.removeEventListener('mousedown', handleClickOutside);
+        }
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [remixExpanded]);
+
+    // Video State
+    const [isPlaying, setIsPlaying] = useState(true);
+    const [progress, setProgress] = useState(0);
+    const [duration, setDuration] = useState(0);
+    const [currentTime, setCurrentTime] = useState(0);
+    const [isMuted, setIsMuted] = useState(false);
 
     // Sync index when open changes or initialIndex changes
     useEffect(() => {
@@ -113,8 +140,20 @@ export function CreationDetailView({
             setDirection(0);
             setIsPromptExpanded(false);
             setShowUI(true);
+            setIsPlaying(true);
+            setProgress(0);
         }
     }, [open, initialIndex]);
+
+    // Reset video state when item changes
+    useEffect(() => {
+        if (videoRef.current) {
+            videoRef.current.currentTime = 0;
+            if (isPlaying) videoRef.current.play().catch(() => setIsPlaying(false));
+            setProgress(0);
+        }
+        setRemixExpanded(false);
+    }, [currentIndex]);
 
     const handleNext = () => {
         if (currentIndex < items.length - 1) {
@@ -192,6 +231,62 @@ export function CreationDetailView({
             }
         };
 
+        const togglePlay = (e?: React.MouseEvent) => {
+            if (e) e.stopPropagation();
+
+            // If UI is hidden, showing it takes priority over playing/pausing
+            if (!showUI) {
+                setShowUI(true);
+                return;
+            }
+
+            if (videoRef.current) {
+                if (isPlaying) {
+                    videoRef.current.pause();
+                } else {
+                    videoRef.current.play();
+                }
+                setIsPlaying(!isPlaying);
+            }
+        };
+
+        const handleTimeUpdate = () => {
+            if (videoRef.current) {
+                const current = videoRef.current.currentTime;
+                const dur = videoRef.current.duration;
+                setCurrentTime(current);
+                setProgress((current / dur) * 100);
+            }
+        };
+
+        const handleLoadedMetadata = () => {
+            if (videoRef.current) {
+                setDuration(videoRef.current.duration);
+            }
+        };
+
+        const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
+            const seekTo = (parseFloat(e.target.value) / 100) * duration;
+            if (videoRef.current) {
+                videoRef.current.currentTime = seekTo;
+                setProgress(parseFloat(e.target.value));
+            }
+        };
+
+        const toggleMute = (e: React.MouseEvent) => {
+            e.stopPropagation();
+            if (videoRef.current) {
+                videoRef.current.muted = !isMuted;
+                setIsMuted(!isMuted);
+            }
+        };
+
+        const formatTime = (time: number) => {
+            const mins = Math.floor(time / 60);
+            const secs = Math.floor(time % 60);
+            return `${mins}:${secs.toString().padStart(2, '0')}`;
+        };
+
         return (
             <AnimatePresence initial={false} custom={direction} mode="popLayout">
                 <motion.div
@@ -226,15 +321,62 @@ export function CreationDetailView({
                     {/* Main Visual */}
                     <div className="relative w-full h-full flex items-center justify-center p-0" onClick={() => setShowUI(!showUI)}>
                         {item.type === 'video' ? (
-                            <video
-                                key={item.id}
-                                src={item.url}
-                                controls={false}
-                                className="h-full w-full object-contain drop-shadow-[0_0_50px_rgba(0,0,0,0.5)]"
-                                autoPlay
-                                loop
-                                playsInline
-                            />
+                            <div className="relative w-full h-full flex items-center justify-center">
+                                <video
+                                    ref={videoRef}
+                                    key={item.id}
+                                    src={item.url}
+                                    controls={false}
+                                    className="h-full w-full object-contain drop-shadow-[0_0_50px_rgba(0,0,0,0.5)]"
+                                    autoPlay
+                                    loop
+                                    playsInline
+                                    muted={isMuted}
+                                    onTimeUpdate={handleTimeUpdate}
+                                    onLoadedMetadata={handleLoadedMetadata}
+                                    onClick={(e) => { e.stopPropagation(); togglePlay(); }}
+                                />
+
+                                {/* Custom Video Controls Overlay */}
+                                <div className={cn(
+                                    "absolute inset-x-0 bottom-0 p-6 flex flex-col gap-4 bg-gradient-to-t from-black/80 via-black/20 to-transparent transition-all duration-500 z-[60]",
+                                    !showUI ? "translate-y-full opacity-0" : "translate-y-0 opacity-100"
+                                )}>
+                                    <div className="flex items-center gap-4">
+                                        <button
+                                            onClick={togglePlay}
+                                            className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white backdrop-blur-md border border-white/10 transition-all active:scale-95"
+                                        >
+                                            {isPlaying ? <Pause className="w-5 h-5 fill-current" /> : <Play className="w-5 h-5 fill-current ml-0.5" />}
+                                        </button>
+
+                                        <div className="flex-1 flex flex-col gap-1.5">
+                                            <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-white/50 px-1">
+                                                <span>{formatTime(currentTime)}</span>
+                                                <span>{formatTime(duration)}</span>
+                                            </div>
+                                            <div className="relative group/slider h-6 flex items-center">
+                                                <input
+                                                    type="range"
+                                                    min="0"
+                                                    max="100"
+                                                    value={progress}
+                                                    onChange={handleSeek}
+                                                    className="w-full h-1 bg-white/20 rounded-full appearance-none cursor-pointer accent-[#D1F349] group-hover/slider:h-1.5 transition-all"
+                                                    onClick={(e) => e.stopPropagation()}
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <button
+                                            onClick={toggleMute}
+                                            className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white backdrop-blur-md border border-white/10 transition-all"
+                                        >
+                                            {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
                         ) : (
                             <img
                                 src={getOptimizedUrl(item.previewUrl || item.url, 1200)}
@@ -269,10 +411,35 @@ export function CreationDetailView({
                     </div>
 
                     <div className={cn(
-                        "absolute bottom-0 left-0 w-full p-6 md:p-8 z-40 transition-all duration-500 bg-gradient-to-t from-[#101112]/95 via-[#101112]/40 to-transparent pt-32 pb-12",
+                        "absolute bottom-0 left-0 w-full p-6 md:p-8 z-40 transition-all duration-500 bg-gradient-to-t from-[#101112]/95 via-[#101112]/40 to-transparent pt-32 pb-20 md:pb-20",
                         !showUI ? "translate-y-20 opacity-0" : "translate-y-0 opacity-100"
                     )}>
                         <div className="space-y-4 max-w-2xl">
+                            {/* Privacy and Copy Row - TOP LEFT of Details */}
+                            <div className="flex items-center gap-2 mb-2">
+                                {item.isOwner && onTogglePublic && (
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); onTogglePublic(item); }}
+                                        className="flex items-center gap-2 bg-white/10 backdrop-blur-md hover:bg-white/20 px-2.5 py-1 rounded-full border border-white/10 transition-colors z-[70]"
+                                    >
+                                        {item.isPublic ? <Globe className="w-2.5 h-2.5 text-[#D1F349]" /> : <Lock className="w-2.5 h-2.5 text-zinc-400" />}
+                                        <span className={cn("text-[9px] font-black uppercase tracking-widest", item.isPublic ? "text-[#D1F349]" : "text-zinc-600")}>
+                                            {item.isPublic ? "Public" : "Private"}
+                                        </span>
+                                    </button>
+                                )}
+
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        navigator.clipboard.writeText(item.prompt || "");
+                                        toast.success("Prompt copied!");
+                                    }}
+                                    className="w-7 h-7 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 transition-colors border border-white/5 z-[70]"
+                                >
+                                    <Copy className="w-3 h-3 text-white/40" />
+                                </button>
+                            </div>
                             {/* Creator Byline - Always visible on mobile and desktop */}
                             {(item.creator_username || item.creator_avatar) && !item.isOwner && (
                                 <div className="flex items-center gap-3 mb-2 group/creator cursor-pointer w-fit" onClick={goToProfile}>
@@ -361,37 +528,12 @@ export function CreationDetailView({
                                     </div>
                                 )}
                             </div>
-
-                            <div className="flex items-center gap-4">
-                                {item.isOwner && onTogglePublic && (
-                                    <button
-                                        onClick={(e) => { e.stopPropagation(); onTogglePublic(item); }}
-                                        className="flex items-center gap-2 bg-white/10 backdrop-blur-md hover:bg-white/20 px-3 py-1.5 rounded-full border border-white/10 transition-colors"
-                                    >
-                                        {item.isPublic ? <Globe className="w-3 h-3 text-[#D1F349]" /> : <Lock className="w-3 h-3 text-zinc-400" />}
-                                        <span className={cn("text-[10px] font-black uppercase tracking-widest", item.isPublic ? "text-[#D1F349]" : "text-zinc-600")}>
-                                            {item.isPublic ? "Public" : "Private"}
-                                        </span>
-                                    </button>
-                                )}
-
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        navigator.clipboard.writeText(item.prompt || "");
-                                        toast.success("Prompt copied!");
-                                    }}
-                                    className="w-8 h-8 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 transition-colors border border-white/5 shadow-inner"
-                                >
-                                    <Copy className="w-3.5 h-3.5 text-white/40" />
-                                </button>
-                            </div>
                         </div>
                     </div>
 
                     {/* Action Buttons Column with Enhanced Blur Panel */}
                     <div className={cn(
-                        "absolute top-1/2 -translate-y-1/2 right-6 p-2 rounded-full z-50 transition-all duration-500",
+                        "absolute top-[45%] -translate-y-1/2 right-6 p-2 rounded-full z-50 transition-all duration-500",
                         !showUI ? "translate-x-24 opacity-0" : "translate-x-0 opacity-100"
                     )}>
                         <div className="absolute inset-0 bg-white/5 backdrop-blur-3xl rounded-full border border-white/10 shadow-2xl" />
@@ -399,7 +541,60 @@ export function CreationDetailView({
                         <div className="relative flex flex-col items-center gap-5 py-6 px-1">
                             <TooltipProvider delayDuration={0}>
                                 <div className="flex flex-col items-center gap-6">
-                                    <ActionButton icon={Wand2} label="Remix" variant="primary" onClick={() => onReusePrompt(item)} />
+                                    <div className="relative flex flex-col items-center group/remix-container" ref={remixRef}>
+                                        <AnimatePresence>
+                                            {remixExpanded && (
+                                                <motion.div
+                                                    initial={{ opacity: 0, scale: 0.8, x: 20 }}
+                                                    animate={{ opacity: 1, scale: 1, x: 0 }}
+                                                    exit={{ opacity: 0, scale: 0.8, x: 20 }}
+                                                    className="absolute right-[100%] top-0 flex flex-row-reverse gap-4 items-center pr-4"
+                                                >
+                                                    <motion.div
+                                                        initial={{ opacity: 0, scale: 0.5, x: 10 }}
+                                                        animate={{ opacity: 1, scale: 1, x: 0 }}
+                                                        exit={{ opacity: 0, scale: 0.5, x: 10 }}
+                                                        transition={{ type: "spring", damping: 15, stiffness: 200 }}
+                                                    >
+                                                        <ActionButton
+                                                            icon={Video}
+                                                            label="Video"
+                                                            variant="default"
+                                                            onClick={() => onReusePrompt(item, 'video')}
+                                                        />
+                                                    </motion.div>
+                                                    <motion.div
+                                                        initial={{ opacity: 0, scale: 0.5, x: 10 }}
+                                                        animate={{ opacity: 1, scale: 1, x: 0 }}
+                                                        exit={{ opacity: 0, scale: 0.5, x: 10 }}
+                                                        transition={{ type: "spring", damping: 15, stiffness: 200, delay: 0.05 }}
+                                                    >
+                                                        <ActionButton
+                                                            icon={Sparkles}
+                                                            label="Prompt"
+                                                            variant="default"
+                                                            onClick={() => onReusePrompt(item, 'prompt')}
+                                                        />
+                                                    </motion.div>
+                                                </motion.div>
+                                            )}
+                                        </AnimatePresence>
+
+                                        <div className="relative">
+                                            <ActionButton
+                                                icon={remixExpanded ? RefreshCw : Wand2}
+                                                label={remixExpanded ? "Full Remix" : "Remix"}
+                                                variant={remixExpanded ? "default" : "primary"}
+                                                onClick={() => {
+                                                    if (remixExpanded) {
+                                                        onReusePrompt(item, 'full');
+                                                    } else {
+                                                        setRemixExpanded(true);
+                                                    }
+                                                }}
+                                            />
+                                        </div>
+                                    </div>
 
                                     {onUseAsTemplate && (
                                         <ActionButton icon={Save} label="Library" onClick={() => onUseAsTemplate(item)} />
@@ -485,7 +680,8 @@ function ActionButton({ onClick, icon: Icon, label, variant = "default" }: any) 
                 >
                     <div className={cn(
                         "w-12 h-12 rounded-full flex items-center justify-center backdrop-blur-md transition-all border border-white/10",
-                        variant === "primary" ? "bg-[#D1F349] text-black border-none shadow-[0_0_20px_rgba(209,243,73,0.3)]" : "bg-white/10 text-white hover:bg-white/20",
+                        variant === "primary" ? "bg-[#D1F349] text-black border-none shadow-[0_0_20px_rgba(209,243,73,0.3)]" :
+                            "bg-white/10 text-white hover:bg-white/20",
                         variant === "danger" && "hover:bg-red-500/20 text-red-500"
                     )}>
                         <Icon className={cn("w-5 h-5", variant === "primary" && "fill-current")} />

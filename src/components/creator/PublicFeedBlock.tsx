@@ -4,8 +4,9 @@ import { getCurrentUser, toggleLike } from "@/services/eventsApi";
 import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Heart, Eye, User } from "lucide-react";
+import { Heart, Eye, User, Play } from "lucide-react";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { getMediaPreviewUrl, isVideoUrl } from "@/services/cdn";
 
 interface PublicFeedBlockProps {
     creations?: PublicCreation[];
@@ -39,6 +40,16 @@ function FeedCard({ creation }: { creation: PublicCreation }) {
     const [likes, setLikes] = useState(creation.likes);
     const [isLiked, setIsLiked] = useState(creation.is_liked || false);
     const [isLiking, setIsLiking] = useState(false);
+
+    // Determine if this is a video
+    const isVideo = creation.type === 'video' || isVideoUrl(creation.image_url);
+
+    // Get the proper preview URL using video-aware helper
+    const previewUrl = getMediaPreviewUrl({
+        url: creation.image_url,
+        type: creation.type,
+        thumbnail_url: creation.thumbnail_url
+    }, 400);
 
     const handleLike = async (e: React.MouseEvent) => {
         e.preventDefault();
@@ -76,13 +87,26 @@ function FeedCard({ creation }: { creation: PublicCreation }) {
     return (
         <Card className="bg-card border-white/10 overflow-hidden group hover:border-indigo-500/50 transition-all cursor-pointer">
             <CardContent className="p-0 relative aspect-[9/16]">
-                {/* Image */}
-                <img
-                    src={creation.thumbnail_url || creation.image_url}
-                    alt={creation.template_name || "Creation"}
-                    className="w-full h-full object-cover"
-                    loading="lazy"
-                />
+                {/* Video indicator badge */}
+                {isVideo && (
+                    <div className="absolute top-2 left-2 z-20 p-1.5 bg-black/50 backdrop-blur-sm rounded-lg">
+                        <Play className="w-3 h-3 text-white fill-white" />
+                    </div>
+                )}
+
+                {/* Preview Image (works for both images and videos) */}
+                {previewUrl ? (
+                    <img
+                        src={previewUrl}
+                        alt={creation.template_name || "Creation"}
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                    />
+                ) : (
+                    <div className="w-full h-full bg-zinc-800 flex items-center justify-center">
+                        <Play className="w-8 h-8 text-zinc-600" />
+                    </div>
+                )}
 
                 {/* Overlay */}
                 <div className="absolute inset-0 bg-gradient-to-t from-[#101112]/90 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-3">

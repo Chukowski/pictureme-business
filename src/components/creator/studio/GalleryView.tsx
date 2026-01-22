@@ -1,8 +1,9 @@
-import React, { useState, useMemo, useCallback } from 'react';
-import { Wand2, Download, LayoutGrid, List, Sparkles, Clock, ChevronRight, Eye, EyeOff, Video, ImageIcon, Save } from 'lucide-react';
+import React, { useState, useMemo, useCallback, useRef } from 'react';
+import { Wand2, Download, LayoutGrid, List, Sparkles, Clock, ChevronRight, Eye, EyeOff, Video, ImageIcon, Save, Play, RefreshCw } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { GalleryItem } from '@/components/creator/CreationDetailView';
 // CDN service for public content (Cloudflare Image Resizing)
-import { getThumbnailUrl } from '@/services/cdn';
+import { getThumbnailUrl, getMediaPreviewUrl, getVideoUrl, isVideoUrl } from '@/services/cdn';
 import { cn } from '@/lib/utils';
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
@@ -13,7 +14,7 @@ import { GalleryHeader } from './GalleryHeader';
 interface GalleryViewProps {
     history: GalleryItem[];
     setPreviewItem: (item: GalleryItem) => void;
-    onReusePrompt: (item: GalleryItem) => void;
+    onReusePrompt: (item: GalleryItem, mode?: 'full' | 'video' | 'prompt') => void;
     onDownload: (item: GalleryItem) => void;
     onUseAsTemplate?: (item: GalleryItem) => void;
 }
@@ -26,6 +27,7 @@ export const GalleryView = ({
     onUseAsTemplate
 }: GalleryViewProps) => {
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+    const [expandedRemixId, setExpandedRemixId] = useState<number | null>(null);
     const [zoomLevel, setZoomLevel] = useState([window.innerWidth < 768 ? 2 : 4]);
     const [showActions, setShowActions] = useState(true);
     const [mediaType, setMediaType] = useState<'all' | 'image' | 'video'>('all');
@@ -89,63 +91,120 @@ export const GalleryView = ({
                                     gridTemplateColumns: `repeat(${zoomLevel[0]}, minmax(0, 1fr))`
                                 }}
                             >
-                                {filteredHistory.map((item) => (
-                                    <div
-                                        key={item.id}
-                                        onClick={() => setPreviewItem(item)}
-                                        className="group relative aspect-[3/4] bg-[#121212] rounded-2xl overflow-hidden cursor-pointer hover:ring-2 ring-[#D1F349]/50 transition-all shadow-xl"
-                                    >
-                                        {item.type === 'image' ? (
-                                            <img
-                                                src={getThumbnailUrl(item.url, 800)}
-                                                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                                                alt={item.prompt || ''}
-                                                loading="lazy"
-                                            />
-                                        ) : (
-                                            <video
-                                                src={item.url}
-                                                poster={getThumbnailUrl(item.url, 800)}
-                                                className="w-full h-full object-cover"
-                                                muted
-                                                playsInline
-                                                loop
-                                            />
-                                        )}
+                                {filteredHistory.map((item) => {
+                                    const isVideo = item.type === 'video' || isVideoUrl(item.url);
+                                    const previewUrl = getMediaPreviewUrl({
+                                        url: item.url,
+                                        type: item.type,
+                                        thumbnail_url: item.thumbnail_url,
+                                        previewUrl: item.previewUrl
+                                    }, 800);
 
-                                        {/* Action Overlay - Conditionally visible */}
-                                        <div className={cn(
-                                            "absolute inset-0 bg-gradient-to-t from-[#101112]/90 via-[#101112]/20 to-transparent transition-all duration-300 flex flex-col justify-end p-4 md:p-6",
-                                            showActions ? (window.innerWidth < 768 ? "opacity-100" : "opacity-0 md:group-hover:opacity-100") : "opacity-0 invisible"
-                                        )}>
-                                            <div className="flex items-center gap-2 mb-3 md:mb-4 md:translate-y-4 md:group-hover:translate-y-0 transition-transform duration-500">
-                                                <button
-                                                    onClick={(e) => { e.stopPropagation(); onReusePrompt(item); }}
-                                                    className="w-9 h-9 md:w-10 md:h-10 rounded-xl bg-[#D1F349] text-black flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-lg"
-                                                >
-                                                    <Wand2 className="w-4 h-4 md:w-5 md:h-5" />
-                                                </button>
-                                                {onUseAsTemplate && (
-                                                    <button
-                                                        onClick={(e) => { e.stopPropagation(); onUseAsTemplate(item); }}
-                                                        className="w-9 h-9 md:w-10 md:h-10 rounded-xl bg-white/10 backdrop-blur-xl text-white flex items-center justify-center hover:bg-[#D1F349] hover:text-black transition-all border border-white/10 shadow-lg"
-                                                        title="Save as Template"
+                                    return (
+                                        <div
+                                            key={item.id}
+                                            onClick={() => setPreviewItem(item)}
+                                            className="group relative aspect-[3/4] bg-[#121212] rounded-2xl overflow-hidden cursor-pointer hover:ring-2 ring-[#D1F349]/50 transition-all shadow-xl"
+                                        >
+                                            {/* Video indicator badge */}
+                                            {isVideo && (
+                                                <div className="absolute top-3 left-3 z-20 p-1.5 bg-black/50 backdrop-blur-sm rounded-lg">
+                                                    <Play className="w-3 h-3 text-white fill-white" />
+                                                </div>
+                                            )}
+
+                                            {/* Preview image or fallback */}
+                                            {previewUrl ? (
+                                                <img
+                                                    src={previewUrl}
+                                                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                                                    alt={item.prompt || ''}
+                                                    loading="lazy"
+                                                />
+                                            ) : (
+                                                <div className="w-full h-full bg-zinc-800 flex items-center justify-center">
+                                                    <Play className="w-10 h-10 text-zinc-600" />
+                                                </div>
+                                            )}
+
+                                            {/* Action Overlay - Conditionally visible */}
+                                            <div className={cn(
+                                                "absolute inset-0 bg-gradient-to-t from-[#101112]/90 via-[#101112]/20 to-transparent transition-all duration-300 flex flex-col justify-end p-4 md:p-6",
+                                                showActions ? (window.innerWidth < 768 ? "opacity-100" : "opacity-0 md:group-hover:opacity-100") : "opacity-0 invisible"
+                                            )}>
+                                                <div className="flex items-center gap-2 mb-3 md:mb-4 md:translate-y-4 md:group-hover:translate-y-0 transition-transform duration-500">
+                                                    {/* Remix Group */}
+                                                    <div
+                                                        className="flex items-center gap-1.5 p-1 group/remix relative"
+                                                        onMouseLeave={() => setExpandedRemixId(null)}
                                                     >
-                                                        <Save className="w-4 h-4 md:w-5 md:h-5" />
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                if (expandedRemixId === item.id) {
+                                                                    onReusePrompt(item, 'full');
+                                                                } else {
+                                                                    setExpandedRemixId(item.id);
+                                                                }
+                                                            }}
+                                                            className={cn(
+                                                                "w-10 h-10 rounded-xl flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-lg",
+                                                                expandedRemixId === item.id ? "bg-white/10 text-white" : "bg-[#D1F349] text-black"
+                                                            )}
+                                                        >
+                                                            {expandedRemixId === item.id ? <RefreshCw className="w-4 h-4 md:w-5 h-5 animate-spin-slow" /> : <Wand2 className="w-4 h-4 md:w-5 h-5" />}
+                                                        </button>
+
+                                                        <AnimatePresence>
+                                                            {expandedRemixId === item.id && (
+                                                                <motion.div
+                                                                    initial={{ width: 0, opacity: 0 }}
+                                                                    animate={{ width: 'auto', opacity: 1 }}
+                                                                    exit={{ width: 0, opacity: 0 }}
+                                                                    className="flex items-center gap-1.5 overflow-hidden"
+                                                                >
+                                                                    <div className="w-px h-5 bg-white/20 mx-1" />
+                                                                    <button
+                                                                        onClick={(e) => { e.stopPropagation(); onReusePrompt(item, 'video'); }}
+                                                                        className="w-8 h-8 rounded-lg bg-white/10 text-white/70 hover:bg-white/20 hover:text-white flex items-center justify-center transition-all"
+                                                                        title="Video Remix"
+                                                                    >
+                                                                        <Video className="w-4 h-4" />
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={(e) => { e.stopPropagation(); onReusePrompt(item, 'prompt'); }}
+                                                                        className="w-8 h-8 rounded-lg bg-white/10 text-white/70 hover:bg-white/20 hover:text-white flex items-center justify-center transition-all"
+                                                                        title="Restore Prompt"
+                                                                    >
+                                                                        <Sparkles className="w-4 h-4" />
+                                                                    </button>
+                                                                </motion.div>
+                                                            )}
+                                                        </AnimatePresence>
+                                                    </div>
+
+                                                    {onUseAsTemplate && (
+                                                        <button
+                                                            onClick={(e) => { e.stopPropagation(); onUseAsTemplate(item); }}
+                                                            className="w-9 h-9 md:w-10 md:h-10 rounded-xl bg-white/10 backdrop-blur-xl text-white flex items-center justify-center hover:bg-[#D1F349] hover:text-black transition-all border border-white/10 shadow-lg"
+                                                            title="Save as Template"
+                                                        >
+                                                            <Save className="w-4 h-4 md:w-5 md:h-5" />
+                                                        </button>
+                                                    )}
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); onDownload(item); }}
+                                                        className="w-9 h-9 md:w-10 md:h-10 rounded-xl bg-white/10 backdrop-blur-xl text-white flex items-center justify-center hover:bg-white/20 hover:scale-105 active:scale-95 transition-all border border-white/10 shadow-lg"
+                                                    >
+                                                        <Download className="w-4 h-4 md:w-5 md:h-5" />
                                                     </button>
-                                                )}
-                                                <button
-                                                    onClick={(e) => { e.stopPropagation(); onDownload(item); }}
-                                                    className="w-9 h-9 md:w-10 md:h-10 rounded-xl bg-white/10 backdrop-blur-xl text-white flex items-center justify-center hover:bg-white/20 hover:scale-105 active:scale-95 transition-all border border-white/10 shadow-lg"
-                                                >
-                                                    <Download className="w-4 h-4 md:w-5 md:h-5" />
-                                                </button>
+                                                </div>
+                                                <p className="hidden md:block text-[11px] text-white/60 line-clamp-2 font-bold uppercase tracking-tight leading-tight mb-1">{item.prompt}</p>
+                                                <span className="md:hidden text-[9px] font-black text-white/40 uppercase tracking-widest">View Details</span>
                                             </div>
-                                            <p className="hidden md:block text-[11px] text-white/60 line-clamp-2 font-bold uppercase tracking-tight leading-tight mb-1">{item.prompt}</p>
-                                            <span className="md:hidden text-[9px] font-black text-white/40 uppercase tracking-widest">View Details</span>
                                         </div>
-                                    </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         ) : (
                             /* List View - Dynamic Grid (1 or 2 Columns based on Zoom) */
@@ -154,6 +213,14 @@ export const GalleryView = ({
                                 zoomLevel[0] >= 4 ? "grid-cols-1 lg:grid-cols-2" : "grid-cols-1"
                             )}>
                                 {filteredHistory.map((item) => {
+                                    const isVideo = item.type === 'video' || isVideoUrl(item.url);
+                                    const previewUrl = getMediaPreviewUrl({
+                                        url: item.url,
+                                        type: item.type,
+                                        thumbnail_url: item.thumbnail_url,
+                                        previewUrl: item.previewUrl
+                                    }, 1200);
+
                                     // Dynamic Height Logic:
                                     // If 1 Column (Zoom 2-3): Scale from 400px down to 300px
                                     // If 2 Columns (Zoom 4-6): Scale from 450px down to 250px (taller start to compensate for narrower width)
@@ -171,28 +238,30 @@ export const GalleryView = ({
                                         >
                                             {/* LEFT COLUMN: MEDIA - 50% Width on Desktop */}
                                             <div className="relative bg-[#101112] overflow-hidden min-h-[240px] md:min-h-0 md:w-1/2 border-r border-white/5">
-                                                {item.type === 'image' ? (
+                                                {/* Video indicator badge */}
+                                                {isVideo && (
+                                                    <div className="absolute top-3 left-3 z-20 p-1.5 bg-black/50 backdrop-blur-sm rounded-lg">
+                                                        <Play className="w-3.5 h-3.5 text-white fill-white" />
+                                                    </div>
+                                                )}
+
+                                                {previewUrl ? (
                                                     <img
-                                                        src={getThumbnailUrl(item.url, 1200)}
+                                                        src={previewUrl}
                                                         className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.03]"
                                                         alt={item.prompt || ''}
                                                         loading="lazy"
                                                     />
                                                 ) : (
-                                                    <video
-                                                        src={item.url}
-                                                        poster={getThumbnailUrl(item.url, 1200)}
-                                                        className="w-full h-full object-cover"
-                                                        muted
-                                                        playsInline
-                                                        loop
-                                                    />
+                                                    <div className="w-full h-full bg-zinc-800 flex items-center justify-center">
+                                                        <Play className="w-12 h-12 text-zinc-600" />
+                                                    </div>
                                                 )}
 
                                                 {/* Type Badge Overlay */}
-                                                <div className="absolute top-3 left-3 md:top-4 md:left-4">
+                                                <div className="absolute top-3 right-3 md:top-4 md:right-4">
                                                     <div className="px-2.5 py-1 bg-black/60 backdrop-blur-md rounded-lg border border-white/10 flex items-center gap-2">
-                                                        {item.type === 'video' ? <Video className="w-3 h-3 text-[#D1F349]" /> : <ImageIcon className="w-3 h-3 text-indigo-400" />}
+                                                        {isVideo ? <Video className="w-3 h-3 text-[#D1F349]" /> : <ImageIcon className="w-3 h-3 text-indigo-400" />}
                                                     </div>
                                                 </div>
                                             </div>
@@ -243,13 +312,64 @@ export const GalleryView = ({
                                                     {/* Action Buttons */}
                                                     {showActions && (
                                                         <div className="flex items-center gap-2 pt-2 border-t border-white/5">
-                                                            <Button
-                                                                onClick={(e) => { e.stopPropagation(); onReusePrompt(item); }}
-                                                                className="flex-1 h-10 rounded-xl bg-[#D1F349] text-black hover:bg-[#b8d63e] font-bold uppercase text-[10px] tracking-widest transition-all shadow-lg active:scale-95"
+                                                            <div
+                                                                className="flex items-center group/remix"
+                                                                onMouseLeave={() => setExpandedRemixId(null)}
                                                             >
-                                                                <Wand2 className="w-3.5 h-3.5 mr-2" />
-                                                                Remix
-                                                            </Button>
+                                                                <Button
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        if (expandedRemixId === item.id) {
+                                                                            onReusePrompt(item, 'full');
+                                                                        } else {
+                                                                            setExpandedRemixId(item.id);
+                                                                        }
+                                                                    }}
+                                                                    className={cn(
+                                                                        "flex-1 h-8 rounded-xl font-bold uppercase text-[10px] tracking-widest transition-all",
+                                                                        expandedRemixId === item.id ? "bg-white/10 text-white" : "bg-[#D1F349] text-black hover:bg-[#b8d63e]"
+                                                                    )}
+                                                                >
+                                                                    {expandedRemixId === item.id ? (
+                                                                        <>
+                                                                            <RefreshCw className="w-3.5 h-3.5 mr-2 animate-spin-slow" />
+                                                                            Full Remix
+                                                                        </>
+                                                                    ) : (
+                                                                        <>
+                                                                            <Wand2 className="w-3.5 h-3.5 mr-2" />
+                                                                            Remix
+                                                                        </>
+                                                                    )}
+                                                                </Button>
+
+                                                                <AnimatePresence>
+                                                                    {expandedRemixId === item.id && (
+                                                                        <motion.div
+                                                                            initial={{ width: 0, opacity: 0 }}
+                                                                            animate={{ width: 'auto', opacity: 1 }}
+                                                                            exit={{ width: 0, opacity: 0 }}
+                                                                            className="flex items-center gap-1.5 overflow-hidden ml-1"
+                                                                        >
+                                                                            <div className="w-px h-5 bg-white/10 mx-0.5" />
+                                                                            <button
+                                                                                onClick={(e) => { e.stopPropagation(); onReusePrompt(item, 'video'); }}
+                                                                                className="w-8 h-8 rounded-lg bg-white/5 text-white/70 hover:bg-white/10 hover:text-white flex items-center justify-center transition-all shrink-0"
+                                                                                title="Video Remix"
+                                                                            >
+                                                                                <Video className="w-4 h-4" />
+                                                                            </button>
+                                                                            <button
+                                                                                onClick={(e) => { e.stopPropagation(); onReusePrompt(item, 'prompt'); }}
+                                                                                className="w-8 h-8 rounded-lg bg-white/5 text-white/70 hover:bg-white/10 hover:text-white flex items-center justify-center transition-all shrink-0"
+                                                                                title="Restore Prompt"
+                                                                            >
+                                                                                <Sparkles className="w-4 h-4" />
+                                                                            </button>
+                                                                        </motion.div>
+                                                                    )}
+                                                                </AnimatePresence>
+                                                            </div>
                                                             {onUseAsTemplate && (
                                                                 <Button
                                                                     variant="outline"

@@ -269,10 +269,106 @@ export function getVideoUrl(sourceUrl: string): string {
   return sourceUrl;
 }
 
+// ============== VIDEO-AWARE MEDIA HELPERS ==============
+
+/**
+ * Check if a URL points to a video file
+ */
+export function isVideoUrl(url: string): boolean {
+  if (!url) return false;
+  const lowerUrl = url.toLowerCase();
+  return lowerUrl.includes('.mp4') ||
+    lowerUrl.includes('.webm') ||
+    lowerUrl.includes('.mov') ||
+    lowerUrl.includes('.avi') ||
+    lowerUrl.includes('/video/');
+}
+
+/**
+ * Media item type for the preview helper
+ */
+export interface MediaItem {
+  url: string;
+  type?: 'image' | 'video';
+  thumbnail_url?: string;
+  previewUrl?: string;
+}
+
+/**
+ * Get the best preview URL for any media item (image or video)
+ * 
+ * For images: Returns optimized Cloudflare Image Resizing URL
+ * For videos: Returns the thumbnail_url/previewUrl (first frame) through CDN
+ * 
+ * This is the recommended function for displaying thumbnails in grids/feeds
+ */
+export function getMediaPreviewUrl(item: MediaItem, size: number = 400): string {
+  if (!item?.url) return '';
+
+  const isVideo = item.type === 'video' || isVideoUrl(item.url);
+
+  if (isVideo) {
+    // For videos, we MUST use a preview image (thumbnail_url or previewUrl)
+    // These should be set by the backend from the first frame of the video
+    const previewSource = item.thumbnail_url || item.previewUrl;
+
+    if (previewSource) {
+      // Process the preview image through CDN
+      return getThumbnailUrl(previewSource, size);
+    }
+
+    // No preview available - return empty to trigger fallback UI
+    // Don't try to load the video URL as an image, it will fail
+    console.warn('[CDN] Video item missing thumbnail_url:', item.url);
+    return '';
+  }
+
+  // For images, use the standard thumbnail processing
+  return getThumbnailUrl(item.url, size);
+}
+
+/**
+ * Get the best feed/larger preview URL for any media item
+ * Similar to getMediaPreviewUrl but for larger displays
+ */
+export function getMediaFeedUrl(item: MediaItem, width: number = 600): string {
+  if (!item?.url) return '';
+
+  const isVideo = item.type === 'video' || isVideoUrl(item.url);
+
+  if (isVideo) {
+    const previewSource = item.thumbnail_url || item.previewUrl;
+    if (previewSource) {
+      return getFeedUrl(previewSource, width);
+    }
+    return '';
+  }
+
+  return getFeedUrl(item.url, width);
+}
+
 // ============== CONVENIENCE EXPORTS ==============
 
-// Alias for backward compatibility
-export { getImageUrl as getProcessingUrl };
+/**
+ * Get processing URL for use as input to AI models
+ * Legacy wrapper that accepts either ImageOptions or just a width number
+ */
+export function getProcessingUrl(sourceUrl: string, widthOrOptions?: number | ImageOptions): string {
+  if (!sourceUrl) return '';
+
+  // Handle legacy width-only signature
+  if (typeof widthOrOptions === 'number') {
+    return getImageUrl(sourceUrl, {
+      width: widthOrOptions,
+      quality: 90,
+      fit: 'scale-down',
+      format: 'auto'
+    });
+  }
+
+  return getImageUrl(sourceUrl, widthOrOptions || {});
+}
+
 export { getFeedUrl as getFeedImageUrl };
 
 // Legacy exports (no-op, kept for compatibility)

@@ -358,16 +358,23 @@ export default function SuperAdminUsers() {
         try {
             const token = localStorage.getItem("auth_token");
             const response = await fetch(
-                `${ENV.API_URL}/api/admin/enterprise/users/${userId}/tokens?tokens=${tokensToAdd}&reason=${encodeURIComponent(tokenReason || 'Admin adjustment')}`,
+                `${ENV.API_URL}/api/admin/enterprise/users/${userId}/tokens`,
                 {
                     method: 'POST',
-                    headers: { Authorization: `Bearer ${token}` }
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        tokens: tokensToAdd,
+                        reason: tokenReason || 'Admin adjustment'
+                    })
                 }
             );
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.detail || 'Failed to add tokens');
+                throw new Error(errorData.error || errorData.detail || 'Failed to add tokens');
             }
 
             const data = await response.json();

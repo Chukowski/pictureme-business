@@ -51,7 +51,7 @@ import { toast } from "sonner";
 import { getCurrentUser, getCurrentUserProfile, User, getUserBooths, EventConfig, Template } from "@/services/eventsApi";
 import { getMarketplaceTemplates } from "@/services/marketplaceApi";
 
-import { processImageWithAI, AspectRatio, AI_MODELS, resolveModelId } from "@/services/aiProcessor";
+import { processImageWithAI, AspectRatio, AI_MODELS, resolveModelId, normalizeModelId } from "@/services/aiProcessor";
 import { processCreatorImage } from "@/services/creatorAiProcessor";
 import { ENV } from "@/config/env";
 import { SaveTemplateModal } from "@/components/templates/SaveTemplateModal";
@@ -156,13 +156,18 @@ function CreatorStudioPageContent({ defaultView }: CreatorStudioPageProps) {
         return "image";
     });
 
-    const [prompt, setPrompt] = useState("");
+    const [prompt, setPrompt] = useState(() => localStorage.getItem("creator_studio_prompt") || "");
     const [model, setModel] = useState("nano-banana");
     const [aspectRatio, setAspectRatio] = useState("9:16");
     const [duration, setDuration] = useState("5s");
     const [audioOn, setAudioOn] = useState(false);
     const [resolution, setResolution] = useState("720p");
     const [numImages, setNumImages] = useState(1);
+
+    // Save prompt to localStorage
+    useEffect(() => {
+        localStorage.setItem("creator_studio_prompt", prompt);
+    }, [prompt]);
 
     // Effect 1: Sync URL param -> State
     useEffect(() => {
@@ -215,10 +220,10 @@ function CreatorStudioPageContent({ defaultView }: CreatorStudioPageProps) {
 
     // Effect 3: Handle External Transitions (defaultView Prop or Location State)
     useEffect(() => {
-        if (defaultView && activeView !== defaultView) {
-            setActiveView(defaultView);
+        if (defaultView) {
+            setActiveView(prev => (prev !== defaultView ? defaultView : prev));
         }
-    }, [defaultView, activeView]);
+    }, [defaultView]);
 
     useEffect(() => {
         const stateView = (location.state as any)?.view;
@@ -315,12 +320,20 @@ function CreatorStudioPageContent({ defaultView }: CreatorStudioPageProps) {
 
     // Input Media
     const [inputImage, setInputImage] = useState<string | null>(null);
+    const [ghostPreviewUrl, setGhostPreviewUrl] = useState<string | null>(null);
     const [inputImages, setInputImages] = useState<string[]>([]); // Multiple images for booth
     const [endFrameImage, setEndFrameImage] = useState<string | null>(null);
     const [referenceImages, setReferenceImages] = useState<string[]>([]);
     const [activeInputType, setActiveInputType] = useState<"main" | "end" | "ref" | "subject">("main");
     const [remixFrom, setRemixFrom] = useState<number | null>(null);
     const [remixFromUsername, setRemixFromUsername] = useState<string | null>(null);
+
+    // Sync inputImage to ghostPreviewUrl for template selector persistence
+    useEffect(() => {
+        if (inputImage) {
+            setGhostPreviewUrl(inputImage);
+        }
+    }, [inputImage]);
 
     // Booth State
     const [userBooths, setUserBooths] = useState<EventConfig[]>([]);
@@ -350,6 +363,7 @@ function CreatorStudioPageContent({ defaultView }: CreatorStudioPageProps) {
 
         if (state.prompt) setPrompt(state.prompt);
         if (state.mode) setMode(state.mode);
+        if (state.model) setModel(normalizeModelId(state.model));
 
         // If we have a source image, set it as the main input
         if (state.sourceImageUrl) {
@@ -539,10 +553,15 @@ function CreatorStudioPageContent({ defaultView }: CreatorStudioPageProps) {
                     allItems = data.creations.map((c: any) => {
                         const realId = c.id.toString();
                         const ts = new Date(c.created_at).getTime();
+                        const isVideo = c.type === 'video';
+                        // For videos: only use thumbnail_url if available (don't fallback to video URL)
+                        // For images: use thumbnail_url or URL
+                        const previewSource = isVideo ? c.thumbnail_url : (c.thumbnail_url || c.url);
                         return {
                             id: realId,
                             url: c.url,
-                            previewUrl: c.thumbnail_url || c.url,
+                            previewUrl: previewSource,
+                            thumbnail_url: c.thumbnail_url, // Pass through for getMediaPreviewUrl
                             type: c.type || 'image',
                             timestamp: isNaN(ts) ? Date.now() : ts,
                             prompt: c.prompt,
@@ -664,36 +683,52 @@ function CreatorStudioPageContent({ defaultView }: CreatorStudioPageProps) {
         }
     };
 
-    const handleReusePrompt = (item: GalleryItem) => {
+    const handleReusePrompt = (item: GalleryItem, remixMode?: 'full' | 'video' | 'prompt') => {
+        // Core settings
         setPrompt(item.prompt || "");
-        if (item.model) setModel(item.model);
+        if (item.model) setModel(normalizeModelId(item.model));
         if (item.ratio) setAspectRatio(item.ratio);
-        setMode(item.type);
 
-        // Set the creation's image as the subject input (matching public feed remix behavior)
-        const sourceUrl = item.url || item.previewUrl;
-        if (sourceUrl) {
-            // Use imgproxy-processed URL for reference to avoid payload issues
-            const refUrl = getThumbnailUrl(sourceUrl, 800);
-            setInputImage(refUrl);
+        // Mode handling
+        if (remixMode === 'video') {
+            setMode('video');
+        } else if (remixMode === 'prompt') {
+            // Stay in current mode or follow item type? Usually prompt remix is for the same type.
+            // But we specifically don't want the image.
+            setMode(item.type);
+        } else {
+            setMode(item.type);
+        }
+
+        // Image handling
+        if (remixMode !== 'prompt') {
+            const sourceUrl = item.url || item.previewUrl;
+            if (sourceUrl) {
+                // Use imgproxy-processed URL for reference to avoid payload issues
+                const refUrl = getThumbnailUrl(sourceUrl, 800);
+                setInputImage(refUrl);
+                setGhostPreviewUrl(refUrl);
+            }
+        } else {
+            setInputImage(null);
+            // Even in prompt mode, if we have a source image, keep it as a ghost preview
+            const sourceUrl = item.url || item.previewUrl;
+            if (sourceUrl) {
+                setGhostPreviewUrl(getThumbnailUrl(sourceUrl, 800));
+            }
         }
 
         // Restore template if available
         if (item.template) {
-            // Check if we can find the full template in our current list
             const found = marketplaceTemplates.find(t => t.id === item.template?.id) ||
                 myLibraryTemplates.find(t => t.id === item.template?.id);
 
             if (found) {
                 setSelectedTemplate(found);
             } else {
-                // If not found (e.g. from older session), construct a minimal shell
-                // This isn't perfect but allows the UI to show the selected template pill
                 setSelectedTemplate({
                     id: item.template.id,
                     name: item.template.name,
-                    // We don't have the original template images/backgrounds here unfortunately
-                    // unless we persist them. For now, we restore the identity.
                     images: [item.template.image],
                     preview_images: [item.template.image],
                     type: 'image'
@@ -703,10 +738,11 @@ function CreatorStudioPageContent({ defaultView }: CreatorStudioPageProps) {
             setSelectedTemplate(null);
         }
 
-        // Close the detail view and switch to create mode
         setPreviewItem(null);
         setActiveView("create");
-        toast.success("Prompt and settings restored");
+
+        const modeLabel = remixMode === 'video' ? 'Video Remix' : remixMode === 'prompt' ? 'Prompt Restored' : 'Remix Settings Restored';
+        toast.success(modeLabel);
     };
 
     const handleUseAsTemplate = (item: GalleryItem) => {
@@ -934,7 +970,11 @@ function CreatorStudioPageContent({ defaultView }: CreatorStudioPageProps) {
             } else if (mode === "video") {
                 const endpoint = `${ENV.API_URL || "http://localhost:3002"}/api/generate/video`;
                 const resp = await fetch(endpoint, {
-                    method: "POST", headers: { "Content-Type": "application/json" },
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${localStorage.getItem("auth_token")}`
+                    },
                     body: JSON.stringify({
                         prompt,
                         model_id: model,
@@ -987,7 +1027,16 @@ function CreatorStudioPageContent({ defaultView }: CreatorStudioPageProps) {
     const applyTemplate = (tpl: MarketplaceTemplate) => {
         setSelectedTemplate(tpl);
         setPrompt(tpl.prompt || "");
-        if (tpl.ai_model) setModel(tpl.ai_model);
+
+        // Automatically switch mode based on template type
+        const tplType = tpl.type || tpl.media_type;
+        if (tplType === 'video' && mode !== 'video') {
+            setMode('video');
+        } else if ((tplType === 'image' || !tplType) && mode !== 'image') {
+            setMode('image');
+        }
+
+        if (tpl.ai_model) setModel(normalizeModelId(tpl.ai_model));
         if (tpl.aspectRatio) setAspectRatio(tpl.aspectRatio);
         // Automatically set the first image as a style reference
         const templateImage = tpl.preview_url || (tpl.preview_images?.length ? tpl.preview_images[0] : null) || (tpl.backgrounds?.length ? tpl.backgrounds[0] : null) || (tpl as any).images?.[0];
@@ -1071,6 +1120,7 @@ function CreatorStudioPageContent({ defaultView }: CreatorStudioPageProps) {
                                 }}
                                 availableModels={availableModels}
                                 remixFromUsername={remixFromUsername}
+                                ghostPreviewUrl={ghostPreviewUrl}
                                 userBooths={userBooths}
                                 selectedBooth={selectedBooth}
                                 onSelectBooth={setSelectedBooth}
@@ -1119,6 +1169,7 @@ function CreatorStudioPageContent({ defaultView }: CreatorStudioPageProps) {
                                 setPreviewItem={setPreviewItem}
                                 onReusePrompt={handleReusePrompt}
                                 onDownload={handleDownload}
+                                onDelete={(item) => handleDeleteHistory(item.id)}
                                 mode={mode}
                             />
                         </div>

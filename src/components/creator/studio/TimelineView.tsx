@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { Sparkles, Loader2, Wand2, Download, History, BookOpen, ImageIcon, Video, CheckCircle2, Maximize2, LayoutGrid, List, Clock, X } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Wand2, Download, Trash2, Clock, CheckCircle2, AlertCircle, Play, Video, Sparkles, History, BookOpen, ImageIcon, LayoutGrid, List, X, Maximize2, RefreshCw, Loader2 } from 'lucide-react';
+import { motion, AnimatePresence } from "framer-motion";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { GalleryItem } from '@/components/creator/CreationDetailView';
@@ -17,8 +18,9 @@ interface TimelineViewProps {
     meta?: any;
     metadata?: any;
     setPreviewItem: (item: GalleryItem) => void;
-    onReusePrompt: (item: GalleryItem) => void;
+    onReusePrompt: (item: GalleryItem, remixMode?: 'full' | 'video' | 'prompt') => void;
     onDownload: (item: GalleryItem) => void;
+    onDelete?: (item: GalleryItem) => void;
     mode?: 'image' | 'video' | 'booth';
 }
 
@@ -29,6 +31,7 @@ export const TimelineView = ({
     setPreviewItem,
     onReusePrompt,
     onDownload,
+    onDelete,
     mode = 'image'
 }: TimelineViewProps) => {
     const [activeTab, setActiveTab] = useState<'history' | 'guide'>('history');
@@ -36,6 +39,24 @@ export const TimelineView = ({
     const [listSplitRatio, setListSplitRatio] = useState([400]); // Width of info panel in px
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
     const [fitToScreen, setFitToScreen] = useState(false);
+    const [expandedRemixId, setExpandedRemixId] = useState<string | number | null>(null);
+    const containerRef = useRef<HTMLDivElement>(null);
+
+    // Close remix menu when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (expandedRemixId && containerRef.current && !containerRef.current.contains(event.target as Node)) {
+                setExpandedRemixId(null);
+            }
+        };
+
+        if (expandedRemixId) {
+            document.addEventListener('mousedown', handleClickOutside);
+        } else {
+            document.removeEventListener('mousedown', handleClickOutside);
+        }
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [expandedRemixId]);
 
     const resolveModelName = (modelId: string | undefined) => {
         if (!modelId) return "AI Model";
@@ -490,7 +511,7 @@ export const TimelineView = ({
                                                                 }}
                                                             />
                                                         ) : (
-                                                            <video src={getVideoUrl(item.url)} className={cn("w-full h-full", fitToScreen ? "object-contain bg-[#101112]" : "object-cover")} />
+                                                            <video src={getVideoUrl(item.url)} className={cn("w-full h-full", fitToScreen ? "object-contain bg-[#101112]" : "object-cover")} controls />
                                                         )
                                                     ) : item.status === 'failed' ? (
                                                         <div className="w-full h-full flex flex-col items-center justify-center bg-red-950/20 text-red-500 gap-2 p-4 text-center">
@@ -498,7 +519,15 @@ export const TimelineView = ({
                                                                 <X className="w-5 h-5 text-red-500" />
                                                             </div>
                                                             <span className="text-[10px] font-black uppercase tracking-tighter">Generation Failed</span>
-                                                            <p className="text-[9px] line-clamp-3 text-red-400/80 leading-tight">{item.error || 'Something went wrong while processing your image.'}</p>
+                                                            <p className="text-[9px] line-clamp-2 text-red-400/80 leading-tight mb-2">{item.error || 'Something went wrong while processing your image.'}</p>
+                                                            {onDelete && (
+                                                                <button
+                                                                    onClick={(e) => { e.stopPropagation(); onDelete(item); }}
+                                                                    className="px-3 py-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-500 text-[9px] font-bold uppercase transition-colors"
+                                                                >
+                                                                    Clear Item
+                                                                </button>
+                                                            )}
                                                         </div>
                                                     ) : (
                                                         <div className="w-full h-full flex flex-col items-center justify-center bg-card/50 text-zinc-700 gap-3">
@@ -509,14 +538,59 @@ export const TimelineView = ({
 
                                                     {item.status === 'completed' && (
                                                         <div className="absolute inset-0 bg-gradient-to-t from-[#101112]/95 via-[#101112]/20 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col justify-end p-6">
-                                                            <div className="flex items-center gap-2 mb-4 translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
-                                                                <button
-                                                                    onClick={(e) => { e.stopPropagation(); onReusePrompt(item); }}
-                                                                    className="w-10 h-10 rounded-2xl bg-[#D1F349] text-black flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-lg"
-                                                                    title="Remix"
+                                                            <div className="flex items-center gap-2 mb-4 translate-y-4 group-hover:translate-y-0 transition-transform duration-500 relative">
+                                                                <div
+                                                                    className="flex items-center gap-1.5 p-1 group/remix relative"
                                                                 >
-                                                                    <Wand2 className="w-5 h-5" />
-                                                                </button>
+                                                                    <button
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            if (expandedRemixId === item.id) {
+                                                                                onReusePrompt(item, 'full');
+                                                                            } else {
+                                                                                setExpandedRemixId(item.id);
+                                                                            }
+                                                                        }}
+                                                                        className={cn(
+                                                                            "w-10 h-10 rounded-xl flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-lg",
+                                                                            expandedRemixId === item.id ? "bg-white/10 text-white" : "bg-[#D1F349] text-black"
+                                                                        )}
+                                                                        title={expandedRemixId === item.id ? "Full Remix" : "Remix Options"}
+                                                                    >
+                                                                        {expandedRemixId === item.id ? <RefreshCw className="w-5 h-5 animate-spin-slow" /> : <Wand2 className="w-5 h-5" />}
+                                                                    </button>
+
+                                                                    <AnimatePresence>
+                                                                        {expandedRemixId === item.id && (
+                                                                            <motion.div
+                                                                                initial={{ width: 0, opacity: 0 }}
+                                                                                animate={{ width: 'auto', opacity: 1 }}
+                                                                                exit={{ width: 0, opacity: 0 }}
+                                                                                transition={{ duration: 0.2 }}
+                                                                                className="flex items-center gap-1.5"
+                                                                            >
+                                                                                <div className="w-px h-6 bg-white/10 mx-0.5" />
+
+                                                                                <button
+                                                                                    onClick={(e) => { e.stopPropagation(); onReusePrompt(item, 'video'); }}
+                                                                                    className="w-8 h-8 rounded-lg bg-white/5 text-white/70 flex items-center justify-center hover:bg-white/10 hover:text-white transition-all"
+                                                                                    title="Remix to Video"
+                                                                                >
+                                                                                    <Video className="w-4 h-4" />
+                                                                                </button>
+
+                                                                                <button
+                                                                                    onClick={(e) => { e.stopPropagation(); onReusePrompt(item, 'prompt'); }}
+                                                                                    className="w-8 h-8 rounded-lg bg-white/5 text-white/70 flex items-center justify-center hover:bg-white/10 hover:text-white transition-all"
+                                                                                    title="Restore Prompt"
+                                                                                >
+                                                                                    <Sparkles className="w-4 h-4" />
+                                                                                </button>
+                                                                            </motion.div>
+                                                                        )}
+                                                                    </AnimatePresence>
+                                                                </div>
+
                                                                 <button
                                                                     onClick={(e) => { e.stopPropagation(); onDownload(item); }}
                                                                     className="w-10 h-10 rounded-2xl bg-white/10 backdrop-blur-xl text-white flex items-center justify-center hover:bg-white/20 hover:scale-105 active:scale-95 transition-all border border-white/10 shadow-lg"
