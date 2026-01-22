@@ -5,7 +5,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { GalleryItem } from '@/components/creator/CreationDetailView';
 // CDN service for public content (Cloudflare Image Resizing)
-import { getThumbnailUrl, getVideoUrl, getDownloadUrl } from "@/services/cdn";
+import { getThumbnailUrl, getVideoUrl, getDownloadUrl, getViewUrl } from "@/services/cdn";
 import { cn } from "@/lib/utils";
 import { Slider } from "@/components/ui/slider";
 
@@ -379,7 +379,7 @@ export const TimelineView = ({
                                                         {item.status === 'completed' ? (
                                                             item.type === 'image' ? (
                                                                 <img
-                                                                    src={getThumbnailUrl(item.url, 1200)}
+                                                                    src={getViewUrl(item.url, 1200)}
                                                                     className="w-full h-full object-contain"
                                                                     loading={isHero ? "eager" : "lazy"}
                                                                     decoding="async"
@@ -485,7 +485,7 @@ export const TimelineView = ({
                                                     {item.status === 'completed' ? (
                                                         item.type === 'image' ? (
                                                             <img
-                                                                src={getThumbnailUrl(item.url, 800)}
+                                                                src={getViewUrl(item.url, 800)}
                                                                 className={cn("w-full h-full transition-transform duration-700 group-hover:scale-105", fitToScreen ? "object-contain bg-[#101112]" : "object-cover")}
                                                                 loading={isHero ? "eager" : "lazy"}
                                                                 decoding="async"
