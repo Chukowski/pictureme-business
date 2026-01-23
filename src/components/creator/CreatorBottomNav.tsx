@@ -94,13 +94,52 @@ export const CreatorBottomNav = ({ onOpenCreate, onLibraryClick, onHomeClick, ac
         window.addEventListener('job-updated', handleJobUpdate);
         window.addEventListener('tokens-updated', handleTokensUpdate);
 
-        // Slow fallback polling (60s instead of 10s)
-        const intervalId = setInterval(fetchPendingStatus, 60000);
+        // Smart polling - only poll if tab is visible AND there are pending items
+        let intervalId: NodeJS.Timeout | null = null;
+
+        const startPolling = () => {
+            if (intervalId) return;
+            intervalId = setInterval(() => {
+                // Only poll if tab is visible
+                if (document.visibilityState === 'visible') {
+                    // Check pendingCount before fetching
+                    setPendingCount(prev => {
+                        if (prev > 0) {
+                            fetchPendingStatus();
+                        }
+                        return prev;
+                    });
+                }
+            }, 60000); // 60s fallback
+        };
+
+        const stopPolling = () => {
+            if (intervalId) {
+                clearInterval(intervalId);
+                intervalId = null;
+            }
+        };
+
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible') {
+                fetchPendingStatus();
+                startPolling();
+            } else {
+                stopPolling();
+            }
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+
+        if (document.visibilityState === 'visible') {
+            startPolling();
+        }
 
         return () => {
             window.removeEventListener('job-updated', handleJobUpdate);
             window.removeEventListener('tokens-updated', handleTokensUpdate);
-            clearInterval(intervalId);
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+            stopPolling();
         };
     }, []);
 

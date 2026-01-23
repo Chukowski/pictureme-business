@@ -1,5 +1,6 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
+import { motion, AnimatePresence } from "framer-motion";
 import {
     Settings,
     Upload,
@@ -22,7 +23,8 @@ import {
     Diamond,
     Smartphone,
     Ratio,
-    Type
+    Type,
+    Clock
 } from 'lucide-react';
 import { LOCAL_IMAGE_MODELS, LOCAL_VIDEO_MODELS, LEGACY_MODEL_IDS, normalizeModelId } from "@/services/aiProcessor";
 import { Button } from "@/components/ui/button";
@@ -135,6 +137,8 @@ export function CreatorStudioSidebar({
     const [enhanceOn, setEnhanceOn] = useState(false);
     const [activeBoothImageIndex, setActiveBoothImageIndex] = useState(0);
     const [showCamera, setShowCamera] = useState(false);
+    const [activeBrand, setActiveBrand] = useState<string | null>(null);
+    const [showInfo, setShowInfo] = useState(true);
     const [countdown, setCountdown] = useState<number | null>(null);
 
     const supportedResolutions = useMemo(() => {
@@ -312,7 +316,22 @@ export function CreatorStudioSidebar({
         if (searchStr.includes('seedream') || searchStr.includes('bytedance')) return 'Bytedance';
         if (searchStr.includes('wan')) return 'Wan';
         if (searchStr.includes('ltx')) return 'LTX';
+        if (searchStr.includes('hailuo') || searchStr.includes('minimax')) return 'MiniMax';
+        if (searchStr.includes('sora') || searchStr.includes('openai')) return 'OpenAI';
         return 'Other';
+    };
+
+    const BRAND_DETAILS: Record<string, { description: string }> = {
+        'Higgsfield': { description: "Advanced camera controls and effect presets" },
+        'OpenAI': { description: "Multi-shot video with sound generation" },
+        'Google': { description: "Precision video with sound control" },
+        'Wan': { description: "Camera-controlled video with sound, more freedom" },
+        'Kling': { description: "Perfect motion with advanced video control" },
+        'MiniMax': { description: "High-dynamic, VFX-ready, fastest and affordable" },
+        'Seedance': { description: "Cinematic, multi-shot video creation" },
+        'Bytedance': { description: "Professional creative video models" },
+        'Flux': { description: "State-of-the-art cinematic image generation" },
+        'LTX': { description: "Real-time high-fidelity video generation" }
     };
 
     const imageModels = useMemo(() => {
@@ -321,7 +340,7 @@ export function CreatorStudioSidebar({
             !LEGACY_MODEL_IDS.includes(m.id)
         );
 
-        const merged = backendImageModels.map(bm => {
+        const merged: any[] = backendImageModels.map(bm => {
             const normalizedId = normalizeModelId(bm.id);
             const local = LOCAL_IMAGE_MODELS.find(lm => lm.shortId === normalizedId || lm.id === bm.id);
             return {
@@ -334,8 +353,7 @@ export function CreatorStudioSidebar({
                 speed: local ? local.speed : 'medium',
                 description: bm.description || (local ? local.description : ''),
                 capabilities: local?.capabilities || [],
-                variants: (local as any)?.variants,
-                isVariant: (local as any)?.isVariant
+                variants: local?.variants || []
             };
         });
 
@@ -349,7 +367,7 @@ export function CreatorStudioSidebar({
             }
         });
 
-        return merged.filter(m => !m.isVariant);
+        return merged.filter(m => !LEGACY_MODEL_IDS.includes(m.id) && !LEGACY_MODEL_IDS.includes(m.shortId) && !m.isVariant);
     }, [availableModels]);
 
     const videoModels = useMemo(() => {
@@ -358,7 +376,7 @@ export function CreatorStudioSidebar({
             !LEGACY_MODEL_IDS.includes(m.id)
         );
 
-        const merged = backendVideoModels.map(bm => {
+        const merged: any[] = backendVideoModels.map(bm => {
             const normalizedId = normalizeModelId(bm.id);
             const local = LOCAL_VIDEO_MODELS.find(lm => lm.shortId === normalizedId || lm.id === bm.id);
             return {
@@ -371,8 +389,7 @@ export function CreatorStudioSidebar({
                 speed: local ? local.speed : 'slow',
                 description: bm.description || (local ? local.description : ''),
                 capabilities: local?.capabilities || [],
-                variants: (local as any)?.variants,
-                isVariant: (local as any)?.isVariant
+                variants: local?.variants || []
             };
         });
 
@@ -386,14 +403,19 @@ export function CreatorStudioSidebar({
             }
         });
 
-        return merged.filter(m => !m.isVariant);
+        return merged.filter(m => !LEGACY_MODEL_IDS.includes(m.id) && !LEGACY_MODEL_IDS.includes(m.shortId) && !m.isVariant);
     }, [availableModels]);
 
     useEffect(() => {
         const validModels = mode === 'image' ? imageModels : videoModels;
         const normalized = normalizeModelId(model);
         const isValid = validModels.some(m => m.shortId === normalized || m.id === model) ||
-            validModels.some(m => m.variants?.some((v: any) => v.id === model || v.shortId === normalized));
+            validModels.some(m => m.variants?.some((v: any) =>
+                v.id === model ||
+                v.id === normalized ||
+                v.shortId === normalized ||
+                normalizeModelId(v.id) === normalized
+            ));
 
         if (!isValid && validModels.length > 0) {
             // If the current model is not a base model or a variant, default to the first base model
@@ -403,21 +425,35 @@ export function CreatorStudioSidebar({
 
     const selectedModelObj = useMemo(() => {
         const models = mode === 'image' ? imageModels : videoModels;
-        let foundModel = models.find(m => m.shortId === model);
 
-        if (!foundModel) {
-            // If the current model is a variant, find its parent model
-            for (const m of models) {
-                const variant = m.variants?.find((v: any) => v.id === model || v.shortId === model);
-                if (variant) {
-                    foundModel = { ...m, ...variant, isVariant: true }; // Merge variant properties into the base model
-                    break;
-                }
+        // 1. Check if the current 'model' matches a base model ID or shortId
+        const base = models.find(m => m.shortId === model || m.id === model);
+        if (base) return base;
+
+        // 2. Check if the current 'model' is a variant of any base model
+        for (const m of models) {
+            if (m.variants?.some((v: any) => v.id === model || v.shortId === model)) {
+                return m;
             }
         }
 
-        return foundModel || models[0];
+        // 3. Fallback to first available model
+        return models[0];
     }, [mode, model, imageModels, videoModels]);
+
+    const activeCapabilities = useMemo(() => {
+        const allLocal = [...LOCAL_IMAGE_MODELS, ...LOCAL_VIDEO_MODELS];
+        const specific = allLocal.find(m => m.shortId === model || m.id === model) ||
+            (selectedModelObj?.variants as any[])?.find((v: any) => v.id === model || v.shortId === model);
+
+        return specific?.capabilities || selectedModelObj?.capabilities || [];
+    }, [model, selectedModelObj]);
+
+    const isOptional = useMemo(() => {
+        if (mode === 'image') return activeCapabilities.includes('t2i');
+        if (mode === 'video') return activeCapabilities.includes('t2v');
+        return false;
+    }, [mode, activeCapabilities]);
 
     const renderRatioVisual = (r: string) => {
         let width = 10;
@@ -847,6 +883,7 @@ export function CreatorStudioSidebar({
                                     {selectedTemplate?.name || "General"}
                                 </h3>
                                 <p className="text-[11px] font-medium text-white/70 drop-shadow-md">
+                                    {selectedModelObj?.brand && <span className="text-white/50">{selectedModelObj.brand} › </span>}
                                     {selectedModelObj?.name || model}
                                 </p>
                             </div>
@@ -878,42 +915,44 @@ export function CreatorStudioSidebar({
                                         <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center mb-1 group-hover:scale-110 transition-transform shadow-inner border border-white/5">
                                             <Upload className="w-5 h-5 text-white/60 group-hover:text-[#D1F349]" />
                                         </div>
-                                        <span className="text-[12px] font-bold text-white/80">Start frame</span>
-                                        <span className="text-[10px] text-zinc-500 uppercase font-black tracking-tighter">Required</span>
+                                        <span className="text-[12px] font-bold text-white/80">{mode === 'image' ? 'Upload' : (activeCapabilities.includes('v2v') ? 'Upload video' : 'Start frame')}</span>
+                                        <span className="text-[10px] text-zinc-500 uppercase font-black tracking-tighter">{isOptional ? 'Optional' : 'Required'}</span>
                                     </div>
                                 )}
                             </div>
 
                             {/* End Frame / Multi-input */}
                             {mode === 'video' ? (
-                                <div
-                                    onClick={() => onUploadClick("end")}
-                                    className={cn(
-                                        "aspect-square w-full rounded-2xl border border-dashed border-white/10 bg-card/30 hover:bg-card/50 hover:border-white/20 transition-all cursor-pointer flex flex-col items-center justify-center gap-2 relative group overflow-hidden",
-                                        endFrameImage && "border-solid border-[#D1F349]/40"
-                                    )}
-                                >
-                                    {endFrameImage ? (
-                                        <>
-                                            <img src={endFrameImage} className="w-full h-full object-cover" />
-                                            <div className="absolute inset-0 bg-[#101112]/20" />
-                                            <button
-                                                onClick={(e) => { e.stopPropagation(); onRemoveEndFrameImage?.(); }}
-                                                className="absolute top-2 right-2 p-1.5 bg-[#101112]/60 backdrop-blur-md rounded-full text-white transition-all ring-1 ring-white/10 opacity-0 group-hover:opacity-100"
-                                            >
-                                                <X className="w-3 h-3" />
-                                            </button>
-                                        </>
-                                    ) : (
-                                        <div className="flex flex-col items-center gap-1">
-                                            <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center mb-1 group-hover:scale-110 transition-transform shadow-inner border border-white/5">
-                                                <Upload className="w-5 h-5 text-zinc-700 group-hover:text-white/80" />
+                                (activeCapabilities.includes('frames') || activeCapabilities.includes('frame') || model.includes('frame') || model.includes('interpolation')) && (
+                                    <div
+                                        onClick={() => onUploadClick("end")}
+                                        className={cn(
+                                            "aspect-square w-full rounded-2xl border border-dashed border-white/10 bg-card/30 hover:bg-card/50 hover:border-white/20 transition-all cursor-pointer flex flex-col items-center justify-center gap-2 relative group overflow-hidden",
+                                            endFrameImage && "border-solid border-[#D1F349]/40"
+                                        )}
+                                    >
+                                        {endFrameImage ? (
+                                            <>
+                                                <img src={endFrameImage} className="w-full h-full object-cover" />
+                                                <div className="absolute inset-0 bg-[#101112]/20" />
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); onRemoveEndFrameImage?.(); }}
+                                                    className="absolute top-2 right-2 p-1.5 bg-[#101112]/60 backdrop-blur-md rounded-full text-white transition-all ring-1 ring-white/10 opacity-0 group-hover:opacity-100"
+                                                >
+                                                    <X className="w-3 h-3" />
+                                                </button>
+                                            </>
+                                        ) : (
+                                            <div className="flex flex-col items-center gap-1">
+                                                <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center mb-1 group-hover:scale-110 transition-transform shadow-inner border border-white/5">
+                                                    <Upload className="w-5 h-5 text-zinc-700 group-hover:text-white/80" />
+                                                </div>
+                                                <span className="text-[12px] font-bold text-zinc-600">End frame</span>
+                                                <span className="text-[10px] text-zinc-700 uppercase font-black tracking-tighter">Required</span>
                                             </div>
-                                            <span className="text-[12px] font-bold text-zinc-600">End frame</span>
-                                            <span className="text-[10px] text-zinc-700 uppercase font-black tracking-tighter">Optional</span>
-                                        </div>
-                                    )}
-                                </div>
+                                        )}
+                                    </div>
+                                )
                             ) : (
                                 <div className="grid grid-cols-2 grid-rows-2 gap-1.5 h-full">
                                     {referenceImages.map((refImg, index) => (
@@ -976,106 +1015,226 @@ export function CreatorStudioSidebar({
                         {/* 4. MODEL & SECONDARY (Row rows) */}
                         <div className="flex flex-col gap-1">
                             {/* Model */}
-                            <DropdownMenu modal={false}>
+                            <DropdownMenu modal={false} onOpenChange={(open) => {
+                                if (open) setActiveBrand(null);
+                            }}>
                                 <DropdownMenuTrigger asChild>
-                                    <button className="flex items-center justify-between w-full h-12 px-3 bg-[#0D0D0D]/50 hover:bg-zinc-800/80 rounded-xl border border-white/5 transition-colors group">
-                                        <div className="flex items-center gap-3 translate-y-[1px]">
-                                            <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center border border-white/5 text-[#D1F349]">
-                                                {selectedModelObj?.brand ? <BrandLogo brand={selectedModelObj.brand} className="w-4 h-4" /> : <Sparkles className="w-4 h-4" />}
+                                    <button className="flex items-center justify-between w-full h-14 px-3 bg-[#0D0D0D]/50 hover:bg-zinc-800/80 rounded-xl border border-white/5 transition-colors group">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center border border-white/5 text-zinc-400 group-hover:text-[#D1F349] transition-colors">
+                                                {selectedModelObj?.brand ? <BrandLogo brand={selectedModelObj.brand} className="w-5 h-5" /> : <Sparkles className="w-5 h-5" />}
                                             </div>
                                             <div className="flex flex-col items-start min-w-0">
-                                                <span className="text-[10px] font-bold text-white/30 uppercase tracking-tighter">Model</span>
-                                                <span className="text-[12px] font-bold text-white group-hover:text-white truncate max-w-[180px]">
-                                                    {selectedModelObj?.name || model}
-                                                </span>
+                                                <span className="text-[9px] font-black text-white/20 uppercase tracking-[0.1em]">Model</span>
+                                                <div className="flex items-center gap-1.5 truncate max-w-[220px]">
+                                                    {selectedModelObj?.brand && (
+                                                        <span className="text-[13px] font-medium text-zinc-500">{selectedModelObj.brand}</span>
+                                                    )}
+                                                    <span className="text-zinc-700 text-[10px] mt-0.5">›</span>
+                                                    <span className="text-[13px] font-black text-white">{selectedModelObj?.name || model}</span>
+                                                </div>
                                             </div>
                                         </div>
-                                        <ChevronRight className="w-4 h-4 text-zinc-600 transition-transform group-hover:translate-x-0.5" />
+                                        <ChevronRight className="w-4 h-4 text-zinc-700 transition-transform group-hover:translate-x-0.5" />
                                     </button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent className="w-[340px] bg-[#1a1a1a] border-white/5 z-[200] p-1.5 shadow-2xl max-h-[400px] overflow-y-auto scrollbar-thin" sideOffset={8}>
-                                    {Object.entries(
-                                        (mode === 'image' ? imageModels : videoModels).reduce((acc, m) => {
-                                            const brand = (m as any).brand || 'Other';
-                                            if (!acc[brand]) acc[brand] = [];
-                                            acc[brand].push(m);
-                                            return acc;
-                                        }, {} as Record<string, typeof imageModels>)
-                                    ).map(([brand, models]) => (
-                                        <div key={brand} className="mb-2 last:mb-0">
-                                            <div className="flex items-center gap-2 px-3 py-1.5 mb-1">
-                                                <BrandLogo brand={brand} className="w-3 h-3 text-zinc-500" />
-                                                <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">{brand}</span>
-                                            </div>
-                                            {models.map((m) => (
-                                                <DropdownMenuItem
-                                                    key={m.id}
-                                                    onClick={() => setModel(m.shortId)}
-                                                    className={cn(
-                                                        "flex flex-col items-start gap-1 p-3 rounded-xl mb-1 last:mb-0 transition-all cursor-pointer",
-                                                        (model === m.shortId || (m.variants && m.variants.some((v: any) => v.id === model))) ? "bg-white/10 border border-white/10" : "hover:bg-white/5 border border-transparent"
-                                                    )}
+                                <DropdownMenuContent
+                                    className="w-[92vw] md:w-[340px] bg-[#141414] border-white/5 z-[200] p-2 shadow-2xl max-h-[85vh] md:max-h-[500px] overflow-hidden flex flex-col"
+                                    side={typeof window !== 'undefined' && window.innerWidth < 768 ? "bottom" : "right"}
+                                    sideOffset={12}
+                                    align={typeof window !== 'undefined' && window.innerWidth < 768 ? "center" : "start"}
+                                    onCloseAutoFocus={(e) => e.preventDefault()}
+                                >
+                                    <AnimatePresence mode="wait">
+                                        {!activeBrand ? (
+                                            /* --- LEVEL 1: BRAND SELECTION --- */
+                                            <motion.div
+                                                key="brands"
+                                                initial={{ opacity: 0, x: -10 }}
+                                                animate={{ opacity: 1, x: 0 }}
+                                                exit={{ opacity: 0, x: -10 }}
+                                                className="flex flex-col gap-1 overflow-y-auto scrollbar-thin max-h-[440px] pr-1"
+                                            >
+                                                {Object.entries(
+                                                    (mode === 'image' ? imageModels : videoModels).reduce((acc, m) => {
+                                                        const brand = (m as any).brand || 'Other';
+                                                        if (!acc[brand]) acc[brand] = [];
+                                                        acc[brand].push(m);
+                                                        return acc;
+                                                    }, {} as Record<string, typeof imageModels>)
+                                                ).map(([brand, models]) => (
+                                                    <button
+                                                        key={brand}
+                                                        onClick={(e) => {
+                                                            e.preventDefault();
+                                                            e.stopPropagation();
+                                                            setActiveBrand(brand);
+                                                        }}
+                                                        className="flex items-center gap-3.5 p-3 rounded-2xl hover:bg-white/5 transition-all text-left group"
+                                                    >
+                                                        <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center border border-white/5 text-zinc-400 group-hover:text-white transition-colors">
+                                                            <BrandLogo brand={brand} className="w-5 h-5" />
+                                                        </div>
+                                                        <div className="flex-1 min-w-0">
+                                                            <h4 className="text-[14px] font-black text-white tracking-tight leading-none mb-1.5">{brand}</h4>
+                                                            <p className="text-[11px] text-zinc-500 font-medium line-clamp-1 leading-none">
+                                                                {BRAND_DETAILS[brand]?.description || `${models.length} models available`}
+                                                            </p>
+                                                        </div>
+                                                        <ChevronRight className="w-4 h-4 text-zinc-700 group-hover:text-zinc-400 transition-all" />
+                                                    </button>
+                                                ))}
+                                            </motion.div>
+                                        ) : (
+                                            /* --- LEVEL 2: COMPACT MODEL LIST --- */
+                                            <motion.div
+                                                key="models"
+                                                initial={{ opacity: 0, x: 10 }}
+                                                animate={{ opacity: 1, x: 0 }}
+                                                exit={{ opacity: 0, x: 10 }}
+                                                className="flex flex-col h-full"
+                                            >
+                                                {/* Header / Back */}
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        e.stopPropagation();
+                                                        setActiveBrand(null);
+                                                    }}
+                                                    className="flex items-center gap-2 p-2 mb-2 text-zinc-500 hover:text-white transition-colors text-[12px] font-black uppercase tracking-wider"
                                                 >
-                                                    <div className="flex items-center justify-between w-full">
-                                                        <div className="flex items-center gap-2">
-                                                            <span className={cn("text-[13px] font-bold", (model === m.shortId || (m.variants && m.variants.some((v: any) => v.id === model))) ? "text-[#D1F349]" : "text-white")}>
-                                                                {m.name}
-                                                            </span>
-                                                            <div className="flex items-center gap-1.5 ml-1">
-                                                                {(m as any).capabilities?.includes('t2i') && <Type className="w-3 h-3 text-zinc-500" title="Text to Image" />}
-                                                                {(m as any).capabilities?.includes('i2i') && <ImageIcon className="w-3 h-3 text-zinc-500" title="Image to Image" />}
-                                                                {(m as any).capabilities?.includes('t2v') && <Type className="w-3 h-3 text-zinc-500" title="Text to Video" />}
-                                                                {(m as any).capabilities?.includes('i2v') && <Video className="w-3 h-3 text-zinc-500" title="Image to Video" />}
-                                                                {(m as any).capabilities?.includes('v2v') && <Video className="w-3 h-3 text-zinc-500" title="Video to Video" />}
-                                                            </div>
-                                                        </div>
-                                                        <div className="flex items-center gap-1">
-                                                            <span className="text-[10px] font-black text-[#D1F349]/40">{m.cost}</span>
-                                                            <Sparkles className="w-2.5 h-2.5 text-[#D1F349]/40" />
-                                                        </div>
-                                                    </div>
-                                                    {m.description && (
-                                                        <p className="text-[10px] text-zinc-500 line-clamp-1 group-hover:line-clamp-none transition-all">
-                                                            {m.description}
-                                                        </p>
-                                                    )}
-                                                </DropdownMenuItem>
-                                            ))}
-                                        </div>
-                                    ))}
+                                                    <ChevronDown className="w-4 h-4 rotate-90" />
+                                                    Back
+                                                </button>
+
+                                                <div className="space-y-1.5 overflow-y-auto scrollbar-thin pr-1 max-h-[440px]">
+                                                    {(mode === 'image' ? imageModels : videoModels)
+                                                        .filter(m => m.brand === activeBrand)
+                                                        .map((m) => {
+                                                            const isSelected = model === m.shortId || (m.shortId === normalizeModelId(model));
+                                                            return (
+                                                                <DropdownMenuItem
+                                                                    key={m.id}
+                                                                    onClick={() => setModel(m.shortId)}
+                                                                    className={cn(
+                                                                        "flex flex-col items-start gap-1 p-4 rounded-2xl transition-all cursor-pointer border border-transparent",
+                                                                        isSelected ? "bg-[#1f1f1f] border-white/10" : "hover:bg-white/5"
+                                                                    )}
+                                                                >
+                                                                    <div className="flex items-center justify-between w-full">
+                                                                        <div className="flex-1 min-w-0">
+                                                                            <h4 className={cn("text-[14px] font-black tracking-tight mb-1", isSelected ? "text-[#D1F349]" : "text-white")}>
+                                                                                {m.name === 'Flux Models' ? 'Flux Pro' : m.name}
+                                                                            </h4>
+                                                                            <p className="text-[11px] text-zinc-500 font-medium leading-relaxed line-clamp-1">
+                                                                                {m.description || "High-quality model"}
+                                                                            </p>
+                                                                        </div>
+                                                                        <div className="flex flex-col items-end gap-1 ml-3">
+                                                                            <div className="flex items-center gap-1 mb-1">
+                                                                                <span className="text-[12px] font-black text-[#D1F349] opacity-60">{m.cost}</span>
+                                                                                <Sparkles className="w-3 h-3 text-[#D1F349] opacity-40" />
+                                                                            </div>
+                                                                            {isSelected && <Check className="w-4 h-4 text-[#D1F349]" />}
+                                                                        </div>
+                                                                    </div>
+
+                                                                    {/* Technical Badges Like Higgsfield */}
+                                                                    <div className="flex items-center gap-1.5 mt-2.5">
+                                                                        <div className="px-2 py-0.5 rounded-md bg-white/5 border border-white/5 flex items-center gap-1">
+                                                                            <Ratio className="w-3 h-3 text-zinc-500" />
+                                                                            <span className="text-[9px] font-black text-zinc-500">
+                                                                                {mode === 'image'
+                                                                                    ? (m.id.includes('2k') || m.id.includes('4k') ? '2K-4K' : (m.id.includes('pro') ? '1MP+ HD' : '1MP'))
+                                                                                    : '720p-1080p'}
+                                                                            </span>
+                                                                        </div>
+
+                                                                        <div className="px-2 py-0.5 rounded-md bg-white/5 border border-white/5 flex items-center gap-1">
+                                                                            <Wand2 className="w-3 h-3 text-zinc-500" />
+                                                                            <span className="text-[9px] font-black text-zinc-500 uppercase tracking-tighter">
+                                                                                {mode === 'image'
+                                                                                    ? (m.capabilities?.includes('t2i') && m.capabilities?.includes('i2i') ? 'T2I · I2I' : (m.capabilities?.includes('i2i') ? 'I2I' : 'T2I'))
+                                                                                    : (m.capabilities?.includes('t2v') && m.capabilities?.includes('i2v') ? 'T2V · I2V' : (m.capabilities?.includes('i2v') ? 'I2V' : 'T2V'))}
+                                                                            </span>
+                                                                        </div>
+
+                                                                        <div className="px-2 py-0.5 rounded-md bg-white/5 border border-white/5 flex items-center gap-1">
+                                                                            <Clock className="w-3 h-3 text-zinc-500" />
+                                                                            <span className="text-[9px] font-black text-zinc-500 uppercase">
+                                                                                {m.speed || (mode === 'video' ? '8s' : 'Pro')}
+                                                                            </span>
+                                                                        </div>
+                                                                    </div>
+                                                                </DropdownMenuItem>
+                                                            );
+                                                        })}
+                                                </div>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
                                 </DropdownMenuContent>
                             </DropdownMenu>
 
-                            {/* Variant Selector (if applicable) */}
-                            {selectedModelObj?.variants && (
-                                <div className="flex flex-col gap-2 p-2 bg-white/5 border border-white/5 rounded-xl border-dashed">
-                                    <div className="flex items-center justify-between px-1">
-                                        <span className="text-[9px] font-black text-white/30 uppercase tracking-widest">Select Variant</span>
-                                        <span className="text-[9px] font-bold text-[#D1F349] uppercase tracking-tighter bg-[#D1F349]/10 px-1.5 py-0.5 rounded">Grouped</span>
-                                    </div>
-                                    <div className="flex flex-wrap gap-1.5">
-                                        {selectedModelObj.variants.map((v: any) => (
+                            <AnimatePresence>
+                                {selectedModelObj?.variants && selectedModelObj.variants.length > 1 && (
+                                    <motion.div
+                                        initial={{ opacity: 0, height: 0 }}
+                                        animate={{ opacity: 1, height: 'auto' }}
+                                        exit={{ opacity: 0, height: 0 }}
+                                        className="mt-2"
+                                    >
+                                        <div className="flex flex-col gap-2 p-3 bg-white/[0.02] border border-white/[0.05] rounded-xl border-dashed">
+                                            <div className="flex items-center justify-between px-1">
+                                                <span className="text-[9px] font-black text-white/30 uppercase tracking-[0.1em]">Engine Variation</span>
+                                                <Badge className="bg-[#D1F349]/10 text-[#D1F349] border-none text-[8px] font-black px-1.5 py-0 h-4 uppercase">Selection</Badge>
+                                            </div>
+                                            <div className="flex flex-wrap gap-1.5">
+                                                {selectedModelObj.variants.map((v: any) => (
+                                                    <button
+                                                        key={v.id}
+                                                        onClick={() => setModel(v.id)}
+                                                        className={cn(
+                                                            "px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-tight transition-all border",
+                                                            model === v.id || normalizeModelId(model) === v.id
+                                                                ? "bg-[#D1F349] text-black border-[#D1F349]"
+                                                                : "bg-white/5 text-zinc-500 border-white/5 hover:border-white/10 hover:text-white"
+                                                        )}
+                                                    >
+                                                        {v.name}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+
+                            <AnimatePresence>
+                                {showInfo && selectedModelObj?.description && (
+                                    <motion.div
+                                        initial={{ opacity: 0, height: 0, marginTop: 0 }}
+                                        animate={{ opacity: 1, height: 'auto', marginTop: 4 }}
+                                        exit={{ opacity: 0, height: 0, marginTop: 0 }}
+                                        className="overflow-hidden"
+                                    >
+                                        <div className="p-3 bg-white/[0.02] border border-white/[0.05] rounded-xl border-dashed relative group/info">
                                             <button
-                                                key={v.id}
-                                                onClick={() => setModel(v.id)}
-                                                className={cn(
-                                                    "px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all border",
-                                                    model === v.id
-                                                        ? "bg-[#D1F349] text-black border-[#D1F349] shadow-[0_0_15px_rgba(209,243,73,0.3)]"
-                                                        : "bg-white/5 text-zinc-400 border-white/5 hover:border-white/20 hover:text-white"
-                                                )}
+                                                onClick={() => setShowInfo(false)}
+                                                className="absolute top-2 right-2 p-1 rounded-md opacity-0 group-hover/info:opacity-40 hover:opacity-100 transition-opacity"
                                             >
-                                                {v.name}
+                                                <X className="w-3 h-3 text-white" />
                                             </button>
-                                        ))}
-                                    </div>
-                                    {selectedModelObj.variants.find((v: any) => v.id === model)?.description && (
-                                        <p className="px-1 text-[9px] text-zinc-500 font-medium italic">
-                                            "{selectedModelObj.variants.find((v: any) => v.id === model).description}"
-                                        </p>
-                                    )}
-                                </div>
-                            )}
+                                            <p className="text-[11px] text-zinc-500 font-medium leading-[1.6] pr-4">
+                                                <Sparkles className="w-3 h-3 inline-block mr-1.5 text-[#D1F349]/40 -translate-y-[1px]" />
+                                                {selectedModelObj.description}
+                                            </p>
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+
+
 
                             <div className={cn(
                                 "grid gap-1",

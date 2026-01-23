@@ -365,9 +365,21 @@ function CreatorStudioPageContent({ defaultView }: CreatorStudioPageProps) {
         if (state.mode) setMode(state.mode);
         if (state.model) setModel(normalizeModelId(state.model));
 
-        // If we have a source image, set it as the main input
+        // If we have a source image, handle specialized routing
         if (state.sourceImageUrl) {
-            setInputImage(state.sourceImageUrl);
+            const remixMode = state.remixMode;
+            if (remixMode === 'last-frame') {
+                setEndFrameImage(state.sourceImageUrl);
+                setMode('video');
+                setModel('veo-3.1-frames');
+            } else {
+                setInputImage(state.sourceImageUrl);
+                if (remixMode === 'first-frame') {
+                    setMode('video');
+                    setModel('veo-3.1-frames');
+                    setEndFrameImage(null);
+                }
+            }
         }
 
         // Attribution
@@ -637,7 +649,7 @@ function CreatorStudioPageContent({ defaultView }: CreatorStudioPageProps) {
 
         loadHistory();
 
-        // 1. EVENT-BASED UPDATES (SSE)
+        // 1. EVENT-BASED UPDATES (SSE) - Primary mechanism
         const handleJobUpdate = (event: any) => {
             const data = event.detail;
             console.log("🔔 [Studio] Job update received:", data.job_id, data.status);
@@ -651,15 +663,57 @@ function CreatorStudioPageContent({ defaultView }: CreatorStudioPageProps) {
         window.addEventListener('job-updated', handleJobUpdate);
         window.addEventListener('tokens-updated', handleTokensUpdate);
 
-        // 2. FALLBACK POLLING
-        const interval = setInterval(() => {
-            loadHistory();
-        }, 15000); // 15s fallback
+        // 2. SMART FALLBACK POLLING - Only when needed
+        let intervalId: NodeJS.Timeout | null = null;
+
+        const startPolling = () => {
+            if (intervalId) return; // Already polling
+            intervalId = setInterval(() => {
+                // Only poll if tab is visible AND there are pending items
+                if (document.visibilityState === 'visible') {
+                    setHistory(prev => {
+                        const hasPending = prev.some(item => item.status !== 'completed' && item.status !== 'failed');
+                        if (hasPending) {
+                            console.log("🔄 [Studio] Polling for pending items...");
+                            loadHistory();
+                        }
+                        return prev; // Don't modify state, just check
+                    });
+                }
+            }, 15000); // 15s fallback
+        };
+
+        const stopPolling = () => {
+            if (intervalId) {
+                clearInterval(intervalId);
+                intervalId = null;
+            }
+        };
+
+        // Handle tab visibility changes
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible') {
+                // Tab became visible - reload and start polling
+                loadHistory();
+                startPolling();
+            } else {
+                // Tab hidden - stop polling to save resources
+                stopPolling();
+            }
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+
+        // Start polling if tab is visible
+        if (document.visibilityState === 'visible') {
+            startPolling();
+        }
 
         return () => {
             window.removeEventListener('job-updated', handleJobUpdate);
             window.removeEventListener('tokens-updated', handleTokensUpdate);
-            clearInterval(interval);
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+            stopPolling();
         };
     }, [loadHistory, navigate, currentUser?.id]);
 
@@ -683,18 +737,19 @@ function CreatorStudioPageContent({ defaultView }: CreatorStudioPageProps) {
         }
     };
 
-    const handleReusePrompt = (item: GalleryItem, remixMode?: 'full' | 'video' | 'prompt') => {
+    const handleReusePrompt = (item: GalleryItem, remixMode?: 'full' | 'video' | 'prompt' | 'first-frame' | 'last-frame') => {
         // Core settings
         setPrompt(item.prompt || "");
         if (item.model) setModel(normalizeModelId(item.model));
         if (item.ratio) setAspectRatio(item.ratio);
 
         // Mode handling
-        if (remixMode === 'video') {
+        if (remixMode === 'video' || remixMode === 'first-frame' || remixMode === 'last-frame') {
             setMode('video');
+            if (remixMode === 'first-frame' || remixMode === 'last-frame') {
+                setModel('veo-3.1-frames'); // Default to interpolation model
+            }
         } else if (remixMode === 'prompt') {
-            // Stay in current mode or follow item type? Usually prompt remix is for the same type.
-            // But we specifically don't want the image.
             setMode(item.type);
         } else {
             setMode(item.type);
@@ -704,14 +759,22 @@ function CreatorStudioPageContent({ defaultView }: CreatorStudioPageProps) {
         if (remixMode !== 'prompt') {
             const sourceUrl = item.url || item.previewUrl;
             if (sourceUrl) {
-                // Use imgproxy-processed URL for reference to avoid payload issues
                 const refUrl = getThumbnailUrl(sourceUrl, 800);
-                setInputImage(refUrl);
-                setGhostPreviewUrl(refUrl);
+
+                if (remixMode === 'last-frame') {
+                    setEndFrameImage(refUrl);
+                } else {
+                    // Default or first-frame
+                    setInputImage(refUrl);
+                    setGhostPreviewUrl(refUrl);
+                    if (remixMode === 'first-frame') {
+                        setEndFrameImage(null); // Clear end frame if we are setting first
+                    }
+                }
             }
         } else {
             setInputImage(null);
-            // Even in prompt mode, if we have a source image, keep it as a ghost preview
+            setEndFrameImage(null);
             const sourceUrl = item.url || item.previewUrl;
             if (sourceUrl) {
                 setGhostPreviewUrl(getThumbnailUrl(sourceUrl, 800));
@@ -741,7 +804,12 @@ function CreatorStudioPageContent({ defaultView }: CreatorStudioPageProps) {
         setPreviewItem(null);
         setActiveView("create");
 
-        const modeLabel = remixMode === 'video' ? 'Video Remix' : remixMode === 'prompt' ? 'Prompt Restored' : 'Remix Settings Restored';
+        let modeLabel = 'Settings Restored';
+        if (remixMode === 'video') modeLabel = 'Video Remix';
+        else if (remixMode === 'prompt') modeLabel = 'Prompt Restored';
+        else if (remixMode === 'first-frame') modeLabel = 'Added as Start Frame';
+        else if (remixMode === 'last-frame') modeLabel = 'Added as End Frame';
+
         toast.success(modeLabel);
     };
 
@@ -969,6 +1037,31 @@ function CreatorStudioPageContent({ defaultView }: CreatorStudioPageProps) {
                 await loadHistory();
             } else if (mode === "video") {
                 const endpoint = `${ENV.API_URL || "http://localhost:3002"}/api/generate/video`;
+
+                // Auto-switch intelligence for video models
+                let finalModelId = model;
+                if (model === 'veo-3.1') {
+                    if (inputImage && endFrameImage) finalModelId = 'fal-ai/veo3.1/first-last-frame-to-video';
+                    else if (inputImage) finalModelId = 'fal-ai/veo3.1/image-to-video';
+                    else finalModelId = 'fal-ai/veo3.1';
+                } else if (model === 'veo-3.1-fast') {
+                    if (inputImage && endFrameImage) finalModelId = 'fal-ai/veo3.1/fast/first-last-frame-to-video';
+                    else if (inputImage) finalModelId = 'fal-ai/veo3.1/fast/image-to-video';
+                    else finalModelId = 'fal-ai/veo3.1/fast';
+                } else if (model === 'google-video') {
+                    finalModelId = 'fal-ai/google/veo-3-1/image-to-video';
+                } else if (model === 'kling-2.6' || model === 'kling-2.6-pro') {
+                    if (inputImage) finalModelId = 'fal-ai/kling-video/v2.6/pro/image-to-video';
+                    else finalModelId = 'fal-ai/kling-video/v2.6/pro/text-to-video';
+                } else if (model === 'kling-2.5') {
+                    if (inputImage) finalModelId = 'fal-ai/kling-video/v2.5-turbo/pro/image-to-video';
+                    else finalModelId = 'fal-ai/kling-video/v2.5-turbo/pro/text-to-video';
+                } else if (model === 'wan-v2') {
+                    if (!inputImage) finalModelId = 'fal-ai/wan/v2.2-a14b/text-to-video';
+                }
+
+                console.log(`🎬 [Studio] Auto-switched model: ${model} -> ${finalModelId}`);
+
                 const resp = await fetch(endpoint, {
                     method: "POST",
                     headers: {
@@ -977,7 +1070,7 @@ function CreatorStudioPageContent({ defaultView }: CreatorStudioPageProps) {
                     },
                     body: JSON.stringify({
                         prompt,
-                        model_id: model,
+                        model_id: finalModelId,
                         duration: duration.replace("s", ""),
                         aspect_ratio: aspectRatio,
                         audio: audioOn,

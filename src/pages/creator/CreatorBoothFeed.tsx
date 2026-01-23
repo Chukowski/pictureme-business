@@ -436,7 +436,7 @@ export default function CreatorBoothFeed() {
                         window.open(item.url, '_blank');
                     }
                 }}
-                onReusePrompt={(item) => {
+                onReusePrompt={(item, remixMode) => {
                     if (!isLoggedIn) {
                         toast.error("Please login to remix this photo");
                         return;
@@ -449,6 +449,7 @@ export default function CreatorBoothFeed() {
                         sourceImageUrl: getViewUrl(item.url),
                         remixFrom: item.id,
                         remixFromUsername: item.creator_username,
+                        remixMode: remixMode,
                         view: 'create'
                     };
                     navigate('/creator/studio?view=create', { state: remixState });

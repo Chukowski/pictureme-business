@@ -65,7 +65,7 @@ interface CreationDetailViewProps {
     open: boolean;
     onClose: () => void;
     onTogglePublic?: (item: GalleryItem) => void;
-    onReusePrompt: (item: GalleryItem, remixMode?: 'full' | 'video' | 'prompt') => void;
+    onReusePrompt: (item: GalleryItem, remixMode?: 'full' | 'video' | 'prompt' | 'first-frame' | 'last-frame') => void;
     onUseAsTemplate?: (item: GalleryItem) => void;
     onDownload: (item: GalleryItem) => void;
     onDelete?: (id: string | number) => void;
@@ -105,6 +105,7 @@ export function CreationDetailView({
     const [isPromptExpanded, setIsPromptExpanded] = useState(false);
     const [showUI, setShowUI] = useState(true);
     const [remixExpanded, setRemixExpanded] = useState(false);
+    const [videoSubmenu, setVideoSubmenu] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
     const videoRef = useRef<HTMLVideoElement>(null);
     const remixRef = useRef<HTMLDivElement>(null);
@@ -115,6 +116,7 @@ export function CreationDetailView({
         const handleClickOutside = (event: MouseEvent) => {
             if (remixExpanded && remixRef.current && !remixRef.current.contains(event.target as Node)) {
                 setRemixExpanded(false);
+                setVideoSubmenu(false);
             }
         };
 
@@ -542,40 +544,94 @@ export function CreationDetailView({
                             <TooltipProvider delayDuration={0}>
                                 <div className="flex flex-col items-center gap-6">
                                     <div className="relative flex flex-col items-center group/remix-container" ref={remixRef}>
-                                        <AnimatePresence>
+                                        <AnimatePresence mode="wait">
                                             {remixExpanded && (
                                                 <motion.div
+                                                    key={videoSubmenu ? "video-submenu" : "base-remix"}
                                                     initial={{ opacity: 0, scale: 0.8, x: 20 }}
                                                     animate={{ opacity: 1, scale: 1, x: 0 }}
                                                     exit={{ opacity: 0, scale: 0.8, x: 20 }}
                                                     className="absolute right-[100%] top-0 flex flex-row-reverse gap-4 items-center pr-4"
                                                 >
-                                                    <motion.div
-                                                        initial={{ opacity: 0, scale: 0.5, x: 10 }}
-                                                        animate={{ opacity: 1, scale: 1, x: 0 }}
-                                                        exit={{ opacity: 0, scale: 0.5, x: 10 }}
-                                                        transition={{ type: "spring", damping: 15, stiffness: 200 }}
-                                                    >
-                                                        <ActionButton
-                                                            icon={Video}
-                                                            label="Video"
-                                                            variant="default"
-                                                            onClick={() => onReusePrompt(item, 'video')}
-                                                        />
-                                                    </motion.div>
-                                                    <motion.div
-                                                        initial={{ opacity: 0, scale: 0.5, x: 10 }}
-                                                        animate={{ opacity: 1, scale: 1, x: 0 }}
-                                                        exit={{ opacity: 0, scale: 0.5, x: 10 }}
-                                                        transition={{ type: "spring", damping: 15, stiffness: 200, delay: 0.05 }}
-                                                    >
-                                                        <ActionButton
-                                                            icon={Sparkles}
-                                                            label="Prompt"
-                                                            variant="default"
-                                                            onClick={() => onReusePrompt(item, 'prompt')}
-                                                        />
-                                                    </motion.div>
+                                                    {!videoSubmenu ? (
+                                                        <>
+                                                            <motion.div
+                                                                initial={{ opacity: 0, scale: 0.5, x: 10 }}
+                                                                animate={{ opacity: 1, scale: 1, x: 0 }}
+                                                                exit={{ opacity: 0, scale: 0.5, x: 10 }}
+                                                                transition={{ type: "spring", damping: 15, stiffness: 200 }}
+                                                            >
+                                                                <ActionButton
+                                                                    icon={Video}
+                                                                    label="Video"
+                                                                    variant="default"
+                                                                    onClick={() => setVideoSubmenu(true)}
+                                                                />
+                                                            </motion.div>
+                                                            <motion.div
+                                                                initial={{ opacity: 0, scale: 0.5, x: 10 }}
+                                                                animate={{ opacity: 1, scale: 1, x: 0 }}
+                                                                exit={{ opacity: 0, scale: 0.5, x: 10 }}
+                                                                transition={{ type: "spring", damping: 15, stiffness: 200, delay: 0.05 }}
+                                                            >
+                                                                <ActionButton
+                                                                    icon={Sparkles}
+                                                                    label="Prompt"
+                                                                    variant="default"
+                                                                    onClick={() => onReusePrompt(item, 'prompt')}
+                                                                />
+                                                            </motion.div>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <motion.div
+                                                                initial={{ opacity: 0, scale: 0.5, x: 10 }}
+                                                                animate={{ opacity: 1, scale: 1, x: 0 }}
+                                                                exit={{ opacity: 0, scale: 0.5, x: 10 }}
+                                                                transition={{ type: "spring", damping: 15, stiffness: 200 }}
+                                                            >
+                                                                <ActionButton
+                                                                    icon={Video}
+                                                                    label="End"
+                                                                    variant="default"
+                                                                    onClick={() => { onReusePrompt(item, 'last-frame'); setVideoSubmenu(false); }}
+                                                                />
+                                                            </motion.div>
+                                                            <motion.div
+                                                                initial={{ opacity: 0, scale: 0.5, x: 10 }}
+                                                                animate={{ opacity: 1, scale: 1, x: 0 }}
+                                                                exit={{ opacity: 0, scale: 0.5, x: 10 }}
+                                                                transition={{ type: "spring", damping: 15, stiffness: 200, delay: 0.05 }}
+                                                            >
+                                                                <ActionButton
+                                                                    icon={Video}
+                                                                    label="Start"
+                                                                    variant="default"
+                                                                    onClick={() => { onReusePrompt(item, 'first-frame'); setVideoSubmenu(false); }}
+                                                                />
+                                                            </motion.div>
+                                                            <motion.div
+                                                                initial={{ opacity: 0, scale: 0.5, x: 10 }}
+                                                                animate={{ opacity: 1, scale: 1, x: 0 }}
+                                                                exit={{ opacity: 0, scale: 0.5, x: 10 }}
+                                                                transition={{ type: "spring", damping: 15, stiffness: 200, delay: 0.1 }}
+                                                            >
+                                                                <ActionButton
+                                                                    icon={Video}
+                                                                    label="Full Video"
+                                                                    variant="default"
+                                                                    onClick={() => { onReusePrompt(item, 'video'); setVideoSubmenu(false); }}
+                                                                />
+                                                            </motion.div>
+                                                            <div className="w-px h-8 bg-white/10 mx-1" />
+                                                            <button
+                                                                onClick={() => setVideoSubmenu(false)}
+                                                                className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-white/40 hover:text-white"
+                                                            >
+                                                                <ChevronDown className="w-5 h-5 rotate-90" />
+                                                            </button>
+                                                        </>
+                                                    )}
                                                 </motion.div>
                                             )}
                                         </AnimatePresence>
@@ -587,7 +643,11 @@ export function CreationDetailView({
                                                 variant={remixExpanded ? "default" : "primary"}
                                                 onClick={() => {
                                                     if (remixExpanded) {
-                                                        onReusePrompt(item, 'full');
+                                                        if (videoSubmenu) {
+                                                            setVideoSubmenu(false);
+                                                        } else {
+                                                            onReusePrompt(item, 'full');
+                                                        }
                                                     } else {
                                                         setRemixExpanded(true);
                                                     }

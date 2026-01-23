@@ -385,7 +385,7 @@ export default function PublicProfile() {
             window.open(item.url, '_blank');
           }
         }}
-        onReusePrompt={(item) => {
+        onReusePrompt={(item, remixMode) => {
           setPreviewOpen(false);
           // Use imgproxy-processed URL for remix to avoid 413 errors
           const optimizedSourceUrl = item.type === 'image'
@@ -397,6 +397,7 @@ export default function PublicProfile() {
             sourceImageUrl: optimizedSourceUrl,
             remixFrom: item.id,
             remixFromUsername: item.creator_username,
+            remixMode: remixMode,
             view: 'create'
           };
           navigate('/creator/studio?view=create', { state: remixState });
