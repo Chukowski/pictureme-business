@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,16 +9,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { 
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { 
-  Loader2, Plus, Edit2, Trash2, Eye, Megaphone, 
-  Sparkles, Activity, Image as ImageIcon, Check, X 
+import {
+  Loader2, Plus, Edit2, Trash2, Eye, Megaphone,
+  Sparkles, Activity, Image as ImageIcon, Check, X
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -33,10 +34,26 @@ import {
   type Announcement,
   type FeaturedTemplate
 } from "@/services/contentApi";
+import { AssetManager } from "./AssetManager";
 
 export default function SuperAdminContent() {
-  const [activeTab, setActiveTab] = useState("announcements");
-  
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const tabParam = searchParams.get('tab');
+  const [activeTab, setActiveTab] = useState(tabParam || "announcements");
+
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    navigate(`/super-admin/content?tab=${value}`, { replace: true });
+  };
+
+  // Update tab when URL parameter changes
+  useEffect(() => {
+    if (tabParam) {
+      setActiveTab(tabParam);
+    }
+  }, [tabParam]);
+
   return (
     <div className="space-y-6 p-6">
       <div>
@@ -44,7 +61,7 @@ export default function SuperAdminContent() {
         <p className="text-zinc-400">Manage announcements, featured content, and community creations.</p>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4">
         <TabsList className="bg-card border border-white/10">
           <TabsTrigger value="announcements" className="data-[state=active]:bg-zinc-800 data-[state=active]:text-white">
             <Megaphone className="w-4 h-4 mr-2" />
@@ -77,15 +94,7 @@ export default function SuperAdminContent() {
         </TabsContent>
 
         <TabsContent value="creations" className="space-y-4">
-          <Card className="bg-card border-white/10">
-            <CardHeader>
-              <CardTitle>Community Creations</CardTitle>
-              <CardDescription>Moderate and feature user creations</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-zinc-500">Feature coming soon...</p>
-            </CardContent>
-          </Card>
+          <AssetManager />
         </TabsContent>
       </Tabs>
     </div>
@@ -99,7 +108,7 @@ function AnnouncementsManager() {
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  
+
   // Form State
   const [formData, setFormData] = useState<Partial<Announcement>>({
     title: "",
@@ -120,9 +129,11 @@ function AnnouncementsManager() {
     try {
       setIsLoading(true);
       const data = await getAdminAnnouncements();
-      setAnnouncements(data);
+      // Ensure data is always an array
+      setAnnouncements(Array.isArray(data) ? data : []);
     } catch (error) {
       toast.error("Failed to load announcements");
+      setAnnouncements([]); // Set empty array on error
     } finally {
       setIsLoading(false);
     }
@@ -236,15 +247,15 @@ function AnnouncementsManager() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                   <Button size="sm" variant="ghost" onClick={() => handleTogglePublish(announcement.id, announcement.published)}>
-                     {announcement.published ? <Eye className="w-4 h-4 text-emerald-400" /> : <Eye className="w-4 h-4 text-zinc-500" />}
-                   </Button>
-                   <Button size="sm" variant="ghost" onClick={() => openEdit(announcement)}>
-                     <Edit2 className="w-4 h-4 text-blue-400" />
-                   </Button>
-                   <Button size="sm" variant="ghost" onClick={() => handleDelete(announcement.id)}>
-                     <Trash2 className="w-4 h-4 text-red-400" />
-                   </Button>
+                  <Button size="sm" variant="ghost" onClick={() => handleTogglePublish(announcement.id, announcement.published)}>
+                    {announcement.published ? <Eye className="w-4 h-4 text-emerald-400" /> : <Eye className="w-4 h-4 text-zinc-500" />}
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={() => openEdit(announcement)}>
+                    <Edit2 className="w-4 h-4 text-blue-400" />
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={() => handleDelete(announcement.id)}>
+                    <Trash2 className="w-4 h-4 text-red-400" />
+                  </Button>
                 </div>
               </div>
             </Card>
@@ -257,14 +268,14 @@ function AnnouncementsManager() {
           <DialogHeader>
             <DialogTitle>{editingId ? "Edit Announcement" : "New Announcement"}</DialogTitle>
           </DialogHeader>
-          
+
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Type</Label>
-                <Select 
-                  value={formData.type} 
-                  onValueChange={(val: any) => setFormData({...formData, type: val})}
+                <Select
+                  value={formData.type}
+                  onValueChange={(val: any) => setFormData({ ...formData, type: val })}
                 >
                   <SelectTrigger className="bg-card border-white/10">
                     <SelectValue />
@@ -279,10 +290,10 @@ function AnnouncementsManager() {
                 </Select>
               </div>
               <div className="space-y-2">
-                 <Label>Visibility</Label>
-                 <Select 
-                  value={formData.visibility} 
-                  onValueChange={(val: any) => setFormData({...formData, visibility: val})}
+                <Label>Visibility</Label>
+                <Select
+                  value={formData.visibility}
+                  onValueChange={(val: any) => setFormData({ ...formData, visibility: val })}
                 >
                   <SelectTrigger className="bg-card border-white/10">
                     <SelectValue />
@@ -298,9 +309,9 @@ function AnnouncementsManager() {
 
             <div className="space-y-2">
               <Label>Title</Label>
-              <Input 
-                value={formData.title} 
-                onChange={e => setFormData({...formData, title: e.target.value})}
+              <Input
+                value={formData.title}
+                onChange={e => setFormData({ ...formData, title: e.target.value })}
                 className="bg-card border-white/10"
                 placeholder="e.g., Live Mode is here!"
               />
@@ -308,9 +319,9 @@ function AnnouncementsManager() {
 
             <div className="space-y-2">
               <Label>Content</Label>
-              <Textarea 
-                value={formData.content} 
-                onChange={e => setFormData({...formData, content: e.target.value})}
+              <Textarea
+                value={formData.content}
+                onChange={e => setFormData({ ...formData, content: e.target.value })}
                 className="bg-card border-white/10 min-h-[100px]"
                 placeholder="Brief description..."
               />
@@ -319,28 +330,28 @@ function AnnouncementsManager() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>CTA Label (Optional)</Label>
-                <Input 
-                  value={formData.cta_label} 
-                  onChange={e => setFormData({...formData, cta_label: e.target.value})}
+                <Input
+                  value={formData.cta_label}
+                  onChange={e => setFormData({ ...formData, cta_label: e.target.value })}
                   className="bg-card border-white/10"
                   placeholder="Try Now"
                 />
               </div>
               <div className="space-y-2">
                 <Label>CTA URL (Optional)</Label>
-                <Input 
-                  value={formData.cta_url} 
-                  onChange={e => setFormData({...formData, cta_url: e.target.value})}
+                <Input
+                  value={formData.cta_url}
+                  onChange={e => setFormData({ ...formData, cta_url: e.target.value })}
                   className="bg-card border-white/10"
                   placeholder="/admin/playground"
                 />
               </div>
             </div>
-            
+
             <div className="flex items-center gap-2 pt-2">
-              <Switch 
-                checked={formData.published} 
-                onCheckedChange={checked => setFormData({...formData, published: checked})}
+              <Switch
+                checked={formData.published}
+                onCheckedChange={checked => setFormData({ ...formData, published: checked })}
               />
               <Label>Publish immediately</Label>
             </div>
@@ -414,8 +425,8 @@ function FeaturedTemplatesManager() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex gap-2">
-            <Input 
-              placeholder="Enter Template ID (e.g. evt-123-abc)" 
+            <Input
+              placeholder="Enter Template ID (e.g. evt-123-abc)"
               value={newTemplateId}
               onChange={e => setNewTemplateId(e.target.value)}
               className="bg-card border-white/10 max-w-md"
