@@ -147,6 +147,7 @@ export default function CreatorBoothEditor() {
 
         monetization: {
             type: "free",
+            sale_mode: "free", // New field for backward/forward compatibility
             token_price: 0,
             fiat_price: 0,
             revenue_split: 0.8,
@@ -214,6 +215,10 @@ export default function CreatorBoothEditor() {
                 navigate("/creator/booth");
                 return;
             }
+
+            console.log("RAW BOOTH LOADED:", booth.monetization);
+            console.log("MONETIZATION TYPE:", booth.monetization?.type);
+            console.log("MONETIZATION SALE_MODE:", booth.monetization?.sale_mode);
 
             setFormData((prev) => ({
                 ...prev,
@@ -291,11 +296,19 @@ export default function CreatorBoothEditor() {
         const isSpark = tierIndicators.some(t => t.includes('spark') || t.includes('individual'));
         const isBusiness = tierIndicators.some(t => t.includes('business') || t.includes('enterprise') || t.includes('masters'));
 
-        // Robust mapping
-        const effectiveTier = isStudio ? 'studio' :
-            isVibe ? 'vibe' :
-                isSpark ? 'spark' :
-                    isBusiness ? 'business_eventpro' : 'spark';
+        // Robust mapping with manual override support
+        // We prioritize 'studio' and 'business' checks
+        let calculatedTier = 'spark';
+
+        if (isStudio) calculatedTier = 'studio';
+        else if (isVibe) calculatedTier = 'vibe';
+        else if (isBusiness) calculatedTier = 'business_eventpro';
+        else if (isSpark) calculatedTier = 'spark';
+
+        const effectiveTier = calculatedTier;
+
+        // DEBUG: Log detection logic
+        console.log('Tier Detection:', { tierIndicators, effectiveTier, isStudio, isVibe });
 
         const canTokens = hasFeature(effectiveTier, 'boothTokenMonetization');
         const canRevenue = hasFeature(effectiveTier, 'boothRevenueShare');
@@ -375,7 +388,7 @@ export default function CreatorBoothEditor() {
                                         className={`p-4 rounded-xl border-2 transition-all cursor-pointer flex flex-col items-center text-center gap-2 ${formData.monetization?.type === 'free' ? 'border-primary bg-primary/10' : 'border-border bg-card/50 hover:border-primary/50'}`}
                                         onClick={() => setFormData({
                                             ...formData,
-                                            monetization: { ...formData.monetization!, type: 'free' }
+                                            monetization: { ...formData.monetization!, type: 'free', sale_mode: 'free' }
                                         })}
                                     >
                                         <div className="w-12 h-12 rounded-full bg-green-500/10 flex items-center justify-center text-green-500 text-2xl">
@@ -394,7 +407,7 @@ export default function CreatorBoothEditor() {
                                             if (!canTokens) return;
                                             setFormData({
                                                 ...formData,
-                                                monetization: { ...formData.monetization!, type: 'tokens', token_price: 1 }
+                                                monetization: { ...formData.monetization!, type: 'tokens', sale_mode: 'tokens', token_price: 1 }
                                             });
                                         }}
                                     >
@@ -416,7 +429,7 @@ export default function CreatorBoothEditor() {
                                             const split = effectiveTier === 'studio' ? 0.7 : 0.5;
                                             setFormData({
                                                 ...formData,
-                                                monetization: { ...formData.monetization!, type: 'revenue_share', fiat_price: 1.0, revenue_split: split }
+                                                monetization: { ...formData.monetization!, type: 'revenue_share', sale_mode: 'money', fiat_price: 1.0, revenue_split: split }
                                             });
                                         }}
                                     >
@@ -498,9 +511,14 @@ export default function CreatorBoothEditor() {
                                         <div className="space-y-4">
                                             <div className="flex items-center justify-between">
                                                 <Label>Your Revenue Split</Label>
-                                                <span className="text-xs font-bold text-emerald-500 bg-emerald-500/10 px-2 py-1 rounded">
-                                                    {effectiveTier === 'studio' ? 'Studio Plan' : 'Vibe Plan'}
-                                                </span>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-[10px] text-zinc-600 font-mono">
+                                                        [{effectiveTier}]
+                                                    </span>
+                                                    <span className="text-xs font-bold text-emerald-500 bg-emerald-500/10 px-2 py-1 rounded">
+                                                        {effectiveTier === 'studio' ? 'Studio Plan' : 'Vibe Plan'}
+                                                    </span>
+                                                </div>
                                             </div>
                                             <div className="p-4 rounded-xl bg-card border border-white/5 flex items-center justify-between">
                                                 <div className="space-y-1">

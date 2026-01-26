@@ -50,6 +50,7 @@ import {
 import { User } from "@/services/eventsApi";
 import { ENV } from "@/config/env";
 import { toast } from "sonner";
+import CreatorEarningsCard from "./CreatorEarningsCard";
 
 interface BillingTabProps {
   currentUser: User;
@@ -1072,8 +1073,8 @@ export default function BillingTab({ currentUser, openPlansModal = false }: Bill
         </Card>
       </div>
 
-      {/* Stripe Connect Section (Business Users Only) */}
-      {isBusinessUser && (
+      {/* Stripe Connect (Business) OR Creator Earnings (Individual) */}
+      {isBusinessUser ? (
         <Card className="bg-card/50 border-white/10">
           <CardHeader>
             <div className="flex items-center justify-between">
@@ -1146,47 +1147,39 @@ export default function BillingTab({ currentUser, openPlansModal = false }: Bill
                 </div>
                 <h3 className="text-lg font-semibold text-white mb-2">Enable Revenue Sharing</h3>
                 <p className="text-sm text-zinc-400 mb-4 max-w-md mx-auto">
-                  Connect your Stripe account to accept payments from album sales and enable automatic revenue sharing.
+                  Connect your Stripe account to accept payments from booth sales, album sales, and enable automatic revenue sharing.
                 </p>
-                {currentPlan?.id === 'masters' || currentPlan?.id === 'business_masters' ? (
+                <Button
+                  className="bg-purple-600 hover:bg-purple-700"
+                  onClick={handleConnectStripe}
+                  disabled={isConnecting}
+                >
+                  {isConnecting ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <Link2 className="w-4 h-4 mr-2" />
+                  )}
+                  Connect Stripe Account
+                </Button>
+                <div className="mt-8 flex justify-center opacity-50 hover:opacity-100 transition-opacity">
                   <Button
-                    className="bg-purple-600 hover:bg-purple-700"
-                    onClick={handleConnectStripe}
-                    disabled={isConnecting}
-                  >
-                    {isConnecting ? (
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    ) : (
-                      <Link2 className="w-4 h-4 mr-2" />
-                    )}
-                    Connect Stripe Account
-                  </Button>
-                ) : (
-                  <div className="space-y-2">
-                    <Badge variant="outline" className="border-amber-500/20 text-amber-400">
-                      <Crown className="w-3 h-3 mr-1" />
-                      Masters Plan Required
-                    </Badge>
-                    <p className="text-xs text-zinc-500">
-                      Upgrade to Masters to enable Stripe Connect and revenue sharing
-                    </p>
-                  </div>
-                )}
-                <div className="mt-4 flex justify-center">
-                  <Button
-                    variant="outline"
-                    className="border-zinc-700 text-zinc-400 hover:bg-zinc-800"
+                    variant="ghost"
+                    size="sm"
+                    className="text-xs text-zinc-600 hover:text-zinc-400"
                     onClick={handleCancelConnect}
                   >
-                    Cancel / Reset Stripe Connect
+                    Reset Connection
                   </Button>
                 </div>
               </div>
             )}
           </CardContent>
         </Card>
+      ) : (
+        /* Individual Creators - Show Earnings Card instead of Stripe Connect */
+        <CreatorEarningsCard />
       )}
-
     </div>
   );
 }
+

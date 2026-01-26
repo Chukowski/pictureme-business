@@ -16,11 +16,12 @@
  */
 
 import { useState, useEffect, useMemo } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import {
     getEventConfig,
     getPublicUserProfile,
     getAuthToken,
+    getCurrentUserProfile,
     Template,
     User,
     EventConfig
@@ -41,7 +42,8 @@ import {
     ExternalLink,
     Share2,
     Heart,
-    Link2
+    Link2,
+    Coins
 } from "lucide-react";
 import { CameraCapture } from "@/components/CameraCapture";
 import { BackgroundSelector } from "@/components/BackgroundSelector";
@@ -56,6 +58,7 @@ import { cn } from "@/lib/utils";
 import { BoothGate } from "@/components/auth/BoothGate";
 import ShaderBackground from "@/components/ShaderBackground";
 import { Link } from "react-router-dom";
+import { ENV } from "@/config/env";
 
 type BoothState = 'landing' | 'select' | 'camera' | 'processing' | 'result';
 
@@ -69,6 +72,7 @@ const TikTokIcon = ({ className }: { className?: string }) => (
 export default function PublicCreatorBooth() {
     const { userSlug, eventSlug } = useParams<{ userSlug: string; eventSlug: string }>();
     const navigate = useNavigate();
+    const [searchParams, setSearchParams] = useSearchParams();
 
     // State
     const [config, setConfig] = useState<EventConfig | null>(null);
@@ -83,6 +87,9 @@ export default function PublicCreatorBooth() {
     const [processingStatus, setProcessingStatus] = useState<string>('');
     const [showAuthGate, setShowAuthGate] = useState(false);
     const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
+    const [hasPaid, setHasPaid] = useState(false);
+    const [isRestoringSession, setIsRestoringSession] = useState(false);
+    const [isCheckingPayment, setIsCheckingPayment] = useState(false);
 
     // Load booth config and creator profile
     useEffect(() => {
@@ -130,8 +137,46 @@ export default function PublicCreatorBooth() {
     // Check if auth is required (for monetized booths)
     const shouldEnforceAuth = useMemo(() => {
         if (!config) return false;
-        return config.monetization?.type === 'tokens' || config.monetization?.type === 'revenue_share';
+        const mode = config.monetization?.sale_mode || config.monetization?.type;
+        return mode === 'tokens' || mode === 'revenue_share' || mode === 'money';
     }, [config]);
+
+    // Check if payment is required (for money/revenue_share mode)
+    const requiresPayment = useMemo(() => {
+        if (!config) return false;
+        const mode = config.monetization?.sale_mode || config.monetization?.type;
+        return mode === 'revenue_share' || mode === 'money';
+    }, [config]);
+
+    // Check payment status for revenue_share booths
+    const checkPaymentStatus = async () => {
+        // We can't rely solely on requiresPayment here because we want to force a check
+        // if we are explicitly in a payment flow
+        const mode = config?.monetization?.sale_mode || config?.monetization?.type;
+        const actuallyRequiresPayment = mode === 'revenue_share' || mode === 'money';
+
+        if (!config || !actuallyRequiresPayment) return true;
+
+        const token = getAuthToken();
+        if (!token) return false;
+
+        try {
+            setIsCheckingPayment(true);
+            const response = await fetch(`${ENV.API_URL}/api/billing/booths/${config._id}/payment-status`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            if (response.ok) {
+                const data = await response.json();
+                setHasPaid(data.paid);
+                return data.paid;
+            }
+        } catch (e) {
+            console.error('Payment check failed:', e);
+        } finally {
+            setIsCheckingPayment(false);
+        }
+        return false;
+    };
 
     // Apply theme
     useEffect(() => {
@@ -166,19 +211,156 @@ export default function PublicCreatorBooth() {
         return () => clearInterval(interval);
     }, [config]);
 
-    // Auth check when entering booth
-    const handleStartBooth = () => {
-        if (shouldEnforceAuth && !getAuthToken()) {
+    // Session restoration after Stripe redirect
+    useEffect(() => {
+        const restoreSession = async () => {
+            const checkoutSuccess = searchParams.get('checkout') === 'success' || searchParams.get('payment') === 'success';
+            const pendingTemplateId = localStorage.getItem('booth_pending_template');
+
+            if (checkoutSuccess && pendingTemplateId && config) {
+                setIsRestoringSession(true);
+
+                // Re-verify payment status
+                const isPaid = await checkPaymentStatus();
+
+                if (isPaid) {
+                    // Find the template
+                    const template = config.templates?.find(t => t.id === pendingTemplateId);
+                    if (template) {
+                        setSelectedTemplate(template);
+                        setBoothState('camera');
+                        toast.success('Payment successful! Ready to take your photo.');
+                    }
+                    // Clean up
+                    localStorage.removeItem('booth_pending_template');
+                    // Remove query params
+                    searchParams.delete('checkout');
+                    searchParams.delete('payment');
+                    setSearchParams(searchParams);
+                }
+
+                setIsRestoringSession(false);
+            }
+        };
+
+        if (config) {
+            restoreSession();
+        }
+    }, [config, searchParams, setSearchParams]);
+
+    // Auth check when entering booth - Require login for ALL users
+    const handleStartBooth = async () => {
+        // Always require authentication to ensure photos can be saved to user gallery
+        if (!getAuthToken()) {
             setShowAuthGate(true);
-        } else {
-            setBoothState('select');
+            return;
+        }
+
+        // Proceed to template selection
+        setBoothState('select');
+    };
+
+    // Initiate Stripe payment for money mode
+    const initiatePayment = async () => {
+        const token = getAuthToken();
+        if (!token || !config) {
+            toast.error('Please sign in first');
+            setShowAuthGate(true);
+            return;
+        }
+
+        try {
+            const response = await fetch(`${ENV.API_URL}/api/billing/booths/${config._id}/checkout`, {
+                method: 'POST',
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                if (data.checkout_url) {
+                    window.location.href = data.checkout_url;
+                }
+            } else {
+                const error = await response.json();
+                toast.error(error.error || 'Failed to create checkout');
+            }
+        } catch (e) {
+            console.error('Checkout error:', e);
+            toast.error('Payment failed. Please try again.');
         }
     };
 
-    // Template selection
-    const handleSelectTemplate = (template: Template) => {
+    // Template selection - now triggers payment gate
+    const handleSelectTemplate = async (template: Template) => {
         setSelectedTemplate(template);
-        setBoothState('camera');
+        await handlePaymentGate(template);
+    };
+
+    // Payment/Token gate - runs AFTER template selection
+    const handlePaymentGate = async (template: Template) => {
+        if (!config) return;
+
+        const monetizationType = config.monetization?.sale_mode || config.monetization?.type || 'free';
+
+        // Free mode - proceed directly
+        if (monetizationType === 'free') {
+            setBoothState('camera');
+            return;
+        }
+
+        // Token mode - check balance
+        if (monetizationType === 'tokens') {
+            try {
+                const user = await getCurrentUserProfile();
+                if (!user) {
+                    toast.error('Please sign in to continue');
+                    setShowAuthGate(true);
+                    return;
+                }
+
+                const tokenCost = config.monetization?.token_price || 1;
+                const userTokens = user.tokens_remaining || 0;
+
+                if (userTokens < tokenCost) {
+                    toast.error(
+                        `You need ${tokenCost} token${tokenCost > 1 ? 's' : ''} to use this booth. You have ${userTokens}.`,
+                        {
+                            description: 'Purchase more tokens in your dashboard.',
+                            duration: 5000,
+                        }
+                    );
+                    return;
+                }
+
+                // Show confirmation
+                toast.info(`This will use ${tokenCost} token${tokenCost > 1 ? 's' : ''}`, {
+                    icon: <Coins className="w-4 h-4" />,
+                });
+
+                setBoothState('camera');
+            } catch (error) {
+                console.error('Failed to check token balance:', error);
+                toast.error('Failed to verify token balance');
+            }
+            return;
+        }
+
+        // Money mode (revenue_share) - check payment
+        if (monetizationType === 'money' || monetizationType === 'revenue_share') {
+            const isPaid = await checkPaymentStatus();
+
+            if (isPaid) {
+                setBoothState('camera');
+            } else {
+                // Save template to restore after payment
+                localStorage.setItem('booth_pending_template', template.id);
+                // Redirect to checkout
+                initiatePayment();
+            }
+        }
     };
 
     // Photo capture and processing
@@ -200,6 +382,7 @@ export default function PublicCreatorBooth() {
                 aiModel: selectedTemplate.pipelineConfig?.imageModel || config.settings?.aiModel,
                 eventSlug: config.slug,
                 userSlug: config.user_slug,
+                boothId: config._id, // Required for backend payment verification
                 onProgress: (status) => {
                     if (status === "queued") setProcessingStatus("Waiting in queue...");
                     else if (status === "processing") setProcessingStatus("AI is working its magic...");
@@ -344,6 +527,11 @@ export default function PublicCreatorBooth() {
             />
 
             <div className="min-h-screen bg-[#101112] relative">
+                {/* Full screen loader while restoring session */}
+                {isRestoringSession && (
+                    <ProcessingLoader status="Verifying payment..." />
+                )}
+
                 {/* Background Image Slideshow */}
                 {(config.branding as any)?.backgroundSlideshow?.enabled &&
                     (config.branding as any)?.backgroundSlideshow?.images?.length > 0 &&
@@ -514,6 +702,11 @@ export default function PublicCreatorBooth() {
                             {config.monetization?.type === 'tokens' && (
                                 <Badge className="mt-4 bg-indigo-500/10 text-indigo-400 border-indigo-500/20">
                                     {config.monetization.token_price} tokens per photo
+                                </Badge>
+                            )}
+                            {(config.monetization?.type === 'revenue_share' || config.monetization?.sale_mode === 'money') && (
+                                <Badge className="mt-4 bg-emerald-500/10 text-emerald-400 border-emerald-500/20">
+                                    ${config.monetization?.fiat_price?.toFixed(2) || '1.00'} per photo
                                 </Badge>
                             )}
 

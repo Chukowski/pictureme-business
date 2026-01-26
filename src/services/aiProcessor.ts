@@ -751,6 +751,7 @@ export interface ProcessImageOptions {
   seed?: number; // Seed for reproducible results (same seed = similar output)
   onProgress?: (status: string, logs?: string[]) => void;
   eventId?: number;
+  boothId?: string; // CouchDB ID for booth
   billingContext?: string;
   tokensToCharge?: number;
   skipTokenCharge?: boolean;
@@ -1079,6 +1080,7 @@ Output a single cohesive image.`;
       model_id: modelToUse,
       image_size: imageSize,
       num_images: numImages,
+      booth_id: options.boothId, // Pass booth ID for monetization check
     };
 
     // Add specific parameters for Flux Klein models

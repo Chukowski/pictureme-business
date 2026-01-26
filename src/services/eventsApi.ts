@@ -236,10 +236,11 @@ export interface EventConfig {
   };
   is_booth?: boolean;
   monetization?: {
-    type: 'free' | 'tokens' | 'revenue_share';
+    type: 'free' | 'tokens' | 'revenue_share'; // Deprecated: use sale_mode
+    sale_mode?: 'free' | 'tokens' | 'money'; // New: free, tokens, money
     token_price?: number;
     fiat_price?: number;
-    revenue_split?: number;
+    revenue_split?: number; // Business only
   };
 }
 
