@@ -7,10 +7,11 @@ import { Button } from "@/components/ui/button";
 import {
   Plus, Image, ShoppingBag, Zap, Sparkles, ArrowRight, Camera,
   Play, RotateCcw, RefreshCw, Wand2, Store, Layout, Clock,
-  TrendingUp, Heart, Eye, ChevronRight, Loader2, X, UserRound, Video
+  TrendingUp, Heart, Eye, ChevronRight, Loader2, X, UserRound, Video, Megaphone
 } from "lucide-react";
+import { WhatsNewCard } from "@/components/dashboard/WhatsNewCard";
 import { motion, AnimatePresence } from "framer-motion";
-import { getHomeContent, HomeContentResponse, getPublicCreations, PublicCreation } from "@/services/contentApi";
+import { getHomeContent, HomeContentResponse, getPublicCreations, PublicCreation, FeaturedTemplate } from "@/services/contentApi";
 import { getMarketplaceTemplates, MarketplaceTemplate } from "@/services/marketplaceApi";
 import { PlanInsightsCard } from "@/components/home/PlanInsightsCard";
 import { WhatsNewBlock } from "@/components/home/WhatsNewBlock";
@@ -33,7 +34,10 @@ import { Slider } from "@/components/ui/slider";
 // =======================
 // MARKETPLACE FEED CARD (Private Component)
 // =======================
-function MarketplaceFeedCard({ creation, onImageClick, onRemixClick }: { creation: any, onImageClick: (e: React.MouseEvent) => void, onRemixClick: (e: React.MouseEvent) => void }) {
+// =======================
+// MARKETPLACE FEED CARD (Private Component)
+// =======================
+function MarketplaceFeedCard({ creation, onImageClick, onRemixClick }: { creation: any, onImageClick: (e: React.MouseEvent) => void, onRemixClick: (e: React.MouseEvent, mode?: 'full' | 'video' | 'prompt') => void }) {
   const isHero = creation.is_hero || false;
 
   const [likes, setLikes] = useState(creation.likes || 0);
@@ -208,8 +212,7 @@ function MarketplaceFeedCard({ creation, onImageClick, onRemixClick }: { creatio
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    const customEvent = { ...e, remixMode: 'video' } as any;
-                    onRemixClick(customEvent);
+                    onRemixClick(e, 'video');
                   }}
                   className="p-1.5 rounded-lg bg-white/5 text-white/70 hover:bg-white/10 hover:text-white transition-all"
                   title="Remix to Video"
@@ -220,8 +223,7 @@ function MarketplaceFeedCard({ creation, onImageClick, onRemixClick }: { creatio
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    const customEvent = { ...e, remixMode: 'prompt' } as any;
-                    onRemixClick(customEvent);
+                    onRemixClick(e, 'prompt');
                   }}
                   className="p-1.5 rounded-lg bg-white/5 text-white/70 hover:bg-white/10 hover:text-white transition-all transition-all"
                   title="Restore Prompt"
@@ -241,13 +243,10 @@ function MarketplaceFeedCard({ creation, onImageClick, onRemixClick }: { creatio
 // =======================
 // MARKETPLACE FEED (Remix Engine)
 // =======================
-// =======================
-// MARKETPLACE FEED (Remix Engine)
-// =======================
 function CreatorsGallerySection({ creations, onImageClick, onRemixClick, columnsCount = 3 }: {
   creations: any[];
   onImageClick: (creation: any, index: number) => void;
-  onRemixClick: (creation: any) => void;
+  onRemixClick: (creation: any, mode?: 'full' | 'video' | 'prompt') => void;
   columnsCount?: number;
 }) {
   if (!creations || creations.length === 0) {
@@ -282,9 +281,9 @@ function CreatorsGallerySection({ creations, onImageClick, onRemixClick, columns
                 // Find visible index in original array if needed, or pass object
                 onImageClick(creation, creations.findIndex(c => c.id === creation.id));
               }}
-              onRemixClick={(e) => {
+              onRemixClick={(e, mode = 'full') => {
                 e.stopPropagation();
-                onRemixClick(creation);
+                onRemixClick(creation, mode);
               }}
             />
           ))}
@@ -401,7 +400,7 @@ export default function CreatorDashboard() {
     try {
       const currentUser = getCurrentUser();
       if (!currentUser) {
-        navigate('/admin/auth');
+        navigate('/auth');
         return;
       }
 
@@ -489,8 +488,10 @@ export default function CreatorDashboard() {
   // Compute home state
   const homeState = useMemo(() => getCreatorHomeState(user, creations), [user, creations]);
 
-  // Compute featured template - Moved up to avoid Rule of Hooks violation
-  const featuredTemplate = useMemo(() => getFeaturedTemplate(marketplaceTemplates), [marketplaceTemplates]);
+  // Compute featured templates
+  const featuredTemplates = useMemo(() =>
+    getFeaturedTemplates(marketplaceTemplates, content?.featured_templates || []),
+    [marketplaceTemplates, content?.featured_templates]);
 
   // Filter public creations for image-only for the hero section
   const imageOnlyCreations = useMemo(() =>
@@ -526,6 +527,11 @@ export default function CreatorDashboard() {
           navigate={navigate}
         />
 
+        {/* Announcements for Creators */}
+        <div className="w-full">
+          <WhatsNewCard userType="personal" />
+        </div>
+
         {/* ========================= */}
         {/* SECTION B: BENTO DASHBOARD GRID */}
         {/* ========================= */}
@@ -533,7 +539,7 @@ export default function CreatorDashboard() {
 
           {/* Left Column: Featured Style (1 Col) */}
           <div className="lg:col-span-1 h-full">
-            <FeaturedStyleCard navigate={navigate} template={featuredTemplate} />
+            <FeaturedStyleCard navigate={navigate} templates={featuredTemplates} />
           </div>
 
           {/* Middle Column: Recent Creations & Marketplace (2 Cols) */}
@@ -598,7 +604,7 @@ export default function CreatorDashboard() {
               setPreviewIndex(index);
               setPreviewOpen(true);
             }}
-            onRemixClick={(creation) => {
+            onRemixClick={(creation, remixMode = 'full') => {
               // Use imgproxy-processed URL for remix to avoid 413 errors
               const optimizedSourceUrl = creation.image_url
                 ? getProcessingUrl(creation.image_url, 2048)
@@ -614,10 +620,10 @@ export default function CreatorDashboard() {
                 view: 'create' // Intent for Studio to open in create mode
               };
 
-              // Check for custom remixMode from the expanded buttons
-              if (creation.remixMode === 'video') {
+              // Check for custom remixMode passed from the card
+              if (remixMode === 'video') {
                 navigate('/creator/studio?view=create&mode=video', { state: remixState });
-              } else if (creation.remixMode === 'prompt') {
+              } else if (remixMode === 'prompt') {
                 navigate('/creator/studio?view=create&mode=image', { state: { prompt: creation.prompt || '' } });
               } else {
                 navigate('/creator/studio?view=create', { state: remixState });
@@ -700,23 +706,29 @@ export default function CreatorDashboard() {
             window.open(item.url, '_blank');
           }
         }}
-        onReusePrompt={(item) => {
+        onReusePrompt={(item, remixMode = 'full') => {
           setPreviewOpen(false);
           // Standardize state keys to match public feed remix behavior
           // Use item.url directly if it's already an optimized imgproxy url or wrap it
           const optimizedSourceUrl = getProcessingUrl(item.url, 2048);
 
-          navigate('/creator/studio?view=create', {
-            state: {
-              prompt: item.prompt || '',
-              templateId: item.template?.id || null, // Works for both flat and nested template objects
-              sourceImageUrl: optimizedSourceUrl,
-              remixFrom: item.id,
-              remixFromUsername: item.creator_username,
-              model: item.model,
-              view: 'create'
-            }
-          });
+          const remixState = {
+            prompt: item.prompt || '',
+            templateId: item.template?.id || null, // Works for both flat and nested template objects
+            sourceImageUrl: optimizedSourceUrl,
+            remixFrom: item.id,
+            remixFromUsername: item.creator_username,
+            model: item.model,
+            view: 'create'
+          };
+
+          if (remixMode === 'video') {
+            navigate('/creator/studio?view=create&mode=video', { state: remixState });
+          } else if (remixMode === 'prompt') {
+            navigate('/creator/studio?view=create&mode=image', { state: { prompt: item.prompt || '' } });
+          } else {
+            navigate('/creator/studio?view=create', { state: remixState });
+          }
         }}
         onDelete={undefined}
         onTogglePublic={undefined}
@@ -832,81 +844,167 @@ function HeroSection({ user, homeState, publicCreations, navigate }: { user: Use
 // FEATURED STYLE CARD
 // =======================
 
-// Helper to select the featured template based on weighted score:
-// 1. Manual ('featured' tag)
-// 2. Promoted ('promoted' tag)
-// 3. Score (70% downloads weight + 30% rating weight)
-function getFeaturedTemplate(templates: MarketplaceTemplate[]): MarketplaceTemplate | undefined {
-  if (!templates || templates.length === 0) return undefined;
+// Helper to select featured templates based on weighted score:
+// 1. Admin Featured (explicitly set in CMS) - prioritized
+// 2. Manual ('featured' tag) - prioritized
+// 3. Promoted ('promoted' tag) - randomized/rotated
+// 4. Score (70% downloads weight + 30% rating weight) - top performers
+function getFeaturedTemplates(templates: MarketplaceTemplate[], adminFeatured: FeaturedTemplate[] = []): MarketplaceTemplate[] {
+  if (!templates || templates.length === 0) return [];
 
-  // 1. Manual Featured
-  const manual = templates.find(t => t.tags?.includes('featured'));
-  if (manual) return manual;
+  // 0. Admin Featured (Explicit overrides)
+  const adminIds = new Set(adminFeatured.map(f => f.template_id));
+  const adminPicks = templates.filter(t => adminIds.has(t.id));
 
-  // 2. Promoted
-  const promoted = templates.find(t => t.tags?.includes('promoted'));
-  if (promoted) return promoted;
+  // 1. Tagged Featured
+  const taggedFeatured = templates.filter(t =>
+    !adminIds.has(t.id) && // Avoid duplicates
+    t.tags?.some(tag => tag.toLowerCase() === 'featured')
+  );
 
-  // 3. Weighted score sorting
-  return [...templates].sort((a, b) => {
-    const scoreA = (a.downloads || 0) * 0.7 + (a.rating || 0) * 100 * 0.3;
-    const scoreB = (b.downloads || 0) * 0.7 + (b.rating || 0) * 100 * 0.3;
-    return scoreB - scoreA;
-  })[0];
+  // 2. Tagged Promoted
+  const taggedPromoted = templates.filter(t =>
+    !adminIds.has(t.id) &&
+    t.tags?.some(tag => tag.toLowerCase() === 'promoted')
+  );
+
+  // 3. Top Performers (exclude already picked)
+  const pickedIds = new Set([
+    ...adminPicks.map(t => t.id),
+    ...taggedFeatured.map(t => t.id),
+    ...taggedPromoted.map(t => t.id)
+  ]);
+
+  const topPerformers = [...templates]
+    .filter(t => !pickedIds.has(t.id))
+    .sort((a, b) => {
+      const scoreA = (a.downloads || 0) * 0.7 + (a.rating || 0) * 100 * 0.3;
+      const scoreB = (b.downloads || 0) * 0.7 + (b.rating || 0) * 100 * 0.3;
+      return scoreB - scoreA;
+    })
+    .slice(0, 3);
+
+  // Combine unique templates (Admin -> Featured -> Promoted -> Top)
+  const combined = [...adminPicks, ...taggedFeatured, ...taggedPromoted, ...topPerformers];
+
+  // Deduplicate by ID just in case
+  const unique = combined.filter((template, index, self) =>
+    index === self.findIndex((t) => t.id === template.id)
+  );
+
+  // Limit to 5 total to rotate
+  return unique.slice(0, 5);
 }
 
-function FeaturedStyleCard({ navigate, template }: { navigate: (p: string, options?: any) => void, template?: MarketplaceTemplate }) {
-  if (!template) return null;
+function FeaturedStyleCard({ navigate, templates }: { navigate: (p: string, options?: any) => void, templates: MarketplaceTemplate[] }) {
+  const [currentIndex, setCurrentIndex] = useState(0);
 
-  const bgImage = template.preview_url || template.preview_images?.[0] || template.backgrounds?.[0];
+  // Rotate templates every 8 seconds
+  useEffect(() => {
+    if (!templates || templates.length <= 1) return;
+
+    const interval = setInterval(() => {
+      setCurrentIndex((prev) => (prev + 1) % templates.length);
+    }, 8000);
+
+    return () => clearInterval(interval);
+  }, [templates]);
+
+  if (!templates || templates.length === 0) return null;
+
+  const template = templates[currentIndex];
+  // Safe access for fallback
+  const bgImage = template.preview_url || template.preview_images?.[0] || template.backgrounds?.[0] || (template as any).images?.[0];
   const title = template.name;
-  // Creator info
   const creatorName = template.creator?.name || "Pictureme.now";
+  // Attempt to use creator avatar if available on the template object (depends on API)
+  const creatorAvatar = (template as any).creator?.avatar_url;
 
   return (
     <div
+      className="group relative w-full h-[240px] md:h-full md:min-h-[400px] rounded-2xl overflow-hidden cursor-pointer border border-white/10 bg-card shadow-xl shadow-black/40 transition-all hover:border-white/20 select-none"
       onClick={() => navigate('/creator/studio?view=create', { state: { view: 'create', selectedTemplate: template } })}
-      className="group relative w-full h-[240px] md:h-full md:min-h-[400px] rounded-2xl overflow-hidden cursor-pointer border border-white/10 bg-card shadow-xl shadow-black/40 transition-all hover:border-white/20"
     >
-      {/* Background Image */}
-      <img
-        src={bgImage}
-        className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-        alt={title}
-        loading="lazy"
-      />
+      {/* Background Image with Crossfade Transition */}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={template.id}
+          initial={{ opacity: 0, scale: 1.1 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.8 }}
+          className="absolute inset-0"
+        >
+          <img
+            src={getFeedImageUrl(bgImage || '', 800)}
+            alt={title}
+            className="w-full h-full object-cover transition-transform duration-[10s] ease-linear group-hover:scale-110"
+          />
+        </motion.div>
+      </AnimatePresence>
 
-      {/* Gradient Overlay - Optimized for readability */}
+      {/* Overlays */}
       <div className="absolute inset-0 bg-gradient-to-t from-[#101112] via-[#101112]/40 to-transparent opacity-90 z-10"></div>
+
+      {/* Progress Indicators (if multiple) */}
+      {templates.length > 1 && (
+        <div className="absolute top-4 left-0 right-0 z-30 flex justify-center gap-1.5 px-6">
+          {templates.map((_, idx) => (
+            <div
+              key={idx}
+              className={cn(
+                "h-1 rounded-full transition-all duration-300",
+                idx === currentIndex ? "w-6 bg-white" : "w-1.5 bg-white/30"
+              )}
+            />
+          ))}
+        </div>
+      )}
 
       {/* Content Container */}
       <div className="absolute inset-0 p-5 md:p-6 z-20 flex flex-col justify-end">
 
         {/* Badge */}
         <div className="mb-2 md:mb-3">
-          <Badge variant="secondary" className="bg-white/10 text-white backdrop-blur-md border-white/10 text-[10px] md:text-xs font-bold tracking-wider uppercase px-2 py-0.5 md:py-1">
+          <Badge variant="secondary" className="bg-white/10 text-white backdrop-blur-md border-white/10 text-[10px] md:text-xs font-bold tracking-wider uppercase px-2 py-0.5 md:py-1 animate-in fade-in slide-in-from-bottom-2 duration-500">
             Featured Style
           </Badge>
         </div>
 
         {/* Title */}
-        <h3 className="text-2xl md:text-4xl lg:text-5xl font-bold text-white mb-1 md:mb-2 leading-none tracking-tight drop-shadow-lg line-clamp-2">
-          {title}
-        </h3>
+        <motion.div
+          key={`title-${template.id}`}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+        >
+          <h3 className="text-2xl md:text-3xl lg:text-4xl font-bold text-white mb-1 md:mb-2 leading-none tracking-tight drop-shadow-lg line-clamp-2">
+            {title}
+          </h3>
+        </motion.div>
 
         {/* Creator Byline */}
-        <div className="flex items-center gap-2 mb-4 md:mb-6">
+        <motion.div
+          key={`creator-${template.id}`}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+          className="flex items-center gap-2 mb-4 md:mb-6"
+        >
+          {creatorAvatar && (
+            <img src={getAvatarUrl(creatorAvatar, 32)} className="w-5 h-5 rounded-full border border-white/20" />
+          )}
           <span className="text-xs md:text-sm text-zinc-300 font-medium drop-shadow-md">
             by {creatorName}
           </span>
-        </div>
+        </motion.div>
 
         {/* CTA Button */}
         <button className="
             flex items-center gap-2 px-4 py-2 md:px-6 md:py-3 w-fit
             bg-white text-black hover:bg-zinc-200
-            rounded-full 
-            text-xs md:text-sm font-bold 
+            rounded-full
+            text-xs md:text-sm font-bold
             transition-all duration-300 transform group-hover:translate-x-1 shadow-lg
         ">
           Use Style <ArrowRight className="w-3 h-3 md:w-4 md:h-4" />

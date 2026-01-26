@@ -15,7 +15,7 @@ export function CreatorLayout() {
     const loadUser = async () => {
       const currentUser = getCurrentUser();
       if (!currentUser) {
-        navigate("/admin/auth");
+        navigate("/auth");
         return;
       }
 

@@ -142,7 +142,7 @@ export function PlaygroundLayout({
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => navigate('/admin')}
+            onClick={() => navigate('/business/home')}
             className="text-zinc-400 hover:text-white h-8 w-8 hidden md:flex"
           >
             <ArrowLeft className="w-4 h-4" />
@@ -151,7 +151,7 @@ export function PlaygroundLayout({
           <Separator orientation="vertical" className="h-5 bg-white/10 hidden md:block" />
 
           <div className="flex items-center gap-2 text-xs">
-            <span className="hidden md:inline text-zinc-400 cursor-pointer hover:text-white transition-colors" onClick={() => navigate('/admin')}>
+            <span className="hidden md:inline text-zinc-400 cursor-pointer hover:text-white transition-colors" onClick={() => navigate('/business/home')}>
               Dashboard
             </span>
             <ChevronRight className="w-3 h-3 text-zinc-600 hidden md:block" />

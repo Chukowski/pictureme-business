@@ -14,10 +14,10 @@ export function UniversalActionBar({ activeEvent, isBusinessUser = false }: Univ
 
   const handleStaffDashboard = () => {
     if (activeEvent) {
-      navigate(`/admin/events/${activeEvent._id}/live?tab=staff`);
+      navigate(`/business/events/${activeEvent._id}/live?tab=staff`);
     } else {
       toast.info("No active event found. Please select an event from the list.");
-      navigate("/admin/events");
+      navigate("/business/events");
     }
   };
 
@@ -25,21 +25,21 @@ export function UniversalActionBar({ activeEvent, isBusinessUser = false }: Univ
     {
       label: "Create Event",
       icon: Plus,
-      onClick: () => navigate("/admin/events/create"),
+      onClick: () => navigate("/business/events/create"),
       variant: "default" as const,
       className: "bg-white text-black hover:bg-zinc-200",
     },
     {
       label: "Open Playground",
       icon: Gamepad2,
-      onClick: () => navigate("/admin/playground"),
+      onClick: () => navigate("/business/playground"),
       variant: "secondary" as const,
       className: "bg-zinc-800 text-zinc-200 hover:bg-zinc-700",
     },
     {
       label: "View My Events",
       icon: Calendar,
-      onClick: () => navigate("/admin/events"),
+      onClick: () => navigate("/business/events"),
       variant: "ghost" as const,
       className: "text-zinc-400 hover:text-white hover:bg-zinc-800",
     },

@@ -114,7 +114,7 @@ export default function LiveEventPage() {
 
       if (!currentEvent) {
         toast.error("Event not found");
-        navigate('/admin/events');
+        navigate('/business/events');
         return;
       }
       setEvent(currentEvent);

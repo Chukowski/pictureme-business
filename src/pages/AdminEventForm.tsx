@@ -184,7 +184,7 @@ export default function AdminEventForm() {
 
   useEffect(() => {
     if (!currentUser) {
-      navigate("/admin/auth");
+      navigate("/auth");
       return;
     }
 
@@ -201,7 +201,7 @@ export default function AdminEventForm() {
 
       if (!event) {
         toast.error("Event not found");
-        navigate("/admin/events");
+        navigate("/business/events");
         return;
       }
 
@@ -340,7 +340,7 @@ export default function AdminEventForm() {
       } else {
         const newEvent = await createEvent(dataToSave);
         toast.success("Event created successfully");
-        navigate(`/admin/events/${newEvent._id}/edit`);
+        navigate(`/business/events/${newEvent._id}/edit`);
       }
     } catch (error) {
       toast.error("Failed to save event");

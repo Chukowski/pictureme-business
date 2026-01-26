@@ -89,7 +89,7 @@ export default function AdminEventPhotos() {
 
   useEffect(() => {
     if (!currentUser) {
-      navigate("/admin/auth");
+      navigate("/auth");
       return;
     }
 
@@ -100,7 +100,7 @@ export default function AdminEventPhotos() {
     try {
       setIsLoading(true);
       const token = localStorage.getItem("auth_token");
-      const endpoint = `${API_URL}/api/admin/events/${eventId}/photos?limit=100&offset=0`;
+      const endpoint = `${API_URL}/api/business/events/${eventId}/photos?limit=100&offset=0`;
       const response = await fetch(endpoint, {
         headers: {
           Authorization: token ? `Bearer ${token}` : "",
@@ -326,7 +326,7 @@ export default function AdminEventPhotos() {
             <div className="flex items-center gap-4">
               <Button
                 variant="ghost"
-                onClick={() => navigate("/admin/events")}
+                onClick={() => navigate("/business/events")}
                 className="shrink-0 text-zinc-400 hover:text-white hover:bg-white/10"
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />

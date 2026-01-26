@@ -54,7 +54,7 @@ export function LiveEventLayout({
             <Button 
               variant="ghost" 
               size="icon" 
-              onClick={() => navigate('/admin/events')}
+              onClick={() => navigate('/business/events')}
               className="text-zinc-400 hover:text-white hover:bg-white/5 rounded-full"
             >
               <ArrowLeft className="w-5 h-5" />

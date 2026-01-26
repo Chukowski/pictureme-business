@@ -32,7 +32,7 @@ export default function HomeDashboard() {
     try {
       const currentUser = getCurrentUser();
       if (!currentUser) {
-        navigate('/admin/auth');
+        navigate('/auth');
         return;
       }
 
@@ -119,14 +119,16 @@ export default function HomeDashboard() {
             {/* Tools Grid */}
             <ToolsGrid activeEvent={activeEvent} isBusinessUser={isBusinessUser} />
 
-            {/* Recommended Templates Slider */}
-            <RecommendedTemplates templates={content.featured_templates.map(t => (t as any).template || ({
-              id: t.template_id,
-              name: t.template_name || 'Featured Style',
-              preview_url: t.thumbnail_url,
-              category: t.template_type || 'Style',
-              tags: []
-            })) as any} />
+            {/* Recommended Templates Slider - Only for Personal/Creator tiers */}
+            {!isBusinessUser && content.featured_templates && (
+              <RecommendedTemplates templates={content.featured_templates.map(t => (t as any).template || ({
+                id: (t as any).template_id,
+                name: (t as any).template_name || 'Featured Style',
+                preview_url: (t as any).thumbnail_url,
+                category: (t as any).template_type || 'Style',
+                tags: []
+              })) as any} />
+            )}
 
             {/* Activity & System Combined Block */}
             <ActivitySystemBlock events={events} isLoading={isLoading} user={user} />
@@ -194,14 +196,14 @@ export default function HomeDashboard() {
               </div>
 
               <Button
-                onClick={() => navigate('/admin/settings/business?tab=billing&activate=true')}
+                onClick={() => navigate('/business/settings?tab=billing&activate=true')}
                 className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-6 text-lg"
               >
                 Activate Subscription <ArrowRight className="w-5 h-5 ml-2" />
               </Button>
 
               <button
-                onClick={() => navigate('/admin/playground')}
+                onClick={() => navigate('/business/playground')}
                 className="text-xs text-zinc-500 hover:text-white underline decoration-zinc-700"
               >
                 Continue to playground with existing tokens

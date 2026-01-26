@@ -32,6 +32,7 @@ export interface MarketplaceTemplate {
         avatar_url?: string;
     };
     status?: 'draft' | 'pending' | 'published' | 'rejected';
+    creator_id?: string;
 }
 
 const getApiUrl = () => ENV.API_URL || "http://localhost:3002";

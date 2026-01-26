@@ -31,9 +31,11 @@ import {
     CheckCircle,
     XCircle,
     Clock,
-    Image as ImageIcon,
-    Star
+    ImageIcon,
+    Star,
+    Layout
 } from "lucide-react";
+import { Card } from "@/components/ui/card";
 import {
     Dialog,
     DialogContent,
@@ -51,6 +53,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
 import {
     adminGetTemplates,
     adminCreateTemplate,
@@ -59,16 +62,18 @@ import {
     adminAssignTemplate,
     MarketplaceTemplate
 } from "@/services/marketplaceApi";
-import { addFeaturedTemplate } from "@/services/contentApi";
+import { addFeaturedTemplate, getAdminFeaturedTemplates } from "@/services/contentApi";
 import { toast } from "sonner";
 import { ENV } from "@/config/env";
-import { AI_MODELS } from "@/services/aiProcessor";
+import { AI_MODELS, getModelDisplayName } from "@/services/aiProcessor";
 
 export default function SuperAdminMarketplace() {
     const [templates, setTemplates] = useState<MarketplaceTemplate[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
     const [isSaving, setIsSaving] = useState(false);
+    const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
+    const [gridCols, setGridCols] = useState(4);
 
     // Dialog states
     const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -82,6 +87,7 @@ export default function SuperAdminMarketplace() {
     const [targetUserId, setTargetUserId] = useState("");
     const [allUsers, setAllUsers] = useState<any[]>([]);
     const [userSearchTerm, setUserSearchTerm] = useState("");
+    const [featuredIds, setFeaturedIds] = useState<string[]>([]);
 
     // Form state for create/edit
     const [formData, setFormData] = useState<Partial<MarketplaceTemplate>>({
@@ -106,7 +112,19 @@ export default function SuperAdminMarketplace() {
     useEffect(() => {
         fetchTemplates();
         fetchUsers();
+        fetchFeatured();
     }, []);
+
+    const fetchFeatured = async () => {
+        try {
+            const data = await getAdminFeaturedTemplates();
+            // Go backend returns { templates: [...] }
+            const list = data?.templates || [];
+            setFeaturedIds(list.map((t: any) => t.template_id));
+        } catch (error) {
+            console.error("Error fetching featured:", error);
+        }
+    };
 
     const fetchTemplates = async () => {
         setIsLoading(true);
@@ -218,13 +236,29 @@ export default function SuperAdminMarketplace() {
 
     const handleFeatureOnHome = async (template: MarketplaceTemplate) => {
         try {
-            await addFeaturedTemplate({
-                template_id: template.id,
-                template_name: template.name,
-                template_type: template.template_type,
-                thumbnail_url: template.preview_url || template.backgrounds?.[0]
-            });
-            toast.success(`${template.name} added to home featured styles!`);
+            const isFeatured = template.tags?.includes('featured') || featuredIds.includes(template.id);
+
+            if (isFeatured) {
+                // Remove from registry if we can find the ID would be ideal, 
+                // but for now let's focus on syncing the tags.
+                const newTags = (template.tags || []).filter(t => t !== 'featured');
+                await adminUpdateTemplate(template.id, { ...template, tags: newTags });
+                toast.success(`${template.name} tag removed`);
+            } else {
+                await addFeaturedTemplate({
+                    template_id: template.id,
+                    template_name: template.name,
+                    template_type: template.template_type,
+                    thumbnail_url: template.preview_url || template.backgrounds?.[0]
+                });
+
+                // Sync tag on the template itself for UI visibility
+                const newTags = [...(template.tags || []), 'featured'];
+                await adminUpdateTemplate(template.id, { ...template, tags: newTags });
+                toast.success(`${template.name} featured on home!`);
+            }
+            fetchTemplates();
+            fetchFeatured();
         } catch (error) {
             toast.error("Failed to feature template on home");
         }
@@ -232,7 +266,7 @@ export default function SuperAdminMarketplace() {
 
     const updateStatus = async (template: MarketplaceTemplate, newStatus: MarketplaceTemplate['status']) => {
         try {
-            await adminUpdateTemplate(template.id, { status: newStatus });
+            await adminUpdateTemplate(template.id, { ...template, status: newStatus });
             toast.success(`Template status updated to ${newStatus}`);
             fetchTemplates();
         } catch (error) {
@@ -242,11 +276,16 @@ export default function SuperAdminMarketplace() {
 
     const togglePublic = async (template: MarketplaceTemplate) => {
         try {
-            await adminUpdateTemplate(template.id, { is_public: !template.is_public });
+            // Send full template to ensure _rev is included for CouchDB stability
+            await adminUpdateTemplate(template.id, {
+                ...template,
+                is_public: !template.is_public
+            });
             toast.success(template.is_public ? "Template unpublished" : "Template published");
             fetchTemplates();
         } catch (error) {
-            toast.error("Failed to update visibility");
+            console.error("getVisibility error:", error);
+            toast.error("Failed to update visibility. Check console.");
         }
     };
 
@@ -272,10 +311,7 @@ export default function SuperAdminMarketplace() {
     };
 
     const getModelLabel = (modelId: string) => {
-        if (!modelId) return "—";
-        const allModels = Object.values(AI_MODELS);
-        const found = allModels.find(m => (m as any).id === modelId || (m as any).shortId === modelId);
-        return found ? (found as any).name : modelId;
+        return getModelDisplayName(modelId);
     };
 
     const getThumbnail = (item: MarketplaceTemplate) => {
@@ -342,8 +378,8 @@ export default function SuperAdminMarketplace() {
         <div className="space-y-6">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight text-white mb-2">Marketplace Manager</h1>
-                    <p className="text-zinc-400">Manage templates, prompt packs, and community contributions.</p>
+                    <h1 className="text-3xl font-bold tracking-tight text-white mb-2">Template Management</h1>
+                    <p className="text-zinc-400">Manage marketplace templates, themes, and community styles.</p>
                 </div>
                 <div className="flex items-center gap-2">
                     <Button
@@ -376,6 +412,39 @@ export default function SuperAdminMarketplace() {
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
                 </div>
+                <div className="flex items-center gap-1 p-1 bg-card border border-white/10 rounded-lg">
+                    <Button
+                        variant={viewMode === 'list' ? 'secondary' : 'ghost'}
+                        size="sm"
+                        onClick={() => setViewMode('list')}
+                        className="h-8 w-8 p-0"
+                    >
+                        <RefreshCw className="w-4 h-4" />
+                    </Button>
+                    <Button
+                        variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
+                        size="sm"
+                        onClick={() => setViewMode('grid')}
+                        className="h-8 w-8 p-0"
+                    >
+                        <ImageIcon className="w-4 h-4" />
+                    </Button>
+                </div>
+
+                {viewMode === 'grid' && (
+                    <div className="flex items-center gap-3 bg-card border border-white/10 px-3 py-1 rounded-lg h-10 min-w-[180px]">
+                        <span className="text-[10px] text-zinc-500 font-medium uppercase whitespace-nowrap">Columns: {gridCols}</span>
+                        <Slider
+                            value={[gridCols]}
+                            onValueChange={(val) => setGridCols(val[0])}
+                            min={2}
+                            max={8}
+                            step={1}
+                            className="w-24"
+                        />
+                    </div>
+                )}
+
                 <Button
                     variant="outline"
                     className="h-10 border-white/10 bg-card"
@@ -385,7 +454,7 @@ export default function SuperAdminMarketplace() {
                 </Button>
             </div>
 
-            <div className="rounded-xl border border-white/5 bg-card/50 backdrop-blur-sm overflow-hidden min-h-[400px]">
+            {viewMode === 'list' ? (
                 <Table>
                     <TableHeader className="bg-white/5">
                         <TableRow className="border-white/10 hover:bg-transparent">
@@ -394,24 +463,24 @@ export default function SuperAdminMarketplace() {
                             <TableHead className="text-zinc-400">Media</TableHead>
                             <TableHead className="text-zinc-400">Category</TableHead>
                             <TableHead className="text-zinc-400">Model</TableHead>
-                            <TableHead className="text-zinc-400">Price ($)</TableHead>
-                            <TableHead className="text-zinc-400">Cost (Tokens)</TableHead>
+                            <TableHead className="text-zinc-400 text-center">Price ($) / Cost</TableHead>
                             <TableHead className="text-zinc-400">Stats</TableHead>
                             <TableHead className="text-zinc-400 text-center">Status</TableHead>
+                            <TableHead className="text-center text-zinc-400">Home</TableHead>
                             <TableHead className="text-right text-zinc-400">Actions</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
                         {isLoading ? (
                             <TableRow>
-                                <TableCell colSpan={7} className="text-center py-20 text-zinc-500">
+                                <TableCell colSpan={10} className="text-center py-20 text-zinc-500">
                                     <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4" />
                                     Loading templates...
                                 </TableCell>
                             </TableRow>
                         ) : filteredTemplates.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={7} className="text-center py-20 text-zinc-500">
+                                <TableCell colSpan={10} className="text-center py-20 text-zinc-500">
                                     <ShoppingBag className="w-12 h-12 mx-auto mb-4 text-zinc-700" />
                                     No templates found match your search.
                                 </TableCell>
@@ -437,11 +506,24 @@ export default function SuperAdminMarketplace() {
                                             <div className="flex flex-col">
                                                 <div className="flex items-center gap-1.5">
                                                     <span className="font-medium text-white">{item.name}</span>
-                                                    {item.tags?.includes('featured') && (
+                                                    {(item.tags?.includes('featured') || featuredIds.includes(item.id)) && (
                                                         <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
                                                     )}
                                                 </div>
-                                                <span className="text-[10px] font-mono text-zinc-500 uppercase">{item.id}</span>
+                                                <div className="flex items-center gap-1">
+                                                    <span className="text-[10px] font-mono text-zinc-500 uppercase">{item.id}</span>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="h-4 w-4 text-zinc-600 hover:text-indigo-400 p-0"
+                                                        onClick={() => {
+                                                            navigator.clipboard.writeText(item.id);
+                                                            toast.success("ID copied");
+                                                        }}
+                                                    >
+                                                        <Copy className="h-2.5 w-2.5" />
+                                                    </Button>
+                                                </div>
                                             </div>
                                         </div>
                                     </TableCell>
@@ -452,7 +534,7 @@ export default function SuperAdminMarketplace() {
                                     </TableCell>
                                     <TableCell>
                                         <Badge variant="secondary" className="text-[10px] uppercase bg-zinc-800 text-zinc-300 border-0">
-                                            {item.media_type || ((item.template_type === 'image' || item.template_type === 'video' || item.template_type === 'workflow') ? item.template_type : 'image')}
+                                            {item.media_type || 'image'}
                                         </Badge>
                                     </TableCell>
                                     <TableCell>
@@ -463,14 +545,10 @@ export default function SuperAdminMarketplace() {
                                     <TableCell>
                                         <span className="text-xs text-zinc-400 font-medium">{getModelLabel(item.ai_model || "")}</span>
                                     </TableCell>
-                                    <TableCell>
-                                        <div className="flex items-center gap-1.5">
+                                    <TableCell className="text-center">
+                                        <div className="flex flex-col gap-1">
                                             <span className="text-emerald-400 font-mono font-bold">${item.price || 0}</span>
-                                        </div>
-                                    </TableCell>
-                                    <TableCell>
-                                        <div className="flex items-center gap-1.5">
-                                            <span className="text-yellow-400 font-mono font-bold">{item.tokens_cost}</span>
+                                            <span className="text-[10px] text-yellow-500/80 font-mono">{item.tokens_cost} tokens</span>
                                         </div>
                                     </TableCell>
                                     <TableCell>
@@ -478,9 +556,6 @@ export default function SuperAdminMarketplace() {
                                             <div className="flex items-center gap-1">
                                                 <Download className="w-3 h-3" />
                                                 {item.downloads}
-                                            </div>
-                                            <div className="flex items-center gap-1">
-                                                <Badge variant="secondary" className="px-1 py-0 h-4 text-[9px]">v1.0</Badge>
                                             </div>
                                         </div>
                                     </TableCell>
@@ -515,6 +590,17 @@ export default function SuperAdminMarketplace() {
                                             </Button>
                                         </div>
                                     </TableCell>
+                                    <TableCell className="text-center">
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => handleFeatureOnHome(item)}
+                                            className={`h-8 w-8 p-0 ${(item.tags?.includes('featured') || featuredIds.includes(item.id)) ? 'text-yellow-500' : 'text-zinc-600'}`}
+                                            title={(item.tags?.includes('featured') || featuredIds.includes(item.id)) ? "Featured on Home" : "Feature on Home"}
+                                        >
+                                            <Star className={`w-4 h-4 ${(item.tags?.includes('featured') || featuredIds.includes(item.id)) ? 'fill-current' : ''}`} />
+                                        </Button>
+                                    </TableCell>
                                     <TableCell className="text-right">
                                         <div className="flex items-center justify-end gap-1">
                                             {item.status === 'pending' && (
@@ -542,34 +628,7 @@ export default function SuperAdminMarketplace() {
                                             <Button
                                                 size="sm"
                                                 variant="ghost"
-                                                className="h-8 w-8 p-0 text-zinc-400 hover:bg-white/10"
-                                                onClick={() => copyJson(item)}
-                                                title="Copy JSON"
-                                            >
-                                                <Copy className="w-4 h-4" />
-                                            </Button>
-                                            <Button
-                                                size="sm"
-                                                variant="ghost"
                                                 className="h-8 w-8 p-0 text-indigo-400 hover:bg-indigo-500/10"
-                                                onClick={() => { setSelectedTemplate(item); setIsAssignOpen(true); }}
-                                                title="Assign to User"
-                                            >
-                                                <UserPlus className="w-4 h-4" />
-                                            </Button>
-                                            <Button
-                                                size="sm"
-                                                variant="ghost"
-                                                className="h-8 w-8 p-0 text-amber-400 hover:bg-amber-500/10"
-                                                onClick={() => handleFeatureOnHome(item)}
-                                                title="Feature on Home"
-                                            >
-                                                <Star className="w-4 h-4" />
-                                            </Button>
-                                            <Button
-                                                size="sm"
-                                                variant="ghost"
-                                                className="h-8 w-8 p-0 text-zinc-400 hover:bg-white/10"
                                                 onClick={() => openEdit(item)}
                                             >
                                                 <Edit className="w-4 h-4" />
@@ -589,7 +648,98 @@ export default function SuperAdminMarketplace() {
                         )}
                     </TableBody>
                 </Table>
-            </div>
+            ) : (
+                <div
+                    className="grid gap-6 p-6"
+                    style={{
+                        gridTemplateColumns: `repeat(${gridCols}, minmax(0, 1fr))`
+                    }}
+                >
+                    {isLoading ? (
+                        <div className="col-span-full py-20 text-center text-zinc-500">
+                            <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4" />
+                            Loading templates...
+                        </div>
+                    ) : filteredTemplates.length === 0 ? (
+                        <div className="col-span-full py-20 text-center text-zinc-500">
+                            <ShoppingBag className="w-12 h-12 mx-auto mb-4 text-zinc-700" />
+                            No templates found.
+                        </div>
+                    ) : (
+                        filteredTemplates.map((item) => (
+                            <Card key={item.id} className="bg-card border-white/10 group overflow-hidden flex flex-col hover:border-indigo-500/50 transition-all shadow-xl">
+                                <div className="aspect-[3/4] relative bg-zinc-900 overflow-hidden">
+                                    {getThumbnail(item) ? (
+                                        <img
+                                            src={getThumbnail(item)}
+                                            alt={item.name}
+                                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                        />
+                                    ) : (
+                                        <div className="w-full h-full flex items-center justify-center text-zinc-700">
+                                            <ImageIcon className="w-12 h-12" />
+                                        </div>
+                                    )}
+                                    <div className="absolute top-3 left-3 flex flex-wrap gap-2">
+                                        <Badge className="bg-black/60 backdrop-blur-md border-white/10 text-white uppercase text-[9px] h-5">
+                                            {item.template_type}
+                                        </Badge>
+                                        {(item.tags?.includes('featured') || featuredIds.includes(item.id)) && (
+                                            <Badge className="bg-yellow-500 text-black border-0 uppercase text-[9px] h-5 font-black">
+                                                Featured
+                                            </Badge>
+                                        )}
+                                    </div>
+                                    <div className="absolute bottom-0 inset-x-0 p-4 bg-gradient-to-t from-black via-black/40 to-transparent">
+                                        <h4 className="font-bold text-white mb-0.5 truncate">{item.name}</h4>
+                                        <p className="text-[10px] text-zinc-400 truncate uppercase tracking-wider">{item.category}</p>
+                                    </div>
+
+                                    {/* Grid Actions Overlay */}
+                                    <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-3">
+                                        <div className="flex gap-2">
+                                            <Button size="icon" variant="secondary" className="rounded-full" onClick={() => openEdit(item)}>
+                                                <Edit className="w-4 h-4" />
+                                            </Button>
+                                            <Button size="icon" variant="destructive" className="rounded-full" onClick={() => handleDelete(item.id)}>
+                                                <Trash2 className="w-4 h-4" />
+                                            </Button>
+                                        </div>
+                                        <div className="flex flex-col gap-2 w-full px-8">
+                                            <Button
+                                                size="sm"
+                                                variant="outline"
+                                                className="w-full border-white/20 text-xs h-8"
+                                                onClick={() => {
+                                                    navigator.clipboard.writeText(item.id);
+                                                    toast.success("ID copied");
+                                                }}
+                                            >
+                                                <Copy className="w-3.5 h-3.5 mr-2" /> Copy ID
+                                            </Button>
+                                            <Button
+                                                size="sm"
+                                                variant="outline"
+                                                className="w-full border-white/20 text-xs h-8"
+                                                onClick={() => handleFeatureOnHome(item)}
+                                            >
+                                                <Star className="w-3.5 h-3.5 mr-2" /> Feature on Home
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="p-4 flex flex-col gap-3 flex-1">
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-emerald-400 font-bold font-mono">${item.price || 0}</span>
+                                        <span className="text-zinc-500 text-[10px] font-mono">{item.id.substring(0, 8)}...</span>
+                                    </div>
+                                </div>
+                            </Card>
+                        ))
+                    )}
+                </div>
+            )
+            }
 
             {/* Create/Edit Template Dialog */}
             <Dialog open={isCreateOpen || isEditDialogOpen} onOpenChange={(open) => { if (!open) { setIsCreateOpen(false); setIsEditDialogOpen(false); } }}>
@@ -636,7 +786,56 @@ export default function SuperAdminMarketplace() {
                                 value={formData.description}
                                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                                 className="bg-card border-white/10 h-20"
+                                placeholder="What makes this style unique?"
                             />
+                        </div>
+                        <div className="space-y-2">
+                            <Label className="text-xs text-zinc-400">Template Creator (User)</Label>
+                            <Select
+                                value={formData.creator?.id || ""}
+                                onValueChange={(val) => {
+                                    const user = allUsers.find(u => u.id === val);
+                                    if (user) {
+                                        setFormData({
+                                            ...formData,
+                                            creator: {
+                                                id: user.id,
+                                                name: user.name || user.email,
+                                                avatar_url: user.image || undefined
+                                            },
+                                            creator_id: user.id
+                                        });
+                                    }
+                                }}
+                            >
+                                <SelectTrigger className="bg-card border-white/10 text-white">
+                                    <SelectValue placeholder="Select Creator" />
+                                </SelectTrigger>
+                                <SelectContent className="bg-card border-white/10 text-white">
+                                    <SelectItem value="system">Pictureme (System)</SelectItem>
+                                    {allUsers.slice(0, 20).map(u => (
+                                        <SelectItem key={u.id} value={u.id}>{u.name || u.email}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-2">
+                            <Label className="text-xs text-zinc-400">Aspect Ratio</Label>
+                            <Select
+                                value={formData.aspectRatio || "1:1"}
+                                onValueChange={(val) => setFormData({ ...formData, aspectRatio: val })}
+                            >
+                                <SelectTrigger className="bg-card border-white/10">
+                                    <SelectValue placeholder="Select Aspect Ratio" />
+                                </SelectTrigger>
+                                <SelectContent className="bg-card border-white/10 text-white">
+                                    <SelectItem value="1:1">1:1 Square</SelectItem>
+                                    <SelectItem value="2:3">2:3 Portrait</SelectItem>
+                                    <SelectItem value="4:5">4:5 Social</SelectItem>
+                                    <SelectItem value="9:16">9:16 Story</SelectItem>
+                                    <SelectItem value="16:9">16:9 Landscape</SelectItem>
+                                </SelectContent>
+                            </Select>
                         </div>
                         <div className="space-y-2">
                             <Label className="text-xs text-zinc-400">Template Tier</Label>
@@ -679,11 +878,11 @@ export default function SuperAdminMarketplace() {
                                     <SelectValue placeholder="Select AI Model" />
                                 </SelectTrigger>
                                 <SelectContent className="bg-card border-white/10 text-white">
-                                    {Object.values(AI_MODELS).filter(m => m.type === 'image').map(model => (
-                                        <SelectItem key={model.id} value={model.id}>
+                                    {Object.values(AI_MODELS).filter(m => (m as any).type === 'image' && !(m as any).isVariant).map((model: any) => (
+                                        <SelectItem key={model.shortId} value={model.id}>
                                             <div className="flex flex-col">
                                                 <span className="font-medium">{model.name}</span>
-                                                <span className="text-[10px] text-zinc-500">{model.description}</span>
+                                                {model.description && <span className="text-[10px] text-zinc-500">{model.description}</span>}
                                             </div>
                                         </SelectItem>
                                     ))}
@@ -745,7 +944,60 @@ export default function SuperAdminMarketplace() {
                                 value={formData.negative_prompt}
                                 onChange={(e) => setFormData({ ...formData, negative_prompt: e.target.value })}
                                 className="bg-card border-white/10 h-20 font-mono text-xs"
+                                placeholder="low quality, blurry, distorted..."
                             />
+                        </div>
+
+                        <div className="col-span-2 space-y-4 border-t border-white/5 pt-4 mt-2">
+                            <h4 className="text-sm font-semibold text-white">Assets & Visuals</h4>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label className="text-xs text-zinc-400">Main Preview URL</Label>
+                                    <Input
+                                        value={formData.preview_url || ""}
+                                        onChange={(e) => setFormData({ ...formData, preview_url: e.target.value })}
+                                        className="bg-card border-white/10 font-mono text-[10px]"
+                                        placeholder="https://..."
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label className="text-xs text-zinc-400">Tags (comma separated)</Label>
+                                    <Input
+                                        value={formData.tags?.join(", ") || ""}
+                                        onChange={(e) => setFormData({ ...formData, tags: e.target.value.split(",").map(t => t.trim()) })}
+                                        className="bg-card border-white/10"
+                                        placeholder="cyberpunk, neon, futuristic"
+                                    />
+                                </div>
+                                <div className="space-y-2 col-span-2">
+                                    <Label className="text-xs text-zinc-400">Gallery Images (JSON array of URLs)</Label>
+                                    <Textarea
+                                        value={JSON.stringify(formData.preview_images || [], null, 2)}
+                                        onChange={(e) => {
+                                            try {
+                                                const val = JSON.parse(e.target.value);
+                                                if (Array.isArray(val)) setFormData({ ...formData, preview_images: val });
+                                            } catch (e) { }
+                                        }}
+                                        className="bg-card border-white/10 h-24 font-mono text-[10px]"
+                                        placeholder='["https://...", "https://..."]'
+                                    />
+                                </div>
+                                <div className="space-y-2 col-span-2">
+                                    <Label className="text-xs text-zinc-400">Backgrounds/Images (Required for Events)</Label>
+                                    <Textarea
+                                        value={JSON.stringify(formData.backgrounds || [], null, 2)}
+                                        onChange={(e) => {
+                                            try {
+                                                const val = JSON.parse(e.target.value);
+                                                if (Array.isArray(val)) setFormData({ ...formData, backgrounds: val });
+                                            } catch (e) { }
+                                        }}
+                                        className="bg-card border-white/10 h-24 font-mono text-[10px]"
+                                        placeholder='["https://...", "https://..."]'
+                                    />
+                                </div>
+                            </div>
                         </div>
 
                         <div className="flex items-center gap-6 col-span-2 bg-zinc-800/50 p-3 rounded">
@@ -878,6 +1130,6 @@ export default function SuperAdminMarketplace() {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
-        </div>
+        </div >
     );
 }

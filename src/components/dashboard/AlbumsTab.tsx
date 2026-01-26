@@ -148,7 +148,7 @@ export default function AlbumsTab({ currentUser }: AlbumsTabProps) {
             Enable it in the Event Editor to start using multi-station workflows.
           </p>
           <Button
-            onClick={() => navigate('/admin/events')}
+            onClick={() => navigate('/business/events')}
             className="bg-cyan-600 hover:bg-cyan-500"
           >
             <Plus className="w-4 h-4 mr-2" />
@@ -423,7 +423,7 @@ export default function AlbumsTab({ currentUser }: AlbumsTabProps) {
                 <span className="text-xs">Open Booth</span>
               </button>
               <button
-                onClick={() => navigate(`/admin/events/edit/${selectedEvent._id}`)}
+                onClick={() => navigate(`/business/events/edit/${selectedEvent._id}`)}
                 className="h-auto py-4 flex flex-col items-center gap-2 rounded-xl bg-card/50 border border-white/10 text-zinc-300 hover:text-white hover:bg-zinc-800/50 hover:border-zinc-500/30 transition-all"
                 title="Edit event settings"
               >

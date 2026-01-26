@@ -25,6 +25,7 @@ import {
     Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter
 } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Slider } from "@/components/ui/slider";
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
     ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Legend
@@ -32,6 +33,7 @@ import {
 import { ENV } from "@/config/env";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { AI_MODELS, getModelDisplayName } from "@/services/aiProcessor";
 
 // --- Types ---
 
@@ -84,12 +86,12 @@ export function AssetManager() {
     const [totalPages, setTotalPages] = useState(1);
     const [pageSize, setPageSize] = useState(24);
 
-    // Filters State
     const [filters, setFilters] = useState({
         user_search: "",
         model: "all",
         asset_type: "all",
         status: "all",
+        user_tier: "creators", // Default to creators as per user request
         date_from: "",
         date_to: "",
         sort_by: "created_at",
@@ -98,6 +100,11 @@ export function AssetManager() {
 
     const [previewAsset, setPreviewAsset] = useState<Asset | null>(null);
     const [isBulkActionLoading, setIsBulkActionLoading] = useState(false);
+    const [columns, setColumns] = useState(4);
+
+    const getModelLabel = (modelId: string) => {
+        return getModelDisplayName(modelId);
+    };
 
     useEffect(() => {
         // Update URL when view changes
@@ -133,6 +140,7 @@ export function AssetManager() {
             if (filters.model !== 'all') params.append("model", filters.model);
             if (filters.asset_type !== 'all') params.append("asset_type", filters.asset_type);
             if (filters.status !== 'all') params.append("status", filters.status);
+            if (filters.user_tier !== 'all') params.append("user_tier", filters.user_tier);
             if (filters.date_from) params.append("date_from", filters.date_from);
             if (filters.date_to) params.append("date_to", filters.date_to);
 
@@ -162,13 +170,16 @@ export function AssetManager() {
         setIsStatsLoading(true);
         try {
             const token = localStorage.getItem("auth_token");
-            const response = await fetch(`${ENV.API_URL}/api/admin/assets/stats`, {
+            const response = await fetch(`${ENV.API_URL}/api/admin/assets/stats?user_tier=${filters.user_tier}`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             if (response.ok) {
                 const data = await response.json();
                 (data as any)._timestamp = Date.now();
                 setStats(data);
+            } else {
+                const errorData = await response.json();
+                toast.error(errorData.error || "Error loading statistics");
             }
         } catch (error) {
             toast.error("Error loading statistics");
@@ -242,7 +253,9 @@ export function AssetManager() {
 
     // --- Render Components ---
 
-    const FilterPanel = () => (
+    // --- Render Helpers ---
+
+    const renderFilterPanel = () => (
         <Card className="bg-card/50 border-white/10 mb-6">
             <CardContent className="p-4 flex flex-wrap items-end gap-4">
                 <div className="flex-1 min-w-[200px] space-y-1.5">
@@ -289,6 +302,20 @@ export function AssetManager() {
                 </div>
 
                 <div className="w-[140px] space-y-1.5">
+                    <label className="text-xs text-zinc-400">User Tier</label>
+                    <Select value={filters.user_tier} onValueChange={(v) => setFilters(f => ({ ...f, user_tier: v }))}>
+                        <SelectTrigger className="bg-zinc-900 border-white/10 border-indigo-500/30">
+                            <SelectValue placeholder="User Tier" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-zinc-900 border-white/10 text-white">
+                            <SelectItem value="all">All Tiers</SelectItem>
+                            <SelectItem value="creators">Creators Only</SelectItem>
+                            <SelectItem value="business">Business Only</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
+
+                <div className="w-[140px] space-y-1.5">
                     <label className="text-xs text-zinc-400">From Date</label>
                     <Input
                         type="date"
@@ -319,6 +346,7 @@ export function AssetManager() {
                                 model: "all",
                                 asset_type: "all",
                                 status: "all",
+                                user_tier: "creators",
                                 date_from: "",
                                 date_to: "",
                                 sort_by: "created_at",
@@ -351,12 +379,19 @@ export function AssetManager() {
                     </div>
                 </div>
 
-                <img
-                    src={asset.url || asset.thumbnail_url}
-                    className="w-full h-full object-cover transition-transform group-hover:scale-105"
-                    alt=""
-                    loading="lazy"
-                />
+                {(asset.type === 'video' && !asset.thumbnail_url) ? (
+                    <div className="w-full h-full flex flex-col items-center justify-center bg-zinc-800 text-zinc-500">
+                        <Play className="w-8 h-8 mb-2 opacity-20" />
+                        <span className="text-[10px] uppercase tracking-widest font-bold">Video</span>
+                    </div>
+                ) : (
+                    <img
+                        src={asset.thumbnail_url || asset.url}
+                        className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                        alt=""
+                        loading="lazy"
+                    />
+                )}
 
                 {asset.type === 'video' && (
                     <div className="absolute top-3 right-3 bg-black/60 backdrop-blur-md p-1.5 rounded-full pointer-events-none">
@@ -412,7 +447,7 @@ export function AssetManager() {
                     </div>
                     <div className="flex flex-wrap gap-1.5">
                         <Badge variant="outline" className="text-[9px] h-4 bg-zinc-900/50 border-white/10 text-zinc-300">
-                            {asset.model || 'Unknown'}
+                            {getModelLabel(asset.model)}
                         </Badge>
                         <Badge variant="outline" className={`text-[9px] h-4 border-0 ${asset.status === 'flagged' ? 'bg-red-500/20 text-red-400' :
                             asset.status === 'private' ? 'bg-amber-500/20 text-amber-400' :
@@ -468,7 +503,14 @@ export function AssetManager() {
                                 <BarChart data={stats.models_usage} layout="vertical">
                                     <CartesianGrid strokeDasharray="3 3" stroke="#27272a" horizontal={false} />
                                     <XAxis type="number" stroke="#71717a" fontSize={10} />
-                                    <YAxis dataKey="model" type="category" stroke="#71717a" fontSize={10} width={100} />
+                                    <YAxis
+                                        dataKey="model"
+                                        type="category"
+                                        stroke="#71717a"
+                                        fontSize={10}
+                                        width={100}
+                                        tickFormatter={(m) => getModelDisplayName(m)}
+                                    />
                                     <Tooltip
                                         contentStyle={{ backgroundColor: '#18181b', border: '1px solid #27272a' }}
                                         cursor={{ fill: '#27272a' }}
@@ -551,6 +593,20 @@ export function AssetManager() {
                 </div>
 
                 <div className="flex items-center gap-2">
+                    {view === 'grid' && (
+                        <div className="flex items-center gap-3 mr-4 bg-zinc-900/50 px-3 py-1.5 rounded-lg border border-white/5">
+                            <span className="text-[10px] text-zinc-500 uppercase font-bold">Columns</span>
+                            <Slider
+                                value={[columns]}
+                                onValueChange={(v) => setColumns(v[0])}
+                                min={2}
+                                max={8}
+                                step={1}
+                                className="w-24"
+                            />
+                            <span className="text-xs font-mono text-zinc-400 w-4 text-center">{columns}</span>
+                        </div>
+                    )}
                     {selectedAssets.length > 0 && (
                         <div className="flex items-center gap-2 mr-4 bg-indigo-500/10 border border-indigo-500/20 px-3 py-1.5 rounded-lg">
                             <span className="text-xs font-medium text-indigo-400">{selectedAssets.length} selected</span>
@@ -590,7 +646,7 @@ export function AssetManager() {
                 </div>
             </div>
 
-            {view !== 'stats' && <FilterPanel />}
+            {view !== 'stats' && renderFilterPanel()}
 
             {isLoading && view !== 'stats' && assets.length === 0 ? (
                 <div className="py-20 flex flex-col items-center justify-center text-zinc-500">
@@ -599,7 +655,10 @@ export function AssetManager() {
                 </div>
             ) : view === 'grid' ? (
                 <div className="space-y-6">
-                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4">
+                    <div
+                        className="grid gap-4"
+                        style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}
+                    >
                         {assets.map(asset => <AssetCard key={asset.id} asset={asset} />)}
                     </div>
                     {assets.length === 0 && !isLoading && (
@@ -642,7 +701,13 @@ export function AssetManager() {
                                     </TableCell>
                                     <TableCell>
                                         <div className="relative w-12 h-16 rounded overflow-hidden bg-black shrink-0 cursor-pointer" onClick={() => setPreviewAsset(asset)}>
-                                            <img src={asset.url || asset.thumbnail_url} className="w-full h-full object-cover" />
+                                            {(asset.type === 'video' && !asset.thumbnail_url) ? (
+                                                <div className="w-full h-full flex items-center justify-center bg-zinc-800">
+                                                    <Play className="w-4 h-4 text-zinc-600" />
+                                                </div>
+                                            ) : (
+                                                <img src={asset.thumbnail_url || asset.url} className="w-full h-full object-cover" />
+                                            )}
                                             {asset.type === 'video' && (
                                                 <div className="absolute inset-0 flex items-center justify-center bg-black/20">
                                                     <Play className="w-3 h-3 text-white fill-white" />
@@ -658,7 +723,7 @@ export function AssetManager() {
                                     </TableCell>
                                     <TableCell>
                                         <div>
-                                            <p className="text-sm text-zinc-300">{asset.model || 'Unknown'}</p>
+                                            <p className="text-sm text-zinc-300">{getModelLabel(asset.model)}</p>
                                             <Badge variant="outline" className="p-0 text-[10px] text-zinc-500 uppercase h-auto border-0 bg-transparent">
                                                 {asset.type}
                                             </Badge>
@@ -790,7 +855,7 @@ export function AssetManager() {
                                     <div className="grid grid-cols-2 gap-4">
                                         <div>
                                             <p className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider mb-1">Model</p>
-                                            <p className="text-sm font-medium">{previewAsset?.model || 'Unknown'}</p>
+                                            <p className="text-sm font-medium">{getModelLabel(previewAsset?.model || "")}</p>
                                         </div>
                                         <div>
                                             <p className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider mb-1">Created At</p>

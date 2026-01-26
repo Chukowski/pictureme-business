@@ -69,6 +69,8 @@ interface Tier {
     category: string;
     highlight: string;
     is_active: boolean;
+    stripe_price_id?: string;
+    stripe_product_id?: string;
     created_at: string;
     updated_at: string;
 }
@@ -88,7 +90,9 @@ export default function SuperAdminTiers() {
         featuresText: "",
         category: "individual",
         highlight: "",
-        isActive: true
+        isActive: true,
+        stripePriceId: "",
+        stripeProductId: ""
     });
 
     useEffect(() => {
@@ -127,7 +131,9 @@ export default function SuperAdminTiers() {
             featuresText: Array.isArray(tier.features) ? tier.features.join("\n") : "",
             category: tier.category || "individual",
             highlight: tier.highlight || "",
-            isActive: tier.is_active
+            isActive: tier.is_active,
+            stripePriceId: tier.stripe_price_id || "",
+            stripeProductId: tier.stripe_product_id || ""
         });
         setIsDialogOpen(true);
     };
@@ -142,7 +148,9 @@ export default function SuperAdminTiers() {
             featuresText: "",
             category: "individual",
             highlight: "",
-            isActive: true
+            isActive: true,
+            stripePriceId: "",
+            stripeProductId: ""
         });
         setIsDialogOpen(true);
     };
@@ -168,7 +176,9 @@ export default function SuperAdminTiers() {
                 features: features,
                 category: form.category,
                 highlight: form.highlight,
-                isActive: form.isActive
+                isActive: form.isActive,
+                stripePriceId: form.stripePriceId,
+                stripeProductId: form.stripeProductId
             };
 
             const response = await fetch(url, {
@@ -458,6 +468,34 @@ export default function SuperAdminTiers() {
                                 checked={form.isActive}
                                 onCheckedChange={(c) => setForm({ ...form, isActive: c })}
                             />
+                        </div>
+
+                        {/* Stripe Info (Developer) */}
+                        <div className="pt-4 border-t border-white/5 space-y-4">
+                            <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Advanced (Stripe)</h4>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-1.5">
+                                    <Label className="text-[10px] text-zinc-500">Product ID</Label>
+                                    <Input
+                                        value={form.stripeProductId}
+                                        onChange={(e) => setForm({ ...form, stripeProductId: e.target.value })}
+                                        className="bg-[#101112] border-zinc-900 h-7 text-[10px] text-zinc-400 font-mono"
+                                        placeholder="prod_..."
+                                    />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <Label className="text-[10px] text-zinc-500">Price ID</Label>
+                                    <Input
+                                        value={form.stripePriceId}
+                                        onChange={(e) => setForm({ ...form, stripePriceId: e.target.value })}
+                                        className="bg-[#101112] border-zinc-900 h-7 text-[10px] text-zinc-400 font-mono"
+                                        placeholder="price_..."
+                                    />
+                                </div>
+                            </div>
+                            <p className="text-[9px] text-zinc-600 italic">
+                                Leave blank to auto-create on next save. Changing existing IDs will reconnect this tier to a different Stripe product.
+                            </p>
                         </div>
                     </div>
 

@@ -22,6 +22,19 @@ import {
     TableHeader,
     TableRow
 } from "@/components/ui/table";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Plus, CreditCard, Package, DollarSign, Edit2, Trash2, Save, Loader2, AlertCircle, RefreshCw, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { ENV } from "@/config/env";
@@ -34,21 +47,54 @@ interface TokenPackage {
     price_usd: number;
     is_active: boolean;
     stripe_price_id?: string;
+    stripe_product_id?: string;
     created_at?: string;
     plan_type?: 'individual' | 'business';
     validity_days?: number;
     is_enterprise?: boolean;
 }
 
-interface Transaction {
-    id: number;
-    user_email: string;
-    amount: number;
-    tokens: number;
-    package_name: string;
-    created_at: string;
-    status: string;
-}
+const INFRA_MULTIPLIER = 1.15;
+const RISK_MULTIPLIER_BY_TYPE: Record<string, number> = {
+    text_to_image: 1.1,
+    image_to_image: 1.1,
+    lora_inference: 1.3, // premium_image
+    video: 1.4,         // video_async
+    video_extend: 1.4,
+    video_to_video: 1.5,
+    realtime_video: 1.6,
+    lora_training: 2.0,
+    upscaler: 1.1,
+    background_remove: 1.0
+};
+const MIN_TOKEN_PRICE_USD = 0.07;
+const REC_TOKEN_PRICE_MIN = 0.08;
+const REC_TOKEN_PRICE_MAX = 0.10;
+
+const VIDEO_PRICING_CONFIG: Record<string, any> = {
+    "fal": {
+        "veo_3_1": {
+            "name": "Veo 3.1",
+            "1080p": { off: 0.20, on: 0.40 },
+            "4k": { off: 0.40, on: 0.60 }
+        },
+        "veo_3_1_fast": {
+            "name": "Veo 3.1 Fast",
+            "1080p": { off: 0.10, on: 0.15 },
+            "4k": { off: 0.30, on: 0.35 }
+        },
+        "kling_2_6": {
+            "name": "Kling 2.6",
+            "1080p": { off: 0.07, on: 0.14 },
+            "4k": { off: 0.07, on: 0.14 } // Kling pricing listed doesn't differentiate res currently
+        },
+        "wan": {
+            "name": "Wan",
+            "1080p": { off: 0.05, on: 0.10 },
+            "4k": { off: 0.05, on: 0.10 }
+        }
+    }
+};
 
 export default function SuperAdminBilling() {
     const [packages, setPackages] = useState<TokenPackage[]>([]);
@@ -66,8 +112,32 @@ export default function SuperAdminBilling() {
         price_usd: 10,
         is_active: true,
         stripe_price_id: "",
+        stripe_product_id: "",
         plan_type: "individual" as 'individual' | 'business',
         validity_days: 30
+    });
+
+    // Calculator state
+    const [calcData, setCalcData] = useState({
+        operation_category: "image" as "image" | "video",
+        provider: "fal",
+        // Image fields
+        operation_type: "text_to_image",
+        real_cost_usd_image: 0.02,
+        resolution_multiplier: 1,
+        // Video fields
+        video_model: "veo_3_1",
+        duration_seconds: 5,
+        video_resolution: "1080p",
+        audio: "off" as "on" | "off",
+        is_manual_video: false,
+        real_cost_usd_video: 0.20,
+        // Shared
+        extra_costs_usd: 0,
+        show_advanced: false, // For Extra Costs visibility
+        infra_multiplier: 1.15,
+        risk_multiplier_video: 1.4,
+        selling_price_token: 0.08
     });
 
     useEffect(() => {
@@ -112,13 +182,13 @@ export default function SuperAdminBilling() {
         try {
             const token = localStorage.getItem("auth_token");
 
-            const response = await fetch(`${ENV.API_URL}/api/admin/token-transactions?limit=20`, {
+            const response = await fetch(`${ENV.API_URL}/api/admin/devtools/transactions?limit=20`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
 
             if (response.ok) {
                 const data = await response.json();
-                setTransactions(data);
+                setTransactions(data.transactions || []);
             }
         } catch (error) {
             console.error("Error fetching transactions:", error);
@@ -134,6 +204,7 @@ export default function SuperAdminBilling() {
             price_usd: 10,
             is_active: true,
             stripe_price_id: "",
+            stripe_product_id: "",
             plan_type: "individual",
             validity_days: 30
         });
@@ -149,6 +220,7 @@ export default function SuperAdminBilling() {
             price_usd: pkg.price_usd,
             is_active: pkg.is_active,
             stripe_price_id: pkg.stripe_price_id || "",
+            stripe_product_id: pkg.stripe_product_id || "",
             plan_type: pkg.plan_type || "individual",
             validity_days: pkg.validity_days || 30
         });
@@ -498,68 +570,381 @@ export default function SuperAdminBilling() {
 
                 {/* Pricing Calculator Tab */}
                 <TabsContent value="pricing" className="space-y-4">
-                    <h2 className="text-xl font-semibold">Pricing Calculator</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <Card className="bg-card/50 border-white/10">
-                            <CardHeader>
-                                <CardTitle>Cost Analysis</CardTitle>
-                                <CardDescription>Calculate token pricing based on FAL.ai costs</CardDescription>
+                    <div>
+                        <h2 className="text-xl font-semibold text-white">Advanced Pricing Calculator</h2>
+                        <p className="text-sm text-zinc-500">Determine token consumption based on real infrastructure and risk costs.</p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        {/* Inputs */}
+                        <Card className="bg-card/50 border-white/10 md:col-span-2">
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0">
+                                <CardTitle className="text-indigo-400">Operation Parameters</CardTitle>
+                                <Tabs value={calcData.operation_category} onValueChange={(v) => setCalcData({ ...calcData, operation_category: v as any })} className="w-auto">
+                                    <TabsList className="bg-zinc-900 border border-white/5 h-8 p-1">
+                                        <TabsTrigger value="image" className="text-[10px] px-3 h-6">Image</TabsTrigger>
+                                        <TabsTrigger value="video" className="text-[10px] px-3 h-6">Video</TabsTrigger>
+                                    </TabsList>
+                                </Tabs>
                             </CardHeader>
-                            <CardContent className="space-y-4">
-                                <div className="space-y-2">
-                                    <Label>FAL.ai Cost per Image ($)</Label>
-                                    <Input
-                                        type="number"
-                                        step="0.001"
-                                        defaultValue="0.02"
-                                        className="bg-card border-white/10"
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label>Tokens per Generation</Label>
-                                    <Input
-                                        type="number"
-                                        defaultValue="1"
-                                        className="bg-card border-white/10"
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label>Desired Margin (%)</Label>
-                                    <Input
-                                        type="number"
-                                        defaultValue="50"
-                                        className="bg-card border-white/10"
-                                    />
-                                </div>
-                                <div className="p-4 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
-                                    <p className="text-sm text-zinc-400">Suggested Price per Token:</p>
-                                    <p className="text-2xl font-bold text-emerald-400">$0.03</p>
+                            <CardContent className="space-y-6">
+                                {calcData.operation_category === 'image' ? (
+                                    <>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="space-y-1.5">
+                                                <Label>Provider</Label>
+                                                <Select value={calcData.provider} onValueChange={(v) => setCalcData({ ...calcData, provider: v })}>
+                                                    <SelectTrigger className="bg-zinc-900 border-white/10 h-10">
+                                                        <SelectValue />
+                                                    </SelectTrigger>
+                                                    <SelectContent className="bg-zinc-900 border-white/10 text-white">
+                                                        <SelectItem value="fal">FAL.ai</SelectItem>
+                                                        <SelectItem value="wavespeed">WaveSpeed</SelectItem>
+                                                        <SelectItem value="replicate">Replicate</SelectItem>
+                                                        <SelectItem value="self-host">Self-Host</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <Label>Operation Type</Label>
+                                                <Select value={calcData.operation_type} onValueChange={(v) => setCalcData({ ...calcData, operation_type: v })}>
+                                                    <SelectTrigger className="bg-zinc-900 border-white/10 h-10 text-zinc-200">
+                                                        <SelectValue />
+                                                    </SelectTrigger>
+                                                    <SelectContent className="bg-zinc-900 border-white/10 text-white">
+                                                        <SelectItem value="text_to_image">Text to Image</SelectItem>
+                                                        <SelectItem value="image_to_image">Image to Image</SelectItem>
+                                                        <SelectItem value="lora_inference">LoRA Inference</SelectItem>
+                                                        <SelectItem value="upscaler">Upscaler</SelectItem>
+                                                        <SelectItem value="background_remove">BG Remove</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="space-y-1.5">
+                                                <Label>Real Cost per Unit ($)</Label>
+                                                <Input
+                                                    type="number"
+                                                    step="0.0001"
+                                                    value={calcData.real_cost_usd_image}
+                                                    onChange={(e) => setCalcData({ ...calcData, real_cost_usd_image: parseFloat(e.target.value) || 0 })}
+                                                    className="bg-zinc-900 border-white/10 h-10"
+                                                />
+                                                <p className="text-[10px] text-zinc-500">The actual price billed by the AI provider.</p>
+                                            </div>
+
+                                            <div className="space-y-1.5">
+                                                <Label>Resolution Multiplier</Label>
+                                                <Select
+                                                    value={calcData.resolution_multiplier.toString()}
+                                                    onValueChange={(v) => setCalcData({ ...calcData, resolution_multiplier: parseInt(v) })}
+                                                >
+                                                    <SelectTrigger className="bg-zinc-900 border-white/10 h-10">
+                                                        <SelectValue />
+                                                    </SelectTrigger>
+                                                    <SelectContent className="bg-zinc-900 border-white/10 text-white">
+                                                        <SelectItem value="1">1x (Standard)</SelectItem>
+                                                        <SelectItem value="2">2x (Pro/4K)</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="space-y-1.5 opacity-50 grayscale pointer-events-none">
+                                                <Label>Provider</Label>
+                                                <Select value={calcData.provider} onValueChange={(v) => setCalcData({ ...calcData, provider: v })}>
+                                                    <SelectTrigger className="bg-zinc-900 border-white/10 h-10">
+                                                        <SelectValue />
+                                                    </SelectTrigger>
+                                                    <SelectContent className="bg-zinc-900 border-white/10 text-white">
+                                                        <SelectItem value="fal">FAL.ai</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <div className="flex items-center justify-between">
+                                                    <Label>{calcData.is_manual_video ? "Manual Cost ($/s)" : "Video Model"}</Label>
+                                                    <div className="flex items-center gap-1.5 pb-1">
+                                                        <Label className="text-[9px] text-zinc-500">Manual</Label>
+                                                        <Switch
+                                                            className="scale-75 h-4 w-7"
+                                                            checked={calcData.is_manual_video}
+                                                            onCheckedChange={(c) => setCalcData({ ...calcData, is_manual_video: c })}
+                                                        />
+                                                    </div>
+                                                </div>
+                                                {!calcData.is_manual_video ? (
+                                                    <Select value={calcData.video_model} onValueChange={(v) => setCalcData({ ...calcData, video_model: v })}>
+                                                        <SelectTrigger className="bg-zinc-900 border-white/10 h-10 text-zinc-200">
+                                                            <SelectValue />
+                                                        </SelectTrigger>
+                                                        <SelectContent className="bg-zinc-900 border-white/10 text-white">
+                                                            {Object.entries(VIDEO_PRICING_CONFIG[calcData.provider] || {}).map(([id, cfg]: [string, any]) => (
+                                                                <SelectItem key={id} value={id}>{cfg.name}</SelectItem>
+                                                            ))}
+                                                        </SelectContent>
+                                                    </Select>
+                                                ) : (
+                                                    <div className="relative">
+                                                        <Input
+                                                            type="number"
+                                                            step="0.01"
+                                                            value={calcData.real_cost_usd_video}
+                                                            onChange={(e) => setCalcData({ ...calcData, real_cost_usd_video: parseFloat(e.target.value) || 0 })}
+                                                            className="bg-zinc-900 border-indigo-500/50 h-10 pr-12"
+                                                        />
+                                                        <span className="absolute right-3 top-2.5 text-[10px] text-zinc-500">$/sec</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="space-y-1.5">
+                                                <Label>Duration (Seconds)</Label>
+                                                <div className="flex gap-2">
+                                                    <Input
+                                                        type="number"
+                                                        value={calcData.duration_seconds}
+                                                        onChange={(e) => setCalcData({ ...calcData, duration_seconds: parseInt(e.target.value) || 1 })}
+                                                        className="bg-zinc-900 border-white/10 h-10 flex-1"
+                                                    />
+                                                    <Button variant="outline" className="h-10 px-3 border-white/5 bg-zinc-900 text-[10px]" onClick={() => setCalcData({ ...calcData, duration_seconds: 5 })}>5s</Button>
+                                                    <Button variant="outline" className="h-10 px-3 border-white/5 bg-zinc-900 text-[10px]" onClick={() => setCalcData({ ...calcData, duration_seconds: 10 })}>10s</Button>
+                                                </div>
+                                            </div>
+
+                                            <div className="space-y-1.5">
+                                                <Label>Resolution</Label>
+                                                <Select
+                                                    value={calcData.video_resolution}
+                                                    onValueChange={(v) => setCalcData({ ...calcData, video_resolution: v })}
+                                                >
+                                                    <SelectTrigger className="bg-zinc-900 border-white/10 h-10">
+                                                        <SelectValue />
+                                                    </SelectTrigger>
+                                                    <SelectContent className="bg-zinc-900 border-white/10 text-white">
+                                                        <SelectItem value="1080p">1080p</SelectItem>
+                                                        <SelectItem value="4k">4K / Ultra</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="flex items-center justify-between p-3 rounded-lg bg-zinc-900 border border-white/5">
+                                                <div className="space-y-0.5">
+                                                    <Label className="text-xs font-medium text-zinc-300">Audio Overlay</Label>
+                                                    <p className="text-[10px] text-zinc-500">Enable sound generation</p>
+                                                </div>
+                                                <Switch
+                                                    checked={calcData.audio === 'on'}
+                                                    onCheckedChange={(c) => setCalcData({ ...calcData, audio: c ? 'on' : 'off' })}
+                                                />
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <Label>Infrastructure Multiplier (%)</Label>
+                                                <Input
+                                                    type="number"
+                                                    value={(calcData.infra_multiplier - 1) * 100}
+                                                    onChange={(e) => setCalcData({ ...calcData, infra_multiplier: (parseFloat(e.target.value) / 100) + 1 })}
+                                                    className="bg-zinc-900 border-white/10 h-10"
+                                                />
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
+
+                                <div className="space-y-4 pt-4 border-t border-white/5">
+                                    <div className="flex items-center justify-between">
+                                        <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Advanced Configuration</h4>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-6 text-[10px]"
+                                            onClick={() => setCalcData({ ...calcData, show_advanced: !calcData.show_advanced })}
+                                        >
+                                            {calcData.show_advanced ? "Hide" : "Show"}
+                                        </Button>
+                                    </div>
+
+                                    {calcData.show_advanced && (
+                                        <div className="grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-1 duration-200">
+                                            <div className="space-y-1.5">
+                                                <div className="flex items-center gap-1.5">
+                                                    <Label>Exceptional Costs ($)</Label>
+                                                    <TooltipProvider>
+                                                        <Tooltip>
+                                                            <TooltipTrigger asChild>
+                                                                <AlertCircle className="w-3 h-3 text-zinc-500 cursor-help" />
+                                                            </TooltipTrigger>
+                                                            <TooltipContent className="bg-zinc-900 border-white/10 text-[10px] max-w-[200px]">
+                                                                Only use for non-standard costs like search, retries, or high-fidelity audio overlays.
+                                                            </TooltipContent>
+                                                        </Tooltip>
+                                                    </TooltipProvider>
+                                                </div>
+                                                <Input
+                                                    type="number"
+                                                    step="0.01"
+                                                    value={calcData.extra_costs_usd}
+                                                    onChange={(e) => setCalcData({ ...calcData, extra_costs_usd: parseFloat(e.target.value) || 0 })}
+                                                    className="bg-zinc-900 border-white/10 h-10"
+                                                    placeholder="0.00"
+                                                />
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <Label>
+                                                    {calcData.operation_category === 'video' ? "Risk Multiplier (Override)" : "Risk Multiplier"}
+                                                </Label>
+                                                <Input
+                                                    type="number"
+                                                    step="0.1"
+                                                    value={calcData.operation_category === 'video' ? calcData.risk_multiplier_video : RISK_MULTIPLIER_BY_TYPE[calcData.operation_type]}
+                                                    onChange={(e) => {
+                                                        const val = parseFloat(e.target.value) || 1;
+                                                        if (calcData.operation_category === 'video') {
+                                                            setCalcData({ ...calcData, risk_multiplier_video: val });
+                                                        }
+                                                    }}
+                                                    className="bg-zinc-900 border-white/10 h-10"
+                                                    disabled={calcData.operation_category === 'image'}
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <div className="space-y-1.5">
+                                        <Label>Selling Token Price ($)</Label>
+                                        <Input
+                                            type="number"
+                                            step="0.001"
+                                            value={calcData.selling_price_token}
+                                            onChange={(e) => setCalcData({ ...calcData, selling_price_token: parseFloat(e.target.value) || 0.08 })}
+                                            className="bg-zinc-900 border-white/10 h-10"
+                                        />
+                                        <p className="text-[10px] text-zinc-500">Current market price per token in packages.</p>
+                                    </div>
                                 </div>
                             </CardContent>
                         </Card>
 
-                        <Card className="bg-card/50 border-white/10">
-                            <CardHeader>
-                                <CardTitle>Package Comparison</CardTitle>
-                                <CardDescription>Compare value across packages</CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="space-y-3">
-                                    {packages.filter(p => p.is_active).map(pkg => (
-                                        <div key={pkg.id} className="flex items-center justify-between p-3 rounded-lg bg-white/5">
-                                            <div>
-                                                <p className="font-medium text-white">{pkg.name}</p>
-                                                <p className="text-xs text-zinc-500">{pkg.tokens.toLocaleString()} tokens</p>
+                        {/* Analysis Output */}
+                        <div className="space-y-4">
+                            {(() => {
+                                // CALCULATION LOGIC
+                                let realCost = 0;
+                                let riskMult = 1.0;
+
+                                if (calcData.operation_category === 'image') {
+                                    realCost = calcData.real_cost_usd_image * calcData.resolution_multiplier;
+                                    riskMult = RISK_MULTIPLIER_BY_TYPE[calcData.operation_type] || 1.15;
+                                } else {
+                                    // Video Logic
+                                    let costPerSec = 0;
+                                    if (calcData.is_manual_video) {
+                                        costPerSec = calcData.real_cost_usd_video;
+                                    } else {
+                                        const modelCfg = VIDEO_PRICING_CONFIG[calcData.provider]?.[calcData.video_model];
+                                        costPerSec = modelCfg?.[calcData.video_resolution]?.[calcData.audio] || 0.20;
+                                    }
+                                    realCost = calcData.duration_seconds * costPerSec;
+                                    riskMult = calcData.risk_multiplier_video;
+                                }
+
+                                realCost += calcData.extra_costs_usd;
+
+                                const infraAdjusted = realCost * calcData.infra_multiplier;
+                                const riskAdjusted = infraAdjusted * riskMult;
+
+                                const minTokens = calcData.operation_category === 'video' ? 5 : 1;
+                                const tokensRequired = Math.max(minTokens, Math.ceil(
+                                    riskAdjusted / calcData.selling_price_token
+                                ));
+
+                                const revenue = tokensRequired * calcData.selling_price_token;
+                                // TRUE MARGIN Calculation (using riskAdjusted as true cost)
+                                const trueCost = riskAdjusted;
+                                const margin = revenue > 0 ? (1 - (trueCost / revenue)) * 100 : 0;
+                                const effectiveCostPerToken = realCost / tokensRequired;
+
+                                const warnings = [];
+                                if (margin < 40) warnings.push("LOW_TRUE_MARGIN_RISKY");
+                                if (tokensRequired < 5 && realCost > 0.50) warnings.push("HIGH_RISK_MODEL_UNDERVALUED");
+                                if (calcData.selling_price_token < MIN_TOKEN_PRICE_USD) warnings.push("TOKEN_PRICE_UNPROFITABLE");
+
+                                return (
+                                    <>
+                                        <Card className="bg-indigo-600 border-none shadow-lg shadow-indigo-900/20 overflow-hidden relative">
+                                            <div className="absolute top-0 right-0 p-4 opacity-10">
+                                                <Sparkles className="w-16 h-16" />
                                             </div>
-                                            <div className="text-right">
-                                                <p className="font-bold text-white">${pkg.price_usd}</p>
-                                                <p className="text-xs text-emerald-400">${pricePerToken(pkg)}/token</p>
-                                            </div>
+                                            <CardHeader className="pb-2">
+                                                <CardTitle className="text-white text-[10px] uppercase tracking-widest font-bold">Defensive Token Requirement</CardTitle>
+                                            </CardHeader>
+                                            <CardContent>
+                                                <div className="text-5xl font-black text-white">
+                                                    {tokensRequired} <span className="text-sm font-normal opacity-60">tokens</span>
+                                                </div>
+                                                <p className="text-white/60 text-[9px] mt-2 italic">
+                                                    Price Protection: {minTokens === 5 ? "Video Floor Active (5 tkn)" : "Standard Floor Active (1 tkn)"}
+                                                </p>
+                                            </CardContent>
+                                        </Card>
+
+                                        <Card className="bg-card border-white/10">
+                                            <CardHeader className="pb-0 pt-4">
+                                                <h4 className="text-[10px] text-zinc-500 font-bold uppercase">Balance Sheet</h4>
+                                            </CardHeader>
+                                            <CardContent className="p-4 space-y-3">
+                                                <div className="flex justify-between items-center text-sm">
+                                                    <span className="text-zinc-400">Provider Cost (Real):</span>
+                                                    <span className="text-white font-mono font-bold">${realCost.toFixed(3)}</span>
+                                                </div>
+                                                <div className="flex justify-between items-center text-sm">
+                                                    <span className="text-zinc-400">Operational Cost (True):</span>
+                                                    <span className="text-zinc-300 font-mono">${trueCost.toFixed(3)}</span>
+                                                </div>
+                                                <div className="flex justify-between items-center border-t border-white/5 pt-3">
+                                                    <span className="text-sm text-zinc-400">Net Business Margin:</span>
+                                                    <span className={`text-lg font-black ${margin < 40 ? 'text-red-400' : margin < 60 ? 'text-amber-400' : 'text-emerald-400'}`}>
+                                                        {margin.toFixed(1)}%
+                                                    </span>
+                                                </div>
+
+                                                {warnings.length > 0 && (
+                                                    <div className="pt-3 border-t border-white/5 space-y-2">
+                                                        <p className="text-[10px] uppercase font-bold text-zinc-500">Stability Warnings</p>
+                                                        {warnings.map(w => (
+                                                            <div key={w} className={`flex items-center gap-2 text-[10px] font-bold py-1.5 px-2 rounded-md ${w.includes('RISKY') || w.includes('UNPROFITABLE') ? 'bg-red-500/10 text-red-400 border border-red-500/10' : 'bg-amber-500/10 text-amber-400 border border-amber-500/10'}`}>
+                                                                <AlertCircle className="w-3 h-3" />
+                                                                {w.replaceAll('_', ' ')}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </CardContent>
+                                        </Card>
+
+                                        <div className="p-3 rounded-lg bg-zinc-900 border border-white/5 text-[10px] text-zinc-500 leading-relaxed shadow-inner">
+                                            <h4 className="font-bold text-zinc-400 mb-1.5 flex items-center gap-2">
+                                                <Sparkles className="w-3 h-3 text-indigo-400" />
+                                                Business Recommendation
+                                            </h4>
+                                            {margin < 40 ?
+                                                "⚠️ High Risk: The margin doesn't adequately cover operational overhead. Consider increasing tokens or risk-tiering." :
+                                                "✅ Sustainable: This model handles infra cost and platform risk while maintaining target profitability."
+                                            }
                                         </div>
-                                    ))}
-                                </div>
-                            </CardContent>
-                        </Card>
+                                    </>
+                                );
+                            })()}
+                        </div>
                     </div>
                 </TabsContent>
             </Tabs>
@@ -675,18 +1060,29 @@ export default function SuperAdminBilling() {
                             </div>
                         )}
 
-                        <div className="space-y-2">
-                            <Label>Stripe Price ID (Optional)</Label>
-                            <Input
-                                value={formData.stripe_price_id}
-                                onChange={(e) => setFormData({ ...formData, stripe_price_id: e.target.value })}
-                                className="bg-card border-white/10"
-                                placeholder="price_..."
-                            />
-                            <p className="text-xs text-zinc-500">
-                                Leave empty to use one-time payment sessions
-                            </p>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label>Stripe Product ID (Optional)</Label>
+                                <Input
+                                    value={formData.stripe_product_id}
+                                    onChange={(e) => setFormData({ ...formData, stripe_product_id: e.target.value })}
+                                    className="bg-card border-white/10"
+                                    placeholder="prod_..."
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Stripe Price ID (Optional)</Label>
+                                <Input
+                                    value={formData.stripe_price_id}
+                                    onChange={(e) => setFormData({ ...formData, stripe_price_id: e.target.value })}
+                                    className="bg-card border-white/10"
+                                    placeholder="price_..."
+                                />
+                            </div>
                         </div>
+                        <p className="text-[10px] text-zinc-500 italic">
+                            Leave blank to auto-create on next save.
+                        </p>
 
                         <div className="flex items-center justify-between">
                             <Label>Active</Label>

@@ -643,7 +643,7 @@ function CreatorStudioPageContent({ defaultView }: CreatorStudioPageProps) {
 
     useEffect(() => {
         if (!currentUser?.id) {
-            navigate("/admin/auth");
+            navigate("/auth");
             return;
         }
 

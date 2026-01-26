@@ -151,7 +151,7 @@ export function BusinessSettingsPage() {
     const token = localStorage.getItem('auth_token');
 
     if (!token || !userStr) {
-      navigate('/login');
+      navigate('/auth');
       return;
     }
 
@@ -163,13 +163,13 @@ export function BusinessSettingsPage() {
       const isBusiness = userData.role?.startsWith('business') && userData.role !== 'business_pending';
       if (!isBusiness) {
         toast.error('Business account required');
-        navigate('/admin/settings/creator');
+        navigate('/creator/settings');
         return;
       }
 
       loadData();
     } catch {
-      navigate('/login');
+      navigate('/auth');
     }
   }, [navigate, loadData]);
 
@@ -337,7 +337,7 @@ export function BusinessSettingsPage() {
           <Button
             variant="outline"
             className="border-zinc-700 text-zinc-300"
-            onClick={() => navigate('/admin')}
+            onClick={() => navigate('/business/home')}
           >
             Back to Dashboard
           </Button>

@@ -37,7 +37,7 @@ export default function PlaygroundPage() {
   useEffect(() => {
     if (!isUserLoading && (userError || !currentUser)) {
       toast.error("Please log in to access the Playground");
-      navigate("/admin/auth");
+      navigate("/auth");
     }
   }, [currentUser, isUserLoading, userError, navigate]);
 

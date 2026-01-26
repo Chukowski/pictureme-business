@@ -7,21 +7,26 @@
 import { ENV } from '../config/env';
 
 /**
- * Get proxied URL for S3 images to bypass CORS
+ * Get proxied URL for S3/R2 images to bypass CORS
  */
 function getProxiedUrl(url: string): string {
-  const s3Patterns = [
-    's3.amazonaws.com/pictureme.now',
-    'pictureme.now.s3.amazonaws.com'
+  const proxyPatterns = [
+    's3.amazonaws.com',
+    'pictureme.now.s3.amazonaws.com',
+    'r2.dev',
+    'r2.cloudflarestorage.com',
+    'fal.media'
   ];
-  
-  const needsProxy = s3Patterns.some(pattern => url.includes(pattern));
-  
+
+  const needsProxy = proxyPatterns.some(pattern => url.includes(pattern)) ||
+    (url.includes('pub-') && url.includes('r2.dev'));
+
   if (needsProxy) {
     const apiUrl = ENV.API_URL || '';
+    // console.log("🔄 Proxying branding asset:", url);
     return `${apiUrl}/api/proxy/image?url=${encodeURIComponent(url)}`;
   }
-  
+
   return url;
 }
 
@@ -78,7 +83,7 @@ export async function applyBrandingOverlay(
     // Only load if explicitly provided (not undefined or empty string)
     const shouldLoadLogo = includeHeader && logoUrl && logoUrl.trim() !== "";
     const shouldLoadFooter = footerUrl && footerUrl.trim() !== "";
-    
+
     // Use provided URLs directly - no defaults unless explicitly set
     const finalLogoPath = shouldLoadLogo ? logoUrl : null;
     const finalFooterPath = shouldLoadFooter ? footerUrl : null;
@@ -117,7 +122,7 @@ export async function applyBrandingOverlay(
       ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
       ctx.shadowBlur = Math.round(campaignFontSize * 0.3);
       ctx.shadowOffsetY = 3;
-      
+
       // Position at top of AI image
       const campaignY = Math.round(aiImageHeight * 0.08);
       ctx.fillText(campaignText, aiImageWidth / 2, campaignY);
@@ -136,16 +141,16 @@ export async function applyBrandingOverlay(
       ctx.fillStyle = headerBackgroundColor;
       ctx.fillRect(0, 0, aiImageWidth, headerHeight);
     }
-    
+
     // Tagline and footer: use backgroundColor (black) - only if they exist
     if (taglineHeight > 0 || footerHeightPx > 0) {
       ctx.fillStyle = backgroundColor;
       const taglineTop = aiImageHeight - footerHeightPx - gap - taglineHeight;
-      
+
       if (taglineHeight > 0) {
         ctx.fillRect(0, taglineTop, aiImageWidth, taglineHeight);
       }
-      
+
       if (footerHeightPx > 0) {
         ctx.fillRect(0, aiImageHeight - footerHeightPx, aiImageWidth, footerHeightPx);
       }
@@ -217,7 +222,7 @@ export async function applyBrandingOverlay(
 function loadImage(src: string): Promise<HTMLImageElement> {
   // Use proxy for S3 URLs to bypass CORS
   const proxiedSrc = getProxiedUrl(src);
-  
+
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.crossOrigin = 'anonymous';
@@ -239,14 +244,14 @@ async function applyWatermark(
   watermark: WatermarkConfig
 ): Promise<void> {
   const padding = 20; // Padding from edges
-  
+
   // Calculate watermark size
   const watermarkWidth = (canvasWidth * watermark.size) / 100;
-  
+
   // Calculate position
   let x = 0;
   let y = 0;
-  
+
   switch (watermark.position) {
     case 'top-left':
       x = padding;
@@ -269,22 +274,22 @@ async function applyWatermark(
       y = canvasHeight / 2;
       break;
   }
-  
+
   // Set global alpha for opacity
   ctx.save();
   ctx.globalAlpha = watermark.opacity;
-  
+
   if (watermark.type === 'image' && watermark.imageUrl) {
     try {
       const watermarkImage = await loadImage(watermark.imageUrl);
       const aspectRatio = watermarkImage.width / watermarkImage.height;
       const watermarkHeight = watermarkWidth / aspectRatio;
-      
+
       // Adjust y for bottom positions (text is drawn from baseline, images from top)
       if (watermark.position === 'bottom-left' || watermark.position === 'bottom-right') {
         y = y - watermarkHeight;
       }
-      
+
       ctx.drawImage(watermarkImage, x, y, watermarkWidth, watermarkHeight);
     } catch (error) {
       console.error('Failed to load watermark image:', error);
@@ -297,7 +302,7 @@ async function applyWatermark(
     ctx.shadowBlur = 4;
     ctx.shadowOffsetX = 2;
     ctx.shadowOffsetY = 2;
-    
+
     // Adjust text alignment based on position
     if (watermark.position === 'top-right' || watermark.position === 'bottom-right') {
       ctx.textAlign = 'right';
@@ -308,11 +313,11 @@ async function applyWatermark(
     } else {
       ctx.textAlign = 'left';
     }
-    
+
     ctx.textBaseline = 'top';
     ctx.fillText(watermark.text, x, y);
   }
-  
+
   ctx.restore();
 }
 

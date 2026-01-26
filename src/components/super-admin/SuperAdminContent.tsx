@@ -108,6 +108,7 @@ function AnnouncementsManager() {
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [filterType, setFilterType] = useState<string>("all");
 
   // Form State
   const [formData, setFormData] = useState<Partial<Announcement>>({
@@ -129,13 +130,37 @@ function AnnouncementsManager() {
     try {
       setIsLoading(true);
       const data = await getAdminAnnouncements();
-      // Ensure data is always an array
-      setAnnouncements(Array.isArray(data) ? data : []);
+      const list = data?.announcements || [];
+      setAnnouncements(Array.isArray(list) ? list : []);
     } catch (error) {
+      console.error("Failed to load announcements:", error);
       toast.error("Failed to load announcements");
-      setAnnouncements([]); // Set empty array on error
+      setAnnouncements([]);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const filteredAnnouncements = announcements.filter(a => {
+    if (filterType === "all") return true;
+    if (filterType === "features") return a.type === 'new_feature' || a.type === 'update';
+    if (filterType === "tips") return a.type === 'pro_tip';
+    if (filterType === "alerts") return a.type === 'alert' || a.type === 'maintenance';
+    return true;
+  });
+
+  const getTypeBadge = (type: string) => {
+    switch (type) {
+      case 'pro_tip':
+        return <Badge className="bg-purple-500/10 text-purple-400 border-purple-500/20">Pro Tip 💡</Badge>;
+      case 'alert':
+        return <Badge className="bg-red-500/10 text-red-400 border-red-500/20">Alert ⚠️</Badge>;
+      case 'maintenance':
+        return <Badge className="bg-amber-500/10 text-amber-400 border-amber-500/20">Maintenance 🔧</Badge>;
+      case 'new_feature':
+        return <Badge className="bg-indigo-500/10 text-indigo-400 border-indigo-500/20">New Feature 🚀</Badge>;
+      default:
+        return <Badge variant="outline">{type}</Badge>;
     }
   };
 
@@ -215,46 +240,55 @@ function AnnouncementsManager() {
 
   return (
     <>
-      <div className="flex justify-between items-center">
-        <h2 className="text-xl font-semibold text-white">Announcements</h2>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div className="space-y-1">
+          <h2 className="text-xl font-semibold text-white">Announcements, Tips & Alerts</h2>
+          <div className="flex gap-2">
+            <Button size="sm" variant={filterType === 'all' ? 'default' : 'outline'} onClick={() => setFilterType('all')} className="h-7 text-[10px] uppercase tracking-wider">All</Button>
+            <Button size="sm" variant={filterType === 'features' ? 'default' : 'outline'} onClick={() => setFilterType('features')} className="h-7 text-[10px] uppercase tracking-wider">Features</Button>
+            <Button size="sm" variant={filterType === 'tips' ? 'default' : 'outline'} onClick={() => setFilterType('tips')} className="h-7 text-[10px] uppercase tracking-wider">Tips</Button>
+            <Button size="sm" variant={filterType === 'alerts' ? 'default' : 'outline'} onClick={() => setFilterType('alerts')} className="h-7 text-[10px] uppercase tracking-wider">Alerts</Button>
+          </div>
+        </div>
         <Button onClick={() => { resetForm(); setIsDialogOpen(true); }} className="bg-indigo-600 hover:bg-indigo-700">
           <Plus className="w-4 h-4 mr-2" />
-          New Announcement
+          Create New
         </Button>
       </div>
 
       <div className="grid grid-cols-1 gap-4">
         {isLoading ? (
           <div className="flex justify-center p-8"><Loader2 className="w-8 h-8 animate-spin text-zinc-500" /></div>
-        ) : announcements.length === 0 ? (
-          <Card className="bg-card border-white/10 p-8 text-center text-zinc-500">
-            No announcements found. Create one to get started.
+        ) : filteredAnnouncements.length === 0 ? (
+          <Card className="bg-card border-white/10 p-12 text-center text-zinc-500 italic">
+            No entries found in this category.
           </Card>
         ) : (
-          announcements.map(announcement => (
-            <Card key={announcement.id} className="bg-card border-white/10 overflow-hidden">
-              <div className="p-4 flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <Badge variant={announcement.published ? "default" : "secondary"} className={announcement.published ? "bg-emerald-500/20 text-emerald-400" : "bg-zinc-800 text-zinc-400"}>
-                    {announcement.published ? "Published" : "Draft"}
-                  </Badge>
-                  <div>
-                    <h3 className="font-medium text-white flex items-center gap-2">
-                      {announcement.title}
-                      <Badge variant="outline" className="text-[10px] h-5">{announcement.type}</Badge>
-                    </h3>
-                    <p className="text-sm text-zinc-400 line-clamp-1">{announcement.content}</p>
+          filteredAnnouncements.map(announcement => (
+            <Card key={announcement.id} className="bg-card border-white/10 overflow-hidden hover:bg-white/[0.02] transition-colors">
+              <div className="p-4 flex items-center justify-between gap-4">
+                <div className="flex items-center gap-4 min-w-0">
+                  <div className="flex flex-col items-center gap-1">
+                    <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => handleTogglePublish(announcement.id, announcement.published)}>
+                      {announcement.published ? <Eye className="w-4 h-4 text-emerald-400" /> : <Eye className="w-4 h-4 text-zinc-600" />}
+                    </Button>
+                    <span className="text-[9px] uppercase font-bold text-zinc-600">{announcement.published ? 'Live' : 'Draft'}</span>
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
+                      <h3 className="font-bold text-zinc-100 truncate">{announcement.title}</h3>
+                      {getTypeBadge(announcement.type)}
+                      <Badge variant="outline" className="text-[10px] h-5 opacity-50 uppercase tracking-tighter">{announcement.visibility.replace('_', ' ')}</Badge>
+                    </div>
+                    <p className="text-xs text-zinc-500 line-clamp-1">{announcement.content}</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Button size="sm" variant="ghost" onClick={() => handleTogglePublish(announcement.id, announcement.published)}>
-                    {announcement.published ? <Eye className="w-4 h-4 text-emerald-400" /> : <Eye className="w-4 h-4 text-zinc-500" />}
+                <div className="flex items-center gap-1 shrink-0">
+                  <Button size="icon" variant="ghost" className="h-8 w-8 text-zinc-400 hover:text-white" onClick={() => openEdit(announcement)}>
+                    <Edit2 className="w-4 h-4" />
                   </Button>
-                  <Button size="sm" variant="ghost" onClick={() => openEdit(announcement)}>
-                    <Edit2 className="w-4 h-4 text-blue-400" />
-                  </Button>
-                  <Button size="sm" variant="ghost" onClick={() => handleDelete(announcement.id)}>
-                    <Trash2 className="w-4 h-4 text-red-400" />
+                  <Button size="icon" variant="ghost" className="h-8 w-8 text-zinc-400 hover:text-red-400" onClick={() => handleDelete(announcement.id)}>
+                    <Trash2 className="w-4 h-4" />
                   </Button>
                 </div>
               </div>
@@ -343,7 +377,7 @@ function AnnouncementsManager() {
                   value={formData.cta_url}
                   onChange={e => setFormData({ ...formData, cta_url: e.target.value })}
                   className="bg-card border-white/10"
-                  placeholder="/admin/playground"
+                  placeholder="/business/playground"
                 />
               </div>
             </div>
@@ -383,7 +417,9 @@ function FeaturedTemplatesManager() {
   const loadFeatured = async () => {
     try {
       const data = await getAdminFeaturedTemplates();
-      setFeatured(data);
+      // Go backend returns { templates: [...] }
+      const list = data?.templates || [];
+      setFeatured(Array.isArray(list) ? list : []);
     } catch (error) {
       console.error(error);
     } finally {

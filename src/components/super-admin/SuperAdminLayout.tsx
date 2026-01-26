@@ -42,14 +42,14 @@ export default function SuperAdminLayout() {
     useEffect(() => {
         if (!currentUser || currentUser.role !== 'superadmin') {
             toast.error("Unauthorized access");
-            navigate("/admin/auth");
+            navigate("/auth");
         }
     }, [currentUser, navigate]);
 
     const handleLogout = () => {
         logoutUser();
         toast.success("Logged out successfully");
-        navigate("/admin/auth");
+        navigate("/auth");
     };
 
     const navItems = [
@@ -85,7 +85,7 @@ export default function SuperAdminLayout() {
                 <nav className="flex items-center gap-2 p-1.5 bg-card/90 backdrop-blur-xl border border-white/10 rounded-full shadow-2xl shadow-black/50">
                     {/* Home Button */}
                     <button
-                        onClick={() => navigate('/admin/home')}
+                        onClick={() => navigate('/business/home')}
                         className="w-9 h-9 flex items-center justify-center rounded-full bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-lg hover:scale-105 transition-transform ml-1"
                         title="Back to Dashboard"
                     >

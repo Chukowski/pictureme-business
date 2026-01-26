@@ -72,7 +72,7 @@ export default function AccountSettings() {
 
   useEffect(() => {
     if (!currentUser) {
-      navigate("/admin/auth");
+      navigate("/auth");
     }
   }, [currentUser, navigate]);
 
@@ -233,7 +233,7 @@ export default function AccountSettings() {
   if (!currentUser) return null;
 
   const backDestination = currentUser?.role?.startsWith('business') && currentUser.role !== 'business_pending' 
-    ? '/admin/home' 
+    ? '/business/home' 
     : '/creator/dashboard';
 
   return (

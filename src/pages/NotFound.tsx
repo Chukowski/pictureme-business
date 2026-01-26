@@ -19,7 +19,7 @@ const NotFound = () => {
       </div>
 
       {/* Grid pattern overlay */}
-      <div 
+      <div
         className="absolute inset-0 opacity-[0.02]"
         style={{
           backgroundImage: `linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)`,
@@ -44,7 +44,7 @@ const NotFound = () => {
             Página no encontrada
           </h1>
           <p className="text-zinc-400 max-w-md mx-auto">
-            Lo sentimos, la página que buscas no existe o ha sido movida. 
+            Lo sentimos, la página que buscas no existe o ha sido movida.
             Verifica la URL o regresa al inicio.
           </p>
         </div>
@@ -57,8 +57,8 @@ const NotFound = () => {
 
         {/* Actions */}
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-          <Button 
-            asChild 
+          <Button
+            asChild
             size="lg"
             className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-lg shadow-indigo-500/25"
           >
@@ -67,13 +67,13 @@ const NotFound = () => {
               Ir al inicio
             </Link>
           </Button>
-          <Button 
-            asChild 
-            variant="outline" 
+          <Button
+            asChild
+            variant="outline"
             size="lg"
             className="border-zinc-700 text-zinc-300 hover:bg-zinc-800 hover:text-white"
           >
-            <Link to="/admin">
+            <Link to="/business/home">
               <ArrowLeft className="h-4 w-4 mr-2" />
               Panel de admin
             </Link>

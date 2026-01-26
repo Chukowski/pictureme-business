@@ -88,7 +88,7 @@ const SettingsRedirect = () => {
   const isBusiness = user?.role?.startsWith("business") && user.role !== "business_pending";
   return (
     <Navigate
-      to={isBusiness ? "/admin/settings/business" : "/admin/settings/creator"}
+      to={isBusiness ? "/business/settings" : "/creator/settings"}
       replace
     />
   );
@@ -148,10 +148,12 @@ const AppContent = () => {
   const apiUrl = getApiUrl();
   const [copilotReady, setCopilotReady] = useState(false);
 
-  // Only initialize CopilotKit on admin, super-admin, and creator pages
-  const shouldInitCopilot = location.pathname.startsWith('/admin') ||
+  // Only initialize CopilotKit on business, super-admin, creator, and auth pages
+  const shouldInitCopilot = location.pathname.startsWith('/business') ||
     location.pathname.startsWith('/super-admin') ||
-    location.pathname.startsWith('/creator');
+    location.pathname.startsWith('/creator') ||
+    location.pathname.startsWith('/auth') ||
+    location.pathname === '/register';
 
   // Check if backend is available before initializing CopilotKit
   useEffect(() => {
@@ -290,73 +292,62 @@ const AppContent = () => {
             <Route path="*" element={<CreatorPlaceholder />} />
           </Route>
 
-          {/* ADMIN ROUTES (BUSINESS) */}
-          <Route path="/admin/auth" element={<AdminAuth />} />
-          <Route path="/admin/register" element={<AdminRegister />} />
+          {/* AUTH ROUTES */}
+          <Route path="/auth" element={<AdminAuth />} />
+          <Route path="/register" element={<AdminRegister />} />
 
-          {/* Main Admin Redirect */}
-          <Route path="/admin" element={
-            // If business, go to home. If creator, go to creator dashboard.
-            // We can use a component to check this or just rely on guards.
-            // For now, redirect to home, and let HomeDashboard redirect creator if needed, 
-            // OR explicit check here.
-            <Navigate to="/admin/home" replace />
+          {/* BUSINESS ROUTES */}
+          {/* Main Business Redirect */}
+          <Route path="/business" element={
+            <Navigate to="/business/home" replace />
           } />
 
-          <Route path="/admin/home" element={
+          <Route path="/business/home" element={
             <BusinessOnly>
               <HomeDashboard />
             </BusinessOnly>
           } />
 
-          <Route path="/admin/events" element={
+          <Route path="/business/events" element={
             <BusinessOnly>
               <AdminDashboard />
             </BusinessOnly>
           } />
-          <Route path="/admin/events/create" element={
+          <Route path="/business/events/create" element={
             <BusinessOnly>
               <AdminEventForm />
             </BusinessOnly>
           } />
-          <Route path="/admin/events/edit/:eventId" element={
+          <Route path="/business/events/edit/:eventId" element={
             <BusinessOnly>
               <AdminEventForm />
             </BusinessOnly>
           } />
-          <Route path="/admin/events/:eventId/photos" element={
+          <Route path="/business/events/:eventId/photos" element={
             <BusinessOnly>
               <AdminEventPhotos />
             </BusinessOnly>
           } />
-          <Route path="/admin/events/:eventId/live" element={
+          <Route path="/business/events/:eventId/live" element={
             <BusinessOnly>
               <LiveEventPage />
             </BusinessOnly>
           } />
 
-          <Route path="/admin/settings" element={<SettingsRedirect />} />
-          {/* Removed CreatorSettingsPage from here, moved to /creator/settings */}
-          {/* But keep it here temporarily for transition if needed, but safer to force separate paths */}
-          <Route path="/admin/settings/creator" element={<Navigate to="/creator/settings" replace />} />
-
-          <Route
-            path="/admin/settings/business"
-            element={
-              <BusinessOnly>
-                <BusinessSettingsPage />
-              </BusinessOnly>
-            }
-          />
+          <Route path="/business/settings" element={
+            <BusinessOnly>
+              <BusinessSettingsPage />
+            </BusinessOnly>
+          } />
           {/* Billing and Tokens now redirect to Business Settings */}
-          <Route path="/admin/billing" element={<Navigate to="/admin/settings/business" replace />} />
-          <Route path="/admin/tokens" element={<Navigate to="/admin/settings/business" replace />} />
-          <Route path="/admin/marketplace" element={
+          <Route path="/business/billing" element={<Navigate to="/business/settings" replace />} />
+          <Route path="/business/tokens" element={<Navigate to="/business/settings" replace />} />
+          <Route path="/business/marketplace" element={
             <BusinessOnly>
               <AdminDashboard />
             </BusinessOnly>
           } />
-          <Route path="/admin/chat" element={
+          <Route path="/business/chat" element={
             <BusinessOnly>
               <div className="min-h-screen bg-black pt-24 px-4 pb-32 md:pb-4">
                 <div className="max-w-7xl mx-auto">
@@ -365,35 +356,56 @@ const AppContent = () => {
               </div>
             </BusinessOnly>
           } />
-          <Route path="/admin/playground" element={
+          <Route path="/business/playground" element={
             <BusinessOnly>
               <PlaygroundPage />
             </BusinessOnly>
           } />
-          <Route path="/admin/analytics" element={
+          <Route path="/business/analytics" element={
             <BusinessOnly>
               <AdminDashboard />
             </BusinessOnly>
           } />
-          <Route path="/admin/studio" element={
+          <Route path="/business/studio" element={
             <BusinessOnly>
               <AdminDashboard />
             </BusinessOnly>
           } />
-          <Route path="/admin/albums" element={
+          <Route path="/business/albums" element={
             <BusinessOnly>
               <AdminDashboard />
             </BusinessOnly>
           } />
-          <Route path="/admin/organization" element={
+          <Route path="/business/organization" element={
             <BusinessOnly>
               <OrganizationSettingsPage />
             </BusinessOnly>
           } />
-          <Route path="/admin/business" element={<Navigate to="/admin/settings/business" replace />} />
-          <Route path="/admin/staff/:eventId" element={<StaffDashboard />} />
-          {/* Catch-all for unknown admin routes - show 404 */}
-          <Route path="/admin/*" element={<NotFound />} />
+          <Route path="/business/staff/:eventId" element={<StaffDashboard />} />
+          {/* Catch-all for unknown business routes - show 404 */}
+          <Route path="/business/*" element={<NotFound />} />
+
+          {/* LEGACY REDIRECTS - Backward compatibility */}
+          <Route path="/admin/auth" element={<Navigate to="/auth" replace />} />
+          <Route path="/admin/register" element={<Navigate to="/register" replace />} />
+          <Route path="/admin/login" element={<Navigate to="/auth" replace />} />
+          <Route path="/admin" element={<Navigate to="/business/home" replace />} />
+          <Route path="/admin/home" element={<Navigate to="/business/home" replace />} />
+          <Route path="/admin/events" element={<Navigate to="/business/events" replace />} />
+          <Route path="/admin/events/*" element={<Navigate to="/business/events" replace />} />
+          <Route path="/admin/settings" element={<SettingsRedirect />} />
+          <Route path="/admin/settings/business" element={<Navigate to="/business/settings" replace />} />
+          <Route path="/admin/settings/creator" element={<Navigate to="/creator/settings" replace />} />
+          <Route path="/admin/marketplace" element={<Navigate to="/business/marketplace" replace />} />
+          <Route path="/admin/chat" element={<Navigate to="/business/chat" replace />} />
+          <Route path="/admin/playground" element={<Navigate to="/business/playground" replace />} />
+          <Route path="/admin/analytics" element={<Navigate to="/business/analytics" replace />} />
+          <Route path="/admin/studio" element={<Navigate to="/business/studio" replace />} />
+          <Route path="/admin/albums" element={<Navigate to="/business/albums" replace />} />
+          <Route path="/admin/organization" element={<Navigate to="/business/organization" replace />} />
+          <Route path="/admin/billing" element={<Navigate to="/business/settings" replace />} />
+          <Route path="/admin/tokens" element={<Navigate to="/business/settings" replace />} />
+          <Route path="/admin/staff/:eventId" element={<Navigate to="/business/staff/:eventId" replace />} />
 
           {/* Public Profile */}
           <Route path="/profile/:username" element={<PublicProfile />} />

@@ -40,7 +40,6 @@ export const TimelineView = ({
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
     const [fitToScreen, setFitToScreen] = useState(false);
     const [expandedRemixId, setExpandedRemixId] = useState<string | number | null>(null);
-    const [videoSubmenuId, setVideoSubmenuId] = useState<string | number | null>(null);
     const [isHoveringList, setIsHoveringList] = useState<string | number | null>(null);
     const containerRef = useRef<HTMLDivElement>(null);
 
@@ -49,7 +48,6 @@ export const TimelineView = ({
         const handleClickOutside = (event: MouseEvent) => {
             if (expandedRemixId && containerRef.current && !containerRef.current.contains(event.target as Node)) {
                 setExpandedRemixId(null);
-                setVideoSubmenuId(null);
             }
         };
 
@@ -59,7 +57,7 @@ export const TimelineView = ({
             document.removeEventListener('mousedown', handleClickOutside);
         }
         return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, [expandedRemixId, videoSubmenuId]);
+    }, [expandedRemixId]);
 
     const resolveModelName = (modelId: string | undefined) => {
         if (!modelId) return "AI Model";
@@ -549,12 +547,8 @@ export const TimelineView = ({
                                                                         onClick={(e) => {
                                                                             e.stopPropagation();
                                                                             if (expandedRemixId === item.id) {
-                                                                                if (videoSubmenuId === item.id) {
-                                                                                    setVideoSubmenuId(null);
-                                                                                } else {
-                                                                                    onReusePrompt(item, 'full');
-                                                                                    setExpandedRemixId(null);
-                                                                                }
+                                                                                onReusePrompt(item, 'full');
+                                                                                setExpandedRemixId(null);
                                                                             } else {
                                                                                 setExpandedRemixId(item.id);
                                                                             }
@@ -571,7 +565,7 @@ export const TimelineView = ({
                                                                     <AnimatePresence mode="wait">
                                                                         {expandedRemixId === item.id && (
                                                                             <motion.div
-                                                                                key={videoSubmenuId === item.id ? "video-sub" : "base-remix"}
+                                                                                key="base-remix"
                                                                                 initial={{ width: 0, opacity: 0 }}
                                                                                 animate={{ width: 'auto', opacity: 1 }}
                                                                                 exit={{ width: 0, opacity: 0 }}
@@ -580,60 +574,21 @@ export const TimelineView = ({
                                                                             >
                                                                                 <div className="w-px h-6 bg-white/10 mx-0.5" />
 
-                                                                                {videoSubmenuId !== item.id ? (
-                                                                                    <>
-                                                                                        <button
-                                                                                            onClick={(e) => { e.stopPropagation(); setVideoSubmenuId(item.id); }}
-                                                                                            className="w-8 h-8 rounded-lg bg-white/5 text-white/70 flex items-center justify-center hover:bg-white/10 hover:text-white transition-all"
-                                                                                            title="Video Options"
-                                                                                        >
-                                                                                            <Video className="w-4 h-4" />
-                                                                                        </button>
+                                                                                <button
+                                                                                    onClick={(e) => { e.stopPropagation(); onReusePrompt(item, 'video'); setExpandedRemixId(null); }}
+                                                                                    className="w-8 h-8 rounded-lg bg-white/5 text-white/70 flex items-center justify-center hover:bg-white/10 hover:text-white transition-all"
+                                                                                    title="Video Remix"
+                                                                                >
+                                                                                    <Video className="w-4 h-4" />
+                                                                                </button>
 
-                                                                                        <button
-                                                                                            onClick={(e) => { e.stopPropagation(); onReusePrompt(item, 'prompt'); }}
-                                                                                            className="w-8 h-8 rounded-lg bg-white/5 text-white/70 flex items-center justify-center hover:bg-white/10 hover:text-white transition-all"
-                                                                                            title="Restore Prompt"
-                                                                                        >
-                                                                                            <Sparkles className="w-4 h-4" />
-                                                                                        </button>
-                                                                                    </>
-                                                                                ) : (
-                                                                                    <>
-                                                                                        <button
-                                                                                            onClick={(e) => { e.stopPropagation(); onReusePrompt(item, 'first-frame'); setVideoSubmenuId(null); setExpandedRemixId(null); }}
-                                                                                            className="w-8 h-8 rounded-lg bg-white/5 text-white/70 flex flex-col items-center justify-center hover:bg-[#D1F349] hover:text-black transition-all"
-                                                                                            title="Add as First Frame"
-                                                                                        >
-                                                                                            <Video className="w-3 h-3" />
-                                                                                            <span className="text-[6px] font-black leading-none mt-0.5 uppercase tracking-tighter">Start</span>
-                                                                                        </button>
-
-                                                                                        <button
-                                                                                            onClick={(e) => { e.stopPropagation(); onReusePrompt(item, 'last-frame'); setVideoSubmenuId(null); setExpandedRemixId(null); }}
-                                                                                            className="w-8 h-8 rounded-lg bg-white/5 text-white/70 flex flex-col items-center justify-center hover:bg-[#D1F349] hover:text-black transition-all"
-                                                                                            title="Add as Last Frame"
-                                                                                        >
-                                                                                            <Video className="w-3 h-3" />
-                                                                                            <span className="text-[6px] font-black leading-none mt-0.5 uppercase tracking-tighter">End</span>
-                                                                                        </button>
-
-                                                                                        <button
-                                                                                            onClick={(e) => { e.stopPropagation(); onReusePrompt(item, 'video'); setVideoSubmenuId(null); setExpandedRemixId(null); }}
-                                                                                            className="w-8 h-8 rounded-lg bg-white/5 text-white/70 flex items-center justify-center hover:bg-white/10 hover:text-white transition-all"
-                                                                                            title="Normal Video Remix"
-                                                                                        >
-                                                                                            <Video className="w-4 h-4" />
-                                                                                        </button>
-
-                                                                                        <button
-                                                                                            onClick={(e) => { e.stopPropagation(); setVideoSubmenuId(null); }}
-                                                                                            className="w-6 h-8 rounded-lg text-white/20 hover:text-white flex items-center justify-center transition-all"
-                                                                                        >
-                                                                                            <ChevronRight className="w-3 h-3 rotate-180" />
-                                                                                        </button>
-                                                                                    </>
-                                                                                )}
+                                                                                <button
+                                                                                    onClick={(e) => { e.stopPropagation(); onReusePrompt(item, 'prompt'); }}
+                                                                                    className="w-8 h-8 rounded-lg bg-white/5 text-white/70 flex items-center justify-center hover:bg-white/10 hover:text-white transition-all"
+                                                                                    title="Restore Prompt"
+                                                                                >
+                                                                                    <Sparkles className="w-4 h-4" />
+                                                                                </button>
                                                                             </motion.div>
                                                                         )}
                                                                     </AnimatePresence>

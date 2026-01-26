@@ -1,10 +1,13 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { 
+import {
     BarChart3, TrendingUp, Users, ImageIcon, Coins, Calendar,
-    Loader2, RefreshCw, ArrowUpRight, ArrowDownRight
+    Loader2, RefreshCw, ArrowUpRight, ArrowDownRight, Filter
 } from "lucide-react";
+import {
+    Select, SelectContent, SelectItem, SelectTrigger, SelectValue
+} from "@/components/ui/select";
 import { ENV } from "@/config/env";
 import { toast } from "sonner";
 
@@ -44,20 +47,22 @@ interface AnalyticsData {
 export default function SuperAdminAnalytics() {
     const [data, setData] = useState<AnalyticsData | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [filters, setFilters] = useState({
+        user_tier: "creators"
+    });
 
-    useEffect(() => {
-        fetchAnalytics();
-    }, []);
-
-    const fetchAnalytics = async () => {
+    const fetchAnalytics = useCallback(async () => {
         try {
             setIsLoading(true);
             const token = localStorage.getItem("auth_token");
-            
-            const response = await fetch(`${ENV.API_URL}/api/admin/stats`, {
+
+            const url = new URL(`${ENV.API_URL}/api/admin/stats`);
+            url.searchParams.append("user_tier", filters.user_tier);
+
+            const response = await fetch(url.toString(), {
                 headers: { Authorization: `Bearer ${token}` }
             });
-            
+
             if (response.ok) {
                 const stats = await response.json();
                 setData(stats);
@@ -70,7 +75,11 @@ export default function SuperAdminAnalytics() {
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [filters.user_tier]);
+
+    useEffect(() => {
+        fetchAnalytics();
+    }, [fetchAnalytics]);
 
     const topEvents = data?.eventsSummary?.slice(0, 10) || [];
 
@@ -81,19 +90,38 @@ export default function SuperAdminAnalytics() {
                     <h1 className="text-3xl font-bold tracking-tight mb-2">Global Analytics</h1>
                     <p className="text-zinc-400">Deep dive into system performance and growth metrics.</p>
                 </div>
-                <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={fetchAnalytics}
-                    disabled={isLoading}
-                    className="border-white/10"
-                >
-                    {isLoading ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                        <RefreshCw className="w-4 h-4" />
-                    )}
-                </Button>
+                <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2 mr-2">
+                        <Filter className="w-4 h-4 text-zinc-500" />
+                        <Select
+                            value={filters.user_tier}
+                            onValueChange={(v) => setFilters(f => ({ ...f, user_tier: v }))}
+                        >
+                            <SelectTrigger className="w-[160px] bg-zinc-900 border-white/10 hover:border-indigo-500/50 transition-colors">
+                                <SelectValue placeholder="User Tier" />
+                            </SelectTrigger>
+                            <SelectContent className="bg-zinc-900 border-white/10">
+                                <SelectItem value="all">All Tiers</SelectItem>
+                                <SelectItem value="creators">Creators Only</SelectItem>
+                                <SelectItem value="business">Business Only</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={fetchAnalytics}
+                        disabled={isLoading}
+                        className="border-white/10"
+                    >
+                        {isLoading ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                            <RefreshCw className="w-4 h-4" />
+                        )}
+                    </Button>
+                </div>
             </div>
 
             {isLoading ? (
@@ -204,7 +232,7 @@ export default function SuperAdminAnalytics() {
                                         </span>
                                     </div>
                                     <div className="w-full h-2 bg-zinc-800 rounded-full overflow-hidden">
-                                        <div 
+                                        <div
                                             className="h-full bg-gradient-to-r from-yellow-500 to-amber-500 rounded-full"
                                             style={{ width: `${Math.min((data.tokens.avg_per_day / 1000) * 100, 100)}%` }}
                                         />
@@ -218,7 +246,7 @@ export default function SuperAdminAnalytics() {
                                         </span>
                                     </div>
                                     <div className="w-full h-2 bg-zinc-800 rounded-full overflow-hidden">
-                                        <div 
+                                        <div
                                             className="h-full bg-gradient-to-r from-emerald-500 to-green-500 rounded-full"
                                             style={{ width: `${Math.min((data.tokens.used_today / data.tokens.avg_per_day) * 100, 100)}%` }}
                                         />
@@ -282,7 +310,7 @@ export default function SuperAdminAnalytics() {
                             <CardContent>
                                 <div className="space-y-3">
                                     {topEvents.map((event, index) => (
-                                        <div 
+                                        <div
                                             key={event.event_id}
                                             className="flex items-center justify-between p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
                                         >
@@ -290,9 +318,9 @@ export default function SuperAdminAnalytics() {
                                                 <span className={`
                                                     w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold
                                                     ${index === 0 ? 'bg-yellow-500/20 text-yellow-400' :
-                                                      index === 1 ? 'bg-zinc-400/20 text-zinc-300' :
-                                                      index === 2 ? 'bg-amber-600/20 text-amber-500' :
-                                                      'bg-zinc-700/50 text-zinc-500'}
+                                                        index === 1 ? 'bg-zinc-400/20 text-zinc-300' :
+                                                            index === 2 ? 'bg-amber-600/20 text-amber-500' :
+                                                                'bg-zinc-700/50 text-zinc-500'}
                                                 `}>
                                                     {index + 1}
                                                 </span>

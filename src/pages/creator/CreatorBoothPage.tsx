@@ -36,7 +36,7 @@ export default function CreatorBoothPage() {
   useEffect(() => {
     const currentUser = getCurrentUser();
     if (!currentUser) {
-      navigate("/admin/auth");
+      navigate("/auth");
       return;
     }
     setUser(currentUser);

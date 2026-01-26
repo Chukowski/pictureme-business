@@ -19,21 +19,21 @@ export function SmartOnboarding({ events }: SmartOnboardingProps) {
       id: 'create_event',
       label: "Create your first event",
       done: events.length > 0,
-      action: () => navigate('/admin/events/create'),
+      action: () => navigate('/business/events/create'),
       cta: "Start"
     },
     {
       id: 'playground',
       label: "Test AI templates in Playground",
       done: false,
-      action: () => navigate('/admin/playground'),
+      action: () => navigate('/business/playground'),
       cta: "Try"
     },
     {
       id: 'explore',
       label: "Explore top templates",
       done: false,
-      action: () => navigate('/admin/marketplace'),
+      action: () => navigate('/business/marketplace'),
       cta: "Browse"
     }
   ];

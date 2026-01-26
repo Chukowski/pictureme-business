@@ -2,7 +2,7 @@
  * StaffDashboard Page
  * 
  * Staff-only dashboard for managing albums and photos during an event.
- * Accessible via /admin/staff/:eventId OR /:userSlug/:eventSlug/staff (legacy)
+ * Accessible via /business/staff/:eventId OR /:userSlug/:eventSlug/staff (legacy)
  */
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
@@ -82,7 +82,7 @@ export default function StaffDashboard() {
   // Try to get config from context first (for short URLs)
   const eventContext = useEventContext();
 
-  // Support both /admin/staff/:eventId and /:userSlug/:eventSlug/staff routes
+  // Support both /business/staff/:eventId and /:userSlug/:eventSlug/staff routes
   const params = useParams<{
     userSlug?: string;
     eventSlug?: string;
@@ -96,8 +96,8 @@ export default function StaffDashboard() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Determine if we're in admin route mode
-  const isAdminRoute = location.pathname.startsWith('/admin/staff');
+  // Determine if we're in business route mode
+  const isAdminRoute = location.pathname.startsWith('/business/staff');
   const hasContextConfig = !!eventContext?.config;
 
   // State for event config when using admin route
@@ -856,7 +856,7 @@ export default function StaffDashboard() {
             {isEventOwner && (
               <Button
                 variant="ghost"
-                onClick={() => navigate('/admin')}
+                onClick={() => navigate('/business/home')}
                 className="w-full text-zinc-400 hover:text-white hover:bg-zinc-800"
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
@@ -891,7 +891,7 @@ export default function StaffDashboard() {
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => isAdminRoute ? navigate('/admin') : navigate(-1)}
+              onClick={() => isAdminRoute ? navigate('/business/home') : navigate(-1)}
               className="text-zinc-400 hover:text-white"
               title={isAdminRoute ? 'Back to Admin Dashboard' : 'Go Back'}
             >
@@ -910,7 +910,7 @@ export default function StaffDashboard() {
             {isEventOwner && (
               <Button
                 size="sm"
-                onClick={() => navigate(`/admin/events/${config._id}/live`)}
+                onClick={() => navigate(`/business/events/${config._id}/live`)}
                 className="ml-4 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 border border-emerald-500/30"
               >
                 <Radio className="w-4 h-4 mr-2" />

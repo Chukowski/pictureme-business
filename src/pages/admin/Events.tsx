@@ -29,7 +29,7 @@ export default function AdminEvents() {
 
   const handleLogout = () => {
     adminLogout();
-    navigate('/admin/login');
+    navigate('/auth');
   };
 
   const handleCreateEvent = () => {

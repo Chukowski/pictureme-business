@@ -217,7 +217,7 @@ export function EventEditorLayout({
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => navigate('/admin/events')}
+            onClick={() => navigate('/business/events')}
             className="text-zinc-500 hover:text-white h-8 w-8 hidden md:flex"
           >
             <ArrowLeft className="w-4 h-4" />
@@ -228,7 +228,7 @@ export function EventEditorLayout({
           <div className="flex items-center gap-2 text-xs" onClick={handleInteraction}>
             <span
               className="text-zinc-500 cursor-pointer hover:text-white transition-colors hidden md:inline"
-              onClick={() => navigate('/admin/events')}
+              onClick={() => navigate('/business/events')}
             >
               Events
             </span>

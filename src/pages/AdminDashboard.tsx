@@ -68,7 +68,7 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     if (!currentUser) {
-      navigate("/admin/auth");
+      navigate("/auth");
       return;
     }
   }, [currentUser, navigate]);
@@ -94,7 +94,7 @@ export default function AdminDashboard() {
   const handleLogout = () => {
     logoutUser();
     toast.success("Logged out successfully");
-    navigate("/admin/auth");
+    navigate("/auth");
   };
 
   if (!currentUser) {

@@ -81,8 +81,8 @@ export function TopNavbar() {
     location.pathname === '/terms' ||
     location.pathname === '/privacy' ||
     location.pathname === '/apply' ||
-    location.pathname === '/admin/auth' ||
-    location.pathname === '/admin/register' ||
+    location.pathname === '/auth' ||
+    location.pathname === '/register' ||
     location.pathname.startsWith('/creator') || // Hide in creator dashboard
     location.pathname.startsWith('/super-admin') || // Hide in super admin dashboard
     [
@@ -92,9 +92,9 @@ export function TopNavbar() {
       '/display', // Big Screen
       '/feed'
     ].some(path => location.pathname.endsWith(path)) ||
-    // Check for dynamic event routes that are not admin routes
+    // Check for dynamic event routes that are not business routes
     (location.pathname.split('/').length >= 3 &&
-      !location.pathname.startsWith('/admin') &&
+      !location.pathname.startsWith('/business') &&
       !location.pathname.startsWith('/super-admin') &&
       !location.pathname.startsWith('/profile'));
 
@@ -216,7 +216,7 @@ export function TopNavbar() {
 
   const handleLogout = () => {
     logoutUser();
-    navigate("/admin/auth");
+    navigate("/auth");
   };
 
   const handleExitImpersonation = () => {
@@ -247,15 +247,15 @@ export function TopNavbar() {
   if (isHiddenPath || !isBusinessUser && !adminRecoveryToken) return null;
 
   const navItems = isBusinessUser ? [
-    { id: 'events', label: 'Events', icon: FolderKanban, path: '/admin/events' },
-    { id: 'analytics', label: 'Analytics', icon: BarChart3, path: '/admin/analytics' },
-    { id: 'marketplace', label: 'Marketplace', icon: ShoppingBag, path: '/admin/marketplace' },
-    { id: 'assist', label: 'Assist', icon: Sparkles, path: '/admin/chat' },
-    { id: 'playground', label: 'Playground', icon: Gamepad2, path: '/admin/playground' },
+    { id: 'events', label: 'Events', icon: FolderKanban, path: '/business/events' },
+    { id: 'analytics', label: 'Analytics', icon: BarChart3, path: '/business/analytics' },
+    { id: 'marketplace', label: 'Marketplace', icon: ShoppingBag, path: '/business/marketplace' },
+    { id: 'assist', label: 'Assist', icon: Sparkles, path: '/business/chat' },
+    { id: 'playground', label: 'Playground', icon: Gamepad2, path: '/business/playground' },
   ] : [];
 
   const isActive = (path: string) => {
-    if (path === '/admin/events' && (location.pathname === '/admin' || location.pathname === '/admin/events')) return true;
+    if (path === '/business/events' && (location.pathname === '/business' || location.pathname === '/business/events')) return true;
     return location.pathname.startsWith(path);
   };
 
@@ -303,7 +303,7 @@ export function TopNavbar() {
 
             {/* Home Shortcut */}
             <button
-              onClick={() => navigate(isBusinessUser ? '/admin/home' : '/creator/dashboard')}
+              onClick={() => navigate(isBusinessUser ? '/business/home' : '/creator/dashboard')}
               className="w-8 h-8 flex items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 text-white shadow-lg ml-1 hover:scale-105 transition-transform"
             >
               <Menu className="w-4 h-4" />
@@ -347,7 +347,7 @@ export function TopNavbar() {
                       >
                         <DropdownMenuItem
                           onClick={() => {
-                            navigate('/admin/events');
+                            navigate('/business/events');
                             setEventsDropdownOpen(false);
                             handleInteraction();
                           }}
@@ -367,7 +367,7 @@ export function TopNavbar() {
                               <DropdownMenuItem
                                 key={event._id}
                                 onClick={() => {
-                                  navigate(`/admin/events/${event._id}/live`);
+                                  navigate(`/business/events/${event._id}/live`);
                                   setEventsDropdownOpen(false);
                                   handleInteraction();
                                 }}
@@ -506,7 +506,7 @@ export function TopNavbar() {
                 <DropdownMenuSeparator className="bg-white/10" />
 
                 <DropdownMenuItem
-                  onClick={() => navigate(isBusinessUser ? '/admin/home' : '/creator/dashboard')}
+                  onClick={() => navigate(isBusinessUser ? '/business/home' : '/creator/dashboard')}
                   className="flex items-center gap-2 px-2 py-1.5 cursor-pointer hover:bg-white/5 rounded-md focus:bg-white/5 focus:text-white"
                 >
                   <Menu className="w-4 h-4 text-zinc-400" />
@@ -525,7 +525,7 @@ export function TopNavbar() {
 
                 {isBusinessUser ? (
                   <DropdownMenuItem
-                    onClick={() => navigate('/admin/settings/business')}
+                    onClick={() => navigate('/business/settings')}
                     className="flex items-center gap-2 px-2 py-1.5 cursor-pointer hover:bg-white/5 rounded-md focus:bg-white/5 focus:text-white text-indigo-400"
                   >
                     <Building2 className="w-4 h-4" />
@@ -543,7 +543,7 @@ export function TopNavbar() {
 
                 {isBusinessUser && (
                   <DropdownMenuItem
-                    onClick={() => navigate('/admin/studio?view=assets')}
+                    onClick={() => navigate('/business/studio?view=assets')}
                     className="flex items-center gap-2 px-2 py-1.5 cursor-pointer hover:bg-white/5 rounded-md focus:bg-white/5 focus:text-white"
                   >
                     <Image className="w-4 h-4 text-zinc-400" />

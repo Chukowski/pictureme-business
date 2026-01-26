@@ -12,7 +12,7 @@ export function CreatorOnly({ children }: CreatorOnlyProps) {
   const isBusiness = user?.role?.startsWith("business") && user.role !== "business_pending";
 
   if (isBusiness) {
-    return <Navigate to="/admin/home" replace />;
+    return <Navigate to="/business/home" replace />;
   }
 
   // If user is superadmin, redirect to superadmin dashboard

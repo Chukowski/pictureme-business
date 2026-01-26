@@ -64,7 +64,7 @@ export default function AdminRegister() {
 
             // For now, all users go to admin/events
             // TODO: Create separate dashboards for different roles
-            navigate("/admin/events");
+            navigate("/business/events");
           },
           onError: (ctx) => {
             toast.error(ctx.error.message || "Registration failed");
@@ -121,7 +121,7 @@ export default function AdminRegister() {
               </Button>
               <Button
                 variant="ghost"
-                onClick={() => navigate("/admin/register")}
+                onClick={() => navigate("/register")}
                 className="text-zinc-400 hover:text-white"
               >
                 Register for Individual Plan

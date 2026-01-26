@@ -50,7 +50,7 @@ export function useAssistantActions() {
       {
         name: "path",
         type: "string",
-        description: "The path to navigate to (e.g., '/admin/events/create')",
+        description: "The path to navigate to (e.g., '/business/events/create')",
         required: true,
       },
       {

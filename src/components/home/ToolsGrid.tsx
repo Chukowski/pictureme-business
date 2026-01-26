@@ -17,10 +17,10 @@ export function ToolsGrid({ activeEvent, isBusinessUser = false }: ToolsGridProp
 
   const handleStaffClick = () => {
     if (activeEvent) {
-      navigate(`/admin/events/${activeEvent._id}/live?tab=staff`);
+      navigate(`/business/events/${activeEvent._id}/live?tab=staff`);
     } else {
        toast.info("No active event. Redirecting to events list.");
-       navigate("/admin/events");
+       navigate("/business/events");
     }
   };
 
@@ -29,7 +29,7 @@ export function ToolsGrid({ activeEvent, isBusinessUser = false }: ToolsGridProp
       label: "Playground",
       description: "Test AI prompts",
       icon: Gamepad2,
-      onClick: () => navigate("/admin/playground"),
+      onClick: () => navigate("/business/playground"),
       color: "text-amber-400",
       bg: "bg-amber-500/10",
       border: "group-hover:border-amber-500/30",
@@ -38,7 +38,7 @@ export function ToolsGrid({ activeEvent, isBusinessUser = false }: ToolsGridProp
       label: "Event Creator",
       description: "New session",
       icon: Plus,
-      onClick: () => navigate("/admin/events/create"),
+      onClick: () => navigate("/business/events/create"),
       color: "text-indigo-400",
       bg: "bg-indigo-500/10",
       border: "group-hover:border-indigo-500/30",
@@ -56,7 +56,7 @@ export function ToolsGrid({ activeEvent, isBusinessUser = false }: ToolsGridProp
       label: "Marketplace",
       description: "Templates & Assets",
       icon: ShoppingBag,
-      onClick: () => navigate("/admin/marketplace"),
+      onClick: () => navigate("/business/marketplace"),
       color: "text-purple-400",
       bg: "bg-purple-500/10",
       border: "group-hover:border-purple-500/30",
@@ -65,7 +65,7 @@ export function ToolsGrid({ activeEvent, isBusinessUser = false }: ToolsGridProp
       label: "My Events",
       description: "View galleries",
       icon: BookOpen,
-      onClick: () => navigate("/admin/events"), // Renamed "Albums" to "My Events" to be more accurate
+      onClick: () => navigate("/business/events"), // Renamed "Albums" to "My Events" to be more accurate
       color: "text-blue-400",
       bg: "bg-blue-500/10",
       border: "group-hover:border-blue-500/30",

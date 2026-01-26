@@ -159,7 +159,7 @@ export function AppSidebar() {
               </SidebarMenuItem>
               <SidebarMenuItem>
                 <SidebarMenuButton asChild>
-                  <NavLink to="/admin/login">
+                  <NavLink to="/auth">
                     <Settings className="h-4 w-4" />
                     <span>Admin Panel</span>
                   </NavLink>

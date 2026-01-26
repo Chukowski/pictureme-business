@@ -82,7 +82,7 @@ export function PlanCard({ plan, onSelect, className }: PlanCardProps) {
     if (onSelect) {
       onSelect();
     }
-    navigate("/admin/billing?upgrade=" + plan);
+    navigate("/business/settings?upgrade=" + plan);
   };
 
   return (
@@ -164,7 +164,7 @@ export function TokenPackageCard({ tokens, price, bonus, onPurchase }: TokenPack
     if (onPurchase) {
       onPurchase();
     }
-    navigate(`/admin/tokens?buy=${tokens}`);
+    navigate(`/business/tokens?buy=${tokens}`);
   };
 
   return (
@@ -260,7 +260,7 @@ export function AuthCard({ type }: AuthCardProps) {
         <div className={cn("flex gap-2", type === "both" ? "flex-col" : "")}>
           {(type === "register" || type === "both") && (
             <Button
-              onClick={() => navigate("/admin/register")}
+              onClick={() => navigate("/register")}
               size="sm"
               className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white"
             >
@@ -269,7 +269,7 @@ export function AuthCard({ type }: AuthCardProps) {
           )}
           {(type === "login" || type === "both") && (
             <Button
-              onClick={() => navigate("/admin/auth")}
+              onClick={() => navigate("/auth")}
               size="sm"
               variant="outline"
               className="flex-1 border-zinc-600 bg-zinc-800 text-white hover:bg-zinc-700 hover:text-white"
@@ -356,7 +356,7 @@ export function parseGenerativeUI(text: string): { text: string; components: Gen
     });
   }
 
-  // Pattern: [[navigate:path=/admin/events|title=Crear Evento|description=...]]
+  // Pattern: [[navigate:path=/business/events|title=Crear Evento|description=...]]
   const navPattern = /\[\[navigate:path=([^|]+)\|title=([^|]+)\|description=([^\]]+)\]\]/gi;
   while ((match = navPattern.exec(text)) !== null) {
     components.push({

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -20,7 +20,8 @@ import {
   LayoutTemplate,
   Activity,
   Image as ImageIcon,
-  PlayCircle
+  PlayCircle,
+  Megaphone
 } from "lucide-react";
 import {
   AlertDialog,
@@ -64,24 +65,25 @@ export default function AdminEventsTab({ currentUser }: AdminEventsTabProps) {
   const canCreateEvent = activeEventsCount < maxEvents;
   const totalTemplates = events.reduce((acc, e) => acc + (e.templates?.length || 0), 0);
 
-  useEffect(() => {
-    loadEvents();
-  }, []);
-
-  const loadEvents = async () => {
+  const loadEvents = useCallback(async () => {
     try {
       setIsLoading(true);
       const data = await getUserEvents();
       setEvents(data);
-    } catch (error: any) {
-      toast.error(error.message || "Failed to load events");
-      if (error.message.includes("Not authenticated")) {
-        navigate("/admin/auth");
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to load events";
+      toast.error(message);
+      if (message.includes("Not authenticated")) {
+        navigate("/auth");
       }
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [navigate]);
+
+  useEffect(() => {
+    loadEvents();
+  }, [loadEvents]);
 
   const handleDeleteClick = (event: EventConfig) => {
     setEventToDelete(event);
@@ -95,8 +97,8 @@ export default function AdminEventsTab({ currentUser }: AdminEventsTabProps) {
       await deleteEvent(eventToDelete._id);
       toast.success("Event deleted successfully");
       loadEvents();
-    } catch (error: any) {
-      toast.error(error.message || "Failed to delete event");
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : "Failed to delete event");
     } finally {
       setDeleteDialogOpen(false);
       setEventToDelete(null);
@@ -115,52 +117,56 @@ export default function AdminEventsTab({ currentUser }: AdminEventsTabProps) {
 
   return (
     <div className="max-w-[1280px] mx-auto space-y-8">
-      {/* Dashboard Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Card className="bg-card/50 border-white/10 backdrop-blur-sm p-4 flex flex-col justify-center h-full">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-indigo-500/10 text-indigo-400">
-              <Activity className="w-5 h-5" />
-            </div>
-            <div>
-              <p className="text-xs text-zinc-400 font-medium uppercase tracking-wider">Active Events</p>
-              <div className="flex items-baseline gap-1">
-                <span className="text-2xl font-bold text-white">{activeEventsCount}</span>
-                <span className="text-sm text-zinc-500 font-medium">/ {maxEvents}</span>
+      {/* Dashboard Stats & Announcements */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 h-full">
+            <Card className="bg-card/50 border-white/10 backdrop-blur-sm p-4 flex flex-col justify-center h-full">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-indigo-500/10 text-indigo-400">
+                  <Activity className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="text-xs text-zinc-400 font-medium uppercase tracking-wider">Active Events</p>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-2xl font-bold text-white">{activeEventsCount}</span>
+                    <span className="text-sm text-zinc-500 font-medium">/ {maxEvents}</span>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
-        </Card>
+            </Card>
 
-        <Card className="bg-card/50 border-white/10 backdrop-blur-sm p-4 flex flex-col justify-center h-full">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-400">
-              <LayoutTemplate className="w-5 h-5" />
-            </div>
-            <div>
-              <p className="text-xs text-zinc-400 font-medium uppercase tracking-wider">Total Templates</p>
-              <div className="flex items-baseline gap-1">
-                <span className="text-2xl font-bold text-white">{totalTemplates}</span>
+            <Card className="bg-card/50 border-white/10 backdrop-blur-sm p-4 flex flex-col justify-center h-full">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-400">
+                  <LayoutTemplate className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="text-xs text-zinc-400 font-medium uppercase tracking-wider">Templates</p>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-2xl font-bold text-white">{totalTemplates}</span>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
-        </Card>
+            </Card>
 
-        <Card className="bg-card/50 border-white/10 backdrop-blur-sm p-4 flex flex-col justify-center h-full">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-purple-500/10 text-purple-400">
-              <Activity className="w-4 h-4" />
-            </div>
-            <div>
-              <p className="text-xs text-zinc-400 font-medium uppercase tracking-wider">Plan</p>
-              <div className="flex items-baseline gap-1">
-                <span className="text-lg font-bold text-white">
-                  {planDisplayName}
-                </span>
+            <Card className="bg-card/50 border-white/10 backdrop-blur-sm p-4 flex flex-col justify-center h-full">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-purple-500/10 text-purple-400">
+                  <Activity className="w-4 h-4" />
+                </div>
+                <div>
+                  <p className="text-xs text-zinc-400 font-medium uppercase tracking-wider">Plan</p>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-lg font-bold text-white">
+                      {planDisplayName}
+                    </span>
+                  </div>
+                </div>
               </div>
-            </div>
+            </Card>
           </div>
-        </Card>
+        </div>
       </div>
 
       {/* Content Section */}
@@ -179,7 +185,7 @@ export default function AdminEventsTab({ currentUser }: AdminEventsTabProps) {
               </span>
             )}
             <Button
-              onClick={() => navigate("/admin/events/create")}
+              onClick={() => navigate("/business/events/create")}
               className="bg-white text-black hover:bg-zinc-200 font-medium"
               disabled={!canCreateEvent}
             >
@@ -208,7 +214,7 @@ export default function AdminEventsTab({ currentUser }: AdminEventsTabProps) {
                   Start growing your workspace by creating your first event.
                 </p>
                 <Button
-                  onClick={() => navigate("/admin/events/create")}
+                  onClick={() => navigate("/business/events/create")}
                   variant="outline"
                   className="border-white/10 text-white hover:bg-white/5"
                 >
@@ -236,8 +242,8 @@ export default function AdminEventsTab({ currentUser }: AdminEventsTabProps) {
                         <Badge
                           variant="outline"
                           className={`text-[10px] px-1.5 h-5 border-0 ${event.is_active
-                              ? "bg-emerald-500/10 text-emerald-400"
-                              : "bg-zinc-500/10 text-zinc-400"
+                            ? "bg-emerald-500/10 text-emerald-400"
+                            : "bg-zinc-500/10 text-zinc-400"
                             }`}
                         >
                           {event.is_active ? "Active" : "Inactive"}
@@ -266,7 +272,7 @@ export default function AdminEventsTab({ currentUser }: AdminEventsTabProps) {
                         <DropdownMenuItem onClick={() => handleViewFeed(event)} className="cursor-pointer">
                           <ImageIcon className="w-4 h-4 mr-2" /> View Feed
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => navigate(`/admin/events/${event.slug}/photos`)} className="cursor-pointer">
+                        <DropdownMenuItem onClick={() => navigate(`/business/events/${event.slug}/photos`)} className="cursor-pointer">
                           <ImageIcon className="w-4 h-4 mr-2" /> Manage Photos
                         </DropdownMenuItem>
                         <DropdownMenuSeparator className="bg-white/10" />
@@ -312,7 +318,7 @@ export default function AdminEventsTab({ currentUser }: AdminEventsTabProps) {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => navigate(`/admin/events/edit/${event._id}`)}
+                    onClick={() => navigate(`/business/events/edit/${event._id}`)}
                     className="h-9 text-xs border-white/10 bg-transparent hover:bg-white/5 text-zinc-300 hover:text-white"
                   >
                     <Settings className="w-3.5 h-3.5 mr-2" />
@@ -321,7 +327,7 @@ export default function AdminEventsTab({ currentUser }: AdminEventsTabProps) {
                   <Button
                     variant="default"
                     size="sm"
-                    onClick={() => navigate(`/admin/events/${event._id}/live`)}
+                    onClick={() => navigate(`/business/events/${event._id}/live`)}
                     className="h-9 text-xs bg-zinc-100 hover:bg-white text-black border-0"
                   >
                     <PlayCircle className="w-3.5 h-3.5 mr-2" />

@@ -156,14 +156,14 @@ export default function LandingPage() {
                   <DropdownMenuSeparator className="bg-white/10" />
                   <DropdownMenuItem
                     className="text-zinc-300 hover:text-white hover:bg-white/5 cursor-pointer"
-                    onClick={() => navigate("/admin")}
+                    onClick={() => navigate("/business/home")}
                   >
                     <User className="h-4 w-4 mr-2" />
                     Dashboard
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     className="text-zinc-300 hover:text-white hover:bg-white/5 cursor-pointer"
-                    onClick={() => navigate("/admin/settings")}
+                    onClick={() => navigate("/business/settings")}
                   >
                     <Sparkles className="h-4 w-4 mr-2" />
                     Configuración
@@ -180,10 +180,10 @@ export default function LandingPage() {
               </DropdownMenu>
             ) : (
               <>
-                <Button variant="ghost" className="text-zinc-400 hover:text-white hover:bg-white/5 px-3 sm:px-4 text-sm" onClick={() => navigate("/admin/auth")}>
+                <Button variant="ghost" className="text-zinc-400 hover:text-white hover:bg-white/5 px-3 sm:px-4 text-sm" onClick={() => navigate("/auth")}>
                   Log in
                 </Button>
-                <Button className="bg-white text-black hover:bg-zinc-200 rounded-full px-4 sm:px-6 font-semibold text-sm" onClick={() => navigate("/admin/register")}>
+                <Button className="bg-white text-black hover:bg-zinc-200 rounded-full px-4 sm:px-6 font-semibold text-sm" onClick={() => navigate("/register")}>
                   Get Started
                 </Button>
               </>
@@ -221,7 +221,7 @@ export default function LandingPage() {
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Button size="lg" className="h-14 px-8 text-lg bg-white text-black hover:bg-zinc-200 rounded-full w-full sm:w-auto font-semibold shadow-xl shadow-white/5" onClick={() => navigate("/admin/register")}>
+            <Button size="lg" className="h-14 px-8 text-lg bg-white text-black hover:bg-zinc-200 rounded-full w-full sm:w-auto font-semibold shadow-xl shadow-white/5" onClick={() => navigate("/register")}>
               Start Creating
             </Button>
             <Button size="lg" variant="outline" className="h-14 px-8 text-lg border-white/10 bg-white/5 hover:bg-white/10 text-white rounded-full w-full sm:w-auto backdrop-blur-md" onClick={() => scrollToSection("showcase")}>
@@ -427,7 +427,7 @@ export default function LandingPage() {
                               if (pricingTab === 'business') {
                                 navigate(`/apply?tier=${tier.code}`);
                               } else {
-                                navigate(`/admin/register?plan=${tier.code}`);
+                                navigate(`/register?plan=${tier.code}`);
                               }
                             }}
                           >

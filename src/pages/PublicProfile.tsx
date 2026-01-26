@@ -250,7 +250,7 @@ export default function PublicProfile() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => navigate((currentUser?.role || '').startsWith('business') ? '/admin/settings/business' : '/creator/settings')}
+                    onClick={() => navigate((currentUser?.role || '').startsWith('business') ? '/business/settings' : '/creator/settings')}
                     className="border-white/30 bg-white/10 text-white hover:bg-white/20"
                   >
                     <Edit2 className="w-4 h-4 mr-1" />

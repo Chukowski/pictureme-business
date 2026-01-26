@@ -47,7 +47,7 @@ export default function AdminEvents() {
 
   useEffect(() => {
     if (!currentUser) {
-      navigate("/admin/auth");
+      navigate("/auth");
       return;
     }
 
@@ -62,7 +62,7 @@ export default function AdminEvents() {
     } catch (error: any) {
       toast.error(error.message || "Failed to load events");
       if (error.message.includes("Not authenticated")) {
-        navigate("/admin/auth");
+        navigate("/auth");
       }
     } finally {
       setIsLoading(false);
@@ -72,7 +72,7 @@ export default function AdminEvents() {
   const handleLogout = () => {
     logoutUser();
     toast.success("Logged out successfully");
-    navigate("/admin/auth");
+    navigate("/auth");
   };
 
   const handleDeleteClick = (event: EventConfig) => {
@@ -133,7 +133,7 @@ export default function AdminEvents() {
 
         {/* Create Event Button */}
         <Button
-          onClick={() => navigate("/admin/events/create")}
+          onClick={() => navigate("/business/events/create")}
           size="lg"
           className="mb-6"
         >
@@ -168,7 +168,7 @@ export default function AdminEvents() {
                   <p className="text-muted-foreground mb-4">
                     Create your first event to get started
                   </p>
-                  <Button onClick={() => navigate("/admin/events/create")}>
+                  <Button onClick={() => navigate("/business/events/create")}>
                     <Plus className="w-4 h-4 mr-2" />
                     Create Event
                   </Button>
@@ -255,7 +255,7 @@ export default function AdminEvents() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => navigate(`/admin/events/edit/${event._id}`)}
+                      onClick={() => navigate(`/business/events/edit/${event._id}`)}
                     >
                       <Pencil className="w-4 h-4 mr-1" />
                       Edit
@@ -263,7 +263,7 @@ export default function AdminEvents() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => navigate(`/admin/events/${event._id}/photos`)}
+                      onClick={() => navigate(`/business/events/${event._id}/photos`)}
                     >
                       <Image className="w-4 h-4 mr-1" />
                       Photos

@@ -55,6 +55,7 @@ import {
   Minimize2,
 } from "lucide-react";
 import { User } from "@/services/eventsApi";
+import { getHomeContent, FeaturedTemplate } from "@/services/contentApi";
 import { ENV } from "@/config/env";
 import { toast } from "sonner";
 import { AI_MODELS, LOCAL_IMAGE_MODELS, LOCAL_VIDEO_MODELS } from "@/services/aiProcessor";
@@ -139,6 +140,7 @@ const FACESWAP_MODELS = [
 let cachedTemplates: MarketplaceTemplate[] | null = null;
 let cachedLoraModels: LoRAModel[] | null = null;
 let cachedLibrary: LibraryItem[] | null = null;
+let cachedFeatured: FeaturedTemplate[] | null = null; // Cache admin featured
 let cachedUserId: string | number | null = null;
 
 export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
@@ -156,11 +158,12 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
   const [templates, setTemplates] = useState<MarketplaceTemplate[]>(cachedTemplates || []);
   const [loraModels, setLoraModels] = useState<LoRAModel[]>(cachedLoraModels || []);
   const [myLibrary, setMyLibrary] = useState<LibraryItem[]>(cachedLibrary || []);
+  const [adminFeatured, setAdminFeatured] = useState<FeaturedTemplate[]>(cachedFeatured || []);
   const [isLoading, setIsLoading] = useState(!cachedTemplates);
   const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [sortBy, setSortBy] = useState('popular');
-  const [typeFilter, setTypeFilter] = useState<'all' | 'individual' | 'business' | 'video' | 'image'>('all');
+  const [typeFilter, setTypeFilter] = useState<'all' | 'featured' | 'individual' | 'business' | 'video' | 'image'>('all');
   const [selectedTemplate, setSelectedTemplate] = useState<MarketplaceTemplate | null>(null);
   const [isInfoExpanded, setIsInfoExpanded] = useState(false);
   const [actionPhrase, setActionPhrase] = useState("Ready?");
@@ -179,11 +182,15 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [gridColumns, setZoomLevel] = useState([4]);
 
-  // Sync search from URL
+  // Sync search & type from URL
   useEffect(() => {
     const search = searchParams.get('search');
+    const type = searchParams.get('type');
     if (search !== null) {
       setSearchQuery(search);
+    }
+    if (type !== null) {
+      setTypeFilter(type as any);
     }
   }, [searchParams]);
 
@@ -242,8 +249,15 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
   };
 
   useEffect(() => {
-    if (!cachedTemplates) {
+    // Fetch if templates OR featured content is missing from cache
+    if (!cachedTemplates || !cachedFeatured) {
       fetchMarketplaceData();
+    } else {
+      // Ensure local state is synced with cache if we didn't fetch
+      setTemplates(cachedTemplates);
+      setLoraModels(cachedLoraModels || []);
+      setMyLibrary(cachedLibrary || []);
+      setAdminFeatured(cachedFeatured);
     }
   }, []);
 
@@ -256,10 +270,11 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
         headers.Authorization = `Bearer ${token}`;
       }
 
-      const [templatesRes, loraRes, libraryRes] = await Promise.all([
+      const [templatesRes, loraRes, libraryRes, homeRes] = await Promise.all([
         fetch(`${ENV.API_URL}/api/marketplace/templates`, { headers }),
         fetch(`${ENV.API_URL}/api/marketplace/lora-models`, { headers }),
-        token ? fetch(`${ENV.API_URL}/api/marketplace/my-library`, { headers }) : Promise.resolve(null)
+        token ? fetch(`${ENV.API_URL}/api/marketplace/my-library`, { headers }) : Promise.resolve(null),
+        getHomeContent(currentUser.role?.startsWith('business') ? 'business' : 'personal').catch(() => null)
       ]);
 
       if (templatesRes.ok) {
@@ -278,6 +293,11 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
         const libraryData = await libraryRes.json();
         cachedLibrary = libraryData || [];
         setMyLibrary(libraryData || []);
+      }
+
+      if (homeRes && homeRes.featured_templates) {
+        cachedFeatured = homeRes.featured_templates;
+        setAdminFeatured(homeRes.featured_templates);
       }
 
       // Reconcile owned templates not present in library
@@ -306,59 +326,37 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
     }
   };
 
-  const handlePurchase = async (template: MarketplaceTemplate) => {
-    setIsPurchasing(true);
-    try {
-      const token = localStorage.getItem("auth_token");
-      const response = await fetch(`${ENV.API_URL}/api/marketplace/purchase/${template.id}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        }
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        if (template.price === 0) {
-          toast.success(`Added "${template.name}" to your library!`);
-        } else {
-          toast.success(`Purchased "${template.name}" for ${result.tokens_spent} tokens!`);
-        }
-
-        const newLibraryItem: LibraryItem = {
-          id: `lib_${template.id}`,
-          template_id: template.id,
-          type: 'template',
-          name: template.name,
-          preview_url: template.preview_url,
-          template_type: template.template_type,
-          purchased_at: new Date().toISOString(),
-          times_used: 0
-        };
-        setMyLibrary([newLibraryItem, ...myLibrary]);
-        cachedLibrary = [newLibraryItem, ...(cachedLibrary || [])];
-
-        setTemplates(templates.map(t =>
-          t.id === template.id ? { ...t, is_owned: true } : t
-        ));
-
-        setSelectedTemplate(null);
-      } else {
-        const error = await response.json();
-        toast.error(error.detail || "Purchase failed");
-      }
-    } catch (error) {
-      toast.error("Purchase failed. Please try again.");
-    } finally {
-      setIsPurchasing(false);
+  const addTag = () => {
+    if (tagInput && !newTemplate.tags.includes(tagInput)) {
+      setNewTemplate({ ...newTemplate, tags: [...newTemplate.tags, tagInput] });
+      setTagInput('');
     }
   };
 
-  const handleRemoveFromLibrary = async (item: LibraryItem) => {
-    setMyLibrary((myLibrary || []).filter(t => t.id !== item.id));
-    cachedLibrary = (cachedLibrary || []).filter(t => t.id !== item.id);
-    toast.success("Removed from library");
+  const removeTag = (tag: string) => {
+    setNewTemplate({ ...newTemplate, tags: newTemplate.tags.filter(t => t !== tag) });
+  };
+
+  const addBackground = () => {
+    if (backgroundInput && !newTemplate.backgrounds.includes(backgroundInput)) {
+      setNewTemplate({ ...newTemplate, backgrounds: [...newTemplate.backgrounds, backgroundInput] });
+      setBackgroundInput('');
+    }
+  };
+
+  const removeBackground = (url: string) => {
+    setNewTemplate({ ...newTemplate, backgrounds: newTemplate.backgrounds.filter(b => b !== url) });
+  };
+
+  const addElement = () => {
+    if (elementInput && !newTemplate.element_images.includes(elementInput)) {
+      setNewTemplate({ ...newTemplate, element_images: [...newTemplate.element_images, elementInput] });
+      setElementInput('');
+    }
+  };
+
+  const removeElement = (url: string) => {
+    setNewTemplate({ ...newTemplate, element_images: newTemplate.element_images.filter(e => e !== url) });
   };
 
   const calculateTokensCost = () => {
@@ -492,37 +490,59 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
     setCreateTab('basic');
   };
 
-  const addTag = () => {
-    if (tagInput && !newTemplate.tags.includes(tagInput)) {
-      setNewTemplate({ ...newTemplate, tags: [...newTemplate.tags, tagInput] });
-      setTagInput('');
+  const handlePurchase = async (template: MarketplaceTemplate) => {
+    setIsPurchasing(true);
+    try {
+      const token = localStorage.getItem("auth_token");
+      const response = await fetch(`${ENV.API_URL}/api/marketplace/purchase/${template.id}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (template.price === 0) {
+          toast.success(`Added "${template.name}" to your library!`);
+        } else {
+          toast.success(`Purchased "${template.name}" for ${result.tokens_spent} tokens!`);
+        }
+
+        const newLibraryItem: LibraryItem = {
+          id: `lib_${template.id}`,
+          template_id: template.id,
+          type: 'template',
+          name: template.name,
+          preview_url: template.preview_url,
+          template_type: template.template_type,
+          purchased_at: new Date().toISOString(),
+          times_used: 0
+        };
+        setMyLibrary([newLibraryItem, ...myLibrary]);
+        cachedLibrary = [newLibraryItem, ...(cachedLibrary || [])];
+
+        setTemplates(templates.map(t =>
+          t.id === template.id ? { ...t, is_owned: true } : t
+        ));
+
+        setSelectedTemplate(null);
+      } else {
+        const error = await response.json();
+        toast.error(error.detail || "Purchase failed");
+      }
+    } catch (error) {
+      toast.error("Purchase failed. Please try again.");
+    } finally {
+      setIsPurchasing(false);
     }
   };
 
-  const removeTag = (tag: string) => {
-    setNewTemplate({ ...newTemplate, tags: newTemplate.tags.filter(t => t !== tag) });
-  };
-
-  const addBackground = () => {
-    if (backgroundInput && !newTemplate.backgrounds.includes(backgroundInput)) {
-      setNewTemplate({ ...newTemplate, backgrounds: [...newTemplate.backgrounds, backgroundInput] });
-      setBackgroundInput('');
-    }
-  };
-
-  const removeBackground = (url: string) => {
-    setNewTemplate({ ...newTemplate, backgrounds: newTemplate.backgrounds.filter(b => b !== url) });
-  };
-
-  const addElement = () => {
-    if (elementInput && !newTemplate.element_images.includes(elementInput)) {
-      setNewTemplate({ ...newTemplate, element_images: [...newTemplate.element_images, elementInput] });
-      setElementInput('');
-    }
-  };
-
-  const removeElement = (url: string) => {
-    setNewTemplate({ ...newTemplate, element_images: newTemplate.element_images.filter(e => e !== url) });
+  const handleRemoveFromLibrary = async (item: LibraryItem) => {
+    setMyLibrary((myLibrary || []).filter(t => t.id !== item.id));
+    cachedLibrary = (cachedLibrary || []).filter(t => t.id !== item.id);
+    toast.success("Removed from library");
   };
 
   const filteredTemplates = templates.filter(template => {
@@ -532,7 +552,16 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
 
     let matchesType = true;
     if (typeFilter !== 'all') {
-      if (typeFilter === 'business') matchesType = template.template_type === 'business';
+      if (typeFilter === 'featured') {
+        // Check if explicit admin featured OR has tags
+        const isAdminFeatured = adminFeatured.some(f => f.template_id === template.id);
+        const isTagged = template.tags?.some(tag => {
+          const t = tag.toLowerCase();
+          return t === 'featured' || t === 'promoted';
+        }) || false;
+        matchesType = isAdminFeatured || isTagged;
+      }
+      else if (typeFilter === 'business') matchesType = template.template_type === 'business';
       else if (typeFilter === 'individual') matchesType = template.template_type === 'individual';
       else if (typeFilter === 'video') matchesType = template.media_type === 'video';
       else if (typeFilter === 'image') matchesType = template.media_type === 'image' || !template.media_type;
@@ -542,6 +571,27 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
 
     return matchesSearch && matchesCategory && matchesType;
   }).sort((a, b) => {
+    // For featured sort, prioritize admin featured
+    if (typeFilter === 'featured') {
+      const aFeatured = adminFeatured.find(f => f.template_id === a.id);
+      const bFeatured = adminFeatured.find(f => f.template_id === b.id);
+
+      if (aFeatured && bFeatured) return aFeatured.featured_order - bFeatured.featured_order;
+      if (aFeatured) return -1;
+      if (bFeatured) return 1;
+    }
+
+  }).sort((a, b) => {
+    // For featured sort, prioritize admin featured
+    if (typeFilter === 'featured') {
+      const aFeatured = adminFeatured.find(f => f.template_id === a.id);
+      const bFeatured = adminFeatured.find(f => f.template_id === b.id);
+
+      if (aFeatured && bFeatured) return aFeatured.featured_order - bFeatured.featured_order;
+      if (aFeatured) return -1;
+      if (bFeatured) return 1;
+    }
+
     switch (sortBy) {
       case 'popular': return b.downloads - a.downloads;
       case 'rating': return b.rating - a.rating;
@@ -685,6 +735,7 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
             <div className="flex items-center gap-0.5 md:gap-1 p-1 bg-[#18181b]/50 backdrop-blur-md rounded-2xl border border-white/5 mx-auto overflow-x-auto max-w-full no-scrollbar">
               {[
                 { id: 'all', label: 'All', icon: Sparkles },
+                { id: 'featured', label: 'Featured', icon: Star },
                 { id: 'image', label: 'Image Gen', icon: ImageIcon },
                 { id: 'video', label: 'Video Gen', icon: Video },
                 { id: 'business', label: 'Booth', icon: Building2 },

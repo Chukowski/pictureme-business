@@ -196,7 +196,7 @@ export function MediaLibrary({ onSelectMedia, selectedUrl, eventId, templates, o
     // Navigate to playground with image parameter
     // We encode the URL to be safe
     const encodedUrl = encodeURIComponent(item.url);
-    navigate(`/admin/playground?image=${encodedUrl}&source=library`);
+    navigate(`/business/playground?image=${encodedUrl}&source=library`);
   };
 
   const handleStartUseInTemplate = async (item: MediaItem) => {
@@ -243,7 +243,7 @@ export function MediaLibrary({ onSelectMedia, selectedUrl, eventId, templates, o
 
       setShowEventDialog(false);
       // Navigate to event editor after success?
-      navigate(`/admin/events/${event._id}/templates`);
+      navigate(`/business/events/${event._id}/templates`);
     } catch (error) {
       console.error("Failed to create template:", error);
       toast({

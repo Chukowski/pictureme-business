@@ -72,7 +72,7 @@ export function CreatorNavbar({ user, creatingCount = 0 }: CreatorNavbarProps) {
 
     const handleLogout = () => {
         logoutUser();
-        navigate("/admin/auth");
+        navigate("/auth");
     };
 
     const navItems = [

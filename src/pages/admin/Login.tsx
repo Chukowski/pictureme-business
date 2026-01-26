@@ -16,7 +16,7 @@ export default function AdminLogin() {
     e.preventDefault();
     if (adminLogin(password)) {
       toast({ title: 'Login successful' });
-      navigate('/admin/events');
+      navigate('/business/events');
     } else {
       toast({ 
         title: 'Invalid password', 

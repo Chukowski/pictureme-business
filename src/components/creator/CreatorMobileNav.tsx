@@ -37,7 +37,7 @@ export function CreatorMobileNav() {
         location.pathname === '/privacy' ||
         location.pathname === '/apply' ||
         location.pathname === '/admin/auth' ||
-        location.pathname === '/admin/register' ||
+        location.pathname === '/register' ||
         location.pathname.startsWith('/super-admin') ||
         // Only hide for PUBLIC booth experiences (not /creator/booth)
         (location.pathname.endsWith('/booth') && !location.pathname.startsWith('/creator')) ||
@@ -47,7 +47,7 @@ export function CreatorMobileNav() {
         location.pathname.endsWith('/feed') ||
         // Check for dynamic event routes that are not admin/creator routes
         (location.pathname.split('/').length >= 3 &&
-            !location.pathname.startsWith('/admin') &&
+            !location.pathname.startsWith('/business') &&
             !location.pathname.startsWith('/super-admin') &&
             !location.pathname.startsWith('/creator') &&
             !location.pathname.startsWith('/profile'));
@@ -63,7 +63,7 @@ export function CreatorMobileNav() {
 
     const handleLogout = () => {
         logoutUser();
-        navigate("/admin/auth");
+        navigate("/auth");
     };
 
     if (!isVisible) return null;

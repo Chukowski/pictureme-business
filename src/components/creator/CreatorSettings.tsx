@@ -75,7 +75,7 @@ export default function CreatorSettings() {
 
   useEffect(() => {
     if (!currentUser) {
-      navigate("/admin/auth");
+      navigate("/auth");
     }
   }, [currentUser, navigate]);
 

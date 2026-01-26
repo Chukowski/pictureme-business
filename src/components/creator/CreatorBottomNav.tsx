@@ -176,7 +176,7 @@ export const CreatorBottomNav = ({ onOpenCreate, onLibraryClick, onHomeClick, ac
 
     const handleLogout = () => {
         logoutUser();
-        navigate("/admin/auth");
+        navigate("/auth");
     };
 
     return (

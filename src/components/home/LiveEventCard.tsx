@@ -73,7 +73,7 @@ export function LiveEventCard({ event }: LiveEventCardProps) {
           <div className="flex flex-col sm:flex-row flex-wrap gap-3 w-full lg:w-auto lg:justify-end">
             <Button 
               className="bg-emerald-500 hover:bg-emerald-600 text-white border-0 font-medium shadow-lg shadow-emerald-900/20 w-full sm:w-auto"
-              onClick={() => navigate(`/admin/events/${event._id}/live`)}
+              onClick={() => navigate(`/business/events/${event._id}/live`)}
             >
               <Play className="w-4 h-4 mr-2 fill-current" />
               Open Live Mode
@@ -90,7 +90,7 @@ export function LiveEventCard({ event }: LiveEventCardProps) {
               <Button 
                 variant="outline"
                 className="flex-1 sm:flex-none bg-zinc-800/50 border-white/10 text-zinc-300 hover:text-white hover:bg-zinc-800 transition-colors"
-                onClick={() => navigate(`/admin/events/${event._id}/live?tab=overview`)}
+                onClick={() => navigate(`/business/events/${event._id}/live?tab=overview`)}
               >
                 <Monitor className="w-4 h-4 mr-2" />
                 Stations

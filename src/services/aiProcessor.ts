@@ -207,6 +207,7 @@ const MODEL_ID_MAP: Record<string, string> = {
   'google-video': 'fal-ai/google/veo-3-1/image-to-video',
   'kling-v2.6-motion': 'fal-ai/kling-video/v2.6/pro/motion-control',
   'kling-v2.6-motion-std': 'fal-ai/kling-video/v2.6/standard/motion-control',
+  'flux-klein-alt': 'fal-ai/flux-2/klein/9b/base/lora',
 };
 
 /**
@@ -235,8 +236,18 @@ export function resolveModelId(modelId: string): string {
  */
 export function normalizeModelId(modelId: string): string {
   if (!modelId) return '';
-
-  const clean = (s: string) => s.toLowerCase().replace(/\s+/g, '').replace(/\/edit$/, '').replace(/\/lora$/, '').replace(/\/text-to-image$/, '').replace(/\/image-to-video$/, '');
+  const clean = (s: string) => s.toLowerCase()
+    .trim()
+    .replace(/^fal-ai\//, '')
+    .replace(/\s+/g, '')
+    .replace(/\/edit$/, '')
+    .replace(/\/lora$/, '')
+    .replace(/\/text-to-image$/, '')
+    .replace(/\/image-to-video$/, '')
+    .replace(/\/pro$/, '')
+    .replace(/\/turbo$/, '')
+    .replace(/\/t2i$/, '')
+    .replace(/\/i2v$/, '');
   const lowerId = clean(modelId);
 
   // 1. Try to find inverse mapping in MODEL_ID_MAP
@@ -271,8 +282,63 @@ export function normalizeModelId(modelId: string): string {
   // 3. Fallback: If it's already a known short ID (doesn't start with fal-ai/), return it
   if (!modelId.startsWith('fal-ai/')) return modelId;
 
-  // 4. Return as-is if no mapping found
+  // 4. Return the last part of the path if it's very long
+  if (modelId.includes('/')) {
+    const parts = modelId.split('/');
+    // Check if it's a known generic structure
+    if (parts[0] === 'fal-ai') {
+      // Try to find a meaningful name in the path
+      if (modelId.includes('flux-2/klein')) return 'flux-klein';
+      if (modelId.includes('seedream')) return 'seedream-v4.5';
+
+      // Return second part if meaningful
+      if (parts.length > 1 && parts[1] !== 'bytedance' && parts[1] !== 'google') {
+        return parts[1];
+      }
+    }
+  }
+
   return modelId;
+}
+
+/**
+ * Get a human-readable display name for a model
+ */
+export function getModelDisplayName(modelId: string): string {
+  if (!modelId) return "Generic AI";
+
+  // 1. Try to find in definitions
+  const normalized = normalizeModelId(modelId);
+  const allModels = Object.values(AI_MODELS) as any[];
+
+  const found = allModels.find(m =>
+    m.id === modelId ||
+    m.shortId === modelId ||
+    m.id === normalized ||
+    m.shortId === normalized
+  );
+
+  if (found) {
+    // If it's a specific variant ID but we found the parent, maybe append variant info
+    let name = found.name;
+    if (modelId.includes('t2i') || modelId.includes('text-to-image')) name += " T2I";
+    else if (modelId.includes('i2v') || modelId.includes('image-to-video')) name += " I2V";
+    else if (modelId.includes('edit')) name += " Edit";
+
+    return name;
+  }
+
+  // 2. Fallback to title-cased normalized ID
+  const label = normalized.split('-').map(word =>
+    word.charAt(0).toUpperCase() + word.slice(1)
+  ).join(' ');
+
+  // If the label is still just a path, format it
+  if (label.includes('/')) {
+    return label.split('/').pop() || label;
+  }
+
+  return label;
 }
 
 // Available AI models for selection

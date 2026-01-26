@@ -79,7 +79,7 @@ export default function BoothDashboard() {
         try {
             const currentUser = getCurrentUser();
             if (!currentUser) {
-                navigate('/admin/auth');
+                navigate('/auth');
                 return;
             }
             setUser(currentUser);

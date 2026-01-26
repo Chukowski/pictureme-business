@@ -88,7 +88,7 @@ export default function AdminAuth() {
       } else {
         const isBusiness = user.role?.startsWith('business') && user.role !== 'business_pending';
         if (isBusiness) {
-          navigate("/admin/home");
+          navigate("/business/home");
         } else {
           navigate("/creator/dashboard");
         }
@@ -181,7 +181,7 @@ export default function AdminAuth() {
         <div className="mt-8 text-center">
           <p className="text-sm text-zinc-500">
             Don't have an account?{" "}
-            <button onClick={() => navigate("/admin/register")} className="text-indigo-400 hover:text-indigo-300 font-medium transition-colors">
+            <button onClick={() => navigate("/register")} className="text-indigo-400 hover:text-indigo-300 font-medium transition-colors">
               Start free trial
             </button>
           </p>

@@ -23,9 +23,9 @@ export function PlanInsightsCard({ user }: PlanInsightsCardProps) {
   const handleUpgradeClick = () => {
     if (needsActivation) {
       // Force them to billing to pay
-      navigate('/admin/settings/business?tab=billing&activate=true');
+      navigate('/business/settings?tab=billing&activate=true');
     } else if (isBusiness) {
-      navigate('/admin/settings/business?tab=billing&showPlans=true');
+      navigate('/business/settings?tab=billing&showPlans=true');
     } else {
       navigate('/creator/billing');
     }

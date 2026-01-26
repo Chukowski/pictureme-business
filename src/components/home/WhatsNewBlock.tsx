@@ -15,7 +15,7 @@ interface WhatsNewBlockProps {
 // Helper for Announcement Item
 const AnnouncementItem = ({ item }: { item: Announcement }) => {
   const navigate = useNavigate();
-  
+
   const handleAction = () => {
     if (!item.cta_url) return;
     if (item.cta_url.startsWith('/')) {
@@ -42,7 +42,7 @@ const AnnouncementItem = ({ item }: { item: Announcement }) => {
 export function WhatsNewBlock({ content }: WhatsNewBlockProps) {
   const [activeTab, setActiveTab] = useState("features");
 
-  // Filter content based on type (mock logic if API doesn't separate strictly yet)
+  // Filter content based on type (following WhatsNewCard logic)
   const features = content?.announcements?.filter(a => a.type === 'new_feature' || a.type === 'update') || [];
   const tips = content?.announcements?.filter(a => a.type === 'pro_tip') || [];
   const alerts = content?.announcements?.filter(a => a.type === 'alert' || a.type === 'maintenance') || [];
@@ -56,8 +56,8 @@ export function WhatsNewBlock({ content }: WhatsNewBlockProps) {
             What's New
           </div>
           {alerts.length > 0 && (
-            <Badge variant="destructive" className="h-5 text-[10px] px-1.5">
-              {alerts.length} Alerts
+            <Badge variant="destructive" className="h-5 text-[10px] px-1.5 bg-red-500/10 text-red-400 border-red-500/20">
+              {alerts.length} New
             </Badge>
           )}
         </CardTitle>
@@ -66,12 +66,12 @@ export function WhatsNewBlock({ content }: WhatsNewBlockProps) {
         <Tabs defaultValue="features" className="flex-1 flex flex-col" onValueChange={setActiveTab}>
           <TabsList className="w-full bg-card/50 border border-white/5 p-0.5 h-8 mb-4">
             <TabsTrigger value="features" className="flex-1 text-[10px] h-7 data-[state=active]:bg-zinc-800 data-[state=active]:text-white text-zinc-500">Features</TabsTrigger>
-            <TabsTrigger value="templates" className="flex-1 text-[10px] h-7 data-[state=active]:bg-zinc-800 data-[state=active]:text-white text-zinc-500">Templates</TabsTrigger>
-            <TabsTrigger value="tips" className="flex-1 text-[10px] h-7 data-[state=active]:bg-zinc-800 data-[state=active]:text-white text-zinc-500">Pro Tips</TabsTrigger>
+            <TabsTrigger value="tips" className="flex-1 text-[10px] h-7 data-[state=active]:bg-zinc-800 data-[state=active]:text-white text-zinc-500">Tips</TabsTrigger>
+            <TabsTrigger value="alerts" className="flex-1 text-[10px] h-7 data-[state=active]:bg-zinc-800 data-[state=active]:text-white text-zinc-500">Alerts</TabsTrigger>
           </TabsList>
 
-          <div className="flex-1 min-h-[200px]">
-            <TabsContent value="features" className="mt-0 space-y-1 h-full">
+          <div className="flex-1 min-h-[220px]">
+            <TabsContent value="features" className="mt-0 space-y-1 h-full animate-in fade-in slide-in-from-bottom-1">
               {features.length > 0 ? (
                 features.slice(0, 4).map(item => <AnnouncementItem key={item.id} item={item} />)
               ) : (
@@ -82,57 +82,29 @@ export function WhatsNewBlock({ content }: WhatsNewBlockProps) {
               )}
             </TabsContent>
 
-            <TabsContent value="templates" className="mt-0 space-y-1 h-full">
-              {content?.featured_templates && content.featured_templates.length > 0 ? (
-                <div className="grid grid-cols-2 gap-2">
-                  {content.featured_templates.slice(0, 4).map(t => (
-                    <div key={t.id} className="aspect-video bg-zinc-800 rounded-lg border border-white/5 relative group cursor-pointer overflow-hidden">
-                      {t.thumbnail_url && (
-                        <img src={t.thumbnail_url} alt={t.template_name} className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity" />
-                      )}
-                      <div className="absolute inset-0 flex items-end p-2 bg-gradient-to-t from-[#101112]/80 to-transparent">
-                        <span className="text-[10px] font-medium text-white truncate w-full">{t.template_name || 'Template'}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+            <TabsContent value="tips" className="mt-0 space-y-1 h-full animate-in fade-in slide-in-from-bottom-1">
+              {tips.length > 0 ? (
+                tips.slice(0, 4).map(item => <AnnouncementItem key={item.id} item={item} />)
               ) : (
                 <div className="flex flex-col items-center justify-center h-full text-zinc-500 gap-2 py-8">
-                  <Sparkles className="w-8 h-8 opacity-20" />
-                  <p className="text-xs">No templates featured</p>
+                  <Lightbulb className="w-8 h-8 opacity-20" />
+                  <p className="text-xs">No tips available</p>
                 </div>
               )}
             </TabsContent>
 
-            <TabsContent value="tips" className="mt-0 space-y-1 h-full">
-              {tips.length > 0 ? (
-                tips.slice(0, 4).map(item => <AnnouncementItem key={item.id} item={item} />)
+            <TabsContent value="alerts" className="mt-0 space-y-1 h-full animate-in fade-in slide-in-from-bottom-1">
+              {alerts.length > 0 ? (
+                alerts.map(item => <AnnouncementItem key={item.id} item={item} />)
               ) : (
-                // Static Tip Fallback
-                <div className="bg-purple-500/10 border border-purple-500/20 rounded-lg p-4">
-                  <div className="flex items-start gap-3">
-                    <Lightbulb className="w-4 h-4 text-purple-400 mt-0.5" />
-                    <div>
-                      <h4 className="text-sm font-medium text-purple-200">Better Prompts</h4>
-                      <p className="text-xs text-purple-300/70 mt-1 leading-relaxed">
-                        Use specific lighting keywords like "cinematic lighting" or "golden hour" to drastically improve AI output quality.
-                      </p>
-                    </div>
-                  </div>
+                <div className="flex flex-col items-center justify-center h-full text-zinc-500 gap-2 py-8">
+                  <Info className="w-8 h-8 opacity-20" />
+                  <p className="text-xs">All systems operational</p>
                 </div>
               )}
             </TabsContent>
           </div>
         </Tabs>
-        
-        {alerts.length > 0 && (
-          <div className="mt-4 bg-amber-500/10 border border-amber-500/20 rounded-md p-2 flex items-start gap-2">
-            <Info className="w-3.5 h-3.5 text-amber-400 mt-0.5" />
-            <p className="text-[10px] text-amber-200/80 leading-tight">
-              {alerts[0].content}
-            </p>
-          </div>
-        )}
       </CardContent>
     </Card>
   );
