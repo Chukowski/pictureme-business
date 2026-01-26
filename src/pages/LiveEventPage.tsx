@@ -117,6 +117,23 @@ export default function LiveEventPage() {
         navigate('/business/events');
         return;
       }
+
+      // If user_slug is missing (common with normalized objects), fetch current user to patch it
+      if (!currentEvent.user_slug) {
+        try {
+          // Dynamic import to avoid circular dep issues if any, or just use the imported one
+          const { getCurrentUser, getCurrentUserProfile } = await import("@/services/eventsApi");
+          const user = getCurrentUser() || await getCurrentUserProfile();
+          if (user && user.slug) {
+            console.log("🔧 Patching event with user slug:", user.slug);
+            currentEvent.user_slug = user.slug;
+            currentEvent.username = user.username;
+          }
+        } catch (e) {
+          console.warn("Failed to patch user slug", e);
+        }
+      }
+
       setEvent(currentEvent);
     } catch (error) {
       console.error("Failed to load event:", error);
@@ -229,7 +246,8 @@ export default function LiveEventPage() {
   };
 
   const handleBroadcast = async (req: BigScreenRequest) => {
-    if (!event?.postgres_event_id || !event?.user_slug || !event?.slug) return;
+    const broadcastUserSlug = event?.user_slug || event?.username;
+    if (!event?.postgres_event_id || !broadcastUserSlug || !event?.slug) return;
 
     try {
       // Check if album is paid (find in current albums list)
@@ -241,7 +259,7 @@ export default function LiveEventPage() {
         visitorName: req.owner_name,
         isPaid: isPaid,
         eventId: event.postgres_event_id,
-        userSlug: event.user_slug,
+        userSlug: broadcastUserSlug,
         eventSlug: event.slug,
       });
 
@@ -304,9 +322,13 @@ export default function LiveEventPage() {
           setTimeout(() => refreshAlbums(), 500);
           break;
         case 'view':
-          if (event?.user_slug && event?.slug) {
-            const url = `${window.location.origin}/${event.user_slug}/${event.slug}/album/${album.code}`;
+          const viewUserSlug = event?.user_slug || event?.username;
+          if (viewUserSlug && event?.slug) {
+            const url = `${window.location.origin}/${viewUserSlug}/${event.slug}/album/${album.code}`;
             window.open(url, '_blank');
+          } else {
+            console.error("Missing event or user slug", event);
+            toast.error("Cannot open album: missing event configuration");
           }
           break;
         case 'share':
@@ -334,10 +356,13 @@ export default function LiveEventPage() {
           // Open email modal logic here
           break;
         case 'whatsapp':
-          if (event?.user_slug && event?.slug) {
-            const url = `${window.location.origin}/${event.user_slug}/${event.slug}/album/${album.code}`;
+          const waUserSlug = event?.user_slug || event?.username;
+          if (waUserSlug && event?.slug) {
+            const url = `${window.location.origin}/${waUserSlug}/${event.slug}/album/${album.code}`;
             const text = `Here are your photos from ${event.title}: ${url}`;
             window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+          } else {
+            toast.error("Cannot open WhatsApp: missing event configuration");
           }
           break;
         case 'print':
@@ -349,10 +374,13 @@ export default function LiveEventPage() {
           toast.success('Album code copied');
           break;
         case 'copy_url':
-          if (event?.user_slug && event?.slug) {
-            const url = `${window.location.origin}/${event.user_slug}/${event.slug}/album/${album.code}`;
+          const copyUserSlug = event?.user_slug || event?.username;
+          if (copyUserSlug && event?.slug) {
+            const url = `${window.location.origin}/${copyUserSlug}/${event.slug}/album/${album.code}`;
             navigator.clipboard.writeText(url);
             toast.success('Album URL copied');
+          } else {
+            toast.error("Cannot copy URL: missing event configuration");
           }
           break;
       }
@@ -364,9 +392,13 @@ export default function LiveEventPage() {
   };
 
   const handleOpenStation = (type: string) => {
-    if (!event?.user_slug || !event?.slug) return;
+    const stationUserSlug = event?.user_slug || event?.username;
+    if (!stationUserSlug || !event?.slug) {
+      toast.error("Cannot open station: missing event configuration");
+      return;
+    }
     const baseUrl = window.location.origin;
-    const url = `${baseUrl}/${event.user_slug}/${event.slug}/${type}`;
+    const url = `${baseUrl}/${stationUserSlug}/${event.slug}/${type}`;
     window.open(url, '_blank');
   };
 
