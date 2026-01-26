@@ -5,8 +5,9 @@ import {
     X, Copy, RefreshCw, Save, Download,
     ChevronDown, Trash2, Maximize2, Wand2,
     Globe, Lock, Info, ChevronUp, Loader2,
-    User, Cpu, Play, Pause, Volume2, VolumeX, Video, Sparkles
+    User, Cpu, Play, Pause, Volume2, VolumeX, Video, Sparkles, Split
 } from 'lucide-react';
+import { ImageCompareSlider } from '@/components/ui/ImageCompareSlider';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
@@ -29,6 +30,7 @@ import { useNavigate } from 'react-router-dom';
 export interface GalleryItem {
     id: string | number;
     url: string;
+    original_url?: string;
     previewUrl?: string;
     thumbnail_url?: string; // Video preview thumbnail from backend
     type: 'image' | 'video';
@@ -105,6 +107,7 @@ export function CreationDetailView({
     const [isPromptExpanded, setIsPromptExpanded] = useState(false);
     const [showUI, setShowUI] = useState(true);
     const [remixExpanded, setRemixExpanded] = useState(false);
+    const [compareMode, setCompareMode] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
     const videoRef = useRef<HTMLVideoElement>(null);
     const remixRef = useRef<HTMLDivElement>(null);
@@ -153,6 +156,7 @@ export function CreationDetailView({
             setProgress(0);
         }
         setRemixExpanded(false);
+        setCompareMode(false);
     }, [currentIndex]);
 
     const handleNext = () => {
@@ -378,11 +382,20 @@ export function CreationDetailView({
                                 </div>
                             </div>
                         ) : (
-                            <img
-                                src={getOptimizedUrl(item.previewUrl || item.url, 1200)}
-                                className="h-full w-full object-contain drop-shadow-[0_0_50px_rgba(0,0,0,0.5)] scale-100"
-                                alt="Preview"
-                            />
+                            compareMode && item.original_url && item.isOwner ? (
+                                <ImageCompareSlider
+                                    beforeImage={item.original_url || ""}
+                                    afterImage={getOptimizedUrl(item.url, 1200)}
+                                    className="h-full w-full"
+                                    aspectRatio="h-full w-full"
+                                />
+                            ) : (
+                                <img
+                                    src={getOptimizedUrl(item.previewUrl || item.url, 1200)}
+                                    className="h-full w-full object-contain drop-shadow-[0_0_50px_rgba(0,0,0,0.5)] scale-100"
+                                    alt="Preview"
+                                />
+                            )
                         )}
                     </div>
 
@@ -602,6 +615,15 @@ export function CreationDetailView({
                                     )}
 
                                     <ActionButton icon={Download} label="Get" onClick={() => onDownload(item)} />
+
+                                    {item.type === 'image' && item.original_url && item.isOwner && (
+                                        <ActionButton
+                                            icon={Split}
+                                            label={compareMode ? "Done" : "Compare"}
+                                            variant={compareMode ? "primary" : "default"}
+                                            onClick={() => setCompareMode(!compareMode)}
+                                        />
+                                    )}
 
                                     {item.isOwner && onDelete && (
                                         <ActionButton icon={Trash2} label="Delete" variant="danger" onClick={() => onDelete(item.id)} />

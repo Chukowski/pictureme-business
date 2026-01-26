@@ -432,6 +432,15 @@ export async function processCreatorImage(
         if (!isT2I) {
             payload.image_urls = uploadedUrls;
             payload.image_url = uploadedUrls[0];
+            // Pass the original URL (first uploaded image) to be saved as 'original_url' in the DB
+            payload.original_url = uploadedUrls[0];
+        } else if (userPhotoBase64) {
+            // Even if T2I (fallback), if we have a user photo we should save it as original
+            // This handles cases where we "switch to T2I" but still want to keep the reference image
+            // Note: We need to make sure uploadedUrls[0] exists, which it should if userPhotoBase64 exists
+            if (uploadedUrls.length > 0) {
+                payload.original_url = uploadedUrls[0];
+            }
         }
 
         console.log("🚀 [CreatorAI] Sending request:", {

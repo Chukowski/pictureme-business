@@ -582,6 +582,7 @@ function CreatorStudioPageContent({ defaultView }: CreatorStudioPageProps) {
                             isPublic: c.is_published || c.visibility === 'public',
                             status: 'completed',
                             isOwner: true,
+                            original_url: c.original_url,
                             template: getTemplateMeta([realId, c.url])
                         };
                     });
