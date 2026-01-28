@@ -33,7 +33,9 @@ export default function AdminAuth() {
         // This is a temporary solution until Better Auth supports username login
         try {
           const response = await fetch(`${ENV.API_URL}/api/users/email-by-username/${loginData.username}`);
-          if (response.ok) {
+          const contentType = response.headers.get("content-type");
+
+          if (response.ok && contentType && contentType.includes("application/json")) {
             const data = await response.json();
             emailToUse = data.email;
           } else {
@@ -57,7 +59,7 @@ export default function AdminAuth() {
         },
         credentials: 'include', // Important for cookies
         body: JSON.stringify({
-          email: emailToUse,
+          email: emailToUse.trim(), // Trim just in case
           password: loginData.password,
         }),
       });
@@ -110,8 +112,11 @@ export default function AdminAuth() {
       <div className="w-full max-w-md relative z-10">
         {/* Header */}
         <div className="text-center mb-10">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 shadow-lg shadow-indigo-500/20 mb-6">
-            <Sparkles className="w-8 h-8 text-white" />
+          <div className="flex items-center justify-center gap-4 mb-8">
+            <div className="w-16 h-16 rounded-[.8rem] overflow-hidden bg-white shadow-xl shadow-black/20 group-hover:bg-transparent transition-all duration-300 hover:scale-110">
+              <img src="/PicturemeIconv2.png" alt="Pictureme" className="w-full h-full object-cover" />
+            </div>
+            <span className="text-3xl font-bold tracking-tight text-white">PictureMe</span>
           </div>
           <h1 className="text-3xl font-bold tracking-tight mb-2">Welcome back</h1>
           <p className="text-zinc-400">Sign in to manage your events</p>

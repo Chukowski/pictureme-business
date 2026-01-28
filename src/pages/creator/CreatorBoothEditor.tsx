@@ -369,6 +369,21 @@ export default function CreatorBoothEditor() {
                                         className="h-20 resize-none"
                                     />
                                 </div>
+                                <div className="flex items-center justify-between p-4 rounded-xl border border-red-500/20 bg-red-500/5 animate-in fade-in slide-in-from-top-2">
+                                    <div className="space-y-0.5">
+                                        <Label className="text-red-400 flex items-center gap-2">
+                                            <Lock className="w-4 h-4" />
+                                            Adult Content (18+)
+                                        </Label>
+                                        <p className="text-[10px] text-zinc-500">
+                                            Require users to confirm they are 18+ before entering the booth.
+                                        </p>
+                                    </div>
+                                    <Switch
+                                        checked={formData.is_adult}
+                                        onCheckedChange={(checked) => setFormData({ ...formData, is_adult: checked })}
+                                    />
+                                </div>
                             </CardContent>
                         </Card>
 

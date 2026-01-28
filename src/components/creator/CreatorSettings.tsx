@@ -24,7 +24,8 @@ import {
   Sparkles,
   Upload,
   Link as LinkIcon,
-  Wand2 // ADDDED
+  Wand2,
+  Cake
 } from "lucide-react";
 import { ENV } from "@/config/env";
 import {
@@ -450,6 +451,18 @@ export default function CreatorSettings() {
                         disabled
                         className="bg-card/50 border-white/5 text-zinc-500"
                       />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Date of Birth</Label>
+                      <div className="relative">
+                        <Cake className="absolute left-3 top-3 w-4 h-4 text-zinc-500" />
+                        <Input
+                          type="date"
+                          value={formData.birth_date}
+                          onChange={(e) => setFormData(prev => ({ ...prev, birth_date: e.target.value }))}
+                          className="bg-card border-white/10 focus:border-indigo-500 pl-9"
+                        />
+                      </div>
                     </div>
                     <div className="space-y-2">
                       <Label>Bio</Label>

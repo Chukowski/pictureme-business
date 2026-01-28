@@ -242,6 +242,7 @@ export interface EventConfig {
     fiat_price?: number;
     revenue_split?: number; // Business only
   };
+  is_adult?: boolean; // Flag for adult content (18+)
 }
 
 /**

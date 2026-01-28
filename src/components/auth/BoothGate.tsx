@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { authClient } from "@/lib/auth-client";
-import { Sparkles, ArrowRight, Lock, User, Mail, Eye, EyeOff } from "lucide-react";
+import { Sparkles, ArrowRight, Lock, User, Mail, Eye, EyeOff, Cake, Wand2 } from "lucide-react";
 import { ENV } from "@/config/env";
 import type { EventConfig } from "@/services/eventsApi";
 
@@ -18,6 +18,8 @@ export function BoothGate({ config, onSuccess }: BoothGateProps) {
     const [activeTab, setActiveTab] = useState<"register" | "login">("register");
     const [isLoading, setIsLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
+    const [ageVerified, setAgeVerified] = useState(false);
+    const [showAgeError, setShowAgeError] = useState(false);
 
     // Form states
     const [formData, setFormData] = useState({
@@ -26,7 +28,74 @@ export function BoothGate({ config, onSuccess }: BoothGateProps) {
         password: "",
         confirmPassword: "",
         fullName: "",
+        birthDate: "",
     });
+    const [hasManuallyEditedUsername, setHasManuallyEditedUsername] = useState(false);
+    const [usernameAvailability, setUsernameAvailability] = useState<{
+        status: 'idle' | 'checking' | 'available' | 'taken';
+        message: string;
+    }>({ status: 'idle', message: '' });
+
+    const checkUsernameAvailability = async (username: string) => {
+        if (!username || username.length < 3) {
+            setUsernameAvailability({ status: 'idle', message: '' });
+            return;
+        }
+
+        setUsernameAvailability({ status: 'checking', message: 'Checking availability...' });
+        try {
+            const response = await fetch(`${ENV.API_URL}/api/users/check-username/${username}`);
+            const contentType = response.headers.get("content-type");
+
+            if (response.ok && contentType && contentType.includes("application/json")) {
+                const data = await response.json();
+                if (data.available) {
+                    setUsernameAvailability({ status: 'available', message: 'Username is available!' });
+                } else {
+                    setUsernameAvailability({ status: 'taken', message: 'Username is already taken' });
+                }
+            } else {
+                // If not JSON or not OK, it's likely a 404/500 HTML page from a routing error
+                console.warn("Username check returned non-JSON response:", response.status);
+                setUsernameAvailability({ status: 'idle', message: '' });
+            }
+        } catch (error) {
+            console.error("Failed to check username availability:", error);
+            setUsernameAvailability({ status: 'idle', message: '' });
+        }
+    };
+
+    // Debounced check
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            if (formData.username) {
+                checkUsernameAvailability(formData.username);
+            }
+        }, 500);
+        return () => clearTimeout(timer);
+    }, [formData.username]);
+
+    const suggestUsername = (name: string, randomize = false) => {
+        if (!name) return "";
+        const base = name
+            .toLowerCase()
+            .replace(/[^a-z0-9]/g, "")
+            .replace(/^\.|\.$/g, "");
+
+        if (randomize) {
+            const random = Math.floor(Math.random() * 1000);
+            return `${base}${random}`;
+        }
+        return base;
+    };
+
+    const handleFullNameChange = (name: string) => {
+        const newData = { ...formData, fullName: name };
+        if (!hasManuallyEditedUsername) {
+            newData.username = suggestUsername(name);
+        }
+        setFormData(newData);
+    };
 
     const [loginData, setLoginData] = useState({
         username: "",
@@ -69,6 +138,11 @@ export function BoothGate({ config, onSuccess }: BoothGateProps) {
             return;
         }
 
+        if (usernameAvailability.status === 'taken') {
+            toast.error("Please choose a different username");
+            return;
+        }
+
         setIsLoading(true);
 
         try {
@@ -77,7 +151,9 @@ export function BoothGate({ config, onSuccess }: BoothGateProps) {
                     email: formData.email,
                     password: formData.password,
                     name: formData.fullName || formData.username,
-                },
+                    username: formData.username,
+                    birth_date: formData.birthDate,
+                } as any,
                 {
                     onSuccess: async (ctx) => {
                         const user = ctx.data.user;
@@ -137,10 +213,95 @@ export function BoothGate({ config, onSuccess }: BoothGateProps) {
         }
     };
 
+    // Age detection
+    useEffect(() => {
+        if (!config.is_adult) return;
+
+        const userStr = localStorage.getItem('user');
+        if (userStr) {
+            try {
+                const user = JSON.parse(userStr);
+                const birthDateValue = user.birth_date || user.birthDate;
+                if (birthDateValue) {
+                    const birthDate = new Date(birthDateValue);
+                    const age = calculateAge(birthDate);
+                    if (age >= 18) {
+                        setAgeVerified(true);
+                    } else {
+                        setShowAgeError(true);
+                    }
+                }
+            } catch (e) {
+                console.error("Age verification failed:", e);
+            }
+        }
+    }, [config.is_adult]);
+
+    const calculateAge = (birthDate: Date) => {
+        const today = new Date();
+        let age = today.getFullYear() - birthDate.getFullYear();
+        const m = today.getMonth() - birthDate.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+            age--;
+        }
+        return age;
+    };
+
+    if (config.is_adult && !ageVerified) {
+        return (
+            <div className="w-full max-w-md mx-auto animate-in fade-in zoom-in duration-300">
+                <div className="bg-black/60 backdrop-blur-xl border border-red-500/30 rounded-3xl p-8 shadow-2xl text-center">
+                    <div className="flex items-center justify-center gap-3 mb-8">
+                        <div className="w-12 h-12 rounded-[.6rem] overflow-hidden bg-white shadow-lg shadow-black/20">
+                            <img src="/PicturemeIconv2.png" alt="Pictureme" className="w-full h-full object-cover" />
+                        </div>
+                        <span className="text-xl font-bold tracking-tight text-white">PictureMe</span>
+                    </div>
+                    <div className="w-20 h-20 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <Lock className="w-10 h-10 text-red-500" />
+                    </div>
+                    <h2 className="text-2xl font-bold text-white mb-4">Adult Content (18+)</h2>
+                    <p className="text-zinc-400 mb-8">
+                        This booth contains adult content and is restricted to users 18 years of age or older.
+                        By continuing, you confirm that you are at least 18 years old.
+                    </p>
+
+                    <div className="space-y-4">
+                        <Button
+                            onClick={() => setAgeVerified(true)}
+                            className="w-full h-12 bg-red-600 hover:bg-red-500 text-white font-bold rounded-xl"
+                        >
+                            I am 18 or older - Enter
+                        </Button>
+                        <Button
+                            variant="ghost"
+                            onClick={() => window.history.back()}
+                            className="w-full text-zinc-500 hover:text-white"
+                        >
+                            Go Back
+                        </Button>
+                    </div>
+
+                    {showAgeError && (
+                        <p className="mt-4 text-xs text-red-400">
+                            You must be 18+ to access this content.
+                        </p>
+                    )}
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="w-full max-w-md mx-auto animate-in fade-in zoom-in duration-300">
             <div className="bg-black/40 backdrop-blur-xl border border-white/10 rounded-3xl p-6 md:p-8 shadow-2xl">
                 <div className="text-center mb-6">
+                    <div className="flex items-center justify-center gap-3 mb-8">
+                        <div className="w-12 h-12 rounded-[.6rem] overflow-hidden bg-white shadow-lg shadow-black/20">
+                            <img src="/PicturemeIconv2.png" alt="Pictureme" className="w-full h-full object-cover" />
+                        </div>
+                        <span className="text-xl font-bold tracking-tight text-white">PictureMe</span>
+                    </div>
                     <h2 className="text-2xl font-bold text-white mb-2">
                         Join {config.title}
                     </h2>
@@ -165,7 +326,7 @@ export function BoothGate({ config, onSuccess }: BoothGateProps) {
                                         id="reg-fullname"
                                         placeholder="Your Name"
                                         value={formData.fullName}
-                                        onChange={e => setFormData({ ...formData, fullName: e.target.value })}
+                                        onChange={e => handleFullNameChange(e.target.value)}
                                         className="pl-9 bg-white/5 border-white/10"
                                         required
                                     />
@@ -180,11 +341,33 @@ export function BoothGate({ config, onSuccess }: BoothGateProps) {
                                         id="reg-username"
                                         placeholder="username"
                                         value={formData.username}
-                                        onChange={e => setFormData({ ...formData, username: e.target.value })}
+                                        onChange={e => {
+                                            setHasManuallyEditedUsername(true);
+                                            setFormData({ ...formData, username: e.target.value });
+                                        }}
                                         className="pl-9 bg-white/5 border-white/10"
                                         required
                                     />
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            const suggestion = suggestUsername(formData.fullName, true);
+                                            setFormData({ ...formData, username: suggestion });
+                                            checkUsernameAvailability(suggestion);
+                                        }}
+                                        className="absolute right-3 top-3 text-indigo-400 hover:text-indigo-300 p-0.5 z-20"
+                                        title="Suggest username"
+                                    >
+                                        <Wand2 className="w-4 h-4" />
+                                    </button>
                                 </div>
+                                {usernameAvailability.message && (
+                                    <p className={`text-xs mt-1 ${usernameAvailability.status === 'available' ? 'text-emerald-400' :
+                                        usernameAvailability.status === 'taken' ? 'text-red-400' : 'text-zinc-500'
+                                        }`}>
+                                        {usernameAvailability.message}
+                                    </p>
+                                )}
                             </div>
 
                             <div className="space-y-2">
@@ -197,6 +380,21 @@ export function BoothGate({ config, onSuccess }: BoothGateProps) {
                                         placeholder="you@example.com"
                                         value={formData.email}
                                         onChange={e => setFormData({ ...formData, email: e.target.value })}
+                                        className="pl-9 bg-white/5 border-white/10"
+                                        required
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="reg-dob">Date of Birth</Label>
+                                <div className="relative">
+                                    <Cake className="absolute left-3 top-3 w-4 h-4 text-zinc-500" />
+                                    <Input
+                                        id="reg-dob"
+                                        type="date"
+                                        value={formData.birthDate}
+                                        onChange={e => setFormData({ ...formData, birthDate: e.target.value })}
                                         className="pl-9 bg-white/5 border-white/10"
                                         required
                                     />

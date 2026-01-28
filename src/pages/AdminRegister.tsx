@@ -5,7 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { authClient } from "@/lib/auth-client";
-import { Sparkles, ArrowRight, Lock, User, Mail, Check, Eye, EyeOff } from "lucide-react";
+import { Sparkles, ArrowRight, Lock, User, Mail, Check, Eye, EyeOff, Cake, Wand2 } from "lucide-react";
+import { ENV } from "@/config/env";
 
 export default function AdminRegister() {
   const navigate = useNavigate();
@@ -24,7 +25,82 @@ export default function AdminRegister() {
     password: "",
     confirmPassword: "",
     fullName: "",
+    birthDate: "",
   });
+  const [hasManuallyEditedUsername, setHasManuallyEditedUsername] = useState(false);
+  const [usernameAvailability, setUsernameAvailability] = useState<{
+    status: 'idle' | 'checking' | 'available' | 'taken';
+    message: string;
+  }>({ status: 'idle', message: '' });
+
+  const checkUsernameAvailability = async (username: string) => {
+    if (!username || username.length < 3) {
+      setUsernameAvailability({ status: 'idle', message: '' });
+      return;
+    }
+
+    setUsernameAvailability({ status: 'checking', message: 'Checking availability...' });
+    try {
+      const response = await fetch(`${ENV.API_URL}/api/users/check-username/${username}`);
+      const contentType = response.headers.get("content-type");
+
+      if (response.ok && contentType && contentType.includes("application/json")) {
+        const data = await response.json();
+        if (data.available) {
+          setUsernameAvailability({ status: 'available', message: 'Username is available!' });
+        } else {
+          setUsernameAvailability({ status: 'taken', message: 'Username is already taken' });
+        }
+      } else {
+        // If not JSON or not OK, it's likely a 404/500 HTML page from a routing error
+        console.warn("Username check returned non-JSON response:", response.status);
+        setUsernameAvailability({ status: 'idle', message: '' });
+      }
+    } catch (error) {
+      console.error("Failed to check username availability:", error);
+      setUsernameAvailability({ status: 'idle', message: '' });
+    }
+  };
+
+  // Debounced check
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (registerData.username) {
+        checkUsernameAvailability(registerData.username);
+      }
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [registerData.username]);
+
+  const suggestUsername = (name: string, randomize = false) => {
+    if (!name) return "";
+    const base = name
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, "")
+      .replace(/^\.|\.$/g, "");
+
+    if (randomize) {
+      const random = Math.floor(Math.random() * 1000);
+      return `${base}${random}`;
+    }
+    return base;
+  };
+
+  const handleFullNameChange = (name: string) => {
+    const newData = { ...registerData, fullName: name };
+    if (!hasManuallyEditedUsername) {
+      const suggestion = suggestUsername(name);
+      newData.username = suggestion;
+      // Also trigger check for suggestion immediately
+      if (suggestion.length >= 3) {
+        checkUsernameAvailability(suggestion);
+      }
+    }
+    setRegisterData(newData);
+    if (!name) {
+      setUsernameAvailability({ status: 'idle', message: '' });
+    }
+  };
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,6 +116,11 @@ export default function AdminRegister() {
       return;
     }
 
+    if (usernameAvailability.status === 'taken') {
+      toast.error("Please choose a different username");
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -49,7 +130,8 @@ export default function AdminRegister() {
           password: registerData.password,
           name: registerData.fullName || registerData.username,
           username: registerData.username, // Send username separately
-        },
+          birth_date: registerData.birthDate,
+        } as any,
         {
           onSuccess: (ctx) => {
             const user = ctx.data.user;
@@ -87,8 +169,11 @@ export default function AdminRegister() {
       <div className="w-full max-w-md relative z-10">
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 shadow-lg shadow-indigo-500/20 mb-6">
-            <Sparkles className="w-8 h-8 text-white" />
+          <div className="flex items-center justify-center gap-4 mb-8">
+            <div className="w-16 h-16 rounded-[.8rem] overflow-hidden bg-white shadow-xl shadow-black/20 group-hover:bg-transparent transition-all duration-300 hover:scale-110">
+              <img src="/PicturemeIconv2.png" alt="Pictureme" className="w-full h-full object-cover" />
+            </div>
+            <span className="text-3xl font-bold tracking-tight text-white">PictureMe</span>
           </div>
           <h1 className="text-3xl font-bold tracking-tight mb-2">
             {["event-starter", "event-pro", "masters"].includes(plan || "") ? "Application Required" : "Create Account"}
@@ -139,9 +224,8 @@ export default function AdminRegister() {
                     type="text"
                     placeholder="John Doe"
                     value={registerData.fullName}
-                    onChange={(e) =>
-                      setRegisterData({ ...registerData, fullName: e.target.value })
-                    }
+                    onChange={(e) => handleFullNameChange(e.target.value)}
+                    required
                     disabled={isLoading}
                     className="bg-[#101112]/50 border-white/10 text-white pl-10 h-12 focus:border-indigo-500 focus:ring-indigo-500/20"
                   />
@@ -157,14 +241,34 @@ export default function AdminRegister() {
                     type="text"
                     placeholder="Choose a username"
                     value={registerData.username}
-                    onChange={(e) =>
-                      setRegisterData({ ...registerData, username: e.target.value })
-                    }
+                    onChange={(e) => {
+                      setHasManuallyEditedUsername(true);
+                      setRegisterData({ ...registerData, username: e.target.value });
+                    }}
                     required
                     disabled={isLoading}
                     className="bg-[#101112]/50 border-white/10 text-white pl-10 h-12 focus:border-indigo-500 focus:ring-indigo-500/20"
                   />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const suggestion = suggestUsername(registerData.fullName, true);
+                      setRegisterData({ ...registerData, username: suggestion });
+                      checkUsernameAvailability(suggestion);
+                    }}
+                    className="absolute right-3 top-3 text-indigo-400 hover:text-indigo-300 p-1 z-20"
+                    title="Suggest username"
+                  >
+                    <Wand2 className="w-4 h-4" />
+                  </button>
                 </div>
+                {usernameAvailability.message && (
+                  <p className={`text-xs mt-1 ${usernameAvailability.status === 'available' ? 'text-emerald-400' :
+                    usernameAvailability.status === 'taken' ? 'text-red-400' : 'text-zinc-500'
+                    }`}>
+                    {usernameAvailability.message}
+                  </p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -178,6 +282,24 @@ export default function AdminRegister() {
                     value={registerData.email}
                     onChange={(e) =>
                       setRegisterData({ ...registerData, email: e.target.value })
+                    }
+                    required
+                    disabled={isLoading}
+                    className="bg-[#101112]/50 border-white/10 text-white pl-10 h-12 focus:border-indigo-500 focus:ring-indigo-500/20"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="register-dob" className="text-zinc-300">Date of Birth</Label>
+                <div className="relative">
+                  <Cake className="absolute left-3 top-3 w-5 h-5 text-zinc-500" />
+                  <Input
+                    id="register-dob"
+                    type="date"
+                    value={registerData.birthDate}
+                    onChange={(e) =>
+                      setRegisterData({ ...registerData, birthDate: e.target.value })
                     }
                     required
                     disabled={isLoading}

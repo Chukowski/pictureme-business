@@ -43,7 +43,8 @@ import {
     Share2,
     Heart,
     Link2,
-    Coins
+    Coins,
+    X
 } from "lucide-react";
 import { CameraCapture } from "@/components/CameraCapture";
 import { BackgroundSelector } from "@/components/BackgroundSelector";
@@ -804,8 +805,16 @@ export default function PublicCreatorBooth() {
                 {/* Auth Gate */}
                 {showAuthGate && config && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                        <div className="absolute inset-0 bg-black/60 backdrop-blur-md" />
+                        <div className="absolute inset-0 bg-black/60 backdrop-blur-md" onClick={() => setShowAuthGate(false)} />
                         <div className="relative z-10 w-full max-w-lg">
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="absolute -top-12 right-0 text-white/60 hover:text-white"
+                                onClick={() => setShowAuthGate(false)}
+                            >
+                                <X className="w-6 h-6" />
+                            </Button>
                             <BoothGate
                                 config={config}
                                 onSuccess={() => {
