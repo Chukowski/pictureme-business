@@ -111,12 +111,6 @@ export default function PublicProfile() {
       }
 
       const data = await response.json();
-      console.log('🔍 Backend Response:', {
-        has_adult_content: data.has_adult_content,
-        is_authenticated: data.is_authenticated,
-        is_owner: data.is_owner,
-        creationsCount: data.creations?.length || 0
-      });
       setProfile(data.profile);
       setCreations(data.creations || []);
       setHasAdultContent(data.has_adult_content || false);
@@ -453,16 +447,6 @@ function CreationsGrid({ creations, isOwnProfile, isAuthenticated, hasAdultConte
   const [blurredItems, setBlurredItems] = useState<Set<string>>(new Set());
   const navigate = useNavigate();
 
-  // Debug logging
-  console.log('🔍 CreationsGrid Debug:', {
-    isOwnProfile,
-    isAuthenticated,
-    hasAdultContent,
-    shouldShowBanner: !isOwnProfile && !isAuthenticated && hasAdultContent,
-    creationsCount: creations.length,
-    adultCreationsInArray: creations.filter(c => c.is_adult).length
-  });
-
   // 18+ Content Policy:
   // - Owner: sees ALL their content (no filter needed, backend handles)
   // - Authenticated users: can opt-in to see 18+ content (blurred)
@@ -475,12 +459,12 @@ function CreationsGrid({ creations, isOwnProfile, isAuthenticated, hasAdultConte
     : creations.filter(c => !c.is_adult);
 
   // Initialize blurred state for all adult content when showAdultContent is enabled
-  useState(() => {
+  useEffect(() => {
     if (showAdultContent) {
       const adultIds = new Set(creations.filter(c => c.is_adult).map(c => c.id));
       setBlurredItems(adultIds);
     }
-  });
+  }, [showAdultContent, creations]);
 
   const toggleBlur = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
