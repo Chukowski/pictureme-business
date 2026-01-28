@@ -21,6 +21,14 @@ const pathToTab: Record<string, string> = {
     '/admin/analytics': 'analytics',
     '/admin/albums': 'albums',
     '/admin/studio': 'assets',
+    // New business routes
+    '/business': 'events',
+    '/business/home': 'events',
+    '/business/events': 'events',
+    '/business/marketplace': 'marketplace',
+    '/business/analytics': 'analytics',
+    '/business/albums': 'albums',
+    '/business/studio': 'assets',
 };
 
 export default function BusinessDashboard({ currentUser, initialTab }: BusinessDashboardProps) {

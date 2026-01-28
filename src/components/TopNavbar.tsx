@@ -515,7 +515,12 @@ export function TopNavbar() {
 
                 {(currentUser?.slug || currentUser?.username) && (
                   <DropdownMenuItem
-                    onClick={() => navigate(`/profile/${currentUser?.slug || currentUser?.username}`)}
+                    onClick={() => {
+                      const profilePath = isBusinessUser
+                        ? `/org/${currentUser?.slug || currentUser?.username}`
+                        : `/profile/${currentUser?.slug || currentUser?.username}`;
+                      navigate(profilePath);
+                    }}
                     className="flex items-center gap-2 px-2 py-1.5 cursor-pointer hover:bg-white/5 rounded-md focus:bg-white/5 focus:text-white"
                   >
                     <User className="w-4 h-4 text-zinc-400" />

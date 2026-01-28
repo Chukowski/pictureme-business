@@ -43,7 +43,7 @@ export function EventSettings({ formData, setFormData }: EditorSectionProps) {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-               <div className="flex items-center justify-between p-3 rounded-lg bg-[#101112]/30 border border-white/5">
+              <div className="flex items-center justify-between p-3 rounded-lg bg-[#101112]/30 border border-white/5">
                 <div>
                   <Label className="text-zinc-300 font-medium">Staff Only Mode</Label>
                   <p className="text-xs text-zinc-500">Restricts entire event access to staff</p>
@@ -54,19 +54,19 @@ export function EventSettings({ formData, setFormData }: EditorSectionProps) {
                   className="data-[state=checked]:bg-emerald-600"
                 />
               </div>
-              
+
               <div className="p-3 rounded-lg bg-[#101112]/30 border border-white/5 space-y-3">
-                 <div className="space-y-0.5">
-                    <Label className="text-zinc-300 font-medium">Staff Access PIN</Label>
-                    <p className="text-xs text-zinc-500">Code to access Staff Dashboard & Tools (required for Staff Only Mode)</p>
-                 </div>
-                 <Input 
-                    value={formData.settings?.staffAccessCode || ''}
-                    onChange={(e) => updateSettings({ staffAccessCode: e.target.value })}
-                    placeholder="Enter 4-digit PIN (e.g. 1234)"
-                    className="bg-[#101112]/40 border-white/10 text-white max-w-[200px]"
-                    maxLength={6}
-                  />
+                <div className="space-y-0.5">
+                  <Label className="text-zinc-300 font-medium">Staff Access PIN</Label>
+                  <p className="text-xs text-zinc-500">Code to access Staff Dashboard & Tools (required for Staff Only Mode)</p>
+                </div>
+                <Input
+                  value={formData.settings?.staffAccessCode || ''}
+                  onChange={(e) => updateSettings({ staffAccessCode: e.target.value })}
+                  placeholder="Enter 4-digit PIN (e.g. 1234)"
+                  className="bg-[#101112]/40 border-white/10 text-white max-w-[200px]"
+                  maxLength={6}
+                />
               </div>
 
               <div className="flex items-center justify-between p-3 rounded-lg bg-[#101112]/30 border border-white/5">
@@ -120,7 +120,7 @@ export function EventSettings({ formData, setFormData }: EditorSectionProps) {
               <div className="space-y-2 p-3 rounded-lg bg-[#101112]/30 border border-white/5">
                 <Label className="text-zinc-300 font-medium">Max Photos Per Session</Label>
                 <p className="text-xs text-zinc-500 mb-2">Limit how many photos a guest can generate</p>
-                <Input 
+                <Input
                   type="number"
                   value={formData.settings?.maxPhotosPerSession || ''}
                   onChange={(e) => updateSettings({ maxPhotosPerSession: e.target.value ? parseInt(e.target.value) : undefined })}
@@ -140,7 +140,7 @@ export function EventSettings({ formData, setFormData }: EditorSectionProps) {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-               <div className="flex items-center justify-between p-3 rounded-lg bg-[#101112]/30 border border-white/5">
+              <div className="flex items-center justify-between p-3 rounded-lg bg-[#101112]/30 border border-white/5">
                 <div>
                   <Label className="text-zinc-300 font-medium">Lead Capture</Label>
                   <p className="text-xs text-zinc-500">Require Email/Phone to view or download</p>
@@ -222,17 +222,17 @@ export function EventSettings({ formData, setFormData }: EditorSectionProps) {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-               <div className="flex items-center justify-between p-3 rounded-lg bg-[#101112]/30 border border-white/5">
-                  <div>
-                    <Label className="text-zinc-300 font-medium">Timeline Split View</Label>
-                    <p className="text-xs text-zinc-500">Show before/after slider in results</p>
-                  </div>
-                  <Switch
-                    checked={formData.rules.allowTimelineSplitView}
-                    onCheckedChange={(c) => updateRules({ allowTimelineSplitView: c })}
-                    className="data-[state=checked]:bg-zinc-600"
-                  />
+              <div className="flex items-center justify-between p-3 rounded-lg bg-[#101112]/30 border border-white/5">
+                <div>
+                  <Label className="text-zinc-300 font-medium">Timeline Split View</Label>
+                  <p className="text-xs text-zinc-500">Show before/after slider in results</p>
                 </div>
+                <Switch
+                  checked={formData.rules.allowTimelineSplitView}
+                  onCheckedChange={(c) => updateRules({ allowTimelineSplitView: c })}
+                  className="data-[state=checked]:bg-zinc-600"
+                />
+              </div>
             </CardContent>
           </Card>
 
@@ -270,7 +270,7 @@ export function EventSettings({ formData, setFormData }: EditorSectionProps) {
                     className="data-[state=checked]:bg-purple-600"
                   />
                 </div>
-                 <div className="flex items-center justify-between p-3 rounded-lg bg-[#101112]/30 border border-white/5">
+                <div className="flex items-center justify-between p-3 rounded-lg bg-[#101112]/30 border border-white/5">
                   <Label className="text-zinc-300 font-medium">Email after Payment</Label>
                   <Switch
                     checked={formData.sharing?.emailAfterBuy}
@@ -280,10 +280,10 @@ export function EventSettings({ formData, setFormData }: EditorSectionProps) {
                 </div>
               </div>
 
-               {formData.sharing?.emailEnabled && (
+              {formData.sharing?.emailEnabled && (
                 <div className="space-y-2">
                   <Label className="text-zinc-300">Email Template</Label>
-                  <Input 
+                  <Input
                     value={formData.sharing?.emailTemplate || ''}
                     onChange={(e) => updateSharing({ emailTemplate: e.target.value })}
                     placeholder="Check out your photo from {event_name}!"
@@ -295,29 +295,41 @@ export function EventSettings({ formData, setFormData }: EditorSectionProps) {
                 </div>
               )}
 
-               <div className="flex items-center justify-between p-3 rounded-lg bg-[#101112]/30 border border-white/5">
-                  <div>
-                    <Label className="text-zinc-300 font-medium">Public Feed</Label>
-                    <p className="text-xs text-zinc-500">Show recent photos in a public gallery</p>
-                  </div>
-                  <Switch
-                    checked={formData.rules.feedEnabled}
-                    onCheckedChange={(c) => updateRules({ feedEnabled: c })}
-                    className="data-[state=checked]:bg-purple-600"
-                  />
+              <div className="flex items-center justify-between p-3 rounded-lg bg-[#101112]/30 border border-white/5">
+                <div>
+                  <Label className="text-zinc-300 font-medium">Public Feed</Label>
+                  <p className="text-xs text-zinc-500">Show recent photos in a public gallery</p>
                 </div>
+                <Switch
+                  checked={formData.rules.feedEnabled}
+                  onCheckedChange={(c) => updateRules({ feedEnabled: c })}
+                  className="data-[state=checked]:bg-purple-600"
+                />
+              </div>
 
-               <div className="flex items-center justify-between p-3 rounded-lg bg-[#101112]/30 border border-white/5">
-                  <div>
-                    <Label className="text-zinc-300 font-medium">Group Photos into Albums</Label>
-                    <p className="text-xs text-zinc-500">Organize shared photos by session/visitor</p>
-                  </div>
-                  <Switch
-                    checked={formData.sharing?.groupPhotosIntoAlbums}
-                    onCheckedChange={(c) => updateSharing({ groupPhotosIntoAlbums: c })}
-                    className="data-[state=checked]:bg-purple-600"
-                  />
+              <div className="flex items-center justify-between p-3 rounded-lg bg-[#101112]/30 border border-white/5">
+                <div>
+                  <Label className="text-zinc-300 font-medium">Show on Public Profile</Label>
+                  <p className="text-xs text-zinc-500">Display this event on your organization's public page</p>
                 </div>
+                <Switch
+                  checked={formData.rules.feedPublic}
+                  onCheckedChange={(c) => updateRules({ feedPublic: c })}
+                  className="data-[state=checked]:bg-purple-600"
+                />
+              </div>
+
+              <div className="flex items-center justify-between p-3 rounded-lg bg-[#101112]/30 border border-white/5">
+                <div>
+                  <Label className="text-zinc-300 font-medium">Group Photos into Albums</Label>
+                  <p className="text-xs text-zinc-500">Organize shared photos by session/visitor</p>
+                </div>
+                <Switch
+                  checked={formData.sharing?.groupPhotosIntoAlbums}
+                  onCheckedChange={(c) => updateSharing({ groupPhotosIntoAlbums: c })}
+                  className="data-[state=checked]:bg-purple-600"
+                />
+              </div>
             </CardContent>
           </Card>
 
@@ -330,17 +342,17 @@ export function EventSettings({ formData, setFormData }: EditorSectionProps) {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-               <div className="flex items-center justify-between p-3 rounded-lg bg-[#101112]/30 border border-white/5">
-                  <div>
-                    <Label className="text-zinc-300 font-medium">Enable Print Station</Label>
-                    <p className="text-xs text-zinc-500">Allow sending photos to connected printer</p>
-                  </div>
-                  <Switch
-                    checked={formData.rules.allowPrintStation}
-                    onCheckedChange={(c) => updateRules({ allowPrintStation: c })}
-                    className="data-[state=checked]:bg-zinc-600"
-                  />
+              <div className="flex items-center justify-between p-3 rounded-lg bg-[#101112]/30 border border-white/5">
+                <div>
+                  <Label className="text-zinc-300 font-medium">Enable Print Station</Label>
+                  <p className="text-xs text-zinc-500">Allow sending photos to connected printer</p>
                 </div>
+                <Switch
+                  checked={formData.rules.allowPrintStation}
+                  onCheckedChange={(c) => updateRules({ allowPrintStation: c })}
+                  className="data-[state=checked]:bg-zinc-600"
+                />
+              </div>
             </CardContent>
           </Card>
         </div>

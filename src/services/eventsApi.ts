@@ -50,12 +50,28 @@ function getApiPath(path: string, useV2 = false): string {
   return `${base}${version}${path}`;
 }
 
-export async function getPublicUserProfile(usernameOrSlug: string): Promise<User | null> {
+// Public Profile Types
+export interface UserCreation {
+  id: string;
+  url: string;
+  thumbnail_url?: string;
+  likes: number;
+  views: number;
+  is_hero?: boolean;
+}
+
+export interface PublicProfileResponse {
+  profile: User;
+  creations: UserCreation[];
+  events?: EventConfig[];
+}
+
+export async function getPublicUserProfile(usernameOrSlug: string): Promise<PublicProfileResponse | null> {
   try {
     const response = await fetch(`${getApiUrl()}/api/users/profile/${usernameOrSlug}`);
     if (!response.ok) return null;
     const data = await response.json();
-    return data.profile; // The API returns { profile: ... }
+    return data; // Return full response { profile, creations }
   } catch (error) {
     console.error("Failed to fetch public profile:", error);
     return null;
@@ -789,6 +805,11 @@ export async function uploadPhotoToEvent(
   return await response.json();
 }
 
+/**
+ * Get public event configuration (Alias for getEventConfig)
+ */
+export const getPublicEvent = getEventConfig;
+
 export const updateUser = async (data: Partial<User> & { password?: string }): Promise<User> => {
   // Try to get token from localStorage (old auth) or use credentials for Better Auth
   const token = getAuthToken();
@@ -867,25 +888,6 @@ export async function getTokenStats(): Promise<{ current_tokens: number; tokens_
   return response.json();
 }
 
-// Organization Types
-export interface Organization {
-  id: string;
-  name: string;
-  slug: string;
-  owner_user_id: number;
-  plan: string;
-  created_at: string;
-}
-
-export interface OrganizationMember {
-  id: string;
-  organization_id: string;
-  user_id: number;
-  role: 'owner' | 'admin' | 'staff';
-  status: 'active' | 'invited' | 'removed';
-  created_at: string;
-}
-
 // Album Types (Backend)
 export interface Album {
   id: string;
@@ -906,44 +908,6 @@ export interface AlbumPhoto {
   photo_id: string;
   station_type: string;
   created_at: string;
-}
-
-// Organization API
-export async function getUserOrganizations(): Promise<Organization[]> {
-  const token = getAuthToken();
-  if (!token) return [];
-
-  const response = await fetch(`${getApiUrl()}/api/organizations/me`, {
-    headers: { 'Authorization': `Bearer ${token}` }
-  });
-
-  if (!response.ok) throw new Error('Failed to fetch organizations');
-  return response.json();
-}
-
-export async function getOrganizationMembers(orgId: string): Promise<OrganizationMember[]> {
-  const token = getAuthToken();
-  const response = await fetch(`${getApiUrl()}/api/organizations/${orgId}/members`, {
-    headers: { 'Authorization': `Bearer ${token}` }
-  });
-  return response.json();
-}
-
-export async function inviteMember(orgId: string, email: string, role: string = 'staff'): Promise<void> {
-  const token = getAuthToken();
-  const response = await fetch(`${getApiUrl()}/api/organizations/${orgId}/invite`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
-    },
-    body: JSON.stringify({ email, role })
-  });
-
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.detail || 'Failed to invite member');
-  }
 }
 
 // Album API
@@ -1418,6 +1382,81 @@ export interface CreateTransactionRequest {
   customer_phone?: string;
   generate_invoice: boolean;
   notes?: string;
+}
+
+export interface OrganizationSettings {
+  description?: string;
+  logoUrl?: string;
+  website?: string;
+  instagram?: string;
+  tiktok?: string;
+  twitter?: string;
+  linkedin?: string;
+  primaryColor?: string;
+  secondaryColor?: string;
+  themeMode?: 'light' | 'dark';
+}
+
+export interface OrganizationMember {
+  id: string;
+  organization_id: string;
+  user_id: number;
+  name?: string;
+  email: string;
+  role: 'owner' | 'admin' | 'staff';
+  status: 'active' | 'invited' | 'removed';
+  avatar_url?: string;
+  joined_at?: string;
+}
+
+export interface Organization {
+  id: string;
+  name: string;
+  slug: string;
+  owner_user_id: number;
+  plan: string; // business_starter, business_pro, enterprise
+  settings?: OrganizationSettings;
+  created_at: string;
+  updated_at: string;
+}
+
+export async function getUserOrganizations(): Promise<Organization[]> {
+  const token = getAuthToken();
+  if (!token) return [];
+
+  const response = await fetch(`${getApiUrl()}/api/organizations/me`, {
+    headers: { 'Authorization': `Bearer ${token}` }
+  });
+
+  if (!response.ok) return [];
+  return response.json();
+}
+
+export async function getOrganizationMembers(orgId: string): Promise<OrganizationMember[]> {
+  const token = getAuthToken();
+  if (!token) return [];
+
+  const response = await fetch(`${getApiUrl()}/api/organizations/${orgId}/members`, {
+    headers: { 'Authorization': `Bearer ${token}` }
+  });
+
+  if (!response.ok) return [];
+  return response.json();
+}
+
+export async function inviteMember(orgId: string, email: string, role: string): Promise<void> {
+  const token = getAuthToken();
+  if (!token) throw new Error('Not authenticated');
+
+  const response = await fetch(`${getApiUrl()}/api/organizations/${orgId}/invite`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify({ email, role })
+  });
+  if (!response.ok) throw new Error('Failed to invite member');
 }
 
 /**

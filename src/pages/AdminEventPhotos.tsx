@@ -100,7 +100,7 @@ export default function AdminEventPhotos() {
     try {
       setIsLoading(true);
       const token = localStorage.getItem("auth_token");
-      const endpoint = `${API_URL}/api/business/events/${eventId}/photos?limit=100&offset=0`;
+      const endpoint = `${API_URL}/api/admin/events/${eventId}/photos?limit=100&offset=0`;
       const response = await fetch(endpoint, {
         headers: {
           Authorization: token ? `Bearer ${token}` : "",

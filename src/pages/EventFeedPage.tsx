@@ -22,16 +22,16 @@ export const EventFeedPage = () => {
   // Try to get config from context first (for short URLs), fallback to params
   const eventContext = useEventContext();
   const params = useParams<{ userSlug: string; eventSlug: string }>();
-  
+
   const userSlug = eventContext?.userSlug || params.userSlug || '';
   const eventSlug = eventContext?.eventSlug || params.eventSlug || '';
-  
+
   // Only fetch if not provided by context
   const { config: fetchedConfig, loading: fetchLoading, error: fetchError } = useEventConfig(
-    eventContext?.config ? '' : userSlug, 
+    eventContext?.config ? '' : userSlug,
     eventContext?.config ? '' : eventSlug
   );
-  
+
   const config = eventContext?.config || fetchedConfig;
   const configLoading = eventContext?.config ? false : fetchLoading;
   const configError = eventContext?.config ? null : fetchError;
@@ -152,7 +152,7 @@ export const EventFeedPage = () => {
 
   if (configError || !config) {
     return (
-      <EventNotFound 
+      <EventNotFound
         message={configError || "Este evento no existe o ya no está activo."}
         eventSlug={eventSlug}
       />

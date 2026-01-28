@@ -76,6 +76,8 @@ import {
   Shield,
   Crown,
   UserCog,
+  Settings,
+  Image as ImageIcon,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -361,6 +363,10 @@ export function BusinessSettingsPage() {
               <CreditCard className="w-4 h-4 mr-2" />
               Billing
             </TabsTrigger>
+            <TabsTrigger value="settings" className="data-[state=active]:bg-indigo-500">
+              <Settings className="w-4 h-4 mr-2" />
+              Settings
+            </TabsTrigger>
           </TabsList>
 
           {/* Overview Tab */}
@@ -581,6 +587,198 @@ export function BusinessSettingsPage() {
                 openPlansModal={shouldOpenPlans}
               />
             )}
+          </TabsContent>
+          {/* Settings Tab */}
+          <TabsContent value="settings" className="space-y-6">
+            <Card className="bg-card border-zinc-800">
+              <CardHeader>
+                <CardTitle className="text-white">General Settings</CardTitle>
+                <CardDescription className="text-zinc-400">
+                  Manage your public business profile and branding
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* General Info */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium text-white">Profile Information</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="orgName" className="text-zinc-300">Display Name</Label>
+                      <Input
+                        id="orgName"
+                        value={newOrgName}
+                        onChange={(e) => setNewOrgName(e.target.value)}
+                        placeholder="Company Name"
+                        className="bg-zinc-800 border-zinc-700 text-white"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="orgSlug" className="text-zinc-300">Slug (URL)</Label>
+                      <Input
+                        id="orgSlug"
+                        value={organization?.slug || ''}
+                        disabled
+                        className="bg-zinc-800/50 border-zinc-700 text-zinc-500 cursor-not-allowed"
+                      />
+                      <p className="text-xs text-zinc-500">
+                        {window.location.host}/{organization?.slug}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="description" className="text-zinc-300">Description</Label>
+                    <Input
+                      id="description"
+                      value={organization?.settings?.description || ''}
+                      onChange={(e) => setOrganization(prev => prev ? { ...prev, settings: { ...prev.settings, description: e.target.value } } : null)}
+                      placeholder="Tell us about your business..."
+                      className="bg-zinc-800 border-zinc-700 text-white"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="logoUrl" className="text-zinc-300">Logo URL</Label>
+                    <div className="flex gap-4">
+                      <Avatar className="w-12 h-12 rounded-lg">
+                        <AvatarImage src={organization?.settings?.logoUrl} />
+                        <AvatarFallback className="rounded-lg bg-zinc-800 text-zinc-400">
+                          <ImageIcon className="w-6 h-6" />
+                        </AvatarFallback>
+                      </Avatar>
+                      <Input
+                        id="logoUrl"
+                        value={organization?.settings?.logoUrl || ''}
+                        onChange={(e) => setOrganization(prev => prev ? { ...prev, settings: { ...prev.settings, logoUrl: e.target.value } } : null)}
+                        placeholder="https://..."
+                        className="bg-zinc-800 border-zinc-700 text-white flex-1"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="border-t border-zinc-800 my-6" />
+
+                {/* Social Links */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium text-white">Social Links</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="website" className="text-zinc-300">Website</Label>
+                      <Input
+                        id="website"
+                        value={organization?.settings?.website || ''}
+                        onChange={(e) => setOrganization(prev => prev ? { ...prev, settings: { ...prev.settings, website: e.target.value } } : null)}
+                        placeholder="https://your-site.com"
+                        className="bg-zinc-800 border-zinc-700 text-white"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="instagram" className="text-zinc-300">Instagram</Label>
+                      <Input
+                        id="instagram"
+                        value={organization?.settings?.instagram || ''}
+                        onChange={(e) => setOrganization(prev => prev ? { ...prev, settings: { ...prev.settings, instagram: e.target.value } } : null)}
+                        placeholder="@username"
+                        className="bg-zinc-800 border-zinc-700 text-white"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="tiktok" className="text-zinc-300">TikTok</Label>
+                      <Input
+                        id="tiktok"
+                        value={organization?.settings?.tiktok || ''}
+                        onChange={(e) => setOrganization(prev => prev ? { ...prev, settings: { ...prev.settings, tiktok: e.target.value } } : null)}
+                        placeholder="@username"
+                        className="bg-zinc-800 border-zinc-700 text-white"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="twitter" className="text-zinc-300">X (Twitter)</Label>
+                      <Input
+                        id="twitter"
+                        value={organization?.settings?.twitter || ''}
+                        onChange={(e) => setOrganization(prev => prev ? { ...prev, settings: { ...prev.settings, twitter: e.target.value } } : null)}
+                        placeholder="@username"
+                        className="bg-zinc-800 border-zinc-700 text-white"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="border-t border-zinc-800 my-6" />
+
+                {/* Branding */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium text-white">Branding</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="primaryColor" className="text-zinc-300">Primary Color</Label>
+                      <div className="flex gap-2">
+                        <div
+                          className="w-10 h-10 rounded border border-white/10"
+                          style={{ backgroundColor: organization?.settings?.primaryColor || '#6366F1' }}
+                        />
+                        <Input
+                          id="primaryColor"
+                          value={organization?.settings?.primaryColor || ''}
+                          onChange={(e) => setOrganization(prev => prev ? { ...prev, settings: { ...prev.settings, primaryColor: e.target.value } } : null)}
+                          placeholder="#6366F1"
+                          className="bg-zinc-800 border-zinc-700 text-white font-mono"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="themeMode" className="text-zinc-300">Theme Mode</Label>
+                      <Select
+                        value={organization?.settings?.themeMode || 'dark'}
+                        onValueChange={(v: 'light' | 'dark') => setOrganization(prev => prev ? { ...prev, settings: { ...prev.settings, themeMode: v } } : null)}
+                      >
+                        <SelectTrigger className="bg-zinc-800 border-zinc-700 text-white">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-zinc-800 border-zinc-700">
+                          <SelectItem value="dark">Dark</SelectItem>
+                          <SelectItem value="light">Light</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+              <CardFooter className="flex justify-end border-t border-zinc-800 pt-6">
+                <Button
+                  onClick={async () => {
+                    if (!organization) return;
+                    setIsSubmitting(true);
+                    try {
+                      const res = await fetch(`${ENV.API_URL}/api/organizations/${organization.id}`, {
+                        method: 'PUT',
+                        headers: {
+                          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
+                          'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                          name: newOrgName, // also update name
+                          settings: organization.settings // JSON settings
+                        }),
+                      });
+                      if (!res.ok) throw new Error('Failed to update settings');
+                      toast.success('Settings saved successfully');
+                      loadData(); // Reload
+                    } catch (error) {
+                      console.error('Failed to update settings:', error);
+                      toast.error('Failed to save settings');
+                    } finally {
+                      setIsSubmitting(false);
+                    }
+                  }}
+                  disabled={isSubmitting}
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white"
+                >
+                  {isSubmitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle2 className="w-4 h-4 mr-2" />}
+                  Save Changes
+                </Button>
+              </CardFooter>
+            </Card>
           </TabsContent>
         </Tabs>
 

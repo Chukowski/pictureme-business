@@ -48,6 +48,7 @@ const BigScreenPage = lazy(() => import("./pages/BigScreenPage"));
 const TermsPage = lazy(() => import("./pages/TermsPage").then(module => ({ default: module.TermsPage })));
 const PrivacyPage = lazy(() => import("./pages/PrivacyPage").then(module => ({ default: module.PrivacyPage })));
 const ShortUrlEventPage = lazy(() => import("./pages/ShortUrlEventPage"));
+const PublicBusinessProfile = lazy(() => import("./pages/PublicBusinessProfile"));
 
 // Creator Imports
 import { CreatorLayout } from "./components/creator/CreatorLayout";
@@ -409,6 +410,7 @@ const AppContent = () => {
 
           {/* Public Profile */}
           <Route path="/profile/:username" element={<PublicProfile />} />
+          <Route path="/org/:slug" element={<PublicBusinessProfile />} />
 
           {/* Dynamic event routes - no sidebar */}
           {/* PublicBoothRouter intelligently routes to PublicCreatorBooth (is_booth=true) or PhotoBoothPage */}
