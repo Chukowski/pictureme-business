@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { ENV } from "@/config/env";
 import { getCurrentUser, toggleLike } from "@/services/eventsApi";
+import { updateCreationAdultStatus } from "@/services/api/business";
 import { toast } from "sonner";
 import { CreationDetailView, GalleryItem } from "@/components/creator/CreationDetailView";
 // CDN service for public content (Cloudflare Image Resizing)
@@ -66,6 +67,7 @@ interface Creation {
   is_liked?: boolean;
   parent_id?: number | string;
   parent_username?: string;
+  is_adult?: boolean;
 }
 
 export default function PublicProfile() {
@@ -75,6 +77,7 @@ export default function PublicProfile() {
   const [creations, setCreations] = useState<Creation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("all");
+  const [hasAdultContent, setHasAdultContent] = useState(false); // Flag from backend
 
   // Immersive Preview State
   const [previewOpen, setPreviewOpen] = useState(false);
@@ -108,8 +111,15 @@ export default function PublicProfile() {
       }
 
       const data = await response.json();
+      console.log('🔍 Backend Response:', {
+        has_adult_content: data.has_adult_content,
+        is_authenticated: data.is_authenticated,
+        is_owner: data.is_owner,
+        creationsCount: data.creations?.length || 0
+      });
       setProfile(data.profile);
       setCreations(data.creations || []);
+      setHasAdultContent(data.has_adult_content || false);
     } catch (error) {
       console.error("Error fetching profile:", error);
     } finally {
@@ -160,6 +170,22 @@ export default function PublicProfile() {
       toast.error("Failed to update like");
       setCreations(previousCreations);
       if (previousProfile) setProfile(previousProfile);
+    }
+  };
+
+  const handleToggleAdult = async (creation: Creation) => {
+    const newStatus = !creation.is_adult;
+    const previousCreations = [...creations];
+
+    setCreations(creations.map(c => c.id === creation.id ? { ...c, is_adult: newStatus } : c));
+
+    try {
+      await updateCreationAdultStatus(Number(creation.id), newStatus);
+      toast.success(newStatus ? "Marked as Adult Content" : "Adult Content filter removed");
+    } catch (error) {
+      console.error("Update adult status failed", error);
+      toast.error("Failed to update adult status");
+      setCreations(previousCreations);
     }
   };
 
@@ -306,6 +332,8 @@ export default function PublicProfile() {
               <CreationsGrid
                 creations={filteredCreations}
                 isOwnProfile={isOwnProfile}
+                isAuthenticated={!!currentUser}
+                hasAdultContent={hasAdultContent}
                 onLike={handleToggleLike}
                 onItemClick={(index) => {
                   setPreviewIndex(index);
@@ -317,6 +345,8 @@ export default function PublicProfile() {
               <CreationsGrid
                 creations={filteredCreations}
                 isOwnProfile={isOwnProfile}
+                isAuthenticated={!!currentUser}
+                hasAdultContent={hasAdultContent}
                 onLike={handleToggleLike}
                 onItemClick={(index) => {
                   setPreviewIndex(index);
@@ -328,6 +358,8 @@ export default function PublicProfile() {
               <CreationsGrid
                 creations={filteredCreations}
                 isOwnProfile={isOwnProfile}
+                isAuthenticated={!!currentUser}
+                hasAdultContent={hasAdultContent}
                 onLike={handleToggleLike}
                 onItemClick={(index) => {
                   setPreviewIndex(index);
@@ -358,6 +390,7 @@ export default function PublicProfile() {
           creator_avatar: profile.avatar_url,
           creator_slug: profile?.slug || username,
           creator_user_id: profile.id,
+          isAdult: c.is_adult,
           parent_id: c.parent_id,
           parent_username: c.parent_username
         })) as GalleryItem[]}
@@ -402,84 +435,211 @@ export default function PublicProfile() {
           };
           navigate('/creator/studio?view=create', { state: remixState });
         }}
-
+        onToggleAdult={handleToggleAdult}
       />
     </>
   );
 }
 
-function CreationsGrid({ creations, isOwnProfile, onLike, onItemClick }: {
+function CreationsGrid({ creations, isOwnProfile, isAuthenticated, hasAdultContent, onLike, onItemClick }: {
   creations: Creation[],
   isOwnProfile: boolean,
+  isAuthenticated: boolean,
+  hasAdultContent: boolean, // Flag from backend indicating profile has 18+ content
   onLike: (c: Creation, e: React.MouseEvent) => void,
   onItemClick: (index: number) => void
 }) {
-  if (creations.length === 0) {
+  const [showAdultContent, setShowAdultContent] = useState(false);
+  const [blurredItems, setBlurredItems] = useState<Set<string>>(new Set());
+  const navigate = useNavigate();
+
+  // Debug logging
+  console.log('🔍 CreationsGrid Debug:', {
+    isOwnProfile,
+    isAuthenticated,
+    hasAdultContent,
+    shouldShowBanner: !isOwnProfile && !isAuthenticated && hasAdultContent,
+    creationsCount: creations.length,
+    adultCreationsInArray: creations.filter(c => c.is_adult).length
+  });
+
+  // 18+ Content Policy:
+  // - Owner: sees ALL their content (no filter needed, backend handles)
+  // - Authenticated users: can opt-in to see 18+ content (blurred)
+  // - Anonymous visitors: CANNOT see 18+ content at all (filtered by backend)
+  
+  // Filter creations based on adult content toggle
+  // For authenticated users, allow toggle. For owners, show all.
+  const filteredCreations = showAdultContent || isOwnProfile
+    ? creations
+    : creations.filter(c => !c.is_adult);
+
+  // Initialize blurred state for all adult content when showAdultContent is enabled
+  useState(() => {
+    if (showAdultContent) {
+      const adultIds = new Set(creations.filter(c => c.is_adult).map(c => c.id));
+      setBlurredItems(adultIds);
+    }
+  });
+
+  const toggleBlur = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setBlurredItems(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  if (filteredCreations.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16">
         <ImageIcon className="w-12 h-12 mx-auto mb-3 opacity-50 text-zinc-500" />
-        <p className="text-zinc-500">No creations yet</p>
+        <p className="text-zinc-500 mb-4">
+          {creations.length > 0 && !showAdultContent && !isOwnProfile
+            ? isAuthenticated
+              ? "All content is marked as 18+. Enable the filter to view (content will be blurred)."
+              : "All content is marked as 18+. Please sign in to view."
+            : "No creations yet"}
+        </p>
+        {!isAuthenticated && creations.length > 0 && (
+          <Button
+            onClick={() => navigate('/auth')}
+            className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700"
+          >
+            Sign In to View 18+ Content
+          </Button>
+        )}
       </div>
     );
   }
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-      {creations.map((creation, index) => {
-        const isHero = (creation as any).is_hero || false;
-        return (
-          <div
-            key={creation.id}
-            onClick={() => onItemClick(index)}
-            className="relative aspect-square rounded-xl overflow-hidden bg-card group cursor-pointer"
-          >
-            {creation.type === 'video' ? (
-              <>
-                <video
-                  src={creation.url}
-                  className="w-full h-full object-cover"
-                  muted
-                  loop
-                  onMouseEnter={(e) => e.currentTarget.play()}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.pause();
-                    e.currentTarget.currentTime = 0;
-                  }}
-                />
-                <div className="absolute top-2 right-2 p-1.5 rounded-full bg-[#101112]/50 backdrop-blur-sm">
-                  <Play className="w-3 h-3 text-white" fill="white" />
-                </div>
-              </>
-            ) : (
-              <img
-                src={getThumbnailUrl(creation.thumbnail_url || creation.url, 400)}
-                alt=""
-                className="w-full h-full object-cover transition-transform group-hover:scale-105"
-                loading={isHero ? "eager" : "lazy"}
-                decoding="async"
-              />
-            )}
-
-            <div className="absolute inset-0 bg-[#101112]/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-3">
-              <div className="flex items-center gap-4 text-sm w-full">
-                <button
-                  className="flex items-center gap-1 hover:scale-105 transition-transform"
-                  onClick={(e) => onLike(creation, e)}
-                >
-                  <Heart
-                    className={`w-4 h-4 ${creation.is_liked ? "fill-red-500 text-red-500" : "text-white"}`}
-                  />
-                  <span className="text-white font-medium">{creation.likes}</span>
-                </button>
-                <span className="flex items-center gap-1 text-white/80">
-                  <Eye className="w-4 h-4" />
-                  {creation.views}
-                </span>
-              </div>
+    <>
+      {/* Adult Content Filter - Only show for authenticated non-owners */}
+      {!isOwnProfile && isAuthenticated && creations.some(c => c.is_adult) && (
+        <div className="flex items-center justify-between gap-4 mb-4 pb-4 border-b border-white/10">
+          <div className="flex flex-col">
+            <span className="text-sm font-medium text-zinc-300">Adult Content (18+)</span>
+            <span className="text-xs text-zinc-500">Sensitive content will appear blurred. Click to reveal.</span>
+          </div>
+          <label className="relative inline-flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              checked={showAdultContent}
+              onChange={(e) => setShowAdultContent(e.target.checked)}
+              className="sr-only peer"
+            />
+            <div className="w-11 h-6 bg-zinc-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-red-500/50 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-500"></div>
+          </label>
+        </div>
+      )}
+      
+      {/* Message for anonymous users if there's adult content */}
+      {!isOwnProfile && !isAuthenticated && hasAdultContent && (
+        <div className="mb-4 pb-4 border-b border-white/10">
+          <div className="bg-zinc-800/50 border border-zinc-700 rounded-lg p-4 flex items-start gap-3">
+            <div className="w-2 h-2 rounded-full bg-red-500 mt-1.5 flex-shrink-0" />
+            <div className="flex-1">
+              <p className="text-sm text-zinc-300 mb-2">
+                This profile contains 18+ content that requires authentication to view.
+              </p>
+              <Button
+                size="sm"
+                onClick={() => navigate('/auth')}
+                className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700"
+              >
+                Sign In to View All Content
+              </Button>
             </div>
           </div>
-        );
-      })}
-    </div>
+        </div>
+      )}
+
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+        {filteredCreations.map((creation, index) => {
+          const isHero = (creation as any).is_hero || false;
+          const isBlurred = creation.is_adult && showAdultContent && blurredItems.has(creation.id);
+          
+          return (
+            <div
+              key={creation.id}
+              onClick={() => !isBlurred && onItemClick(index)}
+              className="relative aspect-square rounded-xl overflow-hidden bg-card group cursor-pointer"
+            >
+              {creation.type === 'video' ? (
+                <>
+                  <video
+                    src={creation.url}
+                    className={`w-full h-full object-cover ${isBlurred ? 'blur-2xl' : ''}`}
+                    muted
+                    loop
+                    onMouseEnter={(e) => !isBlurred && e.currentTarget.play()}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.pause();
+                      e.currentTarget.currentTime = 0;
+                    }}
+                  />
+                  <div className="absolute top-2 right-2 p-1.5 rounded-full bg-[#101112]/50 backdrop-blur-sm z-20">
+                    <Play className="w-3 h-3 text-white" fill="white" />
+                  </div>
+                </>
+              ) : (
+                <img
+                  src={getThumbnailUrl(creation.thumbnail_url || creation.url, 400)}
+                  alt=""
+                  className={`w-full h-full object-cover transition-transform group-hover:scale-105 ${isBlurred ? 'blur-2xl' : ''}`}
+                  loading={isHero ? "eager" : "lazy"}
+                  decoding="async"
+                />
+              )}
+
+              {/* 18+ Badge */}
+              {creation.is_adult && (
+                <div className="absolute top-2 left-2 px-2 py-1 bg-red-500/80 backdrop-blur-sm rounded-md z-20">
+                  <span className="text-white text-[10px] font-black">18+</span>
+                </div>
+              )}
+
+              {/* Blur Overlay for 18+ content */}
+              {isBlurred && (
+                <div 
+                  className="absolute inset-0 backdrop-blur-2xl bg-black/40 flex flex-col items-center justify-center z-30 cursor-pointer"
+                  onClick={(e) => toggleBlur(creation.id, e)}
+                >
+                  <div className="w-12 h-12 rounded-full bg-red-500/20 flex items-center justify-center mb-3 border border-red-500/30">
+                    <span className="text-red-500 font-black text-sm">18+</span>
+                  </div>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-white/80 mb-1">Adult Content</p>
+                  <p className="text-[8px] text-white/60">Click to view</p>
+                </div>
+              )}
+
+              <div className="absolute inset-0 bg-[#101112]/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-3 z-10">
+                <div className="flex items-center gap-4 text-sm w-full">
+                  <button
+                    className="flex items-center gap-1 hover:scale-105 transition-transform"
+                    onClick={(e) => onLike(creation, e)}
+                  >
+                    <Heart
+                      className={`w-4 h-4 ${creation.is_liked ? "fill-red-500 text-red-500" : "text-white"}`}
+                    />
+                    <span className="text-white font-medium">{creation.likes}</span>
+                  </button>
+                  <span className="flex items-center gap-1 text-white/80">
+                    <Eye className="w-4 h-4" />
+                    {creation.views}
+                  </span>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </>
   );
 }
