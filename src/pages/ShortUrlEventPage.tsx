@@ -20,7 +20,7 @@ export const ShortUrlEventPage = () => {
   const { eventId, eventSlug } = useParams<{ eventId: string; eventSlug: string; '*': string }>();
   const [searchParams] = useSearchParams();
   const location = useLocation();
-  
+
   const eventIdNum = eventId ? parseInt(eventId, 10) : null;
   const { config, loading, error } = useEventConfigById(eventIdNum, eventSlug || null);
 
@@ -40,9 +40,9 @@ export const ShortUrlEventPage = () => {
   }
 
   // Get userSlug from config for passing to components
-  const userSlug = config.user_slug || config.userSlug || '';
+  const userSlug = config.user_slug || config.username || '';
   const resolvedEventSlug = config.slug || eventSlug || '';
-  
+
   // Determine which page to render based on the path
   const pathname = location.pathname;
   const basePath = `/e/${eventId}/${eventSlug}`;
@@ -50,9 +50,9 @@ export const ShortUrlEventPage = () => {
 
   // Wrap the component in EventProvider so child components can access config
   const renderWithProvider = (component: React.ReactNode) => (
-    <EventProvider 
-      config={config} 
-      userSlug={userSlug} 
+    <EventProvider
+      config={config}
+      userSlug={userSlug}
       eventSlug={resolvedEventSlug}
     >
       {component}
@@ -67,17 +67,17 @@ export const ShortUrlEventPage = () => {
   switch (subPath) {
     case 'feed':
       return renderWithProvider(<EventFeedPage />);
-    
+
     case 'staff':
       return renderWithProvider(<StaffDashboard />);
-    
+
     case 'display':
     case 'bigscreen':
       return renderWithProvider(<BigScreenPage />);
-    
+
     case 'viewer':
       return renderWithProvider(<ViewerStationPage />);
-    
+
     case 'registration':
     case 'booth':
     case 'playground':
@@ -89,8 +89,8 @@ export const ShortUrlEventPage = () => {
       }
       // Default to PhotoBoothPage with config override
       return renderWithProvider(
-        <PhotoBoothPage 
-          configOverride={config} 
+        <PhotoBoothPage
+          configOverride={config}
           userSlugOverride={userSlug}
           eventSlugOverride={resolvedEventSlug}
         />

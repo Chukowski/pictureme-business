@@ -321,7 +321,7 @@ export const CameraCapture = ({
           )}
 
           {/* Public Feed Toggle/Notice */}
-          {feedEnabled && (
+          {feedEnabled && !publicMandatory && (
             <div className="flex justify-center mb-6">
               <div
                 onClick={() => !publicMandatory && onPublicChange?.(!isPublic)}

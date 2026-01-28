@@ -13,7 +13,7 @@ import { useEventConfig } from '@/hooks/useEventConfig';
 import { useEventPhotos } from '@/hooks/useEventPhotos';
 import {
     Loader2, Camera, ArrowLeft, Heart, Eye,
-    MessageCircle, Cpu, Sparkles, Lock
+    MessageCircle, Cpu, Sparkles, Lock, MonitorX, RefreshCw
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -287,7 +287,21 @@ export default function CreatorBoothFeed() {
 
                 {/* Photo Grid - TikTok Style with Info */}
                 <main className="max-w-7xl mx-auto px-4 py-6">
-                    {photos.length === 0 && !photosLoading && (
+                    {photosError && (
+                        <div className="text-center py-16">
+                            <div className="w-20 h-20 rounded-full bg-red-500/10 flex items-center justify-center mx-auto mb-4 border border-red-500/20">
+                                <MonitorX className="w-10 h-10 text-red-400" />
+                            </div>
+                            <h2 className="text-xl font-semibold text-red-400 mb-2">Failed to load feed</h2>
+                            <p className="text-zinc-500 mb-6 max-w-md mx-auto">{photosError}</p>
+                            <Button variant="outline" onClick={() => window.location.reload()}>
+                                <RefreshCw className="w-4 h-4 mr-2" />
+                                Retry
+                            </Button>
+                        </div>
+                    )}
+
+                    {photos.length === 0 && !photosLoading && !photosError && (
                         <div className="text-center py-16">
                             <div className="w-20 h-20 rounded-full bg-zinc-800 flex items-center justify-center mx-auto mb-4">
                                 <Camera className="w-10 h-10 text-zinc-600" />

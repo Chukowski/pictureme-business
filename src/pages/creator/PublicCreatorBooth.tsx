@@ -122,7 +122,7 @@ export default function PublicCreatorBooth() {
                 }
 
                 setConfig(boothConfig);
-                setCreator(userProfile);
+                setCreator(userProfile.profile);
 
             } catch (err) {
                 console.error("Failed to load booth:", err);

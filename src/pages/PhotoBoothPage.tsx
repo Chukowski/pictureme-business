@@ -92,7 +92,7 @@ export const PhotoBoothPage = ({ configOverride, userSlugOverride, eventSlugOver
 
   useEffect(() => {
     if (config?.user_slug) {
-      getPublicUserProfile(config.user_slug).then(setCreator);
+      getPublicUserProfile(config.user_slug).then(res => setCreator(res.profile));
     }
   }, [config?.user_slug]);
 
@@ -139,6 +139,18 @@ export const PhotoBoothPage = ({ configOverride, userSlugOverride, eventSlugOver
   const isAlbumMode = useMemo(() => {
     return config?.albumTracking?.enabled === true;
   }, [config]);
+
+  // Determine if public sharing is mandatory (e.g. for free booths)
+  const publicMandatory = useMemo(() => {
+    return config?.monetization?.type === 'free' && !!config?.settings?.feedEnabled && !!config?.settings?.feedPublic;
+  }, [config]);
+
+  // Enforce public sharing if mandatory
+  useEffect(() => {
+    if (publicMandatory) {
+      setIsPublic(true);
+    }
+  }, [publicMandatory]);
 
   const canTakeMorePhotos = useMemo(() => {
     if (!isAlbumMode || !albumData) return true;
@@ -700,7 +712,7 @@ export const PhotoBoothPage = ({ configOverride, userSlugOverride, eventSlugOver
           hasGroupPrompt={!!selectedBackground.groupPrompt}
           isPublic={isPublic}
           onPublicChange={setIsPublic}
-          publicMandatory={config.monetization?.type === 'free' && !!config.settings?.feedEnabled && !!config.settings?.feedPublic}
+          publicMandatory={publicMandatory}
           feedEnabled={!!config.settings?.feedEnabled}
         />
       )}

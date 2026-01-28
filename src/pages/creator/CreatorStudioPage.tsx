@@ -598,11 +598,16 @@ function CreatorStudioPageContent({ defaultView }: CreatorStudioPageProps) {
                     console.log(`📥 [Studio] Fetched ${rawPending.length} pending items`);
                     const pendingItems = rawPending.map((p: any) => {
                         const ts = new Date(p.created_at).getTime();
+                        // Heuristic: If job is stuck in processing for > 5 minutes, assume it failed (backend crash?)
+                        const isStale = (Date.now() - ts) > 5 * 60 * 1000;
+                        const status = isStale ? 'failed' : p.status;
+                        const error = isStale ? 'Timed out (Backend unresponsive)' : p.error_message;
+
                         return {
                             id: `pending-${p.id}`, url: '', previewUrl: '', type: p.type || 'image',
                             timestamp: isNaN(ts) ? Date.now() : ts, prompt: p.prompt, model: p.model_id,
-                            ratio: p.aspect_ratio, status: p.status, jobId: p.id,
-                            error: p.error_message,
+                            ratio: p.aspect_ratio, status: status, jobId: p.id,
+                            error: error,
                             template: getTemplateMeta([p.id.toString(), `pending-${p.id}`, p.request_id])
                         };
                     });
@@ -1263,7 +1268,7 @@ function CreatorStudioPageContent({ defaultView }: CreatorStudioPageProps) {
                                 setPreviewItem={setPreviewItem}
                                 onReusePrompt={handleReusePrompt}
                                 onDownload={handleDownload}
-                                onDelete={(item) => handleDeleteHistory(item.id)}
+                                onDelete={(item) => handleDeleteHistory(item.id.toString())}
                                 mode={mode}
                             />
                         </div>

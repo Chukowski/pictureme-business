@@ -23,23 +23,31 @@ export const EventFeedPage = () => {
   const eventContext = useEventContext();
   const params = useParams<{ userSlug: string; eventSlug: string }>();
 
-  const userSlug = eventContext?.userSlug || params.userSlug || '';
-  const eventSlug = eventContext?.eventSlug || params.eventSlug || '';
+  // Initial slugs from context or params
+  const paramUserSlug = eventContext?.userSlug || params.userSlug || '';
+  const paramEventSlug = eventContext?.eventSlug || params.eventSlug || '';
 
   // Only fetch if not provided by context
   const { config: fetchedConfig, loading: fetchLoading, error: fetchError } = useEventConfig(
-    eventContext?.config ? '' : userSlug,
-    eventContext?.config ? '' : eventSlug
+    eventContext?.config ? '' : paramUserSlug,
+    eventContext?.config ? '' : paramEventSlug
   );
 
   const config = eventContext?.config || fetchedConfig;
   const configLoading = eventContext?.config ? false : fetchLoading;
   const configError = eventContext?.config ? null : fetchError;
+
+  // Refined slugs using config if available (handle cases where params might be missing user details)
+  const userSlug = config?.user_slug || config?.username || paramUserSlug;
+  const eventSlug = config?.slug || paramEventSlug;
+
   const { photos, loading: photosLoading, error: photosError } = useEventPhotos(
     userSlug,
     eventSlug,
     5000 // Poll every 5 seconds
   );
+
+  // ... rest of logic
   const displayPhotos = useMemo(() => {
     if (photos.length === 0) return [];
     if (photos.length < 5) return photos;
@@ -161,6 +169,15 @@ export const EventFeedPage = () => {
 
   if (!config.settings?.feedEnabled) {
     return <FeedNotAvailable />;
+  }
+
+  if (!userSlug || !eventSlug) {
+    return (
+      <EventNotFound
+        message="Missing event configuration (User Slug or Event Slug not found)."
+        eventSlug={eventSlug || 'unknown'}
+      />
+    );
   }
 
   return (
