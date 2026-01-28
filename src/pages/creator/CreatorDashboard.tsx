@@ -37,13 +37,14 @@ import { Slider } from "@/components/ui/slider";
 // =======================
 // MARKETPLACE FEED CARD (Private Component)
 // =======================
-function MarketplaceFeedCard({ creation, onImageClick, onRemixClick }: { creation: any, onImageClick: (e: React.MouseEvent) => void, onRemixClick: (e: React.MouseEvent, mode?: 'full' | 'video' | 'prompt') => void }) {
+function MarketplaceFeedCard({ creation, onImageClick, onRemixClick, showBlurred = false }: { creation: any, onImageClick: (e: React.MouseEvent) => void, onRemixClick: (e: React.MouseEvent, mode?: 'full' | 'video' | 'prompt') => void, showBlurred?: boolean }) {
   const isHero = creation.is_hero || false;
 
   const [likes, setLikes] = useState(creation.likes || 0);
   const [isLiked, setIsLiked] = useState(creation.is_liked || false);
   const [isLiking, setIsLiking] = useState(false);
   const [expanded, setExpanded] = useState(false);
+  const [isBlurred, setIsBlurred] = useState(showBlurred);
   const remixRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -101,7 +102,7 @@ function MarketplaceFeedCard({ creation, onImageClick, onRemixClick }: { creatio
   return (
     <div
       className="break-inside-avoid group relative rounded-2xl overflow-hidden bg-card border border-white/5 hover:border-white/20 transition-all cursor-pointer shadow-lg aspect-[4/5] h-min"
-      onClick={onImageClick}
+      onClick={isBlurred ? undefined : onImageClick}
     >
       {/* Video indicator badge */}
       {isVideo && (
@@ -110,18 +111,45 @@ function MarketplaceFeedCard({ creation, onImageClick, onRemixClick }: { creatio
         </div>
       )}
 
+      {/* 18+ Badge */}
+      {creation.is_adult && (
+        <div className="absolute top-3 right-3 z-30 px-2 py-1 bg-red-500/80 backdrop-blur-sm rounded-md">
+          <span className="text-white text-[10px] font-black">18+</span>
+        </div>
+      )}
+
       {/* Preview image (works for both images and videos) */}
       {previewUrl ? (
         <img
           src={previewUrl}
           alt={creation.template_name || creation.prompt || ''}
-          className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-500"
+          className={cn(
+            "w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-500",
+            isBlurred && "blur-2xl"
+          )}
           loading={isHero ? "eager" : "lazy"}
           decoding="async"
         />
       ) : (
         <div className="w-full h-full bg-zinc-800 flex items-center justify-center">
           <Play className="w-8 h-8 text-zinc-600" />
+        </div>
+      )}
+
+      {/* Blur Overlay for 18+ content */}
+      {isBlurred && (
+        <div 
+          className="absolute inset-0 backdrop-blur-2xl bg-black/40 flex flex-col items-center justify-center z-40 cursor-pointer"
+          onClick={(e) => {
+            e.stopPropagation();
+            setIsBlurred(false);
+          }}
+        >
+          <div className="w-20 h-20 rounded-full bg-red-500/20 flex items-center justify-center mb-4 border-2 border-red-500/50">
+            <span className="text-red-400 font-black text-2xl">18+</span>
+          </div>
+          <p className="text-sm font-bold uppercase tracking-widest text-white/90 mb-1">Adult Content</p>
+          <p className="text-xs text-white/60">Click to view</p>
         </div>
       )}
 
@@ -243,23 +271,33 @@ function MarketplaceFeedCard({ creation, onImageClick, onRemixClick }: { creatio
 // =======================
 // MARKETPLACE FEED (Remix Engine)
 // =======================
-function CreatorsGallerySection({ creations, onImageClick, onRemixClick, columnsCount = 3 }: {
+function CreatorsGallerySection({ creations, onImageClick, onRemixClick, columnsCount = 3, showAdultContent = false }: {
   creations: any[];
   onImageClick: (creation: any, index: number) => void;
   onRemixClick: (creation: any, mode?: 'full' | 'video' | 'prompt') => void;
   columnsCount?: number;
+  showAdultContent?: boolean;
 }) {
-  if (!creations || creations.length === 0) {
+  // Filter out 18+ content if toggle is off
+  const filteredCreations = showAdultContent 
+    ? creations 
+    : creations.filter(c => !c.is_adult);
+
+  if (!filteredCreations || filteredCreations.length === 0) {
     return (
       <div className="text-center py-12 bg-card/30 rounded-xl border border-white/5 border-dashed">
-        <p className="text-zinc-500">Marketplace loading...</p>
+        <p className="text-zinc-500">
+          {creations.length > 0 && !showAdultContent 
+            ? "All content is marked as 18+. Enable the filter to view." 
+            : "Marketplace loading..."}
+        </p>
       </div>
     );
   }
 
   // Custom stable masonry layout based on columnsCount
   const columns: any[][] = Array.from({ length: columnsCount }, () => []);
-  creations.forEach((item, i) => {
+  filteredCreations.forEach((item, i) => {
     columns[i % columnsCount].push(item);
   });
 
@@ -276,6 +314,7 @@ function CreatorsGallerySection({ creations, onImageClick, onRemixClick, columns
             <MarketplaceFeedCard
               key={creation.id}
               creation={creation}
+              showBlurred={creation.is_adult && showAdultContent}
               onImageClick={(e) => {
                 e.stopPropagation();
                 // Find visible index in original array if needed, or pass object
@@ -375,6 +414,7 @@ export default function CreatorDashboard() {
     if (typeof window !== 'undefined' && window.innerWidth < 768) return [2];
     return [3];
   });
+  const [showAdultContent, setShowAdultContent] = useState(false);
   const FEED_LIMIT = 12;
 
   // Community Feed Preview State
@@ -580,6 +620,21 @@ export default function CreatorDashboard() {
             <h2 className="text-xl font-bold text-white tracking-tight">Feed</h2>
 
             <div className="flex items-center gap-4">
+              {/* 18+ Filter Toggle */}
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-card/50 rounded-xl border border-white/5">
+                <span className="text-xs text-zinc-400 font-medium">Show 18+</span>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={showAdultContent}
+                    onChange={(e) => setShowAdultContent(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-9 h-5 bg-zinc-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-red-500/50 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-red-500"></div>
+                </label>
+              </div>
+
+              {/* Zoom Slider */}
               <div className="flex items-center gap-2 px-3 py-1.5 bg-card/50 rounded-xl border border-white/5">
                 <Layout className="w-3.5 h-3.5 text-zinc-500" />
                 <div className="w-24">
@@ -600,6 +655,7 @@ export default function CreatorDashboard() {
           <CreatorsGallerySection
             creations={publicCreations}
             columnsCount={feedZoom[0]}
+            showAdultContent={showAdultContent}
             onImageClick={(creation, index) => {
               setPreviewIndex(index);
               setPreviewOpen(true);

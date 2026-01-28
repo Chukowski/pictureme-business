@@ -49,6 +49,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import { getCurrentUser, getCurrentUserProfile, User, getUserBooths, EventConfig, Template } from "@/services/eventsApi";
+import { updateCreationAdultStatus, updatePhotoAdultStatus } from "@/services/api/business";
 import { getMarketplaceTemplates } from "@/services/marketplaceApi";
 
 import { processImageWithAI, AspectRatio, AI_MODELS, resolveModelId, normalizeModelId } from "@/services/aiProcessor";
@@ -580,6 +581,7 @@ function CreatorStudioPageContent({ defaultView }: CreatorStudioPageProps) {
                             model: c.model_id || c.model,
                             ratio: c.aspect_ratio,
                             isPublic: c.is_published || c.visibility === 'public',
+                            isAdult: c.is_adult,
                             status: 'completed',
                             isOwner: true,
                             original_url: c.original_url,
@@ -884,12 +886,11 @@ function CreatorStudioPageContent({ defaultView }: CreatorStudioPageProps) {
     };
 
     const handleTogglePublic = async (item: GalleryItem) => {
-        const newVisibility = !item.isPublic;
-
+        const newStatus = !item.isPublic;
         // Optimistic update for both list and preview
-        setHistory(prev => prev.map(h => h.id === item.id ? { ...h, isPublic: newVisibility } : h));
+        setHistory(prev => prev.map(h => h.id === item.id ? { ...h, isPublic: newStatus } : h));
         if (previewItem?.id === item.id) {
-            setPreviewItem(prev => prev ? { ...prev, isPublic: newVisibility } : null);
+            setPreviewItem(prev => prev ? { ...prev, isPublic: newStatus } : null);
         }
 
         try {
@@ -897,16 +898,43 @@ function CreatorStudioPageContent({ defaultView }: CreatorStudioPageProps) {
             if (!token) return;
             await fetch(`${ENV.API_URL}/api/creations/${item.id}/visibility`, {
                 method: "PUT", headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-                body: JSON.stringify({ visibility: newVisibility ? 'public' : 'private' })
+                body: JSON.stringify({ visibility: newStatus ? "public" : "private" })
             });
-            toast.success(newVisibility ? "Published" : "Private");
+            toast.success(newStatus ? "Published" : "Private");
         } catch (e) {
             // Revert on failure
-            setHistory(prev => prev.map(h => h.id === item.id ? { ...h, isPublic: !newVisibility } : h));
+            setHistory(prev => prev.map(h => h.id === item.id ? { ...h, isPublic: !newStatus } : h));
             if (previewItem?.id === item.id) {
-                setPreviewItem(prev => prev ? { ...prev, isPublic: !newVisibility } : null);
+                setPreviewItem(prev => prev ? { ...prev, isPublic: !newStatus } : null);
             }
             toast.error("Failed to update visibility");
+        }
+    };
+
+    const handleToggleAdult = async (item: GalleryItem) => {
+        const newStatus = !item.isAdult;
+        // Optimistic update
+        setHistory(prev => prev.map(i => i.id === item.id ? { ...i, isAdult: newStatus } : i));
+        if (previewItem?.id === item.id) setPreviewItem(prev => prev ? { ...prev, isAdult: newStatus } : null);
+
+        try {
+            if (item.id.toString().startsWith('pending-')) {
+                toast.error("Wait for generation to complete");
+                return;
+            }
+
+            // If it has a shareCode, it's a "booth photo", otherwise it's a "creation"
+            if (item.shareCode) {
+                await updatePhotoAdultStatus(item.shareCode, newStatus);
+            } else {
+                await updateCreationAdultStatus(Number(item.id), newStatus);
+            }
+            toast.success(newStatus ? "Marked as Adult Content" : "Adult Content filter removed");
+        } catch (e) {
+            // Revert
+            setHistory(prev => prev.map(i => i.id === item.id ? { ...i, isAdult: !newStatus } : i));
+            if (previewItem?.id === item.id) setPreviewItem(prev => prev ? { ...prev, isAdult: !newStatus } : null);
+            toast.error("Failed to update adult status");
         }
     };
 
@@ -1298,6 +1326,7 @@ function CreatorStudioPageContent({ defaultView }: CreatorStudioPageProps) {
                 open={!!previewItem}
                 onClose={() => setPreviewItem(null)}
                 onTogglePublic={handleTogglePublic}
+                onToggleAdult={handleToggleAdult}
                 onReusePrompt={handleReusePrompt}
                 onUseAsTemplate={handleUseAsTemplate}
                 onDownload={handleDownload}

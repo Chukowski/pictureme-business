@@ -264,6 +264,28 @@ export async function updateBoothPhotoVisibility(shareCode: string, published: b
     return response.json();
 }
 
+export async function updateCreationAdultStatus(id: number, isAdult: boolean): Promise<void> {
+    const response = await apiFetch(`/creations/${id}/adult`, {
+        method: 'PUT',
+        body: JSON.stringify({ is_adult: isAdult }),
+    });
+
+    if (!response.ok) {
+        throw new Error('Failed to update adult status');
+    }
+}
+
+export async function updatePhotoAdultStatus(photoId: string, isAdult: boolean): Promise<void> {
+    const response = await apiFetch(`/photos/${photoId}/adult`, {
+        method: 'PUT',
+        body: JSON.stringify({ is_adult: isAdult }),
+    });
+
+    if (!response.ok) {
+        throw new Error('Failed to update photo adult status');
+    }
+}
+
 export async function getBoothPhotos(eventId: number | string, filters?: { published?: boolean }): Promise<BoothPhoto[]> {
     let url = `/events/${eventId}/photos`;
     if (filters?.published !== undefined) {

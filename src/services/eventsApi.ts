@@ -95,6 +95,7 @@ export async function getEventPhotos(userSlug: string, eventSlug: string, limit:
     background_name: photo.background_name ?? photo.backgroundName,
     share_code: photo.share_code ?? photo.shareCode,
     created_at: photo.created_at,
+    is_adult: photo.is_adult ?? photo.meta?.is_adult,
     meta: photo.meta ?? {},
   }));
 }

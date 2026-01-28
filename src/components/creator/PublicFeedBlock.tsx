@@ -7,26 +7,48 @@ import { Badge } from "@/components/ui/badge";
 import { Heart, Eye, User, Play } from "lucide-react";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { getMediaPreviewUrl, isVideoUrl } from "@/services/cdn";
+import { cn } from "@/lib/utils";
 
 interface PublicFeedBlockProps {
     creations?: PublicCreation[];
+    showAdultFilter?: boolean;
 }
 
-export function PublicFeedBlock({ creations = [] }: PublicFeedBlockProps) {
+export function PublicFeedBlock({ creations = [], showAdultFilter = true }: PublicFeedBlockProps) {
+    const [showAdultContent, setShowAdultContent] = useState(false);
+
     if (!creations || creations.length === 0) return null;
+
+    // Filter out 18+ content if the toggle is off
+    const filteredCreations = showAdultContent 
+        ? creations 
+        : creations.filter(c => !c.is_adult);
 
     return (
         <div className="space-y-4">
             <div className="flex items-center justify-between">
                 <h2 className="text-xl font-semibold text-white">Community Feed</h2>
-                {/* <Button variant="link" className="text-zinc-400">View All</Button> */}
+                {showAdultFilter && (
+                    <div className="flex items-center gap-2 text-sm">
+                        <span className="text-zinc-400">Show 18+</span>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                            <input
+                                type="checkbox"
+                                checked={showAdultContent}
+                                onChange={(e) => setShowAdultContent(e.target.checked)}
+                                className="sr-only peer"
+                            />
+                            <div className="w-9 h-5 bg-zinc-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-red-500/50 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-red-500"></div>
+                        </label>
+                    </div>
+                )}
             </div>
 
             <ScrollArea className="w-full whitespace-nowrap rounded-xl border border-white/5 bg-card/30">
                 <div className="flex w-max space-x-4 p-4">
-                    {creations.map((creation) => (
+                    {filteredCreations.map((creation) => (
                         <div key={creation.id} className="w-[250px] shrink-0">
-                            <FeedCard creation={creation} />
+                            <FeedCard creation={creation} showBlurred={creation.is_adult && showAdultContent} />
                         </div>
                     ))}
                 </div>
@@ -36,10 +58,11 @@ export function PublicFeedBlock({ creations = [] }: PublicFeedBlockProps) {
     );
 }
 
-function FeedCard({ creation }: { creation: PublicCreation }) {
+function FeedCard({ creation, showBlurred = false }: { creation: PublicCreation; showBlurred?: boolean }) {
     const [likes, setLikes] = useState(creation.likes);
     const [isLiked, setIsLiked] = useState(creation.is_liked || false);
     const [isLiking, setIsLiking] = useState(false);
+    const [isBlurred, setIsBlurred] = useState(showBlurred);
 
     // Determine if this is a video
     const isVideo = creation.type === 'video' || isVideoUrl(creation.image_url);
@@ -94,17 +117,44 @@ function FeedCard({ creation }: { creation: PublicCreation }) {
                     </div>
                 )}
 
+                {/* 18+ Badge */}
+                {creation.is_adult && (
+                    <div className="absolute top-2 right-2 z-20 px-2 py-1 bg-red-500/80 backdrop-blur-sm rounded-md">
+                        <span className="text-white text-[10px] font-black">18+</span>
+                    </div>
+                )}
+
                 {/* Preview Image (works for both images and videos) */}
                 {previewUrl ? (
                     <img
                         src={previewUrl}
                         alt={creation.template_name || "Creation"}
-                        className="w-full h-full object-cover"
+                        className={cn(
+                            "w-full h-full object-cover transition-all",
+                            isBlurred && "blur-2xl"
+                        )}
                         loading="lazy"
                     />
                 ) : (
                     <div className="w-full h-full bg-zinc-800 flex items-center justify-center">
                         <Play className="w-8 h-8 text-zinc-600" />
+                    </div>
+                )}
+
+                {/* Blur Overlay for 18+ content */}
+                {isBlurred && (
+                    <div 
+                        className="absolute inset-0 backdrop-blur-2xl bg-black/40 flex flex-col items-center justify-center z-30 cursor-pointer"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setIsBlurred(false);
+                        }}
+                    >
+                        <div className="w-16 h-16 rounded-full bg-red-500/20 flex items-center justify-center mb-3 border-2 border-red-500/50">
+                            <span className="text-red-400 font-black text-lg">18+</span>
+                        </div>
+                        <p className="text-xs font-bold uppercase tracking-widest text-white/80 mb-1">Adult Content</p>
+                        <p className="text-[10px] text-white/60">Click to view</p>
                     </div>
                 )}
 

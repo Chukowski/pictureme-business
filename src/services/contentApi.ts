@@ -58,6 +58,7 @@ export interface PublicCreation {
   model?: string;
   parent_id?: number | string;
   parent_username?: string;
+  is_adult?: boolean;
 }
 
 export interface HomeContentResponse {

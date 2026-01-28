@@ -9,6 +9,7 @@ export interface UserCreation {
     likes: number;
     views: number;
     is_hero?: boolean;
+    is_adult?: boolean;
 }
 
 export interface PublicProfileResponse {
@@ -259,6 +260,7 @@ export interface PhotoFeed {
     background_name: string;
     share_code: string;
     created_at: number;
+    is_adult?: boolean;
     meta: any;
 }
 

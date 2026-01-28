@@ -55,6 +55,7 @@ export interface GalleryItem {
     creator_slug?: string;
     creator_user_id?: string | number;
     isOwner?: boolean;
+    isAdult?: boolean;
     parent_id?: number | string;
     parent_username?: string;
     meta?: any;
@@ -67,6 +68,7 @@ interface CreationDetailViewProps {
     open: boolean;
     onClose: () => void;
     onTogglePublic?: (item: GalleryItem) => void;
+    onToggleAdult?: (item: GalleryItem) => void;
     onReusePrompt: (item: GalleryItem, remixMode?: 'full' | 'video' | 'prompt' | 'first-frame' | 'last-frame') => void;
     onUseAsTemplate?: (item: GalleryItem) => void;
     onDownload: (item: GalleryItem) => void;
@@ -96,6 +98,7 @@ export function CreationDetailView({
     open,
     onClose,
     onTogglePublic,
+    onToggleAdult,
     onReusePrompt,
     onUseAsTemplate,
     onDownload,
@@ -452,6 +455,18 @@ export function CreationDetailView({
                                 >
                                     <Copy className="w-3 h-3 text-white/40" />
                                 </button>
+
+                                {item.isOwner && onToggleAdult && (
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); onToggleAdult(item); }}
+                                        className="flex items-center gap-2 bg-white/10 backdrop-blur-md hover:bg-white/20 px-2.5 py-1 rounded-full border border-white/10 transition-colors z-[70]"
+                                    >
+                                        <div className={cn("w-2 h-2 rounded-full", item.isAdult ? "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)]" : "bg-white/20")} />
+                                        <span className={cn("text-[9px] font-black uppercase tracking-widest", item.isAdult ? "text-red-400" : "text-zinc-600")}>
+                                            18+
+                                        </span>
+                                    </button>
+                                )}
                             </div>
                             {/* Creator Byline - Always visible on mobile and desktop */}
                             {(item.creator_username || item.creator_avatar) && !item.isOwner && (
