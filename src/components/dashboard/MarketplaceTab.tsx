@@ -188,13 +188,23 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
   useEffect(() => {
     const search = searchParams.get('search');
     const type = searchParams.get('type');
+    const templateId = searchParams.get('templateId');
+
     if (search !== null) {
       setSearchQuery(search);
     }
     if (type !== null) {
       setTypeFilter(type as any);
     }
-  }, [searchParams]);
+
+    if (templateId && templates.length > 0) {
+      const template = templates.find(t => t.id === templateId);
+      if (template) {
+        setSelectedTemplate(template);
+        setIsInfoExpanded(false);
+      }
+    }
+  }, [searchParams, templates]);
 
   // Create Template Modal
   const [showCreateModal, setShowCreateModal] = useState(false);

@@ -7,6 +7,7 @@ import { ChevronLeft, ChevronRight, Star, ArrowRight } from "lucide-react";
 import { viewTemplate } from "@/services/contentApi";
 import { MarketplaceTemplate } from "@/services/marketplaceApi"; // Import new type
 import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
 
 interface RecommendedTemplatesProps {
   templates?: MarketplaceTemplate[]; // Changed prop
@@ -69,7 +70,18 @@ export function RecommendedTemplates({ templates = [] }: RecommendedTemplatesPro
                       className="bg-white text-black hover:bg-zinc-200 h-8 text-xs font-semibold"
                       onClick={() => {
                         viewTemplate(template.id);
-                        navigate('/creator/studio', { state: { view: 'create', selectedTemplate: template } });
+                        
+                        const isFree = (template.price === 0 || !template.price) && (template.tokens_cost === 0 || !template.tokens_cost);
+                        const canUse = template.is_owned || isFree;
+
+                        if (canUse) {
+                          navigate('/creator/studio', { state: { view: 'create', selectedTemplate: template } });
+                        } else {
+                          toast.info("Purchase template to use", {
+                            description: `This style costs ${template.tokens_cost || template.price} tokens. Redirecting to marketplace...`
+                          });
+                          navigate(`/creator/marketplace?templateId=${template.id}`);
+                        }
                       }}
                     >
                       Use Template

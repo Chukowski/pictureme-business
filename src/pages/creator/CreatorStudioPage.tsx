@@ -1152,6 +1152,19 @@ function CreatorStudioPageContent({ defaultView }: CreatorStudioPageProps) {
     };
 
     const applyTemplate = (tpl: MarketplaceTemplate) => {
+        // Final safeguard: Check if template is usable (free, owned, or creator)
+        const isFree = (tpl.price === 0 || !tpl.price) && (tpl.tokens_cost === 0 || !tpl.tokens_cost);
+        const isCreator = tpl.creator_id === currentUser?.id;
+        const canUse = tpl.is_owned || isFree || isCreator;
+
+        if (!canUse) {
+            toast.error("Purchase template to use", {
+                description: `This style costs ${tpl.tokens_cost || tpl.price} tokens. Redirecting to marketplace...`
+            });
+            navigate(`/creator/marketplace?templateId=${tpl.id}`);
+            return;
+        }
+
         setSelectedTemplate(tpl);
         setPrompt(tpl.prompt || "");
 

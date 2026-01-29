@@ -586,7 +586,7 @@ export default function CreatorDashboard() {
 
           {/* Left Column: Featured Style (1 Col) */}
           <div className="lg:col-span-1 h-full">
-            <FeaturedStyleCard navigate={navigate} templates={featuredTemplates} />
+            <FeaturedStyleCard navigate={navigate} templates={featuredTemplates} user={user} />
           </div>
 
           {/* Middle Column: Recent Creations & Marketplace (2 Cols) */}
@@ -959,8 +959,23 @@ function getFeaturedTemplates(templates: MarketplaceTemplate[], adminFeatured: F
   return unique.slice(0, 5);
 }
 
-function FeaturedStyleCard({ navigate, templates }: { navigate: (p: string, options?: any) => void, templates: MarketplaceTemplate[] }) {
+function FeaturedStyleCard({ navigate, templates, user }: { navigate: (p: string, options?: any) => void, templates: MarketplaceTemplate[], user: User | null }) {
   const [currentIndex, setCurrentIndex] = useState(0);
+
+  const handleUseStyle = (template: MarketplaceTemplate) => {
+    const isFree = (template.price === 0 || !template.price) && (template.tokens_cost === 0 || !template.tokens_cost);
+    const isCreator = template.creator_id === user?.id;
+    const canUse = template.is_owned || isFree || isCreator;
+
+    if (canUse) {
+      navigate('/creator/studio?view=create', { state: { view: 'create', selectedTemplate: template } });
+    } else {
+      toast.info("Purchase template to use", {
+        description: `This style costs ${template.tokens_cost || template.price} tokens. Redirecting to marketplace...`
+      });
+      navigate(`/creator/marketplace?templateId=${template.id}`);
+    }
+  };
 
   // Rotate templates every 8 seconds
   useEffect(() => {
@@ -986,7 +1001,7 @@ function FeaturedStyleCard({ navigate, templates }: { navigate: (p: string, opti
   return (
     <div
       className="group relative w-full h-[240px] md:h-full md:min-h-[400px] rounded-2xl overflow-hidden cursor-pointer border border-white/10 bg-card shadow-xl shadow-black/40 transition-all hover:border-white/20 select-none"
-      onClick={() => navigate('/creator/studio?view=create', { state: { view: 'create', selectedTemplate: template } })}
+      onClick={() => handleUseStyle(template)}
     >
       {/* Background Image with Crossfade Transition */}
       <AnimatePresence mode="wait">
