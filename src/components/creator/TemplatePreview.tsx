@@ -75,7 +75,7 @@ export function TemplatePreview({ formData, currentStep }: TemplatePreviewProps)
                         )}
                         {hasTokenPrice && (
                             <div className="flex items-center gap-1.5 bg-purple-500/20 backdrop-blur-md px-2 py-1 rounded-full border border-purple-500/30">
-                                <span className="text-[10px] font-bold text-purple-400">{formData.tokens_cost}</span>
+                                <span className="text-[10px] font-bold text-purple-400">{formData.tokens_cost} tokens</span>
                                 <div className="w-2 h-2 rounded-full bg-purple-400 shadow-[0_0_8px_rgba(168,85,247,0.5)]" />
                             </div>
                         )}
