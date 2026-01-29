@@ -63,9 +63,30 @@ export function TemplateEditor() {
     const [currentStep, setCurrentStep] = useState('setup');
     const [lastSaved, setLastSaved] = useState<Date | null>(null);
     const [useWorkflow, setUseWorkflow] = useState(false);
+    const [wasRestored, setWasRestored] = useState(false);
 
     const [formData, setFormData] = useState<Partial<MarketplaceTemplate>>(() => {
-        // Try to recover state from location if available immediately
+        // Try to recover from localStorage first (in case of refresh)
+        const localStorageKey = `template-draft-${templateId || 'new'}`;
+        const savedDraft = localStorage.getItem(localStorageKey);
+        
+        if (savedDraft) {
+            try {
+                const parsed = JSON.parse(savedDraft);
+                console.log('📦 Restored template from localStorage:', parsed.name);
+                setWasRestored(true);
+                setTimeout(() => {
+                    toast.success(`Restored draft: "${parsed.name}"`, {
+                        description: "Your work was automatically saved"
+                    });
+                }, 500);
+                return parsed;
+            } catch (e) {
+                console.error('Failed to parse saved draft:', e);
+            }
+        }
+
+        // Then try to recover state from location if available immediately
         const state = window.history.state?.usr as any;
         const initialData: Partial<MarketplaceTemplate> = {
             name: "",
@@ -168,6 +189,14 @@ export function TemplateEditor() {
 
     const lastDraftSaved = useRef<string>("");
 
+    // Save to localStorage whenever formData changes (for refresh recovery)
+    useEffect(() => {
+        if (formData.name && formData.name.trim()) {
+            const localStorageKey = `template-draft-${formData.id || 'new'}`;
+            localStorage.setItem(localStorageKey, JSON.stringify(formData));
+        }
+    }, [formData]);
+
     // Auto-save logic (debounced) - only after user interaction
     useEffect(() => {
         // Skip auto-save on initial mount or if loading
@@ -198,17 +227,33 @@ export function TemplateEditor() {
             
             let result;
             if (formData.id) {
+                // Always update existing draft - never create new
                 result = await updateMarketplaceTemplate(formData.id, formData);
+                if (!isAutoSave) {
+                    console.log('✅ Updated existing draft:', formData.id);
+                }
             } else {
+                // Create new draft only if no ID exists
                 result = await submitMarketplaceTemplate({ ...formData, status: 'draft' });
-                // If new, update URL to edit mode
+                console.log('✅ Created new draft:', result.id);
+                
+                // Update formData with the new ID so subsequent saves update instead of create
                 setFormData(result);
+                
+                // Update URL to edit mode and localStorage key
                 window.history.replaceState(null, '', `/creator/templates/${result.id}/edit`);
+                
+                // Migrate localStorage to use the new ID
+                const oldKey = 'template-draft-new';
+                const newKey = `template-draft-${result.id}`;
+                localStorage.removeItem(oldKey);
+                localStorage.setItem(newKey, JSON.stringify(result));
             }
             
             setLastSaved(new Date());
             if (!isAutoSave) toast.success("Draft saved");
         } catch (error) {
+            console.error('Failed to save draft:', error);
             if (!isAutoSave) toast.error("Failed to save draft");
         } finally {
             if (!isAutoSave) setIsSaving(false);
@@ -231,6 +276,10 @@ export function TemplateEditor() {
                 await submitMarketplaceTemplate(dataToSubmit);
             }
             
+            // Clear localStorage on successful submission
+            const localStorageKey = `template-draft-${formData.id || 'new'}`;
+            localStorage.removeItem(localStorageKey);
+            
             toast.success("Template submitted for review!");
             navigate("/creator/templates");
         } catch (error: any) {
@@ -240,6 +289,34 @@ export function TemplateEditor() {
             setIsSaving(false);
         }
     };
+
+    // Cleanup localStorage when component unmounts
+    useEffect(() => {
+        return () => {
+            // Only clean up if navigating away (not refreshing)
+            if (performance.navigation.type !== 1) {
+                const localStorageKey = `template-draft-${formData.id || 'new'}`;
+                // Only remove if it's been more than 1 minute since last save
+                const savedData = localStorage.getItem(localStorageKey);
+                if (savedData) {
+                    try {
+                        const parsed = JSON.parse(savedData);
+                        const lastModified = new Date(parsed.updated_at || Date.now());
+                        const now = new Date();
+                        const minutesSinceLastSave = (now.getTime() - lastModified.getTime()) / 1000 / 60;
+                        
+                        // Keep draft in localStorage for quick recovery if recently modified
+                        if (minutesSinceLastSave > 1) {
+                            localStorage.removeItem(localStorageKey);
+                        }
+                    } catch (e) {
+                        // If parse fails, just remove it
+                        localStorage.removeItem(localStorageKey);
+                    }
+                }
+            }
+        };
+    }, [formData.id]);
 
     const renderStepContent = () => {
         switch (currentStep) {
