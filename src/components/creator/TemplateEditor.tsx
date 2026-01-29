@@ -61,41 +61,64 @@ export function TemplateEditor() {
     const [currentStep, setCurrentStep] = useState('setup');
     const [lastSaved, setLastSaved] = useState<Date | null>(null);
 
-    const [formData, setFormData] = useState<Partial<MarketplaceTemplate>>({
-        name: "",
-        description: "",
-        template_type: "individual",
-        media_type: "image",
-        category: "General",
-        tags: [],
-        backgrounds: [],
-        preview_images: [],
-        prompt: "",
-        negative_prompt: "",
-        price: 0,
-        tokens_cost: 2,
-        is_public: true,
-        is_adult: false,
-        status: 'draft',
-        pipeline_config: {
-            imageModel: 'seedream-t2i',
-            faceswapEnabled: false,
-            videoEnabled: false,
-        },
-        business_config: {
-            include_header: true,
-            include_branding: true,
-            include_tagline: false,
-            include_watermark: false,
-            campaign_text: '',
-            access_overrides: {
-                leadCaptureRequired: false,
-                requirePayment: false,
-                hardWatermark: false,
-                disableDownloads: false,
-                allowFreePreview: true,
+    const [formData, setFormData] = useState<Partial<MarketplaceTemplate>>(() => {
+        // Try to recover state from location if available immediately
+        const state = window.history.state?.usr as any;
+        const initialData: Partial<MarketplaceTemplate> = {
+            name: "",
+            description: "",
+            template_type: "individual",
+            media_type: "image",
+            category: "General",
+            tags: [],
+            backgrounds: [],
+            preview_images: [],
+            prompt: "",
+            negative_prompt: "",
+            price: 0,
+            tokens_cost: 2,
+            is_public: true,
+            is_adult: false,
+            status: 'draft',
+            pipeline_config: {
+                imageModel: 'seedream-t2i',
+                faceswapEnabled: false,
+                videoEnabled: false,
+            },
+            business_config: {
+                include_header: true,
+                include_branding: true,
+                include_tagline: false,
+                include_watermark: false,
+                campaign_text: '',
+                access_overrides: {
+                    leadCaptureRequired: false,
+                    requirePayment: false,
+                    hardWatermark: false,
+                    disableDownloads: false,
+                    allowFreePreview: true,
+                }
             }
+        };
+
+        if (state?.action === 'create_template' && state?.creation) {
+            const { creation } = state;
+            return {
+                ...initialData,
+                name: creation.prompt ? (creation.prompt.substring(0, 30) + '...') : 'New Template',
+                description: creation.prompt || '',
+                prompt: creation.prompt || '',
+                backgrounds: [creation.url],
+                preview_url: creation.url,
+                preview_images: [creation.url],
+                is_adult: creation.is_adult || false,
+                pipeline_config: {
+                    ...initialData.pipeline_config,
+                    imageModel: creation.model_id || creation.model || 'seedream-t2i',
+                }
+            };
         }
+        return initialData;
     });
 
     const autoSaveTimer = useRef<any>(null);
@@ -121,33 +144,32 @@ export function TemplateEditor() {
         }
     };
 
+    const isProcessingRef = useRef(false);
+    const isInitialMount = useRef(true);
+    const hasUserInteracted = useRef(false);
+
     useEffect(() => {
-        // Handle incoming data from gallery conversion
+        // Clear history state immediately to prevent re-processing on re-renders/back navigation
         const state = location.state as any;
         if (state?.action === 'create_template' && state?.creation) {
-            const { creation } = state;
-            setFormData(prev => ({
-                ...prev,
-                name: creation.prompt ? (creation.prompt.substring(0, 30) + '...') : 'New Template',
-                description: creation.prompt || '',
-                prompt: creation.prompt || '',
-                backgrounds: [creation.url],
-                preview_url: creation.url,
-                preview_images: [creation.url],
-                is_adult: creation.is_adult || false,
-                pipeline_config: {
-                    ...prev.pipeline_config,
-                    imageModel: creation.model_id || creation.model || 'seedream-t2i',
-                }
-            }));
+            window.history.replaceState({}, document.title);
         }
+        
+        // Mark as not initial mount after first render
+        const timer = setTimeout(() => {
+            isInitialMount.current = false;
+        }, 1000);
+        
+        return () => clearTimeout(timer);
     }, [location]);
 
     const lastDraftSaved = useRef<string>("");
 
-    // Auto-save logic (debounced)
+    // Auto-save logic (debounced) - only after user interaction
     useEffect(() => {
-        if (!formData.name || isLoading || formData.status === 'published') return;
+        // Skip auto-save on initial mount or if loading
+        if (isInitialMount.current || !hasUserInteracted.current || isLoading) return;
+        if (!formData.name || formData.status === 'published') return;
 
         const currentDataStr = JSON.stringify(formData);
         if (currentDataStr === lastDraftSaved.current) return;
@@ -166,7 +188,10 @@ export function TemplateEditor() {
         if (!formData.name) return;
         
         try {
-            if (!isAutoSave) setIsSaving(true);
+            if (!isAutoSave) {
+                setIsSaving(true);
+                hasUserInteracted.current = true; // Mark as interacted when manually saving
+            }
             
             let result;
             if (formData.id) {
@@ -229,8 +254,11 @@ export function TemplateEditor() {
                                         <Label htmlFor="name">Template Name</Label>
                                         <Input
                                             id="name"
-                                            value={formData.name}
-                                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                            value={formData.name || ""}
+                                            onChange={(e) => {
+                                                hasUserInteracted.current = true;
+                                                setFormData({ ...formData, name: e.target.value });
+                                            }}
                                             placeholder="Retro Cyberpunk Style"
                                         />
                                     </div>
@@ -238,7 +266,7 @@ export function TemplateEditor() {
                                         <Label htmlFor="category">Category</Label>
                                         <select
                                             id="category"
-                                            value={formData.category}
+                                            value={formData.category || "General"}
                                             onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                                             className="w-full h-10 px-3 rounded-md border border-border bg-background text-sm"
                                         >
@@ -254,8 +282,11 @@ export function TemplateEditor() {
                                     <Label htmlFor="description">Description</Label>
                                     <Textarea
                                         id="description"
-                                        value={formData.description}
-                                        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                                        value={formData.description || ""}
+                                        onChange={(e) => {
+                                            hasUserInteracted.current = true;
+                                            setFormData({ ...formData, description: e.target.value });
+                                        }}
                                         placeholder="Briefly describe what this template does..."
                                         className="h-20 resize-none"
                                     />
@@ -361,7 +392,7 @@ export function TemplateEditor() {
                                                     type="number"
                                                     min={1}
                                                     max={50}
-                                                    value={formData.tokens_cost}
+                                                    value={formData.tokens_cost || 2}
                                                     onChange={(e) => setFormData({ ...formData, tokens_cost: parseInt(e.target.value) || 1 })}
                                                     className="w-24 h-8 text-xs"
                                                 />
@@ -380,7 +411,7 @@ export function TemplateEditor() {
                                                         type="number"
                                                         min={0.50}
                                                         step={0.01}
-                                                        value={formData.price}
+                                                        value={formData.price || 0}
                                                         onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })}
                                                         className="w-28 h-8 pl-7 text-xs"
                                                     />
@@ -426,7 +457,7 @@ export function TemplateEditor() {
                                 <div className="space-y-2">
                                     <Label>Primary Prompt</Label>
                                     <Textarea
-                                        value={formData.prompt}
+                                        value={formData.prompt || ""}
                                         onChange={(e) => setFormData({ ...formData, prompt: e.target.value })}
                                         placeholder="Cyberpunk city with neon lights..."
                                         className="h-24 font-mono text-xs"
@@ -435,7 +466,7 @@ export function TemplateEditor() {
                                 <div className="space-y-2">
                                     <Label>Negative Prompt (Optional)</Label>
                                     <Textarea
-                                        value={formData.negative_prompt}
+                                        value={formData.negative_prompt || ""}
                                         onChange={(e) => setFormData({ ...formData, negative_prompt: e.target.value })}
                                         placeholder="blurry, distorted, low quality..."
                                         className="h-20 font-mono text-xs opacity-70"

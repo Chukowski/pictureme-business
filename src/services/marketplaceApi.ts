@@ -170,3 +170,14 @@ export async function updateMarketplaceTemplate(id: string, template: Partial<Ma
     }
     return response.json();
 }
+
+export async function deleteMarketplaceTemplate(id: string): Promise<void> {
+    const response = await fetchWithAuth(`${getApiUrl()}/api/marketplace/templates/${id}`, {
+        method: 'DELETE'
+    });
+
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to delete template');
+    }
+}
