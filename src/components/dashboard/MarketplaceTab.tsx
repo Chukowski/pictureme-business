@@ -1161,7 +1161,15 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
                   <div className="bg-white/5 border border-white/5 rounded-2xl p-3">
                     <span className="text-[7px] font-black text-zinc-500 uppercase tracking-widest block mb-1">Cost</span>
                     <span className="text-[10px] font-bold text-[#D1F349] uppercase">
-                      {selectedTemplate.price === 0 ? 'Free' : `${selectedTemplate.price} Tokens`}
+                      {(() => {
+                        const tokenCost = selectedTemplate.tokens_cost ?? 0;
+                        const moneyCost = selectedTemplate.price ?? 0;
+                        if (tokenCost === 0 && moneyCost === 0) return 'Free';
+                        const parts = [];
+                        if (tokenCost > 0) parts.push(`${tokenCost} Tokens`);
+                        if (moneyCost > 0) parts.push(`$${moneyCost}`);
+                        return parts.join(' + ');
+                      })()}
                     </span>
                   </div>
                 </div>

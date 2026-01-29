@@ -45,6 +45,10 @@ export function RecommendedTemplates({ templates = [] }: RecommendedTemplatesPro
 
           const name = template.name || template.template_name || 'Featured Style';
           const category = template.category || template.template_type || 'Style';
+          
+          const tokenCost = template.tokens_cost ?? 0;
+          const moneyCost = template.price ?? 0;
+          const isFree = tokenCost === 0 && moneyCost === 0;
 
           return (
             <div key={template.id} className="min-w-[200px] snap-start h-full">
@@ -54,6 +58,25 @@ export function RecommendedTemplates({ templates = [] }: RecommendedTemplatesPro
                   style={{ backgroundImage: `url(${thumb})` }}
                 >
                   <div className="absolute inset-0 bg-gradient-to-t from-[#101112]/90 via-transparent to-transparent opacity-80" />
+                  
+                  {/* Cost Badge */}
+                  <div className="absolute top-3 left-3 flex flex-wrap gap-2">
+                    {isFree ? (
+                      <span className="px-2 py-0.5 rounded-lg bg-emerald-500/90 text-black text-[10px] font-black uppercase tracking-wider shadow-lg">
+                        Free
+                      </span>
+                    ) : (
+                      <span className="px-2 py-0.5 rounded-lg bg-[#D1F349]/90 text-black text-[10px] font-black uppercase tracking-wider shadow-lg flex items-center gap-1">
+                        {(() => {
+                          const parts = [];
+                          if (tokenCost > 0) parts.push(`${tokenCost} Tokens`);
+                          if (moneyCost > 0) parts.push(`$${moneyCost}`);
+                          return parts.join(' + ');
+                        })()}
+                      </span>
+                    )}
+                  </div>
+
                   <div className="absolute bottom-3 left-3 right-3">
                     <h4 className="text-sm font-bold text-white truncate leading-tight">{name}</h4>
                     <div className="flex items-center gap-2 mt-1">

@@ -30,6 +30,7 @@ export interface MarketplaceTemplate {
     media_type?: "image" | "video";
     template_type?: "individual" | "business";
     price?: number;
+    tokens_cost?: number;
     category?: string;
     is_public?: boolean;
     tags?: string[];
@@ -354,6 +355,27 @@ export function TemplateLibrary({
                                             </div>
                                         )}
                                         <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent opacity-60 group-hover:opacity-80 transition-opacity" />
+                                        
+                                        {/* Cost Badge */}
+                                        <div className="absolute top-3 left-3 flex flex-wrap gap-2 z-20">
+                                            {(() => {
+                                                const tokenCost = t.tokens_cost ?? 0;
+                                                const moneyCost = t.price ?? 0;
+                                                if (tokenCost === 0 && moneyCost === 0) {
+                                                    return (
+                                                        <span className="px-2 py-0.5 rounded-lg bg-emerald-500 text-black text-[8px] font-black uppercase tracking-wider shadow-lg">
+                                                            Free
+                                                        </span>
+                                                    );
+                                                }
+                                                return (
+                                                    <span className="px-2 py-0.5 rounded-lg bg-[#D1F349] text-black text-[8px] font-black uppercase tracking-wider shadow-lg">
+                                                        {tokenCost > 0 ? `${tokenCost} Tokens` : `$${moneyCost}`}
+                                                    </span>
+                                                );
+                                            })()}
+                                        </div>
+
                                         <div className="absolute inset-x-0 bottom-0 p-4 transform transition-transform duration-500">
                                             <h3 className="text-white font-black text-[12px] uppercase tracking-wider mb-0.5 line-clamp-1 group-hover:line-clamp-none group-hover:text-[#D1F349] transition-colors">
                                                 {t.name}
@@ -420,7 +442,15 @@ export function TemplateLibrary({
                                     </span>
                                     <span className="w-1 h-1 rounded-full bg-zinc-800" />
                                     <span className="text-[8px] font-bold text-[#D1F349] uppercase tracking-tighter">
-                                        {selectedTemplate?.price === 0 || !selectedTemplate?.price ? 'Free Style' : `${selectedTemplate.price} Tokens`}
+                                        {(() => {
+                                            const tokenCost = selectedTemplate?.tokens_cost ?? 0;
+                                            const moneyCost = selectedTemplate?.price ?? 0;
+                                            if (tokenCost === 0 && moneyCost === 0) return 'Free Style';
+                                            const parts = [];
+                                            if (tokenCost > 0) parts.push(`${tokenCost} Tokens`);
+                                            if (moneyCost > 0) parts.push(`$${moneyCost}`);
+                                            return parts.join(' + ');
+                                        })()}
                                     </span>
                                 </div>
                             </div>
@@ -461,7 +491,15 @@ export function TemplateLibrary({
                                 <div className="bg-white/5 border border-white/5 rounded-2xl p-3">
                                     <span className="text-[7px] font-black text-zinc-500 uppercase tracking-widest block mb-1">Cost</span>
                                     <span className="text-[10px] font-bold text-[#D1F349] uppercase">
-                                        {selectedTemplate?.price === 0 || !selectedTemplate?.price ? 'Free' : `${selectedTemplate.price} Tokens`}
+                                        {(() => {
+                                            const tokenCost = selectedTemplate?.tokens_cost ?? 0;
+                                            const moneyCost = selectedTemplate?.price ?? 0;
+                                            if (tokenCost === 0 && moneyCost === 0) return 'Free';
+                                            const parts = [];
+                                            if (tokenCost > 0) parts.push(`${tokenCost} Tokens`);
+                                            if (moneyCost > 0) parts.push(`$${moneyCost}`);
+                                            return parts.join(' + ');
+                                        })()}
                                     </span>
                                 </div>
                             </div>

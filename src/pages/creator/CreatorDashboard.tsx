@@ -998,6 +998,10 @@ function FeaturedStyleCard({ navigate, templates, user }: { navigate: (p: string
   // Attempt to use creator avatar if available on the template object (depends on API)
   const creatorAvatar = (template as any).creator?.avatar_url;
 
+  const tokenCost = template.tokens_cost ?? 0;
+  const moneyCost = template.price ?? 0;
+  const isFree = tokenCost === 0 && moneyCost === 0;
+
   return (
     <div
       className="group relative w-full h-[240px] md:h-full md:min-h-[400px] rounded-2xl overflow-hidden cursor-pointer border border-white/10 bg-card shadow-xl shadow-black/40 transition-all hover:border-white/20 select-none"
@@ -1023,6 +1027,24 @@ function FeaturedStyleCard({ navigate, templates, user }: { navigate: (p: string
 
       {/* Overlays */}
       <div className="absolute inset-0 bg-gradient-to-t from-[#101112] via-[#101112]/40 to-transparent opacity-90 z-10"></div>
+
+      {/* Cost Badge (Top Right) */}
+      <div className="absolute top-4 right-4 z-30">
+        {isFree ? (
+          <span className="px-3 py-1 rounded-full bg-emerald-500 text-black text-[10px] font-black uppercase tracking-wider shadow-lg">
+            Free
+          </span>
+        ) : (
+          <span className="px-3 py-1 rounded-full bg-[#D1F349] text-black text-[10px] font-black uppercase tracking-wider shadow-lg">
+            {(() => {
+              const parts = [];
+              if (tokenCost > 0) parts.push(`${tokenCost} Tokens`);
+              if (moneyCost > 0) parts.push(`$${moneyCost}`);
+              return parts.join(' + ');
+            })()}
+          </span>
+        )}
+      </div>
 
       {/* Progress Indicators (if multiple) */}
       {templates.length > 1 && (
