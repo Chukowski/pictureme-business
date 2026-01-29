@@ -1,64 +1,5 @@
 import { ENV } from "@/config/env";
 
-// Workflow Step Types
-export type WorkflowStepType = 
-    | 'text-to-image'      // Generate image from prompt
-    | 'image-to-image'     // Edit/transform existing image
-    | 'faceswap'           // Apply face swap
-    | 'image-to-video'     // Animate image to video
-    | 'video-to-video'     // Motion control, extend, etc
-    | 'text-to-video';     // Generate video from prompt
-
-export interface WorkflowStep {
-    id: string;
-    type: WorkflowStepType;
-    name: string;
-    description?: string;
-    model: string;              // Model shortId (e.g., 'seedream-t2i', 'flux-realism', 'nano-banana', 'veo-3.1')
-    prompt?: string;
-    negative_prompt?: string;
-    reference_images?: string[]; // URLs to reference images/backgrounds
-    reference_elements?: string[]; // URLs to elements/assets
-    settings?: {
-        strength?: number;      // For i2i, i2v
-        faceswapEnabled?: boolean;
-        aspectRatio?: string;
-        duration?: number;      // For video (in seconds)
-        fps?: number;           // For video
-        motion_intensity?: number; // For video motion control
-    };
-    // Output from this step becomes input for next step
-    output_key?: string;
-}
-
-export interface WorkflowPipeline {
-    steps: WorkflowStep[];
-    // Final output configuration
-    final_output: {
-        type: 'image' | 'video';
-        preview_url: string;    // The showcase/demo result
-        preview_images: string[]; // Multiple preview angles/variations
-    };
-}
-
-export interface PipelineConfig {
-    // Simple mode (backwards compatible)
-    imageModel?: string;
-    videoModel?: string;
-    faceswapEnabled?: boolean;
-    videoEnabled?: boolean;
-    
-    // Advanced mode (workflow)
-    workflow?: WorkflowPipeline;
-    
-    // Asset library for this template
-    assets?: {
-        backgrounds: string[];   // Original backgrounds used
-        elements: string[];      // Original elements/overlays used
-        reference_images: string[]; // Other reference images
-    };
-}
-
 export interface MarketplaceTemplate {
     id: string;
     _rev?: string;
@@ -83,7 +24,7 @@ export interface MarketplaceTemplate {
     is_owned?: boolean;
     prompt?: string;
     negative_prompt?: string;
-    pipeline_config?: PipelineConfig;
+    pipeline_config?: any;
     business_config?: any;
     creator?: {
         id: string;
@@ -228,15 +169,4 @@ export async function updateMarketplaceTemplate(id: string, template: Partial<Ma
         throw new Error(error.error || 'Failed to update template');
     }
     return response.json();
-}
-
-export async function deleteMarketplaceTemplate(id: string): Promise<void> {
-    const response = await fetchWithAuth(`${getApiUrl()}/api/marketplace/templates/${id}`, {
-        method: 'DELETE'
-    });
-
-    if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to delete template');
-    }
 }

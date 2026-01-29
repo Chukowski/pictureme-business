@@ -336,6 +336,192 @@ export function TemplateEditor() {
                             </CardContent>
                         </Card>
 
+                        {/* Preview & Cover Image Selection */}
+                        <Card className="border-border/40 shadow-sm bg-card/30 backdrop-blur-sm">
+                            <CardHeader>
+                                <CardTitle className="text-xl flex items-center gap-2">
+                                    <ImageIcon className="w-5 h-5 text-purple-500" />
+                                    Preview & Cover
+                                </CardTitle>
+                                <CardDescription>Choose what image represents your template</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div className="space-y-3">
+                                    <Label className="text-sm font-bold">Cover Image Options</Label>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                        {/* Option 1: Use gallery image as-is */}
+                                        {formData.preview_images && formData.preview_images[0] && (
+                                            <button
+                                                onClick={() => setFormData({
+                                                    ...formData,
+                                                    preview_url: formData.preview_images[0]
+                                                })}
+                                                className={cn(
+                                                    "relative group overflow-hidden rounded-lg border-2 transition-all aspect-[9/16]",
+                                                    formData.preview_url === formData.preview_images[0]
+                                                        ? "border-purple-500 ring-2 ring-purple-500/20"
+                                                        : "border-white/10 hover:border-purple-500/50"
+                                                )}
+                                            >
+                                                <img
+                                                    src={formData.preview_images[0]}
+                                                    alt="Gallery result"
+                                                    className="w-full h-full object-cover"
+                                                />
+                                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                                                <div className="absolute bottom-2 left-2 right-2">
+                                                    <Badge className="bg-purple-500/90 text-white text-[10px]">
+                                                        Final Result
+                                                    </Badge>
+                                                    <p className="text-[10px] text-white/90 mt-1">Use the generated image</p>
+                                                </div>
+                                                {formData.preview_url === formData.preview_images[0] && (
+                                                    <div className="absolute top-2 right-2">
+                                                        <div className="w-6 h-6 rounded-full bg-purple-500 flex items-center justify-center">
+                                                            <Sparkles className="w-3 h-3 text-white" />
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </button>
+                                        )}
+
+                                        {/* Option 2: Use custom background */}
+                                        <button
+                                            onClick={() => {
+                                                // Open media library to select custom preview
+                                                const input = document.createElement('input');
+                                                input.type = 'file';
+                                                input.accept = 'image/*';
+                                                input.onchange = (e: any) => {
+                                                    const file = e.target?.files?.[0];
+                                                    if (file) {
+                                                        const reader = new FileReader();
+                                                        reader.onload = (event) => {
+                                                            const dataUrl = event.target?.result as string;
+                                                            setFormData({
+                                                                ...formData,
+                                                                preview_url: dataUrl,
+                                                                backgrounds: [...(formData.backgrounds || []), dataUrl]
+                                                            });
+                                                        };
+                                                        reader.readAsDataURL(file);
+                                                    }
+                                                };
+                                                input.click();
+                                            }}
+                                            className={cn(
+                                                "relative group overflow-hidden rounded-lg border-2 transition-all aspect-[9/16] flex flex-col items-center justify-center gap-2",
+                                                formData.preview_url && formData.preview_url !== formData.preview_images?.[0]
+                                                    ? "border-purple-500 ring-2 ring-purple-500/20"
+                                                    : "border-dashed border-white/20 hover:border-purple-500/50 bg-white/5"
+                                            )}
+                                        >
+                                            {formData.preview_url && formData.preview_url !== formData.preview_images?.[0] ? (
+                                                <>
+                                                    <img
+                                                        src={formData.preview_url}
+                                                        alt="Custom preview"
+                                                        className="w-full h-full object-cover"
+                                                    />
+                                                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                                                    <div className="absolute bottom-2 left-2 right-2">
+                                                        <Badge className="bg-amber-500/90 text-white text-[10px]">
+                                                            Custom Preview
+                                                        </Badge>
+                                                        <p className="text-[10px] text-white/90 mt-1">Your selected image</p>
+                                                    </div>
+                                                    <div className="absolute top-2 right-2">
+                                                        <div className="w-6 h-6 rounded-full bg-purple-500 flex items-center justify-center">
+                                                            <Sparkles className="w-3 h-3 text-white" />
+                                                        </div>
+                                                    </div>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Plus className="w-8 h-8 text-purple-400" />
+                                                    <div className="text-center px-4">
+                                                        <p className="text-xs font-medium text-purple-300">Upload Custom</p>
+                                                        <p className="text-[10px] text-zinc-500 mt-1">
+                                                            Use a different image as preview
+                                                        </p>
+                                                    </div>
+                                                </>
+                                            )}
+                                        </button>
+                                    </div>
+
+                                    <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3">
+                                        <div className="flex items-start gap-2">
+                                            <Info className="w-4 h-4 text-blue-400 mt-0.5 flex-shrink-0" />
+                                            <div className="text-[10px] text-blue-300/90 leading-relaxed">
+                                                <p className="font-medium mb-1">💡 Pro Tip</p>
+                                                <p>You can showcase your <strong>best result</strong> as the preview while keeping the original backgrounds and prompts for users to customize.</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Additional Preview Images */}
+                                <div className="space-y-2 pt-2 border-t border-white/5">
+                                    <div className="flex items-center justify-between">
+                                        <Label className="text-xs">Additional Preview Images</Label>
+                                        <Badge variant="outline" className="text-[9px]">
+                                            {formData.preview_images?.length || 0} images
+                                        </Badge>
+                                    </div>
+                                    <p className="text-[10px] text-zinc-500">
+                                        Show multiple variations or angles of your template
+                                    </p>
+                                    <div className="flex flex-wrap gap-2">
+                                        {formData.preview_images?.map((img, idx) => (
+                                            <div key={idx} className="relative group">
+                                                <img
+                                                    src={img}
+                                                    alt={`Preview ${idx + 1}`}
+                                                    className="w-16 h-24 object-cover rounded-lg border border-white/10"
+                                                />
+                                                <button
+                                                    onClick={() => setFormData({
+                                                        ...formData,
+                                                        preview_images: formData.preview_images?.filter((_, i) => i !== idx)
+                                                    })}
+                                                    className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-500 text-white opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                                                >
+                                                    <X className="w-3 h-3" />
+                                                </button>
+                                            </div>
+                                        ))}
+                                        <button
+                                            onClick={() => {
+                                                const input = document.createElement('input');
+                                                input.type = 'file';
+                                                input.accept = 'image/*';
+                                                input.multiple = true;
+                                                input.onchange = (e: any) => {
+                                                    const files = Array.from(e.target?.files || []);
+                                                    files.forEach((file: any) => {
+                                                        const reader = new FileReader();
+                                                        reader.onload = (event) => {
+                                                            const dataUrl = event.target?.result as string;
+                                                            setFormData({
+                                                                ...formData,
+                                                                preview_images: [...(formData.preview_images || []), dataUrl]
+                                                            });
+                                                        };
+                                                        reader.readAsDataURL(file);
+                                                    });
+                                                };
+                                                input.click();
+                                            }}
+                                            className="w-16 h-24 rounded-lg border-2 border-dashed border-white/20 hover:border-purple-500/50 flex items-center justify-center transition-all bg-white/5 hover:bg-purple-500/10"
+                                        >
+                                            <Plus className="w-6 h-6 text-purple-400" />
+                                        </button>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+
                         <Card className="border-border/40 shadow-sm bg-card/30 backdrop-blur-sm">
                             <CardHeader>
                                 <CardTitle className="text-xl flex items-center gap-2">

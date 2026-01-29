@@ -36,7 +36,6 @@ interface BoothEditorLayoutProps {
     backUrl?: string;
     backLabel?: string;
     headerActions?: ReactNode;
-    sidebarFooter?: ReactNode;
 }
 
 export function BoothEditorLayout({
@@ -53,8 +52,7 @@ export function BoothEditorLayout({
     steps: customSteps,
     backUrl = '/creator/booth',
     backLabel = 'My Booths',
-    headerActions,
-    sidebarFooter
+    headerActions
 }: BoothEditorLayoutProps) {
     const navigate = useNavigate();
     const [previewDevice, setPreviewDevice] = useState<'mobile' | 'tablet' | 'desktop'>('mobile');
@@ -150,25 +148,21 @@ export function BoothEditorLayout({
                 </div>
             </div>
 
-            {/* Sidebar Footer (Custom or Default Quick Share) */}
-            {sidebarFooter ? (
-                sidebarFooter
-            ) : (
-                <div className="p-4 border-y border-white/5 mt-4">
-                    <div className="bg-gradient-to-br from-indigo-900/20 to-purple-900/20 border border-indigo-500/20 rounded-xl p-4">
-                        <h3 className="text-xs font-medium text-indigo-200 mb-1 flex items-center gap-2">
-                            <Share2 className="w-3 h-3" />
-                            Share Your Booth
-                        </h3>
-                        <p className="text-[10px] text-indigo-300/70 mb-3 leading-relaxed">
-                            Copy your booth link and share it with friends!
-                        </p>
-                        <Button size="sm" variant="secondary" className="w-full h-7 text-[10px] bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 border border-indigo-500/20">
-                            Copy Booth Link
-                        </Button>
-                    </div>
+            {/* Quick Share Box */}
+            <div className="p-4 border-y border-white/5 mt-4">
+                <div className="bg-gradient-to-br from-indigo-900/20 to-purple-900/20 border border-indigo-500/20 rounded-xl p-4">
+                    <h3 className="text-xs font-medium text-indigo-200 mb-1 flex items-center gap-2">
+                        <Share2 className="w-3 h-3" />
+                        Share Your Booth
+                    </h3>
+                    <p className="text-[10px] text-indigo-300/70 mb-3 leading-relaxed">
+                        Copy your booth link and share it with friends!
+                    </p>
+                    <Button size="sm" variant="secondary" className="w-full h-7 text-[10px] bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 border border-indigo-500/20">
+                        Copy Booth Link
+                    </Button>
                 </div>
-            )}
+            </div>
         </div>
     );
 

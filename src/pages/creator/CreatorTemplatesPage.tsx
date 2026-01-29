@@ -1,11 +1,10 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { getCurrentUser } from "@/services/eventsApi";
-import { getMyTemplates, deleteMarketplaceTemplate, MarketplaceTemplate } from "@/services/marketplaceApi";
+import { getMyTemplates, MarketplaceTemplate } from "@/services/marketplaceApi";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { toast } from "sonner";
 import { 
     Plus, 
     Search, 
@@ -15,21 +14,9 @@ import {
     Edit, 
     LayoutTemplate,
     Loader2,
-    ShoppingBag,
-    Trash2
+    ShoppingBag
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-    AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 
 export default function CreatorTemplatesPage() {
     const navigate = useNavigate();
@@ -51,17 +38,6 @@ export default function CreatorTemplatesPage() {
             console.error("Failed to fetch templates", error);
         } finally {
             setIsLoading(false);
-        }
-    };
-
-    const handleDeleteTemplate = async (id: string) => {
-        try {
-            await deleteMarketplaceTemplate(id);
-            setTemplates(prev => prev.filter(t => t.id !== id));
-            toast.success("Style deleted successfully");
-        } catch (error) {
-            console.error("Failed to delete template", error);
-            toast.error("Failed to delete style");
         }
     };
 
@@ -145,38 +121,6 @@ export default function CreatorTemplatesPage() {
                                 
                                 <div className="absolute top-3 left-3">
                                     {getStatusBadge(template.status)}
-                                </div>
-
-                                <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <AlertDialog>
-                                        <AlertDialogTrigger asChild>
-                                            <Button 
-                                                variant="destructive" 
-                                                size="icon" 
-                                                className="h-8 w-8 rounded-full bg-black/40 backdrop-blur-md border border-white/10 hover:bg-red-500/80 transition-all"
-                                                onClick={(e) => e.stopPropagation()}
-                                            >
-                                                <Trash2 className="w-4 h-4 text-white" />
-                                            </Button>
-                                        </AlertDialogTrigger>
-                                        <AlertDialogContent className="bg-card border-white/10 text-white">
-                                            <AlertDialogHeader>
-                                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                                <AlertDialogDescription className="text-zinc-400">
-                                                    This will permanently delete your style "{template.name}". This action cannot be undone.
-                                                </AlertDialogDescription>
-                                            </AlertDialogHeader>
-                                            <AlertDialogFooter>
-                                                <AlertDialogCancel className="bg-zinc-800 text-white border-white/5 hover:bg-zinc-700">Cancel</AlertDialogCancel>
-                                                <AlertDialogAction 
-                                                    onClick={() => handleDeleteTemplate(template.id)}
-                                                    className="bg-red-600 text-white hover:bg-red-500"
-                                                >
-                                                    Delete Style
-                                                </AlertDialogAction>
-                                            </AlertDialogFooter>
-                                        </AlertDialogContent>
-                                    </AlertDialog>
                                 </div>
 
                                 <div className="absolute bottom-4 left-4 right-4 translate-y-2 group-hover:translate-y-0 transition-transform">
