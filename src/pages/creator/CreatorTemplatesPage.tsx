@@ -14,7 +14,8 @@ import {
     Edit, 
     LayoutTemplate,
     Loader2,
-    ShoppingBag
+    ShoppingBag,
+    Copy
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -39,6 +40,22 @@ export default function CreatorTemplatesPage() {
         } finally {
             setIsLoading(false);
         }
+    };
+
+    const handleDuplicateTemplate = (template: MarketplaceTemplate) => {
+        // Navigate to editor with template data as state to create a duplicate
+        navigate('/creator/templates/new', { 
+            state: { 
+                duplicateFrom: template,
+                action: 'duplicate_template'
+            } 
+        });
+    };
+
+    const isTemplateEditable = (status?: string) => {
+        // Templates can only be edited if they're draft, rejected, or no status
+        // Once approved or published, they must be duplicated instead
+        return !status || status === 'draft' || status === 'rejected';
     };
 
     const filteredTemplates = templates.filter(t => 
@@ -131,14 +148,25 @@ export default function CreatorTemplatesPage() {
                                 </div>
                             </div>
                             <CardContent className="p-4 flex gap-2">
-                                <Button 
-                                    variant="secondary" 
-                                    className="flex-1 h-9 text-xs bg-white/5 hover:bg-white/10 text-white"
-                                    onClick={() => navigate(`/creator/templates/${template.id}/edit`)}
-                                >
-                                    <Edit className="w-3.5 h-3.5 mr-2" />
-                                    Edit
-                                </Button>
+                                {isTemplateEditable(template.status) ? (
+                                    <Button 
+                                        variant="secondary" 
+                                        className="flex-1 h-9 text-xs bg-white/5 hover:bg-white/10 text-white"
+                                        onClick={() => navigate(`/creator/templates/${template.id}/edit`)}
+                                    >
+                                        <Edit className="w-3.5 h-3.5 mr-2" />
+                                        Edit
+                                    </Button>
+                                ) : (
+                                    <Button 
+                                        variant="secondary" 
+                                        className="flex-1 h-9 text-xs bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 border-indigo-500/20"
+                                        onClick={() => handleDuplicateTemplate(template)}
+                                    >
+                                        <Copy className="w-3.5 h-3.5 mr-2" />
+                                        Duplicate
+                                    </Button>
+                                )}
                                 <Button 
                                     variant="ghost" 
                                     className="flex-1 h-9 text-xs text-zinc-400 hover:text-white"

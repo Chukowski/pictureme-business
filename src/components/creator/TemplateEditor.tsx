@@ -164,6 +164,32 @@ export function TemplateEditor() {
                 }
             };
         }
+
+        // Handle duplication from existing template
+        if (state?.action === 'duplicate_template' && state?.duplicateFrom) {
+            const template = state.duplicateFrom as MarketplaceTemplate;
+            
+            console.log('📋 Duplicating template:', template.name);
+            
+            setTimeout(() => {
+                toast.success(`Creating copy of "${template.name}"`, {
+                    description: "Edit and submit as a new template"
+                });
+            }, 500);
+            
+            return {
+                ...template,
+                id: undefined, // Remove ID so it's treated as new
+                _id: undefined,
+                _rev: undefined,
+                name: `${template.name} (Copy)`,
+                status: undefined, // Reset status to draft
+                creator_id: currentUser?.id || "",
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+            };
+        }
+
         return initialData;
     });
 
@@ -197,7 +223,8 @@ export function TemplateEditor() {
     useEffect(() => {
         // Clear history state immediately to prevent re-processing on re-renders/back navigation
         const state = location.state as any;
-        if (state?.action === 'create_template' && state?.creation) {
+        if ((state?.action === 'create_template' && state?.creation) || 
+            (state?.action === 'duplicate_template' && state?.duplicateFrom)) {
             window.history.replaceState({}, document.title);
         }
         
