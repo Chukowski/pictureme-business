@@ -33,6 +33,7 @@ export interface MarketplaceTemplate {
     };
     status?: 'draft' | 'pending' | 'published' | 'rejected';
     creator_id?: string;
+    is_adult?: boolean;
 }
 
 const getApiUrl = () => ENV.API_URL || "http://localhost:3002";
@@ -72,6 +73,18 @@ export async function getMarketplaceTemplates(params?: { category?: string; sear
     const response = await fetchWithAuth(`${getApiUrl()}/api/marketplace/templates?${query.toString()}`);
 
     if (!response.ok) throw new Error('Failed to fetch marketplace templates');
+    return response.json();
+}
+
+export async function getMyLibrary(): Promise<MarketplaceTemplate[]> {
+    const response = await fetchWithAuth(`${getApiUrl()}/api/marketplace/my-library`);
+    if (!response.ok) throw new Error('Failed to fetch library');
+    return response.json();
+}
+
+export async function getMyTemplates(): Promise<MarketplaceTemplate[]> {
+    const response = await fetchWithAuth(`${getApiUrl()}/api/marketplace/my-templates`);
+    if (!response.ok) throw new Error('Failed to fetch my templates');
     return response.json();
 }
 
@@ -130,4 +143,30 @@ export async function adminAssignTemplate(userId: string, templateId: string): P
     });
 
     if (!response.ok) throw new Error('Failed to assign template');
+}
+
+export async function submitMarketplaceTemplate(template: Partial<MarketplaceTemplate>): Promise<MarketplaceTemplate> {
+    const response = await fetchWithAuth(`${getApiUrl()}/api/marketplace/templates`, {
+        method: 'POST',
+        body: JSON.stringify(template)
+    });
+
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to submit template');
+    }
+    return response.json();
+}
+
+export async function updateMarketplaceTemplate(id: string, template: Partial<MarketplaceTemplate>): Promise<MarketplaceTemplate> {
+    const response = await fetchWithAuth(`${getApiUrl()}/api/marketplace/templates/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(template)
+    });
+
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to update template');
+    }
+    return response.json();
 }

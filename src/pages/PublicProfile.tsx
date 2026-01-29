@@ -25,6 +25,7 @@ import { CreationDetailView, GalleryItem } from "@/components/creator/CreationDe
 // CDN service for public content (Cloudflare Image Resizing)
 import { getAvatarUrl, getViewUrl as getOptimizedUrl, getThumbnailUrl, getDownloadUrl, getProcessingUrl, getProxyDownloadUrl } from "@/services/cdn";
 import { useUserTier } from "@/services/userTier";
+import { isUserAdult } from "@/lib/utils";
 
 
 interface UserProfile {
@@ -446,15 +447,18 @@ function CreationsGrid({ creations, isOwnProfile, isAuthenticated, hasAdultConte
   const [showAdultContent, setShowAdultContent] = useState(false);
   const [blurredItems, setBlurredItems] = useState<Set<string>>(new Set());
   const navigate = useNavigate();
+  const currentUser = getCurrentUser();
+  const isAdult = isUserAdult(currentUser?.birth_date);
 
   // 18+ Content Policy:
   // - Owner: sees ALL their content (no filter needed, backend handles)
-  // - Authenticated users: can opt-in to see 18+ content (blurred)
+  // - Authenticated users (18+): can opt-in to see 18+ content (blurred)
+  // - Minor users (<18): CANNOT see 18+ content at all
   // - Anonymous visitors: CANNOT see 18+ content at all (filtered by backend)
   
-  // Filter creations based on adult content toggle
-  // For authenticated users, allow toggle. For owners, show all.
-  const filteredCreations = showAdultContent || isOwnProfile
+  // Filter creations based on adult content toggle and user age
+  // Only allow showing adult content if user is an adult
+  const filteredCreations = (showAdultContent && isAdult) || isOwnProfile
     ? creations
     : creations.filter(c => !c.is_adult);
 
@@ -483,10 +487,12 @@ function CreationsGrid({ creations, isOwnProfile, isAuthenticated, hasAdultConte
     return (
       <div className="flex flex-col items-center justify-center py-16">
         <ImageIcon className="w-12 h-12 mx-auto mb-3 opacity-50 text-zinc-500" />
-        <p className="text-zinc-500 mb-4">
+        <p className="text-zinc-500 mb-4 text-center max-w-sm">
           {creations.length > 0 && !showAdultContent && !isOwnProfile
             ? isAuthenticated
-              ? "All content is marked as 18+. Enable the filter to view (content will be blurred)."
+              ? isAdult
+                ? "All content is marked as 18+. Enable the filter to view (content will be blurred)."
+                : "This profile contains 18+ content which is restricted for your account."
               : "All content is marked as 18+. Please sign in to view."
             : "No creations yet"}
         </p>
@@ -504,8 +510,8 @@ function CreationsGrid({ creations, isOwnProfile, isAuthenticated, hasAdultConte
 
   return (
     <>
-      {/* Adult Content Filter - Only show for authenticated non-owners */}
-      {!isOwnProfile && isAuthenticated && creations.some(c => c.is_adult) && (
+      {/* Adult Content Filter - Only show for authenticated non-owners who are 18+ */}
+      {!isOwnProfile && isAuthenticated && isAdult && creations.some(c => c.is_adult) && (
         <div className="flex items-center justify-between gap-4 mb-4 pb-4 border-b border-white/10">
           <div className="flex flex-col">
             <span className="text-sm font-medium text-zinc-300">Adult Content (18+)</span>
@@ -523,24 +529,35 @@ function CreationsGrid({ creations, isOwnProfile, isAuthenticated, hasAdultConte
         </div>
       )}
       
-      {/* Message for anonymous users if there's adult content */}
-      {!isOwnProfile && !isAuthenticated && hasAdultContent && (
+      {/* Message for anonymous users or minors if there's adult content */}
+      {!isOwnProfile && hasAdultContent && (
         <div className="mb-4 pb-4 border-b border-white/10">
-          <div className="bg-zinc-800/50 border border-zinc-700 rounded-lg p-4 flex items-start gap-3">
-            <div className="w-2 h-2 rounded-full bg-red-500 mt-1.5 flex-shrink-0" />
-            <div className="flex-1">
-              <p className="text-sm text-zinc-300 mb-2">
-                This profile contains 18+ content that requires authentication to view.
-              </p>
-              <Button
-                size="sm"
-                onClick={() => navigate('/auth')}
-                className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700"
-              >
-                Sign In to View All Content
-              </Button>
+          {!isAuthenticated ? (
+            <div className="bg-zinc-800/50 border border-zinc-700 rounded-lg p-4 flex items-start gap-3">
+              <div className="w-2 h-2 rounded-full bg-red-500 mt-1.5 flex-shrink-0" />
+              <div className="flex-1">
+                <p className="text-sm text-zinc-300 mb-2">
+                  This profile contains 18+ content that requires authentication to view.
+                </p>
+                <Button
+                  size="sm"
+                  onClick={() => navigate('/auth')}
+                  className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700"
+                >
+                  Sign In to View All Content
+                </Button>
+              </div>
             </div>
-          </div>
+          ) : !isAdult && (
+            <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 flex items-start gap-3">
+              <div className="w-2 h-2 rounded-full bg-red-500 mt-1.5 flex-shrink-0" />
+              <div className="flex-1">
+                <p className="text-sm text-red-400">
+                  Some content on this profile has been hidden based on your account age restrictions.
+                </p>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

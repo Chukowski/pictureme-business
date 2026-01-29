@@ -33,6 +33,10 @@ interface BoothEditorLayoutProps {
     currentStep: string;
     onStepChange: (step: string) => void;
     steps?: Step[];
+    backUrl?: string;
+    backLabel?: string;
+    headerActions?: ReactNode;
+    sidebarFooter?: ReactNode;
 }
 
 export function BoothEditorLayout({
@@ -46,7 +50,11 @@ export function BoothEditorLayout({
     isSaving = false,
     currentStep,
     onStepChange,
-    steps: customSteps
+    steps: customSteps,
+    backUrl = '/creator/booth',
+    backLabel = 'My Booths',
+    headerActions,
+    sidebarFooter
 }: BoothEditorLayoutProps) {
     const navigate = useNavigate();
     const [previewDevice, setPreviewDevice] = useState<'mobile' | 'tablet' | 'desktop'>('mobile');
@@ -142,21 +150,25 @@ export function BoothEditorLayout({
                 </div>
             </div>
 
-            {/* Quick Share Box */}
-            <div className="p-4 border-y border-white/5 mt-4">
-                <div className="bg-gradient-to-br from-indigo-900/20 to-purple-900/20 border border-indigo-500/20 rounded-xl p-4">
-                    <h3 className="text-xs font-medium text-indigo-200 mb-1 flex items-center gap-2">
-                        <Share2 className="w-3 h-3" />
-                        Share Your Booth
-                    </h3>
-                    <p className="text-[10px] text-indigo-300/70 mb-3 leading-relaxed">
-                        Copy your booth link and share it with friends!
-                    </p>
-                    <Button size="sm" variant="secondary" className="w-full h-7 text-[10px] bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 border border-indigo-500/20">
-                        Copy Booth Link
-                    </Button>
+            {/* Sidebar Footer (Custom or Default Quick Share) */}
+            {sidebarFooter ? (
+                sidebarFooter
+            ) : (
+                <div className="p-4 border-y border-white/5 mt-4">
+                    <div className="bg-gradient-to-br from-indigo-900/20 to-purple-900/20 border border-indigo-500/20 rounded-xl p-4">
+                        <h3 className="text-xs font-medium text-indigo-200 mb-1 flex items-center gap-2">
+                            <Share2 className="w-3 h-3" />
+                            Share Your Booth
+                        </h3>
+                        <p className="text-[10px] text-indigo-300/70 mb-3 leading-relaxed">
+                            Copy your booth link and share it with friends!
+                        </p>
+                        <Button size="sm" variant="secondary" className="w-full h-7 text-[10px] bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 border border-indigo-500/20">
+                            Copy Booth Link
+                        </Button>
+                    </div>
                 </div>
-            </div>
+            )}
         </div>
     );
 
@@ -192,7 +204,7 @@ export function BoothEditorLayout({
                     <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => navigate('/creator/booth')}
+                        onClick={() => navigate(backUrl)}
                         className="text-zinc-400 hover:text-white h-8 w-8 hidden md:flex"
                     >
                         <ArrowLeft className="w-4 h-4" />
@@ -201,8 +213,8 @@ export function BoothEditorLayout({
                     <Separator orientation="vertical" className="h-5 bg-white/10 hidden md:block" />
 
                     <div className="flex items-center gap-2 text-xs">
-                        <span className="hidden md:inline text-zinc-400 cursor-pointer hover:text-white transition-colors" onClick={() => navigate('/creator/booth')}>
-                            My Booths
+                        <span className="hidden md:inline text-zinc-400 cursor-pointer hover:text-white transition-colors" onClick={() => navigate(backUrl)}>
+                            {backLabel}
                         </span>
                         <ChevronRight className="w-3 h-3 text-zinc-600 hidden md:block" />
                         <span className="font-semibold text-white truncate max-w-[150px] md:max-w-none">{title || 'Untitled'}</span>
@@ -210,44 +222,50 @@ export function BoothEditorLayout({
                 </div>
 
                 <div className="flex items-center gap-3">
-                    {/* Status Toggle */}
-                    <div className="flex items-center gap-1 bg-[#101112]/30 p-1 rounded-lg border border-white/5">
-                        <button
-                            onClick={() => onStatusChange?.('draft')}
-                            className={cn(
-                                "px-3 py-1 text-[10px] font-medium rounded-md transition-all",
-                                status === 'draft'
-                                    ? "bg-zinc-700 text-zinc-200"
-                                    : "text-zinc-500 hover:text-zinc-400"
-                            )}
-                        >
-                            Draft
-                        </button>
-                        <button
-                            onClick={() => onStatusChange?.('active')}
-                            className={cn(
-                                "px-3 py-1 text-[10px] font-medium rounded-md transition-all flex items-center gap-1.5",
-                                status === 'active'
-                                    ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/20"
-                                    : "text-zinc-500 hover:text-zinc-400"
-                            )}
-                        >
-                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                            Live
-                        </button>
-                    </div>
+                    {/* Status Toggle - Only show if onStatusChange is provided */}
+                    {onStatusChange && (
+                        <div className="flex items-center gap-1 bg-[#101112]/30 p-1 rounded-lg border border-white/5">
+                            <button
+                                onClick={() => onStatusChange?.('draft')}
+                                className={cn(
+                                    "px-3 py-1 text-[10px] font-medium rounded-md transition-all",
+                                    status === 'draft'
+                                        ? "bg-zinc-700 text-zinc-200"
+                                        : "text-zinc-500 hover:text-zinc-400"
+                                )}
+                            >
+                                Draft
+                            </button>
+                            <button
+                                onClick={() => onStatusChange?.('active')}
+                                className={cn(
+                                    "px-3 py-1 text-[10px] font-medium rounded-md transition-all flex items-center gap-1.5",
+                                    status === 'active'
+                                        ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/20"
+                                        : "text-zinc-500 hover:text-zinc-400"
+                                )}
+                            >
+                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                                Live
+                            </button>
+                        </div>
+                    )}
 
-                    {/* Save Button */}
-                    <Button
-                        onClick={onSave}
-                        disabled={isSaving}
-                        size="sm"
-                        className="h-8 bg-indigo-600 hover:bg-indigo-500 text-white px-4"
-                    >
-                        <Save className="w-3 h-3 mr-1.5" />
-                        <span className="hidden md:inline">{isSaving ? 'Saving...' : 'Save Changes'}</span>
-                        <span className="md:hidden">{isSaving ? '...' : 'Save'}</span>
-                    </Button>
+                    {/* Save Button / Custom Header Actions */}
+                    {headerActions ? (
+                        headerActions
+                    ) : (
+                        <Button
+                            onClick={onSave}
+                            disabled={isSaving}
+                            size="sm"
+                            className="h-8 bg-indigo-600 hover:bg-indigo-500 text-white px-4"
+                        >
+                            <Save className="w-3 h-3 mr-1.5" />
+                            <span className="hidden md:inline">{isSaving ? 'Saving...' : 'Save Changes'}</span>
+                            <span className="md:hidden">{isSaving ? '...' : 'Save'}</span>
+                        </Button>
+                    )}
 
                     <Separator orientation="vertical" className="h-5 bg-white/10 hidden lg:block" />
 

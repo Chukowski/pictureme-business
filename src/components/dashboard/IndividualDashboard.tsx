@@ -43,10 +43,11 @@ export default function IndividualDashboard({ currentUser }: IndividualDashboard
                         </TabsTrigger>
                         <TabsTrigger
                             value="templates"
+                            onClick={() => navigate('/creator/templates')}
                             className="flex items-center gap-2 px-4 py-2 sm:px-6 sm:py-3 rounded-xl data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-zinc-400 transition-all"
                         >
-                            <ImageIcon className="w-4 h-4" />
-                            <span>Templates</span>
+                            <Palette className="w-4 h-4" />
+                            <span>My Styles</span>
                         </TabsTrigger>
                         <TabsTrigger
                             value="billing"
@@ -134,13 +135,13 @@ export default function IndividualDashboard({ currentUser }: IndividualDashboard
                                 <div className="text-xs text-zinc-500">Launch your personal photo booth</div>
                             </div>
                         </Button>
-                        <Button variant="outline" className="h-auto py-4 border-white/10 bg-card/30 hover:bg-zinc-800 hover:text-white justify-start">
+                        <Button variant="outline" className="h-auto py-4 border-white/10 bg-card/30 hover:bg-zinc-800 hover:text-white justify-start" onClick={() => navigate('/creator/templates')}>
                             <div className="p-2 rounded-lg bg-purple-500/10 mr-4">
-                                <ImageIcon className="w-6 h-6 text-purple-400" />
+                                <Palette className="w-6 h-6 text-purple-400" />
                             </div>
                             <div className="text-left">
-                                <div className="font-semibold text-white">Manage Templates</div>
-                                <div className="text-xs text-zinc-500">Browse and configure styles</div>
+                                <div className="font-semibold text-white">Manage Styles</div>
+                                <div className="text-xs text-zinc-500">Browse and configure your drafts</div>
                             </div>
                         </Button>
                     </div>
@@ -160,27 +161,20 @@ export default function IndividualDashboard({ currentUser }: IndividualDashboard
                     </div>
                 </TabsContent>
 
-                {/* Templates Tab */}
+                {/* My Styles Redirect */}
                 <TabsContent value="templates" className="focus-visible:outline-none">
-                    <div className="flex items-center justify-between mb-6">
-                        <h3 className="text-xl font-semibold text-white">My Templates</h3>
-                        <Button variant="outline" className="border-white/10 text-white hover:bg-white/10">
-                            <Plus className="w-4 h-4 mr-2" /> Create New
+                    <div className="flex flex-col items-center justify-center py-20 bg-card/30 rounded-3xl border border-white/5 border-dashed">
+                        <Palette className="w-12 h-12 text-zinc-600 mb-4" />
+                        <h3 className="text-xl font-semibold text-white mb-2">My Creative Styles</h3>
+                        <p className="text-zinc-400 max-w-md mx-auto mb-6 text-center px-4">
+                            Manage your custom AI templates, drafts, and marketplace submissions in the dedicated styles manager.
+                        </p>
+                        <Button 
+                            className="bg-indigo-600 hover:bg-indigo-500 text-white px-8 h-12 rounded-2xl"
+                            onClick={() => navigate('/creator/templates')}
+                        >
+                            Go to My Styles
                         </Button>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {[1, 2, 3].map((i) => (
-                            <Card key={i} className="bg-card/50 border-white/10 overflow-hidden">
-                                <div className="aspect-video bg-zinc-800 w-full" />
-                                <CardContent className="p-4">
-                                    <h4 className="font-semibold text-white">Template {i}</h4>
-                                    <div className="flex items-center justify-between mt-4">
-                                        <span className="text-xs px-2 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Active</span>
-                                        <Button variant="ghost" size="sm" className="text-zinc-400 hover:text-white">Edit</Button>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        ))}
                     </div>
                 </TabsContent>
 

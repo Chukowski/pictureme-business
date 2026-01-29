@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { PublicCreation } from "@/services/contentApi";
 import { getCurrentUser, toggleLike } from "@/services/eventsApi";
 import { toast } from "sonner";
@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Heart, Eye, User, Play } from "lucide-react";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { getMediaPreviewUrl, isVideoUrl } from "@/services/cdn";
-import { cn } from "@/lib/utils";
+import { cn, isUserAdult } from "@/lib/utils";
 
 interface PublicFeedBlockProps {
     creations?: PublicCreation[];
@@ -16,19 +16,26 @@ interface PublicFeedBlockProps {
 
 export function PublicFeedBlock({ creations = [], showAdultFilter = true }: PublicFeedBlockProps) {
     const [showAdultContent, setShowAdultContent] = useState(false);
+    const currentUser = getCurrentUser();
+    const isAdult = isUserAdult(currentUser?.birth_date);
 
     if (!creations || creations.length === 0) return null;
 
-    // Filter out 18+ content if the toggle is off
-    const filteredCreations = showAdultContent 
+    // Filter out 18+ content if the toggle is off or user is under 18
+    const filteredCreations = (showAdultContent && isAdult)
         ? creations 
         : creations.filter(c => !c.is_adult);
 
     return (
         <div className="space-y-4">
             <div className="flex items-center justify-between">
-                <h2 className="text-xl font-semibold text-white">Community Feed</h2>
-                {showAdultFilter && (
+                <div className="flex flex-col">
+                    <h2 className="text-xl font-semibold text-white">Community Feed</h2>
+                    {!isAdult && currentUser && creations.some(c => c.is_adult) && (
+                        <p className="text-[10px] text-zinc-500 italic">Sensitive content hidden based on your age.</p>
+                    )}
+                </div>
+                {showAdultFilter && isAdult && (
                     <div className="flex items-center gap-2 text-sm">
                         <span className="text-zinc-400">Show 18+</span>
                         <label className="relative inline-flex items-center cursor-pointer">

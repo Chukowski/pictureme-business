@@ -73,6 +73,7 @@ export function CreatorLayout() {
     location.pathname.includes('/studio') ||
     location.pathname.includes('/gallery') ||
     location.pathname.includes('/chat') ||
+    (location.pathname.includes('/templates/') && (location.pathname.includes('/new') || location.pathname.includes('/edit'))) ||
     (location.pathname.includes('/booth/') && location.pathname.includes('/edit'));
 
   return (
@@ -94,7 +95,7 @@ export function CreatorLayout() {
       <main className={cn(
         "flex-1 w-full mx-auto relative",
         isFullBleed
-          ? cn("flex flex-col p-0 pt-16 md:pb-0 overflow-hidden", (!location.pathname.includes('/studio') && !location.pathname.includes('/chat') && !location.pathname.includes('/edit')) ? "pb-32" : "pb-0")
+          ? cn("flex flex-col p-0 pt-16 md:pb-0 overflow-hidden", (!location.pathname.includes('/studio') && !location.pathname.includes('/chat') && !location.pathname.includes('/edit') && !location.pathname.includes('/templates/')) ? "pb-32" : "pb-0")
           : "max-w-7xl px-4 sm:px-6 py-8 pt-20 md:pt-24 pb-32 md:pb-8"
       )}>
         <Outlet />

@@ -19,7 +19,9 @@ import {
     Home,
     GalleryHorizontal,
     Bot,
-    CheckCircle2
+    CheckCircle2,
+    LayoutTemplate,
+    Palette
 } from "lucide-react";
 import { logoutUser, User } from "@/services/eventsApi";
 import { cn } from "@/lib/utils";
@@ -78,7 +80,7 @@ export function CreatorNavbar({ user, creatingCount = 0 }: CreatorNavbarProps) {
     const navItems = [
         { id: 'overview', label: 'Home', icon: LayoutDashboard, path: '/creator/dashboard' },
         { id: 'create', label: 'Create', icon: PlusCircle, path: '/creator/create' },
-        { id: 'templates', label: 'Templates', icon: ShoppingBag, path: '/creator/templates' },
+        { id: 'marketplace', label: 'Marketplace', icon: ShoppingBag, path: '/creator/marketplace' },
         { id: 'booth', label: 'My Booth', icon: Camera, path: '/creator/booth' },
         { id: 'assist', label: 'Assist', icon: Sparkles, path: '/creator/chat' },
     ];
@@ -132,7 +134,7 @@ export function CreatorNavbar({ user, creatingCount = 0 }: CreatorNavbarProps) {
 
                                             <SheetClose asChild>
                                                 <button
-                                                    onClick={() => { navigate('/creator/templates'); }}
+                                                    onClick={() => { navigate('/creator/marketplace'); }}
                                                     className="w-full flex items-center justify-between p-4 rounded-2xl bg-zinc-800/40 border border-white/5 hover:bg-zinc-800/60 transition-all text-left"
                                                 >
                                                     <div className="flex items-center gap-4">
@@ -142,6 +144,24 @@ export function CreatorNavbar({ user, creatingCount = 0 }: CreatorNavbarProps) {
                                                         <div>
                                                             <h4 className="text-sm font-bold text-white">Marketplace</h4>
                                                             <p className="text-[10px] text-zinc-400">Discover AI templates</p>
+                                                        </div>
+                                                    </div>
+                                                    <ChevronDown className="w-4 h-4 text-zinc-600 -rotate-90" />
+                                                </button>
+                                            </SheetClose>
+
+                                            <SheetClose asChild>
+                                                <button
+                                                    onClick={() => { navigate('/creator/templates'); }}
+                                                    className="w-full flex items-center justify-between p-4 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 hover:bg-indigo-500/20 transition-all text-left"
+                                                >
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="w-10 h-10 rounded-xl bg-indigo-500 flex items-center justify-center">
+                                                            <Palette className="w-5 h-5 text-white" />
+                                                        </div>
+                                                        <div>
+                                                            <h4 className="text-sm font-bold text-white">My Styles</h4>
+                                                            <p className="text-[10px] text-zinc-400">Manage your templates</p>
                                                         </div>
                                                     </div>
                                                     <ChevronDown className="w-4 h-4 text-zinc-600 -rotate-90" />
@@ -366,17 +386,48 @@ export function CreatorNavbar({ user, creatingCount = 0 }: CreatorNavbarProps) {
                         >
                             Booths
                         </button>
-                        <button
-                            onClick={() => navigate('/creator/templates')}
-                            className={cn(
-                                "text-sm font-bold transition-all duration-300",
-                                location.pathname === '/creator/templates'
-                                    ? "text-zinc-100"
-                                    : "text-zinc-500 hover:text-white"
-                            )}
-                        >
-                            Marketplace
-                        </button>
+                        {/* Marketplace Dropdown */}
+                        <DropdownMenu modal={false}>
+                            <DropdownMenuTrigger asChild>
+                                <button
+                                    className={cn(
+                                        "text-sm font-bold transition-all duration-300 flex items-center gap-1",
+                                        location.pathname.includes('/marketplace') || location.pathname.includes('/templates')
+                                            ? "text-zinc-100"
+                                            : "text-zinc-500 hover:text-white"
+                                    )}
+                                >
+                                    Marketplace
+                                    <ChevronDown className="w-3.5 h-3.5 opacity-50" />
+                                </button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="start" className="w-56 bg-card border-zinc-900 p-2 z-[100] rounded-2xl shadow-2xl">
+                                <DropdownMenuItem
+                                    onClick={() => navigate('/creator/marketplace')}
+                                    className="flex items-center gap-3 py-3 rounded-xl cursor-pointer focus:bg-card group"
+                                >
+                                    <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-400 group-hover:bg-emerald-500/20 transition-colors">
+                                        <ShoppingBag className="w-4 h-4" />
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <span className="font-bold text-[13px] text-white">Marketplace</span>
+                                        <span className="text-[10px] text-zinc-500">Discover AI templates</span>
+                                    </div>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                    onClick={() => navigate('/creator/templates')}
+                                    className="flex items-center gap-3 py-3 rounded-xl cursor-pointer focus:bg-card group"
+                                >
+                                    <div className="p-2 rounded-lg bg-indigo-500/10 text-indigo-400 group-hover:bg-indigo-500/20 transition-colors">
+                                        <Palette className="w-4 h-4" />
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <span className="font-bold text-[13px] text-white">My Styles</span>
+                                        <span className="text-[10px] text-zinc-500">Manage your templates</span>
+                                    </div>
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                     </div>
                 </div>
 

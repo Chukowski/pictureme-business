@@ -88,6 +88,7 @@ export default function SuperAdminMarketplace() {
     const [allUsers, setAllUsers] = useState<any[]>([]);
     const [userSearchTerm, setUserSearchTerm] = useState("");
     const [featuredIds, setFeaturedIds] = useState<string[]>([]);
+    const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'published' | 'rejected' | 'draft'>('all');
 
     // Form state for create/edit
     const [formData, setFormData] = useState<Partial<MarketplaceTemplate>>({
@@ -362,11 +363,15 @@ export default function SuperAdminMarketplace() {
         toast.success("JSON copied to clipboard");
     };
 
-    const filteredTemplates = templates.filter(t =>
-        t.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        t.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        t.category.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredTemplates = templates.filter(t => {
+        const matchesSearch = t.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            t.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            t.category.toLowerCase().includes(searchTerm.toLowerCase());
+        
+        const matchesStatus = statusFilter === 'all' || t.status === statusFilter;
+        
+        return matchesSearch && matchesStatus;
+    });
 
     const filteredUsers = allUsers.filter(u =>
         u.email.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
@@ -399,6 +404,39 @@ export default function SuperAdminMarketplace() {
                         Create New
                     </Button>
                 </div>
+            </div>
+
+            {/* Status Tabs */}
+            <div className="flex w-full p-1 bg-card border border-white/5 rounded-xl overflow-x-auto scrollbar-hide">
+                {([
+                    { id: 'all', label: 'All Templates', icon: Layout },
+                    { id: 'pending', label: 'Submissions', icon: Clock },
+                    { id: 'published', label: 'Published', icon: CheckCircle },
+                    { id: 'rejected', label: 'Rejected', icon: XCircle },
+                    { id: 'draft', label: 'Drafts', icon: Edit }
+                ] as const).map((tab) => (
+                    <button
+                        key={tab.id}
+                        onClick={() => setStatusFilter(tab.id)}
+                        className={cn(
+                            "flex-1 min-w-[120px] flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all duration-300 whitespace-nowrap",
+                            statusFilter === tab.id
+                                ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/20"
+                                : "text-zinc-500 hover:text-zinc-300 hover:bg-white/5"
+                        )}
+                    >
+                        <tab.icon className="w-3.5 h-3.5" />
+                        {tab.label}
+                        {templates.filter(t => (tab.id === 'all' || t.status === tab.id)).length > 0 && (
+                            <Badge className={cn(
+                                "ml-1.5 border-0 px-1.5 h-4 min-w-[16px] text-[10px] flex items-center justify-center pointer-events-none",
+                                statusFilter === tab.id ? "bg-white/20 text-white" : "bg-zinc-800 text-zinc-500"
+                            )}>
+                                {templates.filter(t => (tab.id === 'all' || t.status === tab.id)).length}
+                            </Badge>
+                        )}
+                    </button>
+                ))}
             </div>
 
             {/* Stats & Filters */}
@@ -733,6 +771,23 @@ export default function SuperAdminMarketplace() {
                                         <span className="text-emerald-400 font-bold font-mono">${item.price || 0}</span>
                                         <span className="text-zinc-500 text-[10px] font-mono">{item.id.substring(0, 8)}...</span>
                                     </div>
+                                    {item.status === 'pending' && (
+                                        <div className="flex gap-2 pt-2 border-t border-white/5">
+                                            <Button 
+                                                className="flex-1 bg-emerald-600 hover:bg-emerald-500 h-8 text-[10px]"
+                                                onClick={() => updateStatus(item, 'published')}
+                                            >
+                                                Approve
+                                            </Button>
+                                            <Button 
+                                                variant="outline"
+                                                className="flex-1 border-red-500/20 text-red-400 hover:bg-red-500/10 h-8 text-[10px]"
+                                                onClick={() => updateStatus(item, 'rejected')}
+                                            >
+                                                Reject
+                                            </Button>
+                                        </div>
+                                    )}
                                 </div>
                             </Card>
                         ))

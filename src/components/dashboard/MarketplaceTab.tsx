@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { useSearchParams, useNavigate, useLocation } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -53,6 +53,7 @@ import {
   Clock,
   Maximize2,
   Minimize2,
+  Palette
 } from "lucide-react";
 import { User } from "@/services/eventsApi";
 import { getHomeContent, FeaturedTemplate } from "@/services/contentApi";
@@ -234,7 +235,32 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
     include_tagline: false,
     include_watermark: false,
     campaign_text: '',
+    is_adult: false,
   });
+
+  // Handle intent from Gallery (Convert to Template)
+  const location = useLocation();
+  useEffect(() => {
+    const state = location.state as any;
+    if (state?.action === 'create_template' && state?.creation) {
+      const { creation } = state;
+      setNewTemplate({
+        ...newTemplate,
+        name: creation.prompt ? creation.prompt.substring(0, 30) + '...' : 'New Template',
+        description: creation.prompt || '',
+        prompt: creation.prompt || '',
+        backgrounds: [creation.url],
+        is_adult: creation.is_adult || false,
+        pipeline_config: {
+          ...newTemplate.pipeline_config,
+          imageModel: creation.model_id || creation.model || 'seedream-t2i',
+        }
+      });
+      setShowCreateModal(true);
+      // Clear state so it doesn't reopen on refresh
+      window.history.replaceState({}, document.title);
+    }
+  }, [location]);
   const [tagInput, setTagInput] = useState('');
   const [backgroundInput, setBackgroundInput] = useState('');
   const [elementInput, setElementInput] = useState('');
@@ -406,6 +432,7 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
         price: newTemplate.price,
         tokens_cost: calculateTokensCost(),
         is_public: newTemplate.is_public,
+        is_adult: newTemplate.is_adult,
         pipeline_config: newTemplate.pipeline_config,
         // For business templates, include full config
         business_config: newTemplate.template_type === 'business' ? {
@@ -486,6 +513,7 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
       include_tagline: false,
       include_watermark: false,
       campaign_text: '',
+      is_adult: false,
     });
     setCreateTab('basic');
   };
@@ -647,6 +675,24 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
                 </Badge>
               )}
             </button>
+
+            <button
+              onClick={() => navigate('/creator/templates')}
+              className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 md:px-6 py-2.5 rounded-full text-xs md:text-sm font-bold transition-all duration-300 whitespace-nowrap text-zinc-400 hover:text-white hover:bg-white/5"
+            >
+              <Palette className="w-4 h-4" />
+              My Styles
+            </button>
+          </div>
+
+          <div className="flex items-center gap-2 w-full md:w-auto">
+            <Button 
+              onClick={() => navigate('/creator/templates/new')}
+              className="flex-1 md:flex-none h-11 md:h-10 bg-indigo-600 hover:bg-indigo-500 text-white rounded-full font-bold text-xs md:text-sm shadow-lg shadow-indigo-500/20"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Create Style
+            </Button>
           </div>
         </div>
 
@@ -1514,6 +1560,28 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
                     value={calculateTokensCost()}
                     disabled
                     className="bg-zinc-800/50 border-white/10 text-zinc-400"
+                  />
+                </div>
+              </div>
+
+              {/* Adult Content Policy */}
+              <div className="space-y-3 p-4 rounded-lg bg-red-500/5 border border-red-500/10">
+                <div className="flex items-center justify-between">
+                  <div className="flex flex-col">
+                    <Label className="text-zinc-300 flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-red-500" />
+                      18+ Content
+                    </Label>
+                    <p className="text-[10px] text-zinc-500 mt-1">
+                      {newTemplate.template_type === 'business' 
+                        ? "Business templates cannot be marked as adult content." 
+                        : "Mark this template as containing adult/sensitive material."}
+                    </p>
+                  </div>
+                  <Switch
+                    checked={newTemplate.is_adult}
+                    disabled={newTemplate.template_type === 'business'}
+                    onCheckedChange={(checked) => setNewTemplate({ ...newTemplate, is_adult: checked })}
                   />
                 </div>
               </div>

@@ -12,7 +12,8 @@ import {
     LogOut,
     Settings,
     CreditCard,
-    Plus
+    Plus,
+    Palette
 } from "lucide-react";
 import { getCurrentUser, logoutUser } from "@/services/eventsApi";
 import { cn } from "@/lib/utils";
@@ -96,22 +97,22 @@ export function CreatorMobileNav() {
                         </span>
                     </button>
 
-                    {/* 2. Templates */}
+                    {/* 2. Booths */}
                     <button
-                        onClick={() => navigate('/creator/templates')}
+                        onClick={() => navigate('/creator/booth')}
                         className="flex-1 flex flex-col items-center justify-center gap-1 h-full w-16"
                     >
                         <div className={cn(
                             "p-1.5 rounded-xl transition-all duration-300",
-                            isActive('/creator/templates') ? "bg-white/10 text-white" : "text-zinc-500 hover:text-zinc-300"
+                            isActive('/creator/booth') ? "bg-white/10 text-white" : "text-zinc-500 hover:text-zinc-300"
                         )}>
-                            <ShoppingBag strokeWidth={isActive('/creator/templates') ? 2.5 : 2} className="w-6 h-6" />
+                            <Camera strokeWidth={isActive('/creator/booth') ? 2.5 : 2} className="w-6 h-6" />
                         </div>
                         <span className={cn(
                             "text-[10px] font-medium transition-colors",
-                            isActive('/creator/templates') ? "text-white" : "text-zinc-500"
+                            isActive('/creator/booth') ? "text-white" : "text-zinc-500"
                         )}>
-                            Store
+                            Booths
                         </span>
                     </button>
 
@@ -134,24 +135,35 @@ export function CreatorMobileNav() {
                         </span>
                     </div>
 
-                    {/* 4. My Booths */}
-                    <button
-                        onClick={() => navigate('/creator/booth')}
-                        className="flex-1 flex flex-col items-center justify-center gap-1 h-full w-16"
-                    >
-                        <div className={cn(
-                            "p-1.5 rounded-xl transition-all duration-300",
-                            isActive('/creator/booth') ? "bg-white/10 text-white" : "text-zinc-500 hover:text-zinc-300"
-                        )}>
-                            <Video strokeWidth={isActive('/creator/booth') ? 2.5 : 2} className="w-6 h-6" />
-                        </div>
-                        <span className={cn(
-                            "text-[10px] font-medium transition-colors",
-                            isActive('/creator/booth') ? "text-white" : "text-zinc-500"
-                        )}>
-                            Booths
-                        </span>
-                    </button>
+                    {/* 4. Marketplace */}
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <button
+                                className="flex-1 flex flex-col items-center justify-center gap-1 h-full w-16"
+                            >
+                                <div className={cn(
+                                    "p-1.5 rounded-xl transition-all duration-300",
+                                    (isActive('/creator/marketplace') || isActive('/creator/templates')) ? "bg-white/10 text-white" : "text-zinc-500 hover:text-zinc-300"
+                                )}>
+                                    <ShoppingBag strokeWidth={(isActive('/creator/marketplace') || isActive('/creator/templates')) ? 2.5 : 2} className="w-6 h-6" />
+                                </div>
+                                <span className={cn(
+                                    "text-[10px] font-medium transition-colors",
+                                    (isActive('/creator/marketplace') || isActive('/creator/templates')) ? "text-white" : "text-zinc-500"
+                                )}>
+                                    Market
+                                </span>
+                            </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-56 bg-card border-white/10 text-white mb-2 pb-2">
+                            <DropdownMenuItem onClick={() => navigate('/creator/marketplace')} className="cursor-pointer">
+                                <ShoppingBag className="w-4 h-4 mr-2 text-emerald-400" /> Marketplace
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => navigate('/creator/templates')} className="cursor-pointer">
+                                <Palette className="w-4 h-4 mr-2 text-indigo-400" /> My Styles
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
 
                     {/* 5. Menu / Profile */}
                     <DropdownMenu>

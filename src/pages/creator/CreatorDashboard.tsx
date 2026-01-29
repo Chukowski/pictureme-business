@@ -23,7 +23,7 @@ import { toast } from "sonner";
 import { CreationDetailView, GalleryItem } from "@/components/creator/CreationDetailView";
 // CDN service for public content (Cloudflare Image Resizing)
 import { getFeedUrl as getFeedImageUrl, getAvatarUrl, getThumbnailUrl, getViewUrl, getDownloadUrl, getProcessingUrl, getProxyDownloadUrl, getMediaPreviewUrl, getMediaFeedUrl, isVideoUrl } from "@/services/cdn";
-import { cn } from "@/lib/utils";
+import { cn, isUserAdult } from "@/lib/utils";
 import { useUserTier } from "@/services/userTier";
 import { Slider } from "@/components/ui/slider";
 
@@ -278,8 +278,11 @@ function CreatorsGallerySection({ creations, onImageClick, onRemixClick, columns
   columnsCount?: number;
   showAdultContent?: boolean;
 }) {
+  const currentUser = getCurrentUser();
+  const isAdult = isUserAdult(currentUser?.birth_date);
+
   // Filter out 18+ content if toggle is off
-  const filteredCreations = showAdultContent 
+  const filteredCreations = showAdultContent
     ? creations 
     : creations.filter(c => !c.is_adult);
 
@@ -288,7 +291,9 @@ function CreatorsGallerySection({ creations, onImageClick, onRemixClick, columns
       <div className="text-center py-12 bg-card/30 rounded-xl border border-white/5 border-dashed">
         <p className="text-zinc-500">
           {creations.length > 0 && !showAdultContent 
-            ? "All content is marked as 18+. Enable the filter to view." 
+            ? isAdult
+              ? "All content is marked as 18+. Enable the filter to view."
+              : "Some content is hidden based on your account age restrictions."
             : "Marketplace loading..."}
         </p>
       </div>
@@ -421,6 +426,8 @@ export default function CreatorDashboard() {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewIndex, setPreviewIndex] = useState(0);
 
+  const isAdult = isUserAdult(user?.birth_date);
+
   useEffect(() => {
     loadData();
 
@@ -533,9 +540,9 @@ export default function CreatorDashboard() {
     getFeaturedTemplates(marketplaceTemplates, content?.featured_templates || []),
     [marketplaceTemplates, content?.featured_templates]);
 
-  // Filter public creations for image-only for the hero section
+  // Filter public creations for image-only for the hero section, EXCLUDING 18+ content
   const imageOnlyCreations = useMemo(() =>
-    publicCreations.filter(c => c.type !== 'video' && !isVideoUrl(c.image_url))
+    publicCreations.filter(c => c.type !== 'video' && !isVideoUrl(c.image_url) && !c.is_adult)
     , [publicCreations]);
 
   if (isLoading) {
@@ -593,7 +600,7 @@ export default function CreatorDashboard() {
             <div className="bg-[#1A1A1A] rounded-2xl border border-white/5 p-5">
               <div className="flex items-center justify-between mb-2">
                 <h3 className="text-lg font-semibold text-white tracking-wide">Explore Templates</h3>
-                <Button variant="link" className="text-indigo-400 text-xs p-0 h-auto" onClick={() => navigate('/creator/templates')}>View All</Button>
+                <Button variant="link" className="text-indigo-400 text-xs p-0 h-auto" onClick={() => navigate('/creator/marketplace')}>View All</Button>
               </div>
               <RecommendedTemplates templates={marketplaceTemplates} />
             </div>
@@ -799,7 +806,7 @@ export default function CreatorDashboard() {
 function HeroSection({ user, homeState, publicCreations, navigate }: { user: User | null; homeState: CreatorHomeState; publicCreations: any[]; navigate: (path: string) => void }) {
   return (
     <div className="flex flex-col gap-3 mt-4 md:mt-0">
-      <div className="relative w-full aspect-[2/1] md:aspect-[4/1] rounded-3xl overflow-hidden group bg-[#080808] shadow-2xl shadow-black/50 border border-white/5">
+      <div className="relative w-full aspect-[3/2] md:aspect-[4/1] rounded-3xl overflow-hidden group bg-[#080808] shadow-2xl shadow-black/50 border border-white/5">
         <div className="absolute inset-0 z-0 select-none pointer-events-none scale-105">
           <div className="grid grid-cols-4 md:grid-cols-12 grid-rows-2 gap-2 w-full h-full opacity-60 p-2">
             {publicCreations.length > 0 ? (
@@ -831,7 +838,7 @@ function HeroSection({ user, homeState, publicCreations, navigate }: { user: Use
                 )}
                 {/* Image 5: Remaining Bottom Bento */}
                 {publicCreations[4] && (
-                  <div className="col-span-1 row-span-1 md:col-span-3 md:row-span-1 relative overflow-hidden rounded-2xl">
+                  <div className="hidden md:block md:col-span-3 md:row-span-1 relative overflow-hidden rounded-2xl">
                     <img src={getFeedImageUrl(publicCreations[4]?.image_url, 800)} className="w-full h-full object-cover" />
                   </div>
                 )}
@@ -860,12 +867,12 @@ function HeroSection({ user, homeState, publicCreations, navigate }: { user: Use
         <div className="absolute inset-0 bg-gradient-to-r from-[#080808] via-[#080808]/70 to-transparent z-0"></div>
         <div className="absolute inset-0 bg-gradient-to-t from-[#080808]/20 via-transparent to-transparent z-0 md:hidden"></div>
 
-        <div className="absolute inset-0 z-10 flex flex-row items-center justify-between px-6 md:px-16 pt-2">
+        <div className="absolute w-full h-full z-10 flex flex-row items-center justify-between px-6 md:px-16 pt-2">
           <div className="flex flex-col items-start text-left max-w-[65%] md:max-w-[70%]">
             <h1 className="text-xl md:text-5xl font-black text-white tracking-tighter mb-0.5 md:mb-1 drop-shadow-2xl leading-[1.1]">
               Create iconic AI photos.
             </h1>
-            <p className="text-[#AAAAAA] text-[9px] md:text-lg font-bold shadow-black drop-shadow-lg uppercase tracking-[0.15em]">
+            <p className="text-[#AAAAAA] text-[10px] md:text-lg font-bold shadow-black drop-shadow-lg uppercase tracking-[0.15em]">
               The world's most advanced AI marketplace.
               {homeState === 'out_of_tokens' && <span className="block text-amber-400 mt-0.5 text-[8px] md:text-sm normal-case tracking-normal">Out of tokens. Upgrade to continue.</span>}
             </p>
@@ -876,7 +883,7 @@ function HeroSection({ user, homeState, publicCreations, navigate }: { user: Use
             onClick={() => navigate(homeState === 'out_of_tokens' ? '/creator/settings?tab=billing' : '/creator/studio?view=create')}
             className="
                           relative -top-1 md:top-0
-                          rounded-full px-4 md:px-10 py-2.5 md:py-7 text-[10px] md:text-lg font-black uppercase tracking-widest
+                          rounded-full px-4 md:px-10 py-2.5 md:py-7 text-[11px] md:text-lg font-black uppercase tracking-widest
                           bg-[#D1F349] hover:bg-[#b9d941] text-black
                           shadow-[0_8px_25px_rgba(209,243,73,0.3)] hover:shadow-[0_12px_35px_rgba(209,243,73,0.4)]
                           hover:scale-105 active:scale-95 transition-all duration-300
@@ -1230,7 +1237,7 @@ function TrendingTagsCard({ navigate, templates }: { navigate: (p: string) => vo
 
   return (
     <div className="flex-shrink-0 bg-[#1A1A1A] rounded-2xl border border-white/5 p-5 flex flex-col group shadow-lg min-h-[160px]">
-      <div className="flex items-center justify-between mb-4 w-full cursor-pointer hover:opacity-80 transition-opacity" onClick={() => navigate('/creator/templates')}>
+      <div className="flex items-center justify-between mb-4 w-full cursor-pointer hover:opacity-80 transition-opacity" onClick={() => navigate('/creator/marketplace')}>
         <h3 className="text-lg font-semibold text-white tracking-wide">Popular Tags</h3>
         <ChevronRight className="w-5 h-5 text-zinc-500" />
       </div>
@@ -1239,7 +1246,7 @@ function TrendingTagsCard({ navigate, templates }: { navigate: (p: string) => vo
         {tags.map((t, i) => (
           <button
             key={i}
-            onClick={() => navigate(`/creator/templates?search=${encodeURIComponent(t.label)}`)}
+            onClick={() => navigate(`/creator/marketplace?search=${encodeURIComponent(t.label)}`)}
             className="flex items-center gap-1.5 px-3 py-2 bg-white/5 hover:bg-white/10 rounded-lg border border-white/5 text-sm text-zinc-300 hover:text-white transition-all transform hover:scale-105 hover:shadow-md"
           >
             <t.icon className="w-3.5 h-3.5 opacity-70" />

@@ -5,7 +5,8 @@ import {
     X, Copy, RefreshCw, Save, Download,
     ChevronDown, Trash2, Maximize2, Wand2,
     Globe, Lock, Info, ChevronUp, Loader2,
-    User, Cpu, Play, Pause, Volume2, VolumeX, Video, Sparkles, Split
+    User, Cpu, Play, Pause, Volume2, VolumeX, Video, Sparkles, Split,
+    LayoutTemplate
 } from 'lucide-react';
 import { ImageCompareSlider } from '@/components/ui/ImageCompareSlider';
 import { Button } from "@/components/ui/button";
@@ -26,6 +27,8 @@ import {
 } from "@/components/ui/tooltip";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from 'react-router-dom';
+import { getCurrentUser } from '@/services/eventsApi';
+import { isUserAdult } from '@/lib/utils';
 
 export interface GalleryItem {
     id: string | number;
@@ -105,6 +108,8 @@ export function CreationDetailView({
     onDelete
 }: CreationDetailViewProps) {
     const navigate = useNavigate();
+    const currentUser = getCurrentUser();
+    const isAdult = isUserAdult(currentUser?.birth_date);
     const [currentIndex, setCurrentIndex] = useState(initialIndex);
     const [direction, setDirection] = useState(0);
     const [isPromptExpanded, setIsPromptExpanded] = useState(false);
@@ -344,6 +349,19 @@ export function CreationDetailView({
                                     onClick={(e) => { e.stopPropagation(); togglePlay(); }}
                                 />
 
+                                {/* Blur for minors */}
+                                {item.isAdult && !isAdult && !item.isOwner && (
+                                    <div className="absolute inset-0 backdrop-blur-3xl bg-black/60 z-[55] flex flex-col items-center justify-center p-6 text-center">
+                                        <div className="w-20 h-20 rounded-full bg-red-500/20 flex items-center justify-center mb-4 border-2 border-red-500/50">
+                                            <span className="text-red-400 font-black text-2xl">18+</span>
+                                        </div>
+                                        <h3 className="text-xl font-bold text-white mb-2">Age Restricted Content</h3>
+                                        <p className="text-zinc-400 text-sm max-w-xs">
+                                            This content is not available for your account due to age restrictions.
+                                        </p>
+                                    </div>
+                                )}
+
                                 {/* Custom Video Controls Overlay */}
                                 <div className={cn(
                                     "absolute inset-x-0 bottom-0 p-6 flex flex-col gap-4 bg-gradient-to-t from-black/80 via-black/20 to-transparent transition-all duration-500 z-[60]",
@@ -400,6 +418,21 @@ export function CreationDetailView({
                                 />
                             )
                         )}
+
+                        {/* Blur for minors (Images) */}
+                        {!item.type || item.type === 'image' ? (
+                            item.isAdult && !isAdult && !item.isOwner && (
+                                <div className="absolute inset-0 backdrop-blur-3xl bg-black/60 z-[55] flex flex-col items-center justify-center p-6 text-center">
+                                    <div className="w-20 h-20 rounded-full bg-red-500/20 flex items-center justify-center mb-4 border-2 border-red-500/50">
+                                        <span className="text-red-400 font-black text-2xl">18+</span>
+                                    </div>
+                                    <h3 className="text-xl font-bold text-white mb-2">Age Restricted Content</h3>
+                                    <p className="text-zinc-400 text-sm max-w-xs">
+                                        This content is not available for your account due to age restrictions.
+                                    </p>
+                                </div>
+                            )
+                        ) : null}
                     </div>
 
                     {/* --- ITEM OVERLAYS --- */}
@@ -627,6 +660,23 @@ export function CreationDetailView({
 
                                     {onUseAsTemplate && (
                                         <ActionButton icon={Save} label="Library" onClick={() => onUseAsTemplate(item)} />
+                                    )}
+
+                                    {item.isOwner && (
+                                        <ActionButton 
+                                            icon={LayoutTemplate} 
+                                            label="Market" 
+                                            variant="primary" 
+                                            onClick={() => {
+                                                onClose();
+                                                navigate('/creator/templates/new', { 
+                                                    state: { 
+                                                        action: 'create_template',
+                                                        creation: item 
+                                                    } 
+                                                });
+                                            }} 
+                                        />
                                     )}
 
                                     <ActionButton icon={Download} label="Get" onClick={() => onDownload(item)} />

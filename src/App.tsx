@@ -61,8 +61,10 @@ const PublicBoothRouter = lazy(() => import("./pages/creator/PublicBoothRouter")
 const PublicFeedRouter = lazy(() => import("./pages/creator/PublicFeedRouter"));
 const CreatorStudioPage = lazy(() => import("./pages/creator/CreatorStudioPage"));
 const CreatorTemplatesPage = lazy(() => import("./pages/creator/CreatorTemplatesPage"));
+const CreatorMarketplacePage = lazy(() => import("./pages/creator/CreatorMarketplacePage"));
 const CreatorBillingPage = lazy(() => import("./pages/creator/CreatorBillingPage"));
 const CreatorSupportPage = lazy(() => import("./pages/creator/CreatorSupportPage"));
+const TemplateEditorPage = lazy(() => import("./pages/creator/TemplateEditorPage"));
 import { CreatorOnly } from "./components/routing/CreatorOnly";
 
 // CopilotKit imports (self-hosted, no cloud required)
@@ -285,7 +287,9 @@ const AppContent = () => {
             <Route path="booth/:eventId" element={<CreatorBoothPage />} />
             <Route path="booth/:eventId/edit" element={<CreatorBoothEditor />} />
             <Route path="studio" element={<CreatorStudioPage />} />
-            <Route path="models" element={<CreatorTemplatesPage />} />
+            <Route path="templates/new" element={<TemplateEditorPage />} />
+            <Route path="templates/:templateId/edit" element={<TemplateEditorPage />} />
+            <Route path="marketplace" element={<CreatorMarketplacePage />} />
             <Route path="templates" element={<CreatorTemplatesPage />} />
             <Route path="billing" element={<CreatorBillingPage />} />
             <Route path="support" element={<CreatorSupportPage />} />
