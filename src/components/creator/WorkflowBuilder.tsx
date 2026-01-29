@@ -36,22 +36,18 @@ const STEP_TYPES: { value: WorkflowStepType; label: string; icon: any; descripti
     { value: 'text-to-video', label: 'Text → Video', icon: Sparkles, description: 'Generate video' },
 ];
 
-// Get models from aiProcessor constants
-const IMAGE_MODELS = LOCAL_IMAGE_MODELS
-    .filter(m => !m.isVariant)
-    .map(m => ({
-        value: m.shortId,
-        label: m.name,
-        cost: m.cost
-    }));
+// Get models from aiProcessor constants (include ALL models, even variants)
+const IMAGE_MODELS = LOCAL_IMAGE_MODELS.map(m => ({
+    value: m.shortId,
+    label: m.name,
+    cost: m.cost
+}));
 
-const VIDEO_MODELS = LOCAL_VIDEO_MODELS
-    .filter(m => !m.isVariant)
-    .map(m => ({
-        value: m.shortId,
-        label: m.name,
-        cost: m.cost
-    }));
+const VIDEO_MODELS = LOCAL_VIDEO_MODELS.map(m => ({
+    value: m.shortId,
+    label: m.name,
+    cost: m.cost
+}));
 
 export function WorkflowBuilder({ workflow, onChange }: WorkflowBuilderProps) {
     const [expandedStep, setExpandedStep] = useState<string | null>(null);

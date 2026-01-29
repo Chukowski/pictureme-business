@@ -1,6 +1,7 @@
 import { type MarketplaceTemplate } from "@/services/marketplaceApi";
 import { cn } from "@/lib/utils";
-import { Building2, User, Sparkles, Wand2, ShieldCheck, Heart } from "lucide-react";
+import { Building2, User, Sparkles, Wand2, ShieldCheck, Heart, DollarSign } from "lucide-react";
+import { LOCAL_IMAGE_MODELS, LOCAL_VIDEO_MODELS } from "@/services/aiProcessor";
 
 interface TemplatePreviewProps {
     formData: Partial<MarketplaceTemplate>;
@@ -10,6 +11,23 @@ interface TemplatePreviewProps {
 export function TemplatePreview({ formData, currentStep }: TemplatePreviewProps) {
     const isBusiness = formData.template_type === 'business';
     const previewUrl = formData.preview_url || (formData.backgrounds && formData.backgrounds[0]);
+    
+    // Calculate estimated cost
+    const imageModelId = formData.pipeline_config?.imageModel || 'seedream-v4.5';
+    const videoModelId = formData.pipeline_config?.videoModel;
+    
+    const imageModel = LOCAL_IMAGE_MODELS.find(m => m.shortId === imageModelId);
+    const videoModel = videoModelId ? LOCAL_VIDEO_MODELS.find(m => m.shortId === videoModelId) : null;
+    
+    const imageCost = imageModel?.cost || 2;
+    const videoCost = videoModel?.cost || 0;
+    const faceswapCost = formData.pipeline_config?.faceswapEnabled ? 1 : 0;
+    
+    const estimatedCost = imageCost + videoCost + faceswapCost;
+    
+    // Check if template has a price
+    const hasPrice = formData.price && formData.price > 0;
+    const hasTokenCost = formData.tokens_cost && formData.tokens_cost > 0;
 
     return (
         <div className="flex flex-col h-full bg-[#101112] text-white">
@@ -45,9 +63,21 @@ export function TemplatePreview({ formData, currentStep }: TemplatePreviewProps)
                             By You • {formData.category}
                         </p>
                     </div>
-                    <div className="flex items-center gap-1.5 bg-black/40 backdrop-blur-md px-2 py-1 rounded-full border border-white/10">
-                        <span className="text-[10px] font-bold text-amber-500">{formData.tokens_cost}</span>
-                        <div className="w-2 h-2 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]" />
+                    <div className="flex items-center gap-2">
+                        {hasPrice && (
+                            <div className="flex items-center gap-1 bg-green-500/20 backdrop-blur-md px-2 py-1 rounded-full border border-green-500/30">
+                                <DollarSign className="w-3 h-3 text-green-400" />
+                                <span className="text-[10px] font-bold text-green-400">{formData.price?.toFixed(2)}</span>
+                            </div>
+                        )}
+                        {(hasTokenCost || estimatedCost > 0) && (
+                            <div className="flex items-center gap-1.5 bg-black/40 backdrop-blur-md px-2 py-1 rounded-full border border-white/10">
+                                <span className="text-[10px] font-bold text-amber-500">
+                                    {hasTokenCost ? formData.tokens_cost : `~${estimatedCost}`}
+                                </span>
+                                <div className="w-2 h-2 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]" />
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
@@ -61,7 +91,7 @@ export function TemplatePreview({ formData, currentStep }: TemplatePreviewProps)
                             <Sparkles className="w-3 h-3" />
                             AI Pipeline
                         </h3>
-                        <div className="text-[10px] text-indigo-400 font-mono">{formData.pipeline_config?.imageModel}</div>
+                        <div className="text-[10px] text-indigo-400 font-mono">{imageModel?.name || formData.pipeline_config?.imageModel}</div>
                     </div>
                     
                     <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5 space-y-2">
@@ -75,6 +105,46 @@ export function TemplatePreview({ formData, currentStep }: TemplatePreviewProps)
                             </div>
                         )}
                     </div>
+                </div>
+
+                {/* Estimated Cost Breakdown */}
+                <div className="space-y-3">
+                    <h3 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2">
+                        <Sparkles className="w-3 h-3" />
+                        Estimated Cost
+                    </h3>
+                    <div className="p-4 rounded-xl bg-amber-500/5 border border-amber-500/20 space-y-2">
+                        <div className="flex items-center justify-between text-[10px]">
+                            <span className="text-zinc-400">Image Model:</span>
+                            <span className="text-amber-400 font-bold">{imageCost} tokens</span>
+                        </div>
+                        {videoModel && (
+                            <div className="flex items-center justify-between text-[10px]">
+                                <span className="text-zinc-400">Video Model:</span>
+                                <span className="text-amber-400 font-bold">{videoCost} tokens</span>
+                            </div>
+                        )}
+                        {formData.pipeline_config?.faceswapEnabled && (
+                            <div className="flex items-center justify-between text-[10px]">
+                                <span className="text-zinc-400">Face-Swap:</span>
+                                <span className="text-amber-400 font-bold">{faceswapCost} tokens</span>
+                            </div>
+                        )}
+                        <div className="flex items-center justify-between text-[11px] pt-2 border-t border-amber-500/20">
+                            <span className="text-amber-500 font-bold">Total per use:</span>
+                            <span className="text-amber-500 font-black">~{estimatedCost} tokens</span>
+                        </div>
+                    </div>
+                    
+                    {hasPrice && (
+                        <div className="p-3 rounded-lg bg-green-500/5 border border-green-500/20 flex items-center justify-between">
+                            <span className="text-[10px] text-green-400 font-medium">Purchase Price:</span>
+                            <div className="flex items-center gap-1">
+                                <DollarSign className="w-3 h-3 text-green-400" />
+                                <span className="text-[12px] font-bold text-green-400">{formData.price?.toFixed(2)}</span>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* Business Placeholders (The Core Request) */}

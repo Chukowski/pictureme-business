@@ -799,14 +799,11 @@ export function TemplateEditor() {
                                                     })}
                                                     className="w-full h-10 px-3 rounded-md border border-border bg-background text-sm"
                                                 >
-                                                    {LOCAL_IMAGE_MODELS
-                                                        .filter(m => !m.isVariant) // Exclude variants
-                                                        .map(model => (
-                                                            <option key={model.shortId} value={model.shortId}>
-                                                                {model.name} ({model.cost} tokens)
-                                                            </option>
-                                                        ))
-                                                    }
+                                                    {LOCAL_IMAGE_MODELS.map(model => (
+                                                        <option key={model.shortId} value={model.shortId}>
+                                                            {model.name} ({model.cost} tokens)
+                                                        </option>
+                                                    ))}
                                                 </select>
                                             </div>
                                             <div className="flex items-center justify-between p-3 rounded-lg border border-white/5 bg-white/5">
