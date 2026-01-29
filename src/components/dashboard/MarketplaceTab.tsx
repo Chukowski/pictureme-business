@@ -542,7 +542,9 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
 
       if (response.ok) {
         const result = await response.json();
-        if (template.price === 0) {
+        const tokenCost = template.tokens_cost ?? 0;
+        const moneyCost = template.price ?? 0;
+        if (tokenCost === 0 && moneyCost === 0) {
           toast.success(`Added "${template.name}" to your library!`);
         } else {
           toast.success(`Purchased "${template.name}" for ${result.tokens_spent} tokens!`);
@@ -882,7 +884,7 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
 
                         {/* Status Badges */}
                         <div className="absolute top-4 left-4 flex flex-wrap gap-2">
-                          {template.price === 0 && (
+                          {((template.tokens_cost ?? 0) === 0 && (template.price ?? 0) === 0) && (
                             <span className="px-2.5 py-1 rounded-lg bg-emerald-500 text-black text-[10px] font-black uppercase tracking-wider shadow-lg">
                               Free
                             </span>
@@ -905,7 +907,13 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
                             </span>
                             <span className="w-1 h-1 rounded-full bg-zinc-800" />
                             <span className="text-[9px] font-bold text-[#D1F349] uppercase tracking-tighter">
-                              {template.price === 0 ? 'Free Style' : `${template.price} Tokens`}
+                              {(() => {
+                                const tokenCost = template.tokens_cost ?? 0;
+                                const moneyCost = template.price ?? 0;
+                                if (tokenCost === 0 && moneyCost === 0) return 'Free Style';
+                                if (moneyCost > 0) return `$${moneyCost}`;
+                                return `${tokenCost} Tokens`;
+                              })()}
                             </span>
                           </div>
                         </div>
@@ -1092,7 +1100,13 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
                     </span>
                     <span className="w-1 h-1 rounded-full bg-zinc-800" />
                     <span className="text-[8px] font-bold text-[#D1F349] uppercase tracking-tighter">
-                      {selectedTemplate.price === 0 ? 'Free Style' : `${selectedTemplate.price} Tokens`}
+                      {(() => {
+                        const tokenCost = selectedTemplate.tokens_cost ?? 0;
+                        const moneyCost = selectedTemplate.price ?? 0;
+                        if (tokenCost === 0 && moneyCost === 0) return 'Free Style';
+                        if (moneyCost > 0) return `$${moneyCost}`;
+                        return `${tokenCost} Tokens`;
+                      })()}
                     </span>
                   </div>
                 </div>
@@ -1168,7 +1182,13 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
               {isPurchasing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : (
                 (selectedTemplate.is_owned || isInLibrary(selectedTemplate.id))
                   ? "Use Template"
-                  : (selectedTemplate.price === 0 ? "Add to Library" : `Get for ${selectedTemplate.price} Tokens`)
+                  : (() => {
+                      const tokenCost = selectedTemplate.tokens_cost ?? 0;
+                      const moneyCost = selectedTemplate.price ?? 0;
+                      if (tokenCost === 0 && moneyCost === 0) return "Add to Library";
+                      if (moneyCost > 0) return `Get for $${moneyCost}`;
+                      return `Get for ${tokenCost} Tokens`;
+                    })()
               )}
             </Button>
           )}
