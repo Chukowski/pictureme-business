@@ -8,6 +8,7 @@ import { submitMarketplaceTemplate, updateMarketplaceTemplate, getMarketplaceTem
 import { BoothEditorLayout } from "@/components/creator/BoothEditorLayout";
 import { TemplatePreview } from "@/components/creator/TemplatePreview";
 import { WorkflowBuilder } from "@/components/creator/WorkflowBuilder";
+import { LOCAL_IMAGE_MODELS, LOCAL_VIDEO_MODELS, normalizeModelId } from "@/services/aiProcessor";
 import {
     Card,
     CardContent,
@@ -127,6 +128,27 @@ export function TemplateEditor() {
 
         if (state?.action === 'create_template' && state?.creation) {
             const { creation } = state;
+            
+            // Normalize the model ID from the creation
+            const creationModelId = creation.model_id || creation.model || '';
+            const normalizedModelId = normalizeModelId(creationModelId);
+            
+            // Find the correct model shortId from LOCAL_IMAGE_MODELS
+            const modelMatch = LOCAL_IMAGE_MODELS.find(m => 
+                m.shortId === normalizedModelId || 
+                m.id === creationModelId ||
+                normalizeModelId(m.id) === normalizedModelId
+            );
+            
+            const correctModelId = modelMatch?.shortId || normalizedModelId || 'seedream-t2i';
+            
+            console.log('🎨 Template from creation:', {
+                original: creationModelId,
+                normalized: normalizedModelId,
+                matched: modelMatch?.name,
+                using: correctModelId
+            });
+            
             return {
                 ...initialData,
                 name: creation.prompt ? (creation.prompt.substring(0, 30) + '...') : 'New Template',
@@ -138,7 +160,7 @@ export function TemplateEditor() {
                 is_adult: creation.is_adult || false,
                 pipeline_config: {
                     ...initialData.pipeline_config,
-                    imageModel: creation.model_id || creation.model || 'seedream-t2i',
+                    imageModel: correctModelId,
                 }
             };
         }
@@ -777,9 +799,14 @@ export function TemplateEditor() {
                                                     })}
                                                     className="w-full h-10 px-3 rounded-md border border-border bg-background text-sm"
                                                 >
-                                                    <option value="seedream-t2i">Seedream T2I (Balanced)</option>
-                                                    <option value="flux-realism">Flux Realism (Pro)</option>
-                                                    <option value="nano-banana">Nano Banana (Fast)</option>
+                                                    {LOCAL_IMAGE_MODELS
+                                                        .filter(m => !m.isVariant) // Exclude variants
+                                                        .map(model => (
+                                                            <option key={model.shortId} value={model.shortId}>
+                                                                {model.name} ({model.cost} tokens)
+                                                            </option>
+                                                        ))
+                                                    }
                                                 </select>
                                             </div>
                                             <div className="flex items-center justify-between p-3 rounded-lg border border-white/5 bg-white/5">

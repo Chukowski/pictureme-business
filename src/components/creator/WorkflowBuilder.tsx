@@ -19,6 +19,7 @@ import {
     Users
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { LOCAL_IMAGE_MODELS, LOCAL_VIDEO_MODELS } from "@/services/aiProcessor";
 import type { WorkflowStep, WorkflowStepType, WorkflowPipeline } from "@/services/marketplaceApi";
 
 interface WorkflowBuilderProps {
@@ -35,20 +36,22 @@ const STEP_TYPES: { value: WorkflowStepType; label: string; icon: any; descripti
     { value: 'text-to-video', label: 'Text → Video', icon: Sparkles, description: 'Generate video' },
 ];
 
-const IMAGE_MODELS = [
-    { value: 'seedream-t2i', label: 'Seedream T2I (Balanced)', cost: 2 },
-    { value: 'flux-realism', label: 'Flux Realism (Pro)', cost: 2 },
-    { value: 'flux-2-pro', label: 'Flux Pro (Premium)', cost: 4 },
-    { value: 'nano-banana', label: 'Nano Banana (Fast)', cost: 1 },
-    { value: 'nano-banana-pro', label: 'Nano Banana Pro', cost: 15 },
-];
+// Get models from aiProcessor constants
+const IMAGE_MODELS = LOCAL_IMAGE_MODELS
+    .filter(m => !m.isVariant)
+    .map(m => ({
+        value: m.shortId,
+        label: m.name,
+        cost: m.cost
+    }));
 
-const VIDEO_MODELS = [
-    { value: 'veo-3.1', label: 'Veo 3.1 (Premium)', cost: 100 },
-    { value: 'veo-3.1-fast', label: 'Veo 3.1 Fast', cost: 100 },
-    { value: 'kling-2.5', label: 'Kling 2.5 Turbo', cost: 100 },
-    { value: 'ltx-video', label: 'LTX Video (Fast)', cost: 10 },
-];
+const VIDEO_MODELS = LOCAL_VIDEO_MODELS
+    .filter(m => !m.isVariant)
+    .map(m => ({
+        value: m.shortId,
+        label: m.name,
+        cost: m.cost
+    }));
 
 export function WorkflowBuilder({ workflow, onChange }: WorkflowBuilderProps) {
     const [expandedStep, setExpandedStep] = useState<string | null>(null);
@@ -56,11 +59,15 @@ export function WorkflowBuilder({ workflow, onChange }: WorkflowBuilderProps) {
     const steps = workflow?.steps || [];
 
     const addStep = (type: WorkflowStepType) => {
+        // Get default model based on step type
+        const defaultImageModel = IMAGE_MODELS[0]?.value || 'seedream-v4.5';
+        const defaultVideoModel = VIDEO_MODELS.find(m => m.value.includes('fast'))?.value || VIDEO_MODELS[0]?.value || 'veo-3.1-fast';
+        
         const newStep: WorkflowStep = {
             id: `step-${Date.now()}`,
             type,
             name: STEP_TYPES.find(t => t.value === type)?.label || 'New Step',
-            model: type.includes('video') ? 'veo-3.1-fast' : 'seedream-t2i',
+            model: type.includes('video') ? defaultVideoModel : defaultImageModel,
             prompt: '',
             negative_prompt: '',
             reference_images: [],
