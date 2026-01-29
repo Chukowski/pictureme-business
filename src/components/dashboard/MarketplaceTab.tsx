@@ -911,8 +911,10 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
                                 const tokenCost = template.tokens_cost ?? 0;
                                 const moneyCost = template.price ?? 0;
                                 if (tokenCost === 0 && moneyCost === 0) return 'Free Style';
-                                if (moneyCost > 0) return `$${moneyCost}`;
-                                return `${tokenCost} Tokens`;
+                                const parts = [];
+                                if (tokenCost > 0) parts.push(`${tokenCost} Tokens`);
+                                if (moneyCost > 0) parts.push(`$${moneyCost}`);
+                                return parts.join(' + ');
                               })()}
                             </span>
                           </div>
@@ -1104,8 +1106,10 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
                         const tokenCost = selectedTemplate.tokens_cost ?? 0;
                         const moneyCost = selectedTemplate.price ?? 0;
                         if (tokenCost === 0 && moneyCost === 0) return 'Free Style';
-                        if (moneyCost > 0) return `$${moneyCost}`;
-                        return `${tokenCost} Tokens`;
+                        const parts = [];
+                        if (tokenCost > 0) parts.push(`${tokenCost} Tokens`);
+                        if (moneyCost > 0) parts.push(`$${moneyCost}`);
+                        return parts.join(' + ');
                       })()}
                     </span>
                   </div>
@@ -1186,8 +1190,10 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
                       const tokenCost = selectedTemplate.tokens_cost ?? 0;
                       const moneyCost = selectedTemplate.price ?? 0;
                       if (tokenCost === 0 && moneyCost === 0) return "Add to Library";
-                      if (moneyCost > 0) return `Get for $${moneyCost}`;
-                      return `Get for ${tokenCost} Tokens`;
+                      const parts = [];
+                      if (tokenCost > 0) parts.push(`${tokenCost} Tokens`);
+                      if (moneyCost > 0) parts.push(`$${moneyCost}`);
+                      return `Get for ${parts.join(' + ')}`;
                     })()
               )}
             </Button>
