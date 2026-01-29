@@ -59,24 +59,6 @@ export function RecommendedTemplates({ templates = [] }: RecommendedTemplatesPro
                 >
                   <div className="absolute inset-0 bg-gradient-to-t from-[#101112]/90 via-transparent to-transparent opacity-80" />
                   
-                  {/* Cost Badge */}
-                  <div className="absolute top-3 left-3 flex flex-wrap gap-2">
-                    {isFree ? (
-                      <span className="px-2 py-0.5 rounded-lg bg-emerald-500/90 text-black text-[10px] font-black uppercase tracking-wider shadow-lg">
-                        Free
-                      </span>
-                    ) : (
-                      <span className="px-2 py-0.5 rounded-lg bg-[#D1F349]/90 text-black text-[10px] font-black uppercase tracking-wider shadow-lg flex items-center gap-1">
-                        {(() => {
-                          const parts = [];
-                          if (tokenCost > 0) parts.push(`${tokenCost} Tokens`);
-                          if (moneyCost > 0) parts.push(`$${moneyCost}`);
-                          return parts.join(' + ');
-                        })()}
-                      </span>
-                    )}
-                  </div>
-
                   <div className="absolute bottom-3 left-3 right-3">
                     <h4 className="text-sm font-bold text-white truncate leading-tight">{name}</h4>
                     <div className="flex items-center gap-2 mt-1">
@@ -90,7 +72,7 @@ export function RecommendedTemplates({ templates = [] }: RecommendedTemplatesPro
                   <div className="absolute inset-0 bg-[#101112]/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-[1px]">
                     <Button
                       size="sm"
-                      className="bg-white text-black hover:bg-zinc-200 h-8 text-xs font-semibold"
+                      className="bg-white text-black hover:bg-zinc-200 h-8 text-[10px] font-bold uppercase tracking-tight"
                       onClick={() => {
                         viewTemplate(template.id);
                         
@@ -107,7 +89,16 @@ export function RecommendedTemplates({ templates = [] }: RecommendedTemplatesPro
                         }
                       }}
                     >
-                      Use Template
+                      {template.is_owned ? "Use Style" : (
+                        isFree ? "Use Style" : (
+                          (() => {
+                            const parts = [];
+                            if (tokenCost > 0) parts.push(`${tokenCost} Tokens`);
+                            if (moneyCost > 0) parts.push(`$${moneyCost}`);
+                            return `Get for ${parts.join(' + ')}`;
+                          })()
+                        )
+                      )}
                     </Button>
                   </div>
                 </div>

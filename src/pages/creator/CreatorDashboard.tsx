@@ -1028,24 +1028,6 @@ function FeaturedStyleCard({ navigate, templates, user }: { navigate: (p: string
       {/* Overlays */}
       <div className="absolute inset-0 bg-gradient-to-t from-[#101112] via-[#101112]/40 to-transparent opacity-90 z-10"></div>
 
-      {/* Cost Badge (Top Right) */}
-      <div className="absolute top-4 right-4 z-30">
-        {isFree ? (
-          <span className="px-3 py-1 rounded-full bg-emerald-500 text-black text-[10px] font-black uppercase tracking-wider shadow-lg">
-            Free
-          </span>
-        ) : (
-          <span className="px-3 py-1 rounded-full bg-[#D1F349] text-black text-[10px] font-black uppercase tracking-wider shadow-lg">
-            {(() => {
-              const parts = [];
-              if (tokenCost > 0) parts.push(`${tokenCost} Tokens`);
-              if (moneyCost > 0) parts.push(`$${moneyCost}`);
-              return parts.join(' + ');
-            })()}
-          </span>
-        )}
-      </div>
-
       {/* Progress Indicators (if multiple) */}
       {templates.length > 1 && (
         <div className="absolute top-4 left-0 right-0 z-30 flex justify-center gap-1.5 px-6">
@@ -1100,14 +1082,29 @@ function FeaturedStyleCard({ navigate, templates, user }: { navigate: (p: string
         </motion.div>
 
         {/* CTA Button */}
-        <button className="
+        <button 
+          onClick={(e) => {
+            e.stopPropagation();
+            handleUseStyle(template);
+          }}
+          className="
             flex items-center gap-2 px-4 py-2 md:px-6 md:py-3 w-fit
             bg-white text-black hover:bg-zinc-200
             rounded-full
             text-xs md:text-sm font-bold
             transition-all duration-300 transform group-hover:translate-x-1 shadow-lg
         ">
-          Use Style <ArrowRight className="w-3 h-3 md:w-4 md:h-4" />
+          {template.is_owned ? "Use Style" : (
+            isFree ? "Use Style" : (
+              (() => {
+                const parts = [];
+                if (tokenCost > 0) parts.push(`${tokenCost} Tokens`);
+                if (moneyCost > 0) parts.push(`$${moneyCost}`);
+                return `Get for ${parts.join(' + ')}`;
+              })()
+            )
+          )}
+          <ArrowRight className="w-3 h-3 md:w-4 md:h-4" />
         </button>
       </div>
     </div>
