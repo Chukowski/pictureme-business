@@ -207,7 +207,6 @@ const MODEL_ID_MAP: Record<string, string> = {
   'google-video': 'fal-ai/google/veo-3-1/image-to-video',
   'kling-v2.6-motion': 'fal-ai/kling-video/v2.6/pro/motion-control',
   'kling-v2.6-motion-std': 'fal-ai/kling-video/v2.6/standard/motion-control',
-  'flux-klein-alt': 'fal-ai/flux-2/klein/9b/base/lora',
 };
 
 /**
@@ -603,30 +602,7 @@ export const AI_MODELS = {
     capabilities: ['i2i', 't2i'] as const,
     isVariant: true
   },
-  fluxDev: {
-    id: "fal-ai/flux/dev",
-    shortId: "flux-dev",
-    name: "Flux Dev",
-    brand: "Flux",
-    description: "Flux Dev",
-    speed: "medium",
-    type: "image",
-    cost: 3,
-    capabilities: ['t2i'] as const,
-    isVariant: true
-  },
-  fluxRealism: {
-    id: "fal-ai/flux-realism",
-    shortId: "flux-realism",
-    name: "Flux Realism",
-    brand: "Flux",
-    description: "Flux Realism",
-    speed: "medium",
-    type: "image",
-    cost: 2,
-    capabilities: ['t2i'] as const,
-    isVariant: true
-  },
+
 
   // --- BYTEDANCE ---
   seedream: {

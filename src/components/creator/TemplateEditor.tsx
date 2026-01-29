@@ -7,6 +7,7 @@ import { getCurrentUser, type User } from "@/services/eventsApi";
 import { submitMarketplaceTemplate, updateMarketplaceTemplate, getMarketplaceTemplate, type MarketplaceTemplate } from "@/services/marketplaceApi";
 import { BoothEditorLayout } from "@/components/creator/BoothEditorLayout";
 import { TemplatePreview } from "@/components/creator/TemplatePreview";
+import { WorkflowBuilder } from "@/components/creator/WorkflowBuilder";
 import {
     Card,
     CardContent,
@@ -38,7 +39,8 @@ import {
     Send,
     Gift,
     DollarSign,
-    Info
+    Info,
+    Workflow
 } from "lucide-react";
 import { MediaLibrary } from "@/components/MediaLibrary";
 import {
@@ -60,6 +62,7 @@ export function TemplateEditor() {
     const [isSaving, setIsSaving] = useState(false);
     const [currentStep, setCurrentStep] = useState('setup');
     const [lastSaved, setLastSaved] = useState<Date | null>(null);
+    const [useWorkflow, setUseWorkflow] = useState(false);
 
     const [formData, setFormData] = useState<Partial<MarketplaceTemplate>>(() => {
         // Try to recover state from location if available immediately
@@ -473,32 +476,74 @@ export function TemplateEditor() {
                                     />
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-                                    <div className="space-y-2">
-                                        <Label>AI Model</Label>
-                                        <select
-                                            value={formData.pipeline_config?.imageModel}
-                                            onChange={(e) => setFormData({
-                                                ...formData,
-                                                pipeline_config: { ...formData.pipeline_config, imageModel: e.target.value }
-                                            })}
-                                            className="w-full h-10 px-3 rounded-md border border-border bg-background text-sm"
-                                        >
-                                            <option value="seedream-t2i">Seedream T2I (Balanced)</option>
-                                            <option value="flux-realism">Flux Realism (Pro)</option>
-                                            <option value="nano-banana">Nano Banana (Fast)</option>
-                                        </select>
+                                {/* Mode Toggle: Simple vs Workflow */}
+                                <div className="pt-4 border-t border-white/5">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <div>
+                                            <Label className="text-sm font-bold">Pipeline Mode</Label>
+                                            <p className="text-xs text-zinc-500">Choose between simple or advanced workflow</p>
+                                        </div>
+                                        <div className="flex items-center gap-2 p-1 rounded-lg bg-white/5 border border-white/10">
+                                            <Button
+                                                variant={!useWorkflow ? "default" : "ghost"}
+                                                size="sm"
+                                                className="h-8 text-xs"
+                                                onClick={() => setUseWorkflow(false)}
+                                            >
+                                                <Wand2 className="w-3 h-3 mr-1.5" />
+                                                Simple
+                                            </Button>
+                                            <Button
+                                                variant={useWorkflow ? "default" : "ghost"}
+                                                size="sm"
+                                                className="h-8 text-xs"
+                                                onClick={() => setUseWorkflow(true)}
+                                            >
+                                                <Workflow className="w-3 h-3 mr-1.5" />
+                                                Workflow
+                                            </Button>
+                                        </div>
                                     </div>
-                                    <div className="flex items-center justify-between p-3 rounded-lg border border-white/5 bg-white/5">
-                                        <Label className="text-xs">Enable Face-Swap</Label>
-                                        <Switch
-                                            checked={formData.pipeline_config?.faceswapEnabled}
-                                            onCheckedChange={(checked) => setFormData({
+
+                                    {!useWorkflow ? (
+                                        // Simple Mode
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div className="space-y-2">
+                                                <Label>AI Model</Label>
+                                                <select
+                                                    value={formData.pipeline_config?.imageModel}
+                                                    onChange={(e) => setFormData({
+                                                        ...formData,
+                                                        pipeline_config: { ...formData.pipeline_config, imageModel: e.target.value }
+                                                    })}
+                                                    className="w-full h-10 px-3 rounded-md border border-border bg-background text-sm"
+                                                >
+                                                    <option value="seedream-t2i">Seedream T2I (Balanced)</option>
+                                                    <option value="flux-realism">Flux Realism (Pro)</option>
+                                                    <option value="nano-banana">Nano Banana (Fast)</option>
+                                                </select>
+                                            </div>
+                                            <div className="flex items-center justify-between p-3 rounded-lg border border-white/5 bg-white/5">
+                                                <Label className="text-xs">Enable Face-Swap</Label>
+                                                <Switch
+                                                    checked={formData.pipeline_config?.faceswapEnabled}
+                                                    onCheckedChange={(checked) => setFormData({
+                                                        ...formData,
+                                                        pipeline_config: { ...formData.pipeline_config, faceswapEnabled: checked }
+                                                    })}
+                                                />
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        // Workflow Mode
+                                        <WorkflowBuilder
+                                            workflow={formData.pipeline_config?.workflow}
+                                            onChange={(workflow) => setFormData({
                                                 ...formData,
-                                                pipeline_config: { ...formData.pipeline_config, faceswapEnabled: checked }
+                                                pipeline_config: { ...formData.pipeline_config, workflow }
                                             })}
                                         />
-                                    </div>
+                                    )}
                                 </div>
                             </CardContent>
                         </Card>
