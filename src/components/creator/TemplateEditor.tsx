@@ -189,7 +189,8 @@ export function TemplateEditor() {
 
     const lastDraftSaved = useRef<string>("");
 
-    // Save to localStorage whenever formData changes (for refresh recovery)
+    // Save to localStorage whenever formData changes (for refresh recovery ONLY)
+    // This does NOT save to server - only local storage for crash recovery
     useEffect(() => {
         if (formData.name && formData.name.trim()) {
             const localStorageKey = `template-draft-${formData.id || 'new'}`;
@@ -197,24 +198,9 @@ export function TemplateEditor() {
         }
     }, [formData]);
 
-    // Auto-save logic (debounced) - only after user interaction
-    useEffect(() => {
-        // Skip auto-save on initial mount or if loading
-        if (isInitialMount.current || !hasUserInteracted.current || isLoading) return;
-        if (!formData.name || formData.status === 'published') return;
-
-        const currentDataStr = JSON.stringify(formData);
-        if (currentDataStr === lastDraftSaved.current) return;
-
-        if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
-        
-        autoSaveTimer.current = setTimeout(() => {
-            handleSaveAction(true);
-            lastDraftSaved.current = currentDataStr;
-        }, 5000); // Auto-save after 5 seconds of inactivity
-
-        return () => clearTimeout(autoSaveTimer.current);
-    }, [formData, isLoading]);
+    // DISABLED: Auto-save to server (was causing issues with automatic submission)
+    // User must manually click "Save Draft" button to save to server
+    // localStorage still provides crash recovery
 
     const handleSaveAction = async (isAutoSave = false) => {
         if (!formData.name) return;
@@ -225,16 +211,19 @@ export function TemplateEditor() {
                 hasUserInteracted.current = true; // Mark as interacted when manually saving
             }
             
+            // CRITICAL: Always ensure status is 'draft' when saving manually
+            const draftData = { ...formData, status: 'draft' as const };
+            
             let result;
-            if (formData.id) {
+            if (draftData.id) {
                 // Always update existing draft - never create new
-                result = await updateMarketplaceTemplate(formData.id, formData);
+                result = await updateMarketplaceTemplate(draftData.id, draftData);
                 if (!isAutoSave) {
-                    console.log('✅ Updated existing draft:', formData.id);
+                    console.log('✅ Updated existing draft:', draftData.id);
                 }
             } else {
                 // Create new draft only if no ID exists
-                result = await submitMarketplaceTemplate({ ...formData, status: 'draft' });
+                result = await submitMarketplaceTemplate(draftData);
                 console.log('✅ Created new draft:', result.id);
                 
                 // Update formData with the new ID so subsequent saves update instead of create
@@ -251,7 +240,7 @@ export function TemplateEditor() {
             }
             
             setLastSaved(new Date());
-            if (!isAutoSave) toast.success("Draft saved");
+            if (!isAutoSave) toast.success("Draft saved - continue editing");
         } catch (error) {
             console.error('Failed to save draft:', error);
             if (!isAutoSave) toast.error("Failed to save draft");
@@ -266,22 +255,29 @@ export function TemplateEditor() {
             return;
         }
 
+        if (!formData.id) {
+            toast.error("Please save as draft first before submitting");
+            return;
+        }
+
         try {
             setIsSaving(true);
+            
+            // CRITICAL: Only submit to marketplace when user explicitly clicks "Submit to Market"
             const dataToSubmit = { ...formData, status: 'pending' as const };
             
-            if (formData.id) {
-                await updateMarketplaceTemplate(formData.id, dataToSubmit);
-            } else {
-                await submitMarketplaceTemplate(dataToSubmit);
-            }
+            await updateMarketplaceTemplate(formData.id, dataToSubmit);
             
             // Clear localStorage on successful submission
-            const localStorageKey = `template-draft-${formData.id || 'new'}`;
+            const localStorageKey = `template-draft-${formData.id}`;
             localStorage.removeItem(localStorageKey);
             
             toast.success("Template submitted for review!");
-            navigate("/creator/templates");
+            
+            // Only navigate away after explicit submission
+            setTimeout(() => {
+                navigate("/creator/templates");
+            }, 500);
         } catch (error: any) {
             console.error(error);
             toast.error(error.message || "Failed to submit template");
