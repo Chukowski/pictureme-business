@@ -26,8 +26,9 @@ export function TemplatePreview({ formData, currentStep }: TemplatePreviewProps)
     const generationCost = imageCost + videoCost + faceswapCost; // Cost to generate
     
     // SALE PRICE (what the creator charges users)
-    const hasMoneyPrice = formData.price && formData.price > 0;
-    const hasTokenPrice = formData.tokens_cost && formData.tokens_cost > 0;
+    // Only consider it a price if it's explicitly greater than 0
+    const hasMoneyPrice = (formData.price ?? 0) > 0;
+    const hasTokenPrice = (formData.tokens_cost ?? 0) > 0;
     const isFree = !hasMoneyPrice && !hasTokenPrice;
 
     return (

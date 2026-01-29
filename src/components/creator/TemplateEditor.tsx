@@ -101,7 +101,7 @@ export function TemplateEditor() {
             prompt: "",
             negative_prompt: "",
             price: 0,
-            tokens_cost: 2,
+            tokens_cost: 0, // Default to FREE
             is_public: true,
             is_adult: false,
             status: 'draft',
