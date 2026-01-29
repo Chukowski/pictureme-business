@@ -19,9 +19,11 @@ import {
     CheckCircle,
     Loader2,
     TrendingUp,
+    Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
 import { ENV } from "@/config/env";
+import { getTokenStats, TokenStats } from "@/services/billingApi";
 
 interface CreatorBalance {
     user_id: string;
@@ -43,6 +45,7 @@ interface LedgerEntry {
 
 export default function CreatorEarningsCard() {
     const [balance, setBalance] = useState<CreatorBalance | null>(null);
+    const [tokenStats, setTokenStats] = useState<TokenStats | null>(null);
     const [history, setHistory] = useState<LedgerEntry[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [showPayoutDialog, setShowPayoutDialog] = useState(false);
@@ -52,7 +55,17 @@ export default function CreatorEarningsCard() {
     useEffect(() => {
         fetchBalance();
         fetchHistory();
+        fetchTokenStats();
     }, []);
+
+    const fetchTokenStats = async () => {
+        try {
+            const stats = await getTokenStats();
+            setTokenStats(stats);
+        } catch (error) {
+            console.error("Failed to fetch token stats:", error);
+        }
+    };
 
     const fetchBalance = async () => {
         try {
@@ -210,21 +223,30 @@ export default function CreatorEarningsCard() {
                 </CardHeader>
                 <CardContent className="space-y-6">
                     {/* Balance Cards */}
-                    <div className="grid grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         <div className="p-4 rounded-lg bg-card/50 border border-white/5">
-                            <p className="text-sm text-zinc-400">Available</p>
+                            <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400 mb-1">Available USD</p>
                             <p className="text-2xl font-bold text-emerald-400">
                                 ${balance?.available_balance?.toFixed(2) || "0.00"}
                             </p>
                         </div>
                         <div className="p-4 rounded-lg bg-card/50 border border-white/5">
-                            <p className="text-sm text-zinc-400">Pending</p>
+                            <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400 mb-1">Pending USD</p>
                             <p className="text-2xl font-bold text-yellow-400">
                                 ${balance?.pending_balance?.toFixed(2) || "0.00"}
                             </p>
                         </div>
                         <div className="p-4 rounded-lg bg-card/50 border border-white/5">
-                            <p className="text-sm text-zinc-400">Total Paid Out</p>
+                            <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400 mb-1">Tokens Earned</p>
+                            <div className="flex items-center gap-2">
+                                <Sparkles className="w-4 h-4 text-[#D1F349]" />
+                                <p className="text-2xl font-bold text-[#D1F349]">
+                                    {tokenStats?.tokens_earned || 0}
+                                </p>
+                            </div>
+                        </div>
+                        <div className="p-4 rounded-lg bg-card/50 border border-white/5">
+                            <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400 mb-1">Total Paid Out</p>
                             <p className="text-2xl font-bold text-zinc-300">
                                 ${balance?.total_paid_out?.toFixed(2) || "0.00"}
                             </p>

@@ -95,6 +95,8 @@ interface LibraryItem {
   template_id: string;
   type: string;
   name: string;
+  description?: string;
+  prompt?: string;
   preview_url?: string;
   template_type: string;
   purchased_at: string;
@@ -350,7 +352,9 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
       const libraryList = cachedLibrary || [];
       const libraryIds = new Set(libraryList.map((item) => item.template_id));
       const ownedMissing = (cachedTemplates || []).filter((t) => t.is_owned && !libraryIds.has(t.id));
+      
       if (ownedMissing.length > 0) {
+        console.log("🔗 [Marketplace] Reconciling owned templates missing from library:", ownedMissing.map(t => t.id));
         const synthesized: LibraryItem[] = ownedMissing.map((t) => ({
           id: `owned_${t.id}`,
           template_id: t.id,
@@ -552,6 +556,29 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
 
       if (response.ok) {
         const result = await response.json();
+        
+        // Fetch full template details to get the unprotected prompt
+        try {
+          const tRes = await fetch(`${ENV.API_URL}/api/marketplace/templates/${template.id}`, { headers: { Authorization: `Bearer ${token}` } });
+          if (tRes.ok) {
+            const fullTemplate = await tRes.json();
+            setTemplates(templates.map(t =>
+              t.id === template.id ? { ...fullTemplate, is_owned: true } : t
+            ));
+            if (selectedTemplate?.id === template.id) {
+              setSelectedTemplate({ ...fullTemplate, is_owned: true });
+            }
+          } else {
+            setTemplates(templates.map(t =>
+              t.id === template.id ? { ...t, is_owned: true } : t
+            ));
+          }
+        } catch (e) {
+          setTemplates(templates.map(t =>
+            t.id === template.id ? { ...t, is_owned: true } : t
+          ));
+        }
+
         const tokenCost = template.tokens_cost ?? 0;
         const moneyCost = template.price ?? 0;
         if (tokenCost === 0 && moneyCost === 0) {
@@ -572,10 +599,6 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
         };
         setMyLibrary([newLibraryItem, ...myLibrary]);
         cachedLibrary = [newLibraryItem, ...(cachedLibrary || [])];
-
-        setTemplates(templates.map(t =>
-          t.id === template.id ? { ...t, is_owned: true } : t
-        ));
 
         setSelectedTemplate(null);
       } else {
@@ -894,15 +917,15 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
 
                         {/* Status Badges */}
                         <div className="absolute top-4 left-4 flex flex-wrap gap-2">
-                          {((template.tokens_cost ?? 0) === 0 && (template.price ?? 0) === 0) && (
+                          {(template.is_owned || isInLibrary(template.id)) ? (
+                            <span className="px-2.5 py-1 rounded-lg bg-emerald-500 text-black text-[10px] font-black uppercase tracking-wider shadow-lg flex items-center gap-1.5">
+                              <Check className="w-3 h-3 stroke-[4]" />
+                              Owned
+                            </span>
+                          ) : ((template.tokens_cost ?? 0) === 0 && (template.price ?? 0) === 0) && (
                             <span className="px-2.5 py-1 rounded-lg bg-emerald-500 text-black text-[10px] font-black uppercase tracking-wider shadow-lg">
                               Free
                             </span>
-                          )}
-                          {(template.is_owned || isInLibrary(template.id)) && (
-                            <div className="w-7 h-7 rounded-full bg-[#D1F349] flex items-center justify-center shadow-lg animate-in zoom-in-50 duration-300">
-                              <Check className="w-4 h-4 text-black stroke-[3]" />
-                            </div>
                           )}
                         </div>
 
@@ -1018,7 +1041,11 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
                 {myLibrary.map((item) => (
                   <div
                     key={item.id}
-                    className={`group relative bg-[#18181b] rounded-3xl overflow-hidden border border-white/5 hover:border-white/20 transition-all duration-300 ${viewMode === 'list' ? 'flex flex-row h-32 md:h-40' : ''}`}
+                    onClick={() => {
+                      const fullTemplate = templates.find(t => t.id === item.template_id);
+                      if (fullTemplate) setSelectedTemplate(fullTemplate);
+                    }}
+                    className={`group relative bg-[#18181b] rounded-3xl overflow-hidden border border-white/5 hover:border-[#D1F349]/30 transition-all duration-300 cursor-pointer ${viewMode === 'list' ? 'flex flex-row h-32 md:h-40' : ''}`}
                   >
                     <div className={`bg-card relative ${viewMode === 'list' ? 'w-32 md:w-48 aspect-auto h-full shrink-0' : 'aspect-square'}`}>
                       <img
@@ -1026,10 +1053,34 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                       />
                       <div className="absolute inset-0 bg-[#101112]/60 flex items-center justify-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 backdrop-blur-[2px]">
-                        <Button size="sm" className="rounded-xl bg-white text-black font-bold hover:bg-zinc-200">
+                        <Button 
+                          size="sm" 
+                          className="rounded-xl bg-white text-black font-bold hover:bg-zinc-200"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate('/creator/studio?view=create', { state: { templateId: item.template_id } });
+                          }}
+                        >
                           Use
                         </Button>
-                        <Button size="sm" variant="ghost" className="rounded-xl text-white hover:bg-white/20">
+                        <Button 
+                          size="sm" 
+                          variant="ghost" 
+                          className="rounded-xl text-white hover:bg-white/20"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const fullTemplate = templates.find(t => t.id === item.template_id);
+                            if (fullTemplate) {
+                              setSelectedTemplate(fullTemplate);
+                            } else {
+                              // If not in current list, fetch it
+                              fetch(`${ENV.API_URL}/api/marketplace/templates/${item.template_id}`, {
+                                headers: { Authorization: `Bearer ${localStorage.getItem("auth_token")}` }
+                              }).then(res => res.ok ? res.json() : null)
+                                .then(data => data && setSelectedTemplate(data));
+                            }
+                          }}
+                        >
                           <Eye className="w-4 h-4" />
                         </Button>
                       </div>
@@ -1047,13 +1098,19 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
                       <div className="flex items-center gap-2 shrink-0">
                         <Button
                           size="sm"
-                          className="md:hidden h-8 px-4 rounded-xl bg-[#D1F349] text-black font-black uppercase text-[10px] tracking-wider"
-                          onClick={() => navigate('/creator/studio?view=create', { state: { selectedTemplateId: item.template_id } })}
+                          className="h-8 px-4 rounded-xl bg-[#D1F349] text-black font-black uppercase text-[10px] tracking-wider"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate('/creator/studio?view=create', { state: { templateId: item.template_id } });
+                          }}
                         >
                           Use
                         </Button>
                         <button
-                          onClick={() => handleRemoveFromLibrary(item)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRemoveFromLibrary(item);
+                          }}
                           className="w-8 h-8 md:w-9 md:h-9 rounded-xl flex items-center justify-center text-zinc-600 hover:text-red-400 hover:bg-red-500/10 transition-all border border-white/5"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -1113,6 +1170,9 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
                     <span className="w-1 h-1 rounded-full bg-zinc-800" />
                     <span className="text-[8px] font-bold text-[#D1F349] uppercase tracking-tighter">
                       {(() => {
+                        const isOwned = selectedTemplate.is_owned || selectedTemplate.creator_id === currentUser?.id || isInLibrary(selectedTemplate.id);
+                        if (isOwned) return 'Owned & Unlocked';
+
                         const tokenCost = selectedTemplate.tokens_cost ?? 0;
                         const moneyCost = selectedTemplate.price ?? 0;
                         if (tokenCost === 0 && moneyCost === 0) return 'Free Style';
@@ -1146,7 +1206,16 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
                     "text-[10px] text-zinc-400 font-medium leading-relaxed uppercase tracking-tight",
                     !isInfoExpanded && "line-clamp-2"
                   )}>
-                    {selectedTemplate.description}
+                    {(() => {
+                      const isFree = (selectedTemplate.price === 0 || !selectedTemplate.price) && (selectedTemplate.tokens_cost === 0 || !selectedTemplate.tokens_cost);
+                      const canSeeFull = selectedTemplate.is_owned || isFree || selectedTemplate.creator_id === currentUser?.id || isInLibrary(selectedTemplate.id);
+                      
+                      if (canSeeFull) return selectedTemplate.description;
+                      
+                      const words = selectedTemplate.description.split(/\s+/);
+                      if (words.length <= 10) return selectedTemplate.description;
+                      return words.slice(0, 10).join(' ') + '... (Purchase to see full description)';
+                    })()}
                   </p>
                 )}
 
@@ -1174,14 +1243,19 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
                   </div>
                 </div>
 
-                {isInfoExpanded && selectedTemplate.prompt && (
-                  <div className="bg-[#D1F349]/5 border border-[#D1F349]/10 rounded-2xl p-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
-                    <span className="text-[7px] font-black text-[#D1F349] uppercase tracking-widest block mb-2">Prompt Brief</span>
-                    <p className="text-[10px] text-zinc-300 font-serif italic italic leading-relaxed">
-                      "{selectedTemplate.prompt.split('.').slice(0, 2).join('.') + '...'}"
-                    </p>
-                  </div>
-                )}
+                            {isInfoExpanded && selectedTemplate.prompt && (
+                              <div className="bg-[#D1F349]/5 border border-[#D1F349]/10 rounded-2xl p-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
+                                <span className="text-[7px] font-black text-[#D1F349] uppercase tracking-widest block mb-2">Prompt Brief</span>
+                                <p className="text-[10px] text-zinc-300 font-serif italic leading-relaxed">
+                                  "{(() => {
+                                    const p = selectedTemplate.prompt;
+                                    if (!p) return "";
+                                    const words = p.split(/\s+/);
+                                    return words.slice(0, 5).join(' ') + '...';
+                                  })()}"
+                                </p>
+                              </div>
+                            )}
               </div>
             </div>
           </div>
@@ -1192,8 +1266,11 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
           {selectedTemplate && (
             <Button
               onClick={() => {
-                if (selectedTemplate.is_owned || isInLibrary(selectedTemplate.id)) {
-                  navigate('/creator/studio?view=create', { state: { selectedTemplateId: selectedTemplate.id } });
+                const isFree = (selectedTemplate.price === 0 || !selectedTemplate.price) && (selectedTemplate.tokens_cost === 0 || !selectedTemplate.tokens_cost);
+                const isOwned = selectedTemplate.is_owned || isInLibrary(selectedTemplate.id) || selectedTemplate.creator_id === currentUser?.id;
+                
+                if (isOwned || isFree) {
+                  navigate('/creator/studio?view=create', { state: { view: 'create', selectedTemplate: selectedTemplate } });
                 } else {
                   handlePurchase(selectedTemplate);
                 }
@@ -1202,17 +1279,19 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
               className="pointer-events-auto rounded-full px-12 py-6 font-black text-xs uppercase tracking-[0.2em] border border-white/10 bg-[#D1F349] text-black hover:bg-white hover:scale-105 active:scale-95 animate-pulse shadow-[0_0_50px_rgba(209,243,73,0.15)]"
             >
               {isPurchasing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : (
-                (selectedTemplate.is_owned || isInLibrary(selectedTemplate.id))
-                  ? "Use Template"
-                  : (() => {
-                      const tokenCost = selectedTemplate.tokens_cost ?? 0;
-                      const moneyCost = selectedTemplate.price ?? 0;
-                      if (tokenCost === 0 && moneyCost === 0) return "Add to Library";
-                      const parts = [];
-                      if (tokenCost > 0) parts.push(`${tokenCost} Tokens`);
-                      if (moneyCost > 0) parts.push(`$${moneyCost}`);
-                      return `Get for ${parts.join(' + ')}`;
-                    })()
+                (() => {
+                  const isFree = (selectedTemplate.price === 0 || !selectedTemplate.price) && (selectedTemplate.tokens_cost === 0 || !selectedTemplate.tokens_cost);
+                  const isOwned = selectedTemplate.is_owned || isInLibrary(selectedTemplate.id) || selectedTemplate.creator_id === currentUser?.id;
+                  
+                  if (isOwned || isFree) return "Use Template";
+                  
+                  const tokenCost = selectedTemplate.tokens_cost ?? 0;
+                  const moneyCost = selectedTemplate.price ?? 0;
+                  const parts = [];
+                  if (tokenCost > 0) parts.push(`${tokenCost} Tokens`);
+                  if (moneyCost > 0) parts.push(`$${moneyCost}`);
+                  return `Get for ${parts.join(' + ')}`;
+                })()
               )}
             </Button>
           )}

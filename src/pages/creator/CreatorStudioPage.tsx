@@ -410,15 +410,33 @@ function CreatorStudioPageContent({ defaultView }: CreatorStudioPageProps) {
         window.history.replaceState({}, document.title);
     }, [location.state]);
 
-    // Template Resolution Effect (for templateId from feed)
+    // Template Resolution Effect (for templateId from feed or marketplace)
     useEffect(() => {
-        const pendingTemplateId = (location.state as any)?.templateId;
-        if (pendingTemplateId && marketplaceTemplates.length > 0 && !selectedTemplate) {
-            const found = marketplaceTemplates.find(t => t.id === pendingTemplateId || (t as any).template_id === pendingTemplateId);
-            if (found) {
-                console.log("[CreatorStudioPage] Resolved template from ID:", pendingTemplateId);
-                applyTemplate(found);
-            }
+        const pendingTemplateId = (location.state as any)?.templateId || (location.state as any)?.selectedTemplateId;
+        if (pendingTemplateId && !selectedTemplate) {
+            const fetchAndApply = async () => {
+                try {
+                    // Always fetch from specific endpoint to get fresh ownership and full prompt
+                    const response = await fetch(`${ENV.API_URL}/api/marketplace/templates/${pendingTemplateId}`, {
+                        headers: { Authorization: `Bearer ${localStorage.getItem("auth_token")}` }
+                    });
+                    if (response.ok) {
+                        const fullTemplate = await response.json();
+                        console.log("[CreatorStudioPage] Resolved template from API:", pendingTemplateId);
+                        applyTemplate(fullTemplate);
+                    } else if (marketplaceTemplates.length > 0) {
+                        // Fallback to local list if fetch fails
+                        const found = marketplaceTemplates.find(t => t.id === pendingTemplateId || (t as any).template_id === pendingTemplateId);
+                        if (found) {
+                            console.log("[CreatorStudioPage] Resolved template from local list:", pendingTemplateId);
+                            applyTemplate(found);
+                        }
+                    }
+                } catch (e) {
+                    console.error("Error resolving template:", e);
+                }
+            };
+            fetchAndApply();
         }
     }, [marketplaceTemplates, location.state, selectedTemplate]);
 
@@ -791,8 +809,9 @@ function CreatorStudioPageContent({ defaultView }: CreatorStudioPageProps) {
 
         // Restore template if available
         if (item.template) {
-            const found = marketplaceTemplates.find(t => t.id === item.template?.id) ||
-                myLibraryTemplates.find(t => t.id === item.template?.id);
+            const tId = item.template.id;
+            const found = marketplaceTemplates.find(t => t.id === tId) ||
+                myLibraryTemplates.find(t => t.id === tId || (t as any).template_id === tId);
 
             if (found) {
                 setSelectedTemplate(found);
@@ -1154,8 +1173,16 @@ function CreatorStudioPageContent({ defaultView }: CreatorStudioPageProps) {
     const applyTemplate = (tpl: MarketplaceTemplate) => {
         // Final safeguard: Check if template is usable (free, owned, or creator)
         const isFree = (tpl.price === 0 || !tpl.price) && (tpl.tokens_cost === 0 || !tpl.tokens_cost);
-        const isCreator = tpl.creator_id === currentUser?.id;
-        const canUse = tpl.is_owned || isFree || isCreator;
+        
+        // Robust creator check (comparing strings to avoid number/uuid mismatch)
+        const currentUserIdStr = currentUser?.id?.toString();
+        const isCreator = (tpl.creator_id && tpl.creator_id.toString() === currentUserIdStr) || 
+                         (tpl.creator?.id && tpl.creator.id.toString() === currentUserIdStr) ||
+                         (tpl.creator_id && currentUser?.username && tpl.creator_id === currentUser.username) ||
+                         (tpl.creator_id && currentUser?.slug && tpl.creator_id === currentUser.slug);
+
+        const isOwned = (tpl as any).is_owned || myLibraryTemplates.some(lib => lib.id === tpl.id || (lib as any).template_id === tpl.id);
+        const canUse = isOwned || isFree || isCreator;
 
         if (!canUse) {
             toast.error("Purchase template to use", {

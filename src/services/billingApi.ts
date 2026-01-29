@@ -36,6 +36,7 @@ export interface TokenStats {
   total_purchased: number;
   total_used: number;
   plan_tokens: number;
+  tokens_earned?: number;
   plan_renewal_date?: string;
 }
 

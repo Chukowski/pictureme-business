@@ -359,6 +359,15 @@ export function TemplateLibrary({
                                         {/* Cost Badge */}
                                         <div className="absolute top-3 left-3 flex flex-wrap gap-2 z-20">
                                             {(() => {
+                                                const isOwned = activeTab === 'library' || myLibraryTemplates.some(lib => lib.id === t.id || (lib as any).template_id === t.id);
+                                                if (isOwned) {
+                                                    return (
+                                                        <span className="px-2 py-0.5 rounded-lg bg-emerald-500 text-black text-[8px] font-black uppercase tracking-wider shadow-lg">
+                                                            Owned
+                                                        </span>
+                                                    );
+                                                }
+
                                                 const tokenCost = t.tokens_cost ?? 0;
                                                 const moneyCost = t.price ?? 0;
                                                 if (tokenCost === 0 && moneyCost === 0) {
@@ -443,6 +452,9 @@ export function TemplateLibrary({
                                     <span className="w-1 h-1 rounded-full bg-zinc-800" />
                                     <span className="text-[8px] font-bold text-[#D1F349] uppercase tracking-tighter">
                                         {(() => {
+                                            const isOwned = activeTab === 'library' || myLibraryTemplates.some(lib => lib.id === selectedTemplate?.id || (lib as any).template_id === selectedTemplate?.id);
+                                            if (isOwned) return 'Owned & Unlocked';
+                                            
                                             const tokenCost = selectedTemplate?.tokens_cost ?? 0;
                                             const moneyCost = selectedTemplate?.price ?? 0;
                                             if (tokenCost === 0 && moneyCost === 0) return 'Free Style';
@@ -476,7 +488,17 @@ export function TemplateLibrary({
                                     "text-[10px] text-zinc-400 font-medium leading-relaxed uppercase tracking-tight",
                                     !isInfoExpanded && "line-clamp-2"
                                 )}>
-                                    {selectedTemplate.description}
+                                    {(() => {
+                                        const isFree = (selectedTemplate.price === 0 || !selectedTemplate.price) && (selectedTemplate.tokens_cost === 0 || !selectedTemplate.tokens_cost);
+                                        const isOwned = activeTab === 'library' || myLibraryTemplates.some(lib => lib.id === selectedTemplate.id || (lib as any).template_id === selectedTemplate.id);
+                                        const canSeeFull = isOwned || isFree;
+
+                                        if (canSeeFull) return selectedTemplate.description;
+
+                                        const words = selectedTemplate.description.split(/\s+/);
+                                        if (words.length <= 10) return selectedTemplate.description;
+                                        return words.slice(0, 10).join(' ') + '... (Purchase to see full description)';
+                                    })()}
                                 </p>
                             )}
 
@@ -505,10 +527,22 @@ export function TemplateLibrary({
                             </div>
 
                             {isInfoExpanded && selectedTemplate?.prompt && (
-                                <div className="bg-[#D1F349]/5 border border-[#D1F349]/10 rounded-2xl p-12 animate-in fade-in slide-in-from-bottom-2 duration-500">
+                                <div className="bg-[#D1F349]/5 border border-[#D1F349]/10 rounded-2xl p-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
                                     <span className="text-[7px] font-black text-[#D1F349] uppercase tracking-widest block mb-2">Prompt Brief</span>
-                                    <p className="text-[10px] text-zinc-300 font-serif italic italic leading-relaxed">
-                                        "{selectedTemplate.prompt.split('.').slice(0, 2).join('.') + '...'}"
+                                    <p className="text-[10px] text-zinc-300 font-serif italic leading-relaxed">
+                                        "{(() => {
+                                            const p = selectedTemplate.prompt;
+                                            if (!p) return "";
+                                            
+                                            const isFree = (selectedTemplate.price === 0 || !selectedTemplate.price) && (selectedTemplate.tokens_cost === 0 || !selectedTemplate.tokens_cost);
+                                            const isOwned = activeTab === 'library' || myLibraryTemplates.some(lib => lib.id === selectedTemplate.id || (lib as any).template_id === selectedTemplate.id);
+                                            const canSeeFull = isOwned || isFree;
+
+                                            if (canSeeFull) return p;
+
+                                            const words = p.split(/\s+/);
+                                            return words.slice(0, 5).join(' ') + '...';
+                                        })()}"
                                     </p>
                                 </div>
                             )}
