@@ -48,6 +48,7 @@ import {
   Image as ImageIcon,
   Lock,
   Globe,
+  RefreshCw,
   Zap,
   Settings2,
   Clock,
@@ -286,6 +287,15 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
       setAdminFeatured(cachedFeatured);
     }
   }, []);
+
+  // Force refresh function (clears cache and refetches)
+  const forceRefresh = () => {
+    cachedTemplates = null;
+    cachedLoraModels = null;
+    cachedLibrary = null;
+    cachedFeatured = null;
+    fetchMarketplaceData();
+  };
 
   const fetchMarketplaceData = async () => {
     try {
@@ -738,6 +748,16 @@ export default function MarketplaceTab({ currentUser }: MarketplaceTabProps) {
               </div>
 
               <div className="w-full sm:w-px h-px sm:h-6 bg-white/5 mx-1" />
+
+              <Button
+                onClick={forceRefresh}
+                variant="ghost"
+                size="sm"
+                className="h-10 px-3 rounded-xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.05] transition-all"
+                disabled={isLoading}
+              >
+                <RefreshCw className={cn("w-4 h-4 text-zinc-400", isLoading && "animate-spin")} />
+              </Button>
 
               {/* View Controls (Integrated) */}
               <div className="flex items-center justify-between sm:justify-start w-full sm:w-auto gap-2">
