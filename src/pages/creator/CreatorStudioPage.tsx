@@ -159,7 +159,7 @@ function CreatorStudioPageContent({ defaultView }: CreatorStudioPageProps) {
 
     const [prompt, setPrompt] = useState(() => localStorage.getItem("creator_studio_prompt") || "");
     const [model, setModel] = useState("nano-banana");
-    const [aspectRatio, setAspectRatio] = useState("9:16");
+    const [aspectRatio, setAspectRatio] = useState("auto");
     const [duration, setDuration] = useState("5s");
     const [audioOn, setAudioOn] = useState(false);
     const [resolution, setResolution] = useState("720p");
@@ -1043,7 +1043,9 @@ function CreatorStudioPageContent({ defaultView }: CreatorStudioPageProps) {
 
         // Relax check for Text-to-Image models
         const selectedModelObj = Object.values(AI_MODELS).find(m => m.shortId === model || m.id === model);
-        const isT2I = model.includes("-t2i") || (selectedModelObj && (selectedModelObj as any).capabilities?.includes('t2i'));
+        const isT2I = model.includes("-t2i") || 
+                     model.includes("xai-grok-image") || 
+                     (selectedModelObj && (selectedModelObj as any).capabilities?.includes('t2i'));
 
         if (mode === "image" && !inputImage && !isT2I) return toast.error("Upload image first");
         if (mode === "video" && !inputImage && !prompt) return toast.error("Provide a start frame or prompt"); // Relaxed for video

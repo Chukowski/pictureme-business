@@ -181,6 +181,8 @@ async function waitForJobCompletion(jobId: number, apiUrl: string, timeoutMs = 1
 // Map short model IDs to full FAL.ai model IDs
 const MODEL_ID_MAP: Record<string, string> = {
   // Image models
+  'xai-grok-image': 'xai/grok-imagine-image/edit',
+  'xai-grok-image-t2i': 'xai/grok-imagine-image',
   'nano-banana': 'fal-ai/nano-banana/edit',
   'nano-banana-pro': 'fal-ai/nano-banana-pro/edit',
   'seedream-v4.5': 'fal-ai/bytedance/seedream/v4.5/edit',
@@ -462,6 +464,20 @@ export const AI_MODELS = {
       { id: "nano-banana-pro", name: "Pro", description: "Premium quality", cost: 15 }
     ]
   },
+  xaiGrokImage: {
+    id: "xai/grok-imagine-image/edit",
+    shortId: "xai-grok-image",
+    name: "xAI Grok Image",
+    brand: "xAI",
+    description: "xAI Grok Imagine - High-quality image generation",
+    speed: "medium",
+    type: "image",
+    cost: 1,
+    capabilities: ['i2i', 't2i'] as const,
+    variants: [
+      { id: "xai-grok-image", name: "Grok Image", description: "Standard quality", cost: 1 }
+    ]
+  },
   nanoBananaPro: {
     id: "fal-ai/nano-banana-pro/edit",
     shortId: "nano-banana-pro",
@@ -608,7 +624,7 @@ export const AI_MODELS = {
   seedream: {
     id: "fal-ai/bytedance/seedream/v4.5/edit",
     shortId: "seedream-v4.5",
-    name: "Seedream",
+    name: "Seedream v4.5",
     brand: "Bytedance",
     description: "Bytedance Seedream - Multi-modal generation",
     speed: "medium",
@@ -619,22 +635,10 @@ export const AI_MODELS = {
       { id: "seedream-v4.5", name: "v4.5", description: "Bytedance Seedream v4.5", cost: 2 }
     ]
   },
-  seedreamEdit: {
-    id: "fal-ai/bytedance/seedream/v4.5/edit",
-    shortId: "seedream-edit",
-    name: "Seedream Edit",
-    brand: "Bytedance",
-    description: "Bytedance Seedream Edit",
-    speed: "medium",
-    type: "image",
-    cost: 2,
-    capabilities: ['i2i'] as const,
-    isVariant: true
-  },
   seedreamT2I: {
     id: "fal-ai/bytedance/seedream/v4.5/text-to-image",
     shortId: "seedream-t2i",
-    name: "Seedream T2I",
+    name: "Seedream V4.5",//The Name must be the same as the variation 
     brand: "Bytedance",
     description: "Bytedance Seedream Text-to-Image",
     speed: "medium",
@@ -739,8 +743,10 @@ export interface ProcessImageOptions {
 /**
  * Get image dimensions based on aspect ratio (standard quality)
  */
-export function getImageDimensions(aspectRatio: AspectRatio = '9:16'): { width: number; height: number } {
+export function getImageDimensions(aspectRatio: AspectRatio = '9:16'): { width: number; height: number } | undefined {
   switch (aspectRatio) {
+    case 'auto':
+      return undefined;
     case '1:1':
       return { width: 1080, height: 1080 };
     case '4:5':
@@ -785,9 +791,11 @@ export function getFluxOptimizedDimensions(aspectRatio: AspectRatio = '9:16'): {
  * Get Flux image_size enum value when available, or custom dimensions
  * Flux 2 Pro supports: square, portrait_4_3, portrait_16_9, landscape_4_3, landscape_16_9
  */
-export function getFluxImageSize(aspectRatio: AspectRatio = '9:16'): string | { width: number; height: number } {
+export function getFluxImageSize(aspectRatio: AspectRatio = '9:16'): string | { width: number; height: number } | undefined {
   // Use Flux's built-in presets when they match our aspect ratios
   switch (aspectRatio) {
+    case 'auto':
+      return undefined;
     case '1:1':
       return 'square'; // 1024x1024
     case '4:5':
@@ -846,7 +854,7 @@ export async function processImageWithAI(
   let modelToUse = resolveModelId(requestedModel);
 
   // Validate required parameters
-  if (!userPhotoBase64 && !modelToUse.includes("lora")) {
+  if (!userPhotoBase64 && !modelToUse.includes("lora") && !modelToUse.includes("xai")) {
     // If no user photo, we need to make sure we're using a text-to-image model
     // or that we have at least some input images
     if (!backgroundImageUrl && (!backgroundImageUrls || backgroundImageUrls.length === 0)) {
@@ -896,8 +904,12 @@ export async function processImageWithAI(
 
     if (isSeedream) {
       // Get dimensions based on aspect ratio
-      const dimensions = getImageDimensions(aspectRatio);
-      imageSize = dimensions;
+      if (aspectRatio === 'auto') {
+        imageSize = "auto_4K";
+      } else {
+        const dimensions = getImageDimensions(aspectRatio);
+        imageSize = dimensions;
+      }
 
       const forceInstructions = options.forceInstructions || false;
 
@@ -963,10 +975,18 @@ Output a single cohesive image.`;
       }
 
       const isFlux2Pro = modelToUse.includes("flux-2-pro");
-      if (isFlux2Pro && aspectRatio !== 'auto') {
-        imageSize = getFluxImageSize(aspectRatio);
+      if (isFlux2Pro) {
+        if (aspectRatio === 'auto') {
+          imageSize = "auto";
+        } else {
+          imageSize = getFluxImageSize(aspectRatio);
+        }
       } else {
-        imageSize = getImageDimensions(aspectRatio);
+        if (aspectRatio === 'auto') {
+          imageSize = undefined; // Let backend/FAL handle it
+        } else {
+          imageSize = getImageDimensions(aspectRatio);
+        }
       }
     }
 
@@ -1058,6 +1078,12 @@ Output a single cohesive image.`;
       num_images: numImages,
       booth_id: options.boothId, // Pass booth ID for monetization check
     };
+
+    // Only send aspect_ratio if it's NOT "auto" - many FAL models don't support "auto" literally
+    // When "auto" is selected, we rely on image_size being set correctly above
+    if (aspectRatio && aspectRatio !== 'auto') {
+      payload.aspect_ratio = aspectRatio;
+    }
 
     // Add specific parameters for Flux Klein models
     if (modelToUse.includes('klein')) {

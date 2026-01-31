@@ -202,11 +202,52 @@ export function CreationDetailView({
 
         const formatModelName = (modelId: string) => {
             if (!modelId) return "AI Model";
-            // Handle FAL model IDs like "fal-ai/nano-banana/edit" or "fal-ai/seedream-2.0"
+            
+            // Map legacy model IDs to clean names
+            const modelNameMap: { [key: string]: string } = {
+                // Image models
+                'seedream-edit': 'Seedream v4.5',
+                'seedream-t2i': 'Seedream v4.5',
+                'seedream-v4.5-t2i': 'Seedream v4.5',
+                'seedream-v4.5': 'Seedream v4.5',
+                'seedream-v4': 'Seedream v4',
+                'nano-banana': 'Nano Banana',
+                'nano-banana-t2i': 'Nano Banana',
+                'nano-banana-pro': 'Nano Banana Pro',
+                'nano-banana-pro-t2i': 'Nano Banana Pro',
+                'flux-2-pro': 'Flux 2 Pro',
+                'flux-2-pro-t2i': 'Flux 2 Pro',
+                'flux-klein': 'Flux Klein',
+                'flux-klein-t2i': 'Flux Klein',
+                // Video models
+                'kling-pro': 'Kling v2.5',
+                'kling-v2.5': 'Kling v2.5',
+                'kling-v2.5-t2v': 'Kling v2.5',
+                'kling-v2.5-i2v': 'Kling v2.5',
+                'kling-2.6-pro': 'Kling v2.6 Pro',
+                'kling-v2.6-motion': 'Kling v2.6 Motion',
+                'kling-v2.6-motion-std': 'Kling v2.6 Motion',
+                'kling-o1-edit': 'Kling O1 Edit',
+                'veo-3.1': 'Veo 3.1',
+                'veo-3.1-fast': 'Veo 3.1',
+                'veo-3.1-i2v': 'Veo 3.1',
+                'veo-3.1-frames': 'Veo 3.1',
+                'veo-3.1-extend': 'Veo 3.1',
+                'google-video': 'Veo 3.1',
+                'wan-v2': 'Wan v2',
+                'xai-grok-video': 'xAI Grok Video',
+                'xai-grok-video-edit': 'xAI Grok Video Edit',
+                'xai-grok-image': 'xAI Grok Image',
+            };
+            
+            // Check if we have a direct mapping
+            if (modelNameMap[modelId]) {
+                return modelNameMap[modelId];
+            }
+            
+            // Fallback to original formatting
             const parts = modelId.replace('fal-ai/', '').split('/');
-            // Take the model name part (usually the first after removing provider)
             const modelPart = parts[0] || parts[parts.length - 1];
-            // Convert kebab-case to Title Case
             return modelPart
                 .split('-')
                 .filter(word => word && !['ai', 'fal', 'v1', 'v2'].includes(word.toLowerCase()))

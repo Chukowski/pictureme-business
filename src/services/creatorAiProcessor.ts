@@ -397,7 +397,11 @@ export async function processCreatorImage(
         let imageSize: string | { width: number; height: number } | undefined;
 
         if (isSeedream) {
-            imageSize = getImageDimensions(aspectRatio);
+            if (aspectRatio === 'auto') {
+                imageSize = "auto_4K";
+            } else {
+                imageSize = getImageDimensions(aspectRatio);
+            }
             // Add specific instructions for style transfer if needed (copying simplified logic)
             const promptLower = backgroundPrompt.toLowerCase();
             if (options.forceInstructions && (promptLower.includes('lego') || promptLower.includes('pixar') || promptLower.includes('anime'))) {
@@ -406,10 +410,18 @@ export async function processCreatorImage(
         } else {
             // Flux/Gemini logic
             const isFlux2Pro = modelToUse.includes("flux-2-pro");
-            if (isFlux2Pro && aspectRatio !== 'auto') {
-                imageSize = getFluxImageSize(aspectRatio);
+            if (isFlux2Pro) {
+                if (aspectRatio === 'auto') {
+                    imageSize = "auto";
+                } else {
+                    imageSize = getFluxImageSize(aspectRatio);
+                }
             } else {
-                imageSize = getImageDimensions(aspectRatio);
+                if (aspectRatio === 'auto') {
+                    imageSize = undefined;
+                } else {
+                    imageSize = getImageDimensions(aspectRatio);
+                }
             }
         }
 
@@ -420,6 +432,9 @@ export async function processCreatorImage(
             prompt: finalPrompt,
             model_id: modelToUse,
             image_size: imageSize,
+            // Only send aspect_ratio if it's NOT "auto" - many FAL models don't support "auto" literally
+            // When "auto" is selected, we rely on image_size being set correctly above
+            ...(aspectRatio !== 'auto' && { aspect_ratio: aspectRatio }),
             resolution: resolution, // Pass resolution explicitly if provided
             num_images: numImages,
             visibility: isPublic ? 'public' : 'private',

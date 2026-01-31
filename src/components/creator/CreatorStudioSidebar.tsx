@@ -21,7 +21,6 @@ import {
     Pencil,
     ChevronDown,
     Diamond,
-    Smartphone,
     Ratio,
     Type,
     Clock
@@ -261,6 +260,15 @@ export function CreatorStudioSidebar({
 
     const BrandLogo = ({ brand, className = "w-4 h-4" }: { brand: string, className?: string }) => {
         switch (brand) {
+            case 'xAI':
+                return (
+                    <svg className={className} viewBox="0 0 727.27 778.68" fill="currentColor">
+                        <polygon transform="translate(-134,-113.32)" points="508.67 574.07 761.27 213.32 639.19 213.32 447.64 486.9"/>
+                        <polygon transform="translate(-134,-113.32)" points="356.08 792 417.12 704.83 356.08 617.66 234 792"/>
+                        <polygon transform="translate(-134,-113.32)" points="508.67 792 630.75 792 356.08 399.72 234 399.72"/>
+                        <polygon transform="translate(-134,-113.32)" points="761.27 256.91 661.27 399.72 671.27 792 751.27 792"/>
+                    </svg>
+                );
             case 'Google':
                 return (
                     <svg className={className} viewBox="0 0 20 20">
@@ -310,6 +318,7 @@ export function CreatorStudioSidebar({
     const getRobustBrand = (id: string, name?: string, localBrand?: string): string => {
         if (localBrand && localBrand !== 'Other') return localBrand;
         const searchStr = (id + (name || '')).toLowerCase();
+        if (searchStr.includes('xai') || searchStr.includes('grok')) return 'xAI';
         if (searchStr.includes('kling')) return 'Kling';
         if (searchStr.includes('google') || searchStr.includes('veo') || searchStr.includes('nano-banana')) return 'Google';
         if (searchStr.includes('flux')) return 'Flux';
@@ -322,6 +331,7 @@ export function CreatorStudioSidebar({
     };
 
     const BRAND_DETAILS: Record<string, { description: string }> = {
+        'xAI': { description: "Advanced image and video generation with Grok AI" },
         'Higgsfield': { description: "Advanced camera controls and effect presets" },
         'OpenAI': { description: "Multi-shot video with sound generation" },
         'Google': { description: "Precision video with sound control" },
@@ -455,21 +465,29 @@ export function CreatorStudioSidebar({
         return false;
     }, [mode, activeCapabilities]);
 
-    const renderRatioVisual = (r: string) => {
+    const renderRatioVisual = (r: string, className = "w-4 h-4") => {
         let width = 10;
         let height = 10;
         switch (r) {
+            case "auto": width = 10; height = 10; break;
             case "16:9": width = 14; height = 8; break;
+            case "4:3": width = 13; height = 10; break;
+            case "3:4": width = 10; height = 13; break;
             case "4:5": width = 9; height = 11; break;
             case "3:2": width = 12; height = 8; break;
+            case "2:3": width = 8; height = 12; break;
             case "9:16": width = 8; height = 14; break;
         }
         return (
-            <div className="w-4 h-4 flex items-center justify-center mr-1.5 text-zinc-500">
-                <div
-                    className="border border-current rounded-[1px]"
-                    style={{ width: `${width}px`, height: `${height}px` }}
-                />
+            <div className={cn("flex items-center justify-center mr-1.5 text-zinc-500", className)}>
+                {r === "auto" ? (
+                    <div className="text-[8px] font-black tracking-tighter opacity-50">AUTO</div>
+                ) : (
+                    <div
+                        className="border border-current rounded-[1px]"
+                        style={{ width: `${width}px`, height: `${height}px` }}
+                    />
+                )}
             </div>
         );
     };
@@ -1272,7 +1290,7 @@ export function CreatorStudioSidebar({
                                             <div className="flex flex-col items-start translate-y-[1px]">
                                                 <span className="text-[10px] font-bold text-white/30 uppercase tracking-tighter">Ratio</span>
                                                 <div className="flex items-center gap-1.5">
-                                                    <Smartphone className="w-3 h-3 text-white/30" />
+                                                    {renderRatioVisual(aspectRatio, "w-3 h-3 text-white/30")}
                                                     <span className="text-[12px] font-bold text-white">{aspectRatio}</span>
                                                 </div>
                                             </div>
@@ -1280,9 +1298,9 @@ export function CreatorStudioSidebar({
                                         </button>
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent className="bg-card border-zinc-900 text-white z-[200] min-w-[100px]">
-                                        {["1:1", "4:5", "16:9", "9:16"].map(r => (
+                                        {["auto", "1:1", "4:5", "3:2", "16:9", "9:16"].map(r => (
                                             <DropdownMenuItem key={r} onClick={() => setAspectRatio(r)} className="text-[12px] cursor-pointer focus:bg-card">
-                                                {renderRatioVisual(r)} {r}
+                                                {renderRatioVisual(r)} {r === "auto" ? "Auto" : r}
                                             </DropdownMenuItem>
                                         ))}
                                     </DropdownMenuContent>

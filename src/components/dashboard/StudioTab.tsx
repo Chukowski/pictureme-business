@@ -1,5 +1,15 @@
 import { useState, useRef, useEffect } from "react";
 import { Video, ImageIcon, RefreshCw, Wand2, Sparkles, MonitorPlay, Upload, ImagePlus, Layers, Loader2, Zap, ChevronRight, Ratio, Plus, Minus, Settings2, PenTool, Edit2, X, Download, Trash2, Copy } from "lucide-react";
+
+// XAI Logo Component
+const XAIIcon = ({ size = 24, color = "currentColor" }: { size?: number; color?: string }) => (
+    <svg width={size} height={size} viewBox="0 0 727.27 778.68" fill={color} xmlns="http://www.w3.org/2000/svg">
+        <polygon transform="translate(-134,-113.32)" points="508.67 574.07 761.27 213.32 639.19 213.32 447.64 486.9"/>
+        <polygon transform="translate(-134,-113.32)" points="356.08 792 417.12 704.83 356.08 617.66 234 792"/>
+        <polygon transform="translate(-134,-113.32)" points="508.67 792 630.75 792 356.08 399.72 234 399.72"/>
+        <polygon transform="translate(-134,-113.32)" points="761.27 256.91 661.27 399.72 671.27 792 751.27 792"/>
+    </svg>
+);
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -23,18 +33,22 @@ import { useUserTier } from "@/services/userTier";
 // AI Models Data
 const MODELS = [
     // Video Models
-    { id: "kling-2.6-pro", name: "Kling 2.6 Pro (Cinematic)", type: "video", badge: "New", icon: Video },
-    { id: "kling-o1-edit", name: "Kling O1 Video Edit", type: "video", badge: "Pro", icon: Video },
-    { id: "wan-v2", name: "Wan v2.2 Video", type: "video", badge: "Fast", icon: MonitorPlay },
-    { id: "google-video", name: "Google Gemini Video", type: "video", badge: "Beta", icon: Zap },
+    { id: "xai-grok-video", name: "xAI Grok Video", type: "video", badge: "New", icon: XAIIcon },
+    { id: "xai-grok-video-edit", name: "xAI Grok Video Edit", type: "video", badge: "Pro", icon: XAIIcon },
+    { id: "kling-v2.5", name: "Kling v2.5", type: "video", badge: "Fast", icon: Video },
+    { id: "kling-2.6-pro", name: "Kling v2.6 Pro", type: "video", badge: "Premium", icon: Video },
+    { id: "kling-v2.6-motion", name: "Kling v2.6 Motion", type: "video", badge: "Motion", icon: Video },
+    { id: "kling-o1-edit", name: "Kling O1 Edit", type: "video", badge: "Edit", icon: Video },
+    { id: "veo-3.1", name: "Google Veo 3.1", type: "video", badge: "Quality", icon: Zap },
+    { id: "wan-v2", name: "Wan v2", type: "video", badge: "Fast", icon: MonitorPlay },
 
     // Image Models
-    { id: "nano-banana", name: "Nano Banana (Gemini 2.5 Flash)", type: "image", badge: "Fast", icon: Sparkles },
-    { id: "nano-banana-pro", name: "Nano Banana Pro (Gemini 3 Pro)", type: "image", badge: "Quality", icon: Sparkles },
-    { id: "seedream-v4", name: "Seedream v4", type: "image", badge: "Artistic", icon: Wand2 },
-    { id: "seedream-v4.5", name: "Seedream 4.5 (Latest)", type: "image", badge: "New", icon: Wand2 },
-    { id: "flux-realism", name: "Flux Realism", type: "image", badge: "Photo", icon: ImageIcon },
-    { id: "flux-2-pro", name: "Flux 2 Pro", type: "image", badge: "Pro", icon: ImageIcon },
+    { id: "xai-grok-image", name: "xAI Grok Image", type: "image", badge: "New", icon: XAIIcon, capabilities: ['i2i', 't2i'] },
+    { id: "nano-banana", name: "Nano Banana", type: "image", badge: "Fast", icon: Sparkles, capabilities: ['i2i', 't2i'] },
+    { id: "nano-banana-pro", name: "Nano Banana Pro", type: "image", badge: "Quality", icon: Sparkles, capabilities: ['i2i', 't2i'] },
+    { id: "seedream-v4.5", name: "Seedream v4.5", type: "image", badge: "Latest", icon: Wand2, capabilities: ['i2i', 't2i'] },
+    { id: "flux-2-pro", name: "Flux 2 Pro", type: "image", badge: "Pro", icon: ImageIcon, capabilities: ['i2i', 't2i'] },
+    { id: "flux-klein", name: "Flux Klein", type: "image", badge: "Compact", icon: ImageIcon, capabilities: ['i2i', 't2i'] },
 ];
 
 interface HistoryItem {
@@ -71,6 +85,7 @@ export default function StudioTab({ currentUser }: StudioTabProps) {
     // History & Persistence
     const [history, setHistory] = useState<HistoryItem[]>([]);
     const [selectedHistoryItem, setSelectedHistoryItem] = useState<HistoryItem | null>(null);
+    const [aspectRatio, setAspectRatio] = useState<AspectRatio>("auto");
 
     // Load history from localStorage on mount (user-specific)
     useEffect(() => {
@@ -94,6 +109,34 @@ export default function StudioTab({ currentUser }: StudioTabProps) {
     }, [history, currentUser?.id]);
 
     const [imageCount, setImageCount] = useState(1);
+
+    const renderRatioVisual = (r: string, className = "w-4 h-4") => {
+        let width = 10;
+        let height = 10;
+        switch (r) {
+            case "auto": width = 10; height = 10; break;
+            case "16:9": width = 14; height = 8; break;
+            case "4:3": width = 13; height = 10; break;
+            case "3:4": width = 10; height = 13; break;
+            case "4:5": width = 9; height = 11; break;
+            case "3:2": width = 12; height = 8; break;
+            case "2:3": width = 8; height = 12; break;
+            case "9:16": width = 8; height = 14; break;
+        }
+        return (
+            <div className={cn("flex items-center justify-center mr-1.5 text-zinc-500", className)}>
+                {r === "auto" ? (
+                    <div className="text-[7px] font-black tracking-tighter opacity-50">AUTO</div>
+                ) : (
+                    <div
+                        className="border border-current rounded-[1px]"
+                        style={{ width: `${width}px`, height: `${height}px` }}
+                    />
+                )}
+            </div>
+        );
+    };
+
     const [startImageUrl, setStartImageUrl] = useState<string | null>(null);
     const [endImageUrl, setEndImageUrl] = useState<string | null>(null);
     const [sourceFaceUrl, setSourceFaceUrl] = useState<string | null>(null);
@@ -165,7 +208,7 @@ export default function StudioTab({ currentUser }: StudioTabProps) {
 
             if (activeMode === 'image') {
                 body.num_images = imageCount;
-                body.image_size = "landscape_4_3";
+                body.aspect_ratio = aspectRatio;
             } else if (activeMode === 'video') {
                 body.duration = "5";
                 body.aspect_ratio = "16:9";
@@ -473,9 +516,24 @@ export default function StudioTab({ currentUser }: StudioTabProps) {
                                     </div>
 
                                     {/* Ratio Selector */}
-                                    <Button variant="outline" className="flex-1 justify-between bg-[#101112]/20 border-white/10 font-normal text-zinc-300 hover:bg-white/5 hover:text-white h-10 px-3">
-                                        9:16 <Ratio className="w-4 h-4 opacity-50" />
-                                    </Button>
+                                    <Select value={aspectRatio} onValueChange={(v: any) => setAspectRatio(v)}>
+                                        <SelectTrigger className="flex-1 justify-between bg-[#101112]/20 border-white/10 font-normal text-zinc-300 hover:bg-white/5 hover:text-white h-10 px-3">
+                                            <div className="flex items-center gap-2">
+                                                {renderRatioVisual(aspectRatio, "w-4 h-4 opacity-50")}
+                                                <span className="text-sm">{aspectRatio === 'auto' ? 'Auto' : aspectRatio}</span>
+                                            </div>
+                                        </SelectTrigger>
+                                        <SelectContent className="bg-card border-white/10">
+                                            {["auto", "1:1", "4:5", "3:2", "16:9", "9:16"].map(ratio => (
+                                                <SelectItem key={ratio} value={ratio}>
+                                                    <div className="flex items-center">
+                                                        {renderRatioVisual(ratio, "w-4 h-4 opacity-70")}
+                                                        {ratio === 'auto' ? 'Auto' : ratio}
+                                                    </div>
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
                                 </div>
 
                                 {/* Unlimited Toggle & Draw Button */}
