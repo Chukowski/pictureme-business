@@ -141,10 +141,9 @@ export function CreatorStudioSidebar({
     const [countdown, setCountdown] = useState<number | null>(null);
 
     const supportedResolutions = useMemo(() => {
-        if (mode !== 'image') return [];
-        if (model === 'nano-banana-pro') return ["2K", "4K"];
-        if (model.includes('seedream')) return ["2K", "4K"];
-        if (model.includes('flux')) return ["1K", "2K"];
+        if (mode === 'video') return ["720p", "1080p", "4k"];
+        if (model === 'nano-banana-pro' || model.includes('seedream')) return ["standard", "hd"];
+        if (model.includes('flux')) return ["standard", "hd"];
         return [];
     }, [model, mode]);
 
@@ -360,6 +359,7 @@ export function CreatorStudioSidebar({
                 brand: getRobustBrand(bm.id, bm.name, local?.brand),
                 type: 'image',
                 cost: bm.cost || (local ? local.cost : 15),
+                cost_rules: bm.cost_rules || (local as any)?.cost_rules || {},
                 speed: local ? local.speed : 'medium',
                 description: bm.description || (local ? local.description : ''),
                 capabilities: local?.capabilities || [],
@@ -396,6 +396,7 @@ export function CreatorStudioSidebar({
                 brand: getRobustBrand(bm.id, bm.name, local?.brand),
                 type: 'video',
                 cost: bm.cost || (local ? local.cost : 100),
+                cost_rules: bm.cost_rules || (local as any)?.cost_rules || {},
                 speed: local ? local.speed : 'slow',
                 description: bm.description || (local ? local.description : ''),
                 capabilities: local?.capabilities || [],
@@ -450,6 +451,60 @@ export function CreatorStudioSidebar({
         // 3. Fallback to first available model
         return models[0];
     }, [mode, model, imageModels, videoModels]);
+
+    const dynamicCost = useMemo(() => {
+        if (!selectedModelObj) return 0;
+        
+        let totalCost = selectedModelObj.cost || 0;
+        const rules = selectedModelObj.cost_rules || {};
+        
+        // 1. Resolution Rule
+        if (rules.resolution && resolution) {
+            const resCost = rules.resolution[resolution];
+            if (typeof resCost === 'number') {
+                totalCost += resCost;
+            }
+        }
+        
+        // 2. Audio Rule (Video only)
+        if (mode === 'video' && rules.audio) {
+            const audioKey = audio ? 'true' : 'false';
+            const audioCost = rules.audio[audioKey];
+            if (typeof audioCost === 'number') {
+                totalCost += audioCost;
+            }
+        }
+
+        // 2.5 Duration Rule (Video only)
+        if (mode === 'video' && rules.duration && duration) {
+            // duration typically comes as "5s" or "10s", normalize to "5" or "10"
+            const durKey = duration.replace('s', '');
+            const durCost = rules.duration[durKey];
+            if (typeof durCost === 'number') {
+                totalCost += durCost;
+            }
+        }
+        
+        // 3. Aspect Ratio mapping to Resolution Rules (Image only fallback)
+        if (mode === 'image' && rules.resolution && aspectRatio) {
+            const mapping: Record<string, string> = {
+                '1:1': 'square_hd',
+                '4:5': 'portrait_hd',
+                '9:16': 'portrait_hd',
+                '16:9': 'hd',
+                '3:2': 'hd',
+                'auto': 'standard'
+            };
+            const mappedKey = mapping[aspectRatio];
+            const resCost = rules.resolution[mappedKey];
+            if (typeof resCost === 'number' && !rules.resolution[resolution]) {
+                // Only apply if we haven't already applied a direct resolution cost
+                totalCost += resCost;
+            }
+        }
+
+        return totalCost;
+    }, [selectedModelObj, resolution, audio, aspectRatio, mode, duration]);
 
     const activeCapabilities = useMemo(() => {
         const allLocal = [...LOCAL_IMAGE_MODELS, ...LOCAL_VIDEO_MODELS];
@@ -1150,6 +1205,7 @@ export function CreatorStudioSidebar({
                                                                         </div>
                                                                         <div className="flex flex-col items-end gap-1 ml-3">
                                                                             <div className="flex items-center gap-1 mb-1">
+                                                                                <span className="text-[10px] font-black text-[#D1F349] opacity-40 uppercase mr-1">Base</span>
                                                                                 <span className="text-[12px] font-black text-[#D1F349] opacity-60">{m.cost}</span>
                                                                                 <Sparkles className="w-3 h-3 text-[#D1F349] opacity-40" />
                                                                             </div>
@@ -1274,7 +1330,7 @@ export function CreatorStudioSidebar({
                                             </button>
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent className="bg-card border-zinc-900 text-white z-[200] min-w-[100px]">
-                                            {(mode === 'video' ? ["720p", "1080p", "2K", "4K"] : supportedResolutions).map(r => (
+                                            {supportedResolutions.map(r => (
                                                 <DropdownMenuItem key={r} onClick={() => setResolution(r)} className="text-[12px] cursor-pointer focus:bg-card">
                                                     {r}
                                                 </DropdownMenuItem>
@@ -1425,10 +1481,10 @@ export function CreatorStudioSidebar({
                                     {mode === 'booth' ? 'Capture Booth' : mode === 'video' ? 'Animate Scene' : 'Generate'}
                                 </span>
                             </div>
-                            {selectedModelObj?.cost && (
+                            {dynamicCost > 0 && (
                                 <div className="flex items-center gap-1.5 px-2.5 py-1 bg-black/10 rounded-full border border-black/5">
                                     <Coins className="w-3 h-3" />
-                                    <span className="text-[10px] font-black">{selectedModelObj.cost}</span>
+                                    <span className="text-[10px] font-black">{dynamicCost}</span>
                                 </div>
                             )}
                         </div>

@@ -71,27 +71,44 @@ const MIN_TOKEN_PRICE_USD = 0.07;
 const REC_TOKEN_PRICE_MIN = 0.08;
 const REC_TOKEN_PRICE_MAX = 0.10;
 
-const VIDEO_PRICING_CONFIG: Record<string, any> = {
+type VideoPricingSchema =
+    | { type: "fixed_block"; baseSeconds: number; basePrice: number; extraSecondPrice: number }
+    | { type: "per_second"; pricePerSecond: number }
+    | { type: "per_second_with_modifiers"; baseRates: Record<string, number>; audioSurcharge?: Record<string, number> };
+
+const VIDEO_PRICING_CONFIG: Record<string, Record<string, { name: string, schema: VideoPricingSchema }>> = {
     "fal": {
         "veo_3_1": {
             "name": "Veo 3.1",
-            "1080p": { off: 0.20, on: 0.40 },
-            "4k": { off: 0.40, on: 0.60 }
+            "schema": {
+                "type": "per_second_with_modifiers",
+                "baseRates": { "1080p": 0.20, "4k": 0.40 },
+                "audioSurcharge": { "1080p": 0.20, "4k": 0.20 }
+            }
         },
         "veo_3_1_fast": {
             "name": "Veo 3.1 Fast",
-            "1080p": { off: 0.10, on: 0.15 },
-            "4k": { off: 0.30, on: 0.35 }
+            "schema": {
+                "type": "per_second_with_modifiers",
+                "baseRates": { "1080p": 0.10, "4k": 0.30 },
+                "audioSurcharge": { "1080p": 0.05, "4k": 0.05 }
+            }
         },
         "kling_2_6": {
             "name": "Kling 2.6",
-            "1080p": { off: 0.07, on: 0.14 },
-            "4k": { off: 0.07, on: 0.14 } // Kling pricing listed doesn't differentiate res currently
+            "schema": {
+                "type": "fixed_block",
+                "baseSeconds": 5,
+                "basePrice": 0.35,
+                "extraSecondPrice": 0.07
+            }
         },
         "wan": {
             "name": "Wan",
-            "1080p": { off: 0.05, on: 0.10 },
-            "4k": { off: 0.05, on: 0.10 }
+            "schema": {
+                "type": "per_second",
+                "pricePerSecond": 0.05
+            }
         }
     }
 };
@@ -127,6 +144,7 @@ export default function SuperAdminBilling() {
         resolution_multiplier: 1,
         // Video fields
         video_model: "veo_3_1",
+        video_pricing_schema: VIDEO_PRICING_CONFIG["fal"]["veo_3_1"].schema,
         duration_seconds: 5,
         video_resolution: "1080p",
         audio: "off" as "on" | "off",
@@ -137,8 +155,49 @@ export default function SuperAdminBilling() {
         show_advanced: false, // For Extra Costs visibility
         infra_multiplier: 1.15,
         risk_multiplier_video: 1.4,
-        selling_price_token: 0.08
+        selling_price_token: 0.08,
+        target_margin: 60,
+        is_manual_tokens: false,
+        manual_tokens: 10
     });
+
+    function calculateVideoCost(
+        schema: VideoPricingSchema,
+        duration: number,
+        resolution: string,
+        audioEnabled: boolean
+    ): number {
+        switch (schema.type) {
+            case "fixed_block":
+                return duration <= schema.baseSeconds
+                    ? schema.basePrice
+                    : schema.basePrice +
+                    (duration - schema.baseSeconds) * schema.extraSecondPrice;
+
+            case "per_second":
+                return duration * schema.pricePerSecond;
+
+            case "per_second_with_modifiers":
+                const base =
+                    (schema.baseRates[resolution] || 0) * duration;
+                const audio =
+                    audioEnabled
+                        ? (schema.audioSurcharge?.[resolution] ?? 0) * duration
+                        : 0;
+                return base + audio;
+            default:
+                return 0;
+        }
+    }
+
+    useEffect(() => {
+        if (!calcData.is_manual_video && calcData.operation_category === 'video') {
+            const config = VIDEO_PRICING_CONFIG[calcData.provider]?.[calcData.video_model];
+            if (config) {
+                setCalcData(prev => ({ ...prev, video_pricing_schema: config.schema }));
+            }
+        }
+    }, [calcData.video_model, calcData.provider, calcData.is_manual_video, calcData.operation_category]);
 
     useEffect(() => {
         fetchPackages();
@@ -655,54 +714,246 @@ export default function SuperAdminBilling() {
                                 ) : (
                                     <>
                                         <div className="grid grid-cols-2 gap-4">
-                                            <div className="space-y-1.5 opacity-50 grayscale pointer-events-none">
-                                                <Label>Provider</Label>
-                                                <Select value={calcData.provider} onValueChange={(v) => setCalcData({ ...calcData, provider: v })}>
-                                                    <SelectTrigger className="bg-zinc-900 border-white/10 h-10">
+                                            <div className={`space-y-1.5 ${!calcData.is_manual_video ? 'opacity-100' : 'opacity-50 grayscale pointer-events-none'}`}>
+                                                <Label>Video Model Preset</Label>
+                                                <Select
+                                                    value={calcData.video_model}
+                                                    onValueChange={(v) => setCalcData({ ...calcData, video_model: v })}
+                                                    disabled={calcData.is_manual_video}
+                                                >
+                                                    <SelectTrigger className="bg-zinc-900 border-white/10 h-10 text-zinc-200">
                                                         <SelectValue />
                                                     </SelectTrigger>
                                                     <SelectContent className="bg-zinc-900 border-white/10 text-white">
-                                                        <SelectItem value="fal">FAL.ai</SelectItem>
+                                                        {Object.entries(VIDEO_PRICING_CONFIG[calcData.provider] || {}).map(([id, cfg]: [string, any]) => (
+                                                            <SelectItem key={id} value={id}>{cfg.name}</SelectItem>
+                                                        ))}
                                                     </SelectContent>
                                                 </Select>
                                             </div>
                                             <div className="space-y-1.5">
                                                 <div className="flex items-center justify-between">
-                                                    <Label>{calcData.is_manual_video ? "Manual Cost ($/s)" : "Video Model"}</Label>
-                                                    <div className="flex items-center gap-1.5 pb-1">
-                                                        <Label className="text-[9px] text-zinc-500">Manual</Label>
-                                                        <Switch
-                                                            className="scale-75 h-4 w-7"
-                                                            checked={calcData.is_manual_video}
-                                                            onCheckedChange={(c) => setCalcData({ ...calcData, is_manual_video: c })}
-                                                        />
-                                                    </div>
+                                                    <Label>Manual Pricing Mode</Label>
+                                                    <Switch
+                                                        className="scale-75 h-4 w-7"
+                                                        checked={calcData.is_manual_video}
+                                                        onCheckedChange={(c) => setCalcData({ ...calcData, is_manual_video: c })}
+                                                    />
                                                 </div>
-                                                {!calcData.is_manual_video ? (
-                                                    <Select value={calcData.video_model} onValueChange={(v) => setCalcData({ ...calcData, video_model: v })}>
-                                                        <SelectTrigger className="bg-zinc-900 border-white/10 h-10 text-zinc-200">
+                                                <div className="p-2 rounded bg-zinc-900/50 border border-white/5 text-[10px] text-zinc-500">
+                                                    {calcData.is_manual_video ? "Direct schema entry enabled" : "Using provider presets"}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {calcData.is_manual_video && (
+                                            <div className="space-y-4 p-4 rounded-lg bg-indigo-500/5 border border-indigo-500/10 animate-in fade-in zoom-in-95 duration-200">
+                                                <div className="space-y-1.5">
+                                                    <div className="flex items-center justify-between">
+                                                        <Label className="text-indigo-300">Pricing Schema Type</Label>
+                                                        <div className="flex items-center gap-2">
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                className="h-6 text-[9px] text-indigo-400 hover:text-indigo-300 hover:bg-indigo-500/10 px-2"
+                                                                onClick={() => {
+                                                                    navigator.clipboard.writeText(JSON.stringify(calcData.video_pricing_schema, null, 2));
+                                                                    toast.success("Schema copied as JSON");
+                                                                }}
+                                                            >
+                                                                Copy JSON
+                                                            </Button>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                className="h-6 text-[9px] text-indigo-400 hover:text-indigo-300 hover:bg-indigo-500/10 px-2"
+                                                                onClick={() => {
+                                                                    const json = prompt("Paste your pricing schema JSON here:");
+                                                                    if (json) {
+                                                                        try {
+                                                                            const parsed = JSON.parse(json);
+                                                                            if (parsed.type) {
+                                                                                setCalcData({ ...calcData, video_pricing_schema: parsed });
+                                                                                toast.success("Schema imported");
+                                                                            } else {
+                                                                                toast.error("Invalid schema format");
+                                                                            }
+                                                                        } catch (e) {
+                                                                            toast.error("Invalid JSON");
+                                                                        }
+                                                                    }
+                                                                }}
+                                                            >
+                                                                Import JSON
+                                                            </Button>
+                                                        </div>
+                                                    </div>
+                                                    <Select
+                                                        value={calcData.video_pricing_schema.type}
+                                                        onValueChange={(type: any) => {
+                                                            let newSchema: VideoPricingSchema;
+                                                            if (type === "fixed_block") {
+                                                                newSchema = { type: "fixed_block", baseSeconds: 5, basePrice: 0.35, extraSecondPrice: 0.07 };
+                                                            } else if (type === "per_second") {
+                                                                newSchema = { type: "per_second", pricePerSecond: 0.05 };
+                                                            } else {
+                                                                newSchema = { type: "per_second_with_modifiers", baseRates: { "1080p": 0.20, "4k": 0.40 }, audioSurcharge: { "1080p": 0.20, "4k": 0.20 } };
+                                                            }
+                                                            setCalcData({ ...calcData, video_pricing_schema: newSchema });
+                                                        }}
+                                                    >
+                                                        <SelectTrigger className="bg-zinc-900 border-indigo-500/20 h-10">
                                                             <SelectValue />
                                                         </SelectTrigger>
                                                         <SelectContent className="bg-zinc-900 border-white/10 text-white">
-                                                            {Object.entries(VIDEO_PRICING_CONFIG[calcData.provider] || {}).map(([id, cfg]: [string, any]) => (
-                                                                <SelectItem key={id} value={id}>{cfg.name}</SelectItem>
-                                                            ))}
+                                                            <SelectItem value="fixed_block">Fixed Block + Overage</SelectItem>
+                                                            <SelectItem value="per_second">Pure Per-Second</SelectItem>
+                                                            <SelectItem value="per_second_with_modifiers">Per-Second With Modifiers</SelectItem>
                                                         </SelectContent>
                                                     </Select>
-                                                ) : (
-                                                    <div className="relative">
+                                                </div>
+
+                                                {calcData.video_pricing_schema.type === "fixed_block" && (
+                                                    <div className="grid grid-cols-3 gap-3">
+                                                        <div className="space-y-1.5">
+                                                            <Label className="text-[10px]">Base Sec</Label>
+                                                            <Input
+                                                                type="number"
+                                                                min="1"
+                                                                value={calcData.video_pricing_schema.baseSeconds}
+                                                                onChange={(e) => setCalcData({
+                                                                    ...calcData,
+                                                                    video_pricing_schema: { ...calcData.video_pricing_schema, baseSeconds: Math.max(1, parseInt(e.target.value) || 1) } as any
+                                                                })}
+                                                                className="bg-zinc-900 border-white/10 h-8 text-xs"
+                                                            />
+                                                        </div>
+                                                        <div className="space-y-1.5">
+                                                            <Label className="text-[10px]">Base Price ($)</Label>
+                                                            <Input
+                                                                type="number"
+                                                                min="0"
+                                                                step="0.01"
+                                                                value={calcData.video_pricing_schema.basePrice}
+                                                                onChange={(e) => setCalcData({
+                                                                    ...calcData,
+                                                                    video_pricing_schema: { ...calcData.video_pricing_schema, basePrice: Math.max(0, parseFloat(e.target.value) || 0) } as any
+                                                                })}
+                                                                className="bg-zinc-900 border-white/10 h-8 text-xs"
+                                                            />
+                                                        </div>
+                                                        <div className="space-y-1.5">
+                                                            <Label className="text-[10px]">Extra $/sec</Label>
+                                                            <Input
+                                                                type="number"
+                                                                min="0"
+                                                                step="0.01"
+                                                                value={calcData.video_pricing_schema.extraSecondPrice}
+                                                                onChange={(e) => setCalcData({
+                                                                    ...calcData,
+                                                                    video_pricing_schema: { ...calcData.video_pricing_schema, extraSecondPrice: Math.max(0, parseFloat(e.target.value) || 0) } as any
+                                                                })}
+                                                                className="bg-zinc-900 border-white/10 h-8 text-xs"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {calcData.video_pricing_schema.type === "per_second" && (
+                                                    <div className="space-y-1.5">
+                                                        <Label className="text-[10px]">Price Per Second ($)</Label>
                                                         <Input
                                                             type="number"
-                                                            step="0.01"
-                                                            value={calcData.real_cost_usd_video}
-                                                            onChange={(e) => setCalcData({ ...calcData, real_cost_usd_video: parseFloat(e.target.value) || 0 })}
-                                                            className="bg-zinc-900 border-indigo-500/50 h-10 pr-12"
+                                                            min="0"
+                                                            step="0.001"
+                                                            value={calcData.video_pricing_schema.pricePerSecond}
+                                                            onChange={(e) => setCalcData({
+                                                                ...calcData,
+                                                                video_pricing_schema: { ...calcData.video_pricing_schema, pricePerSecond: Math.max(0, parseFloat(e.target.value) || 0) } as any
+                                                            })}
+                                                            className="bg-zinc-900 border-white/10 h-10"
                                                         />
-                                                        <span className="absolute right-3 top-2.5 text-[10px] text-zinc-500">$/sec</span>
+                                                    </div>
+                                                )}
+
+                                                {calcData.video_pricing_schema.type === "per_second_with_modifiers" && (
+                                                    <div className="space-y-4">
+                                                        <div className="grid grid-cols-2 gap-3">
+                                                            <div className="space-y-1.5">
+                                                                <Label className="text-[10px]">1080p Rate ($/s)</Label>
+                                                                <Input
+                                                                    type="number"
+                                                                    min="0"
+                                                                    step="0.01"
+                                                                    value={calcData.video_pricing_schema.baseRates["1080p"]}
+                                                                    onChange={(e) => setCalcData({
+                                                                        ...calcData,
+                                                                        video_pricing_schema: {
+                                                                            ...calcData.video_pricing_schema,
+                                                                            baseRates: { ...calcData.video_pricing_schema.baseRates, "1080p": Math.max(0, parseFloat(e.target.value) || 0) }
+                                                                        } as any
+                                                                    })}
+                                                                    className="bg-zinc-900 border-white/10 h-8 text-xs"
+                                                                />
+                                                            </div>
+                                                            <div className="space-y-1.5">
+                                                                <Label className="text-[10px]">4K Rate ($/s)</Label>
+                                                                <Input
+                                                                    type="number"
+                                                                    min="0"
+                                                                    step="0.01"
+                                                                    value={calcData.video_pricing_schema.baseRates["4k"]}
+                                                                    onChange={(e) => setCalcData({
+                                                                        ...calcData,
+                                                                        video_pricing_schema: {
+                                                                            ...calcData.video_pricing_schema,
+                                                                            baseRates: { ...calcData.video_pricing_schema.baseRates, "4k": Math.max(0, parseFloat(e.target.value) || 0) }
+                                                                        } as any
+                                                                    })}
+                                                                    className="bg-zinc-900 border-white/10 h-8 text-xs"
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                        <div className="grid grid-cols-2 gap-3">
+                                                            <div className="space-y-1.5">
+                                                                <Label className="text-[10px]">1080p Audio Surcharge ($/s)</Label>
+                                                                <Input
+                                                                    type="number"
+                                                                    min="0"
+                                                                    step="0.01"
+                                                                    value={calcData.video_pricing_schema.audioSurcharge?.["1080p"] || 0}
+                                                                    onChange={(e) => setCalcData({
+                                                                        ...calcData,
+                                                                        video_pricing_schema: {
+                                                                            ...calcData.video_pricing_schema,
+                                                                            audioSurcharge: { ...calcData.video_pricing_schema.audioSurcharge, "1080p": Math.max(0, parseFloat(e.target.value) || 0) }
+                                                                        } as any
+                                                                    })}
+                                                                    className="bg-zinc-900 border-white/10 h-8 text-xs"
+                                                                />
+                                                            </div>
+                                                            <div className="space-y-1.5">
+                                                                <Label className="text-[10px]">4K Audio Surcharge ($/s)</Label>
+                                                                <Input
+                                                                    type="number"
+                                                                    min="0"
+                                                                    step="0.01"
+                                                                    value={calcData.video_pricing_schema.audioSurcharge?.["4k"] || 0}
+                                                                    onChange={(e) => setCalcData({
+                                                                        ...calcData,
+                                                                        video_pricing_schema: {
+                                                                            ...calcData.video_pricing_schema,
+                                                                            audioSurcharge: { ...calcData.video_pricing_schema.audioSurcharge, "4k": Math.max(0, parseFloat(e.target.value) || 0) }
+                                                                        } as any
+                                                                    })}
+                                                                    className="bg-zinc-900 border-white/10 h-8 text-xs"
+                                                                />
+                                                            </div>
+                                                        </div>
                                                     </div>
                                                 )}
                                             </div>
-                                        </div>
+                                        )}
 
                                         <div className="grid grid-cols-2 gap-4">
                                             <div className="space-y-1.5">
@@ -710,8 +961,9 @@ export default function SuperAdminBilling() {
                                                 <div className="flex gap-2">
                                                     <Input
                                                         type="number"
+                                                        min="1"
                                                         value={calcData.duration_seconds}
-                                                        onChange={(e) => setCalcData({ ...calcData, duration_seconds: parseInt(e.target.value) || 1 })}
+                                                        onChange={(e) => setCalcData({ ...calcData, duration_seconds: Math.max(1, parseInt(e.target.value) || 1) })}
                                                         className="bg-zinc-900 border-white/10 h-10 flex-1"
                                                     />
                                                     <Button variant="outline" className="h-10 px-3 border-white/5 bg-zinc-900 text-[10px]" onClick={() => setCalcData({ ...calcData, duration_seconds: 5 })}>5s</Button>
@@ -751,7 +1003,7 @@ export default function SuperAdminBilling() {
                                                 <Label>Infrastructure Multiplier (%)</Label>
                                                 <Input
                                                     type="number"
-                                                    value={(calcData.infra_multiplier - 1) * 100}
+                                                    value={((calcData.infra_multiplier - 1) * 100).toFixed(0)}
                                                     onChange={(e) => setCalcData({ ...calcData, infra_multiplier: (parseFloat(e.target.value) / 100) + 1 })}
                                                     className="bg-zinc-900 border-white/10 h-10"
                                                 />
@@ -830,6 +1082,36 @@ export default function SuperAdminBilling() {
                                         />
                                         <p className="text-[10px] text-zinc-500">Current market price per token in packages.</p>
                                     </div>
+
+                                    <div className="grid grid-cols-2 gap-4 pt-2">
+                                        <div className="space-y-1.5">
+                                            <Label>Target Margin (%)</Label>
+                                            <Input
+                                                type="number"
+                                                value={calcData.target_margin}
+                                                onChange={(e) => setCalcData({ ...calcData, target_margin: parseInt(e.target.value) || 0 })}
+                                                className="bg-zinc-900 border-indigo-500/30 h-10"
+                                            />
+                                            <p className="text-[10px] text-zinc-500">Desired profitability target.</p>
+                                        </div>
+                                        <div className="space-y-1.5">
+                                            <div className="flex items-center justify-between">
+                                                <Label>Manual Tokens</Label>
+                                                <Switch
+                                                    className="scale-75 h-4"
+                                                    checked={calcData.is_manual_tokens}
+                                                    onCheckedChange={(c) => setCalcData({ ...calcData, is_manual_tokens: c })}
+                                                />
+                                            </div>
+                                            <Input
+                                                type="number"
+                                                disabled={!calcData.is_manual_tokens}
+                                                value={calcData.manual_tokens}
+                                                onChange={(e) => setCalcData({ ...calcData, manual_tokens: parseInt(e.target.value) || 0 })}
+                                                className={`bg-zinc-900 h-10 ${calcData.is_manual_tokens ? 'border-amber-500/50' : 'border-white/10 opacity-50'}`}
+                                            />
+                                        </div>
+                                    </div>
                                 </div>
                             </CardContent>
                         </Card>
@@ -846,14 +1128,12 @@ export default function SuperAdminBilling() {
                                     riskMult = RISK_MULTIPLIER_BY_TYPE[calcData.operation_type] || 1.15;
                                 } else {
                                     // Video Logic
-                                    let costPerSec = 0;
-                                    if (calcData.is_manual_video) {
-                                        costPerSec = calcData.real_cost_usd_video;
-                                    } else {
-                                        const modelCfg = VIDEO_PRICING_CONFIG[calcData.provider]?.[calcData.video_model];
-                                        costPerSec = modelCfg?.[calcData.video_resolution]?.[calcData.audio] || 0.20;
-                                    }
-                                    realCost = calcData.duration_seconds * costPerSec;
+                                    realCost = calculateVideoCost(
+                                        calcData.video_pricing_schema,
+                                        calcData.duration_seconds,
+                                        calcData.video_resolution,
+                                        calcData.audio === 'on'
+                                    );
                                     riskMult = calcData.risk_multiplier_video;
                                 }
 
@@ -862,10 +1142,23 @@ export default function SuperAdminBilling() {
                                 const infraAdjusted = realCost * calcData.infra_multiplier;
                                 const riskAdjusted = infraAdjusted * riskMult;
 
-                                const minTokens = calcData.operation_category === 'video' ? 5 : 1;
-                                const tokensRequired = Math.max(minTokens, Math.ceil(
+                                const minTokensFloor = calcData.operation_category === 'video' ? 5 : 1;
+
+                                // 1. Defensive (Break-even + Risk)
+                                const defensiveTokens = Math.max(minTokensFloor, Math.ceil(
                                     riskAdjusted / calcData.selling_price_token
                                 ));
+
+                                // 2. Suggested (Reach Target Margin)
+                                // Formula: tokens = trueCost / (price * (1 - margin/100))
+                                const suggestedTokens = Math.max(defensiveTokens, Math.ceil(
+                                    riskAdjusted / (calcData.selling_price_token * (1 - calcData.target_margin / 100))
+                                ));
+
+                                // 3. Final Tokens (Manual override or Suggested)
+                                const tokensRequired = calcData.is_manual_tokens
+                                    ? calcData.manual_tokens
+                                    : suggestedTokens;
 
                                 const revenue = tokensRequired * calcData.selling_price_token;
                                 // TRUE MARGIN Calculation (using riskAdjusted as true cost)
@@ -874,9 +1167,64 @@ export default function SuperAdminBilling() {
                                 const effectiveCostPerToken = realCost / tokensRequired;
 
                                 const warnings = [];
-                                if (margin < 40) warnings.push("LOW_TRUE_MARGIN_RISKY");
-                                if (tokensRequired < 5 && realCost > 0.50) warnings.push("HIGH_RISK_MODEL_UNDERVALUED");
+                                if (margin < 30) warnings.push("LOW_TRUE_MARGIN_CRITICAL");
+                                else if (margin < calcData.target_margin) warnings.push("BELOW_TARGET_PROFITABILITY");
+
+                                if (tokensRequired < defensiveTokens) warnings.push("BELOW_DEFENSIVE_FLOOR_RISKY");
                                 if (calcData.selling_price_token < MIN_TOKEN_PRICE_USD) warnings.push("TOKEN_PRICE_UNPROFITABLE");
+
+                                // Breakdown for Transparency Panel
+                                let breakdown: React.ReactNode = null;
+                                if (calcData.operation_category === 'video') {
+                                    const schema = calcData.video_pricing_schema;
+                                    const duration = calcData.duration_seconds;
+                                    const res = calcData.video_resolution;
+                                    const audioOn = calcData.audio === 'on';
+
+                                    if (schema.type === 'fixed_block') {
+                                        const extraSec = Math.max(0, duration - schema.baseSeconds);
+                                        breakdown = (
+                                            <div className="space-y-1 text-[10px] text-zinc-500 border-l-2 border-indigo-500/30 pl-3 my-2">
+                                                <div className="flex justify-between">
+                                                    <span>Base cost ({schema.baseSeconds}s):</span>
+                                                    <span>${schema.basePrice.toFixed(2)}</span>
+                                                </div>
+                                                {extraSec > 0 && (
+                                                    <div className="flex justify-between">
+                                                        <span>Extra seconds ({extraSec} × ${schema.extraSecondPrice.toFixed(2)}):</span>
+                                                        <span>${(extraSec * schema.extraSecondPrice).toFixed(2)}</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    } else if (schema.type === 'per_second') {
+                                        breakdown = (
+                                            <div className="space-y-1 text-[10px] text-zinc-500 border-l-2 border-indigo-500/30 pl-3 my-2">
+                                                <div className="flex justify-between">
+                                                    <span>Base rate ({duration}s × ${schema.pricePerSecond.toFixed(3)}):</span>
+                                                    <span>${(duration * schema.pricePerSecond).toFixed(2)}</span>
+                                                </div>
+                                            </div>
+                                        );
+                                    } else if (schema.type === 'per_second_with_modifiers') {
+                                        const baseRate = schema.baseRates[res] || 0;
+                                        const audioRate = audioOn ? (schema.audioSurcharge?.[res] ?? 0) : 0;
+                                        breakdown = (
+                                            <div className="space-y-1 text-[10px] text-zinc-500 border-l-2 border-indigo-500/30 pl-3 my-2">
+                                                <div className="flex justify-between">
+                                                    <span>Base ({res}, {duration}s × ${baseRate.toFixed(2)}):</span>
+                                                    <span>${(duration * baseRate).toFixed(2)}</span>
+                                                </div>
+                                                {audioOn && (
+                                                    <div className="flex justify-between">
+                                                        <span>Audio surcharge ({duration}s × ${audioRate.toFixed(2)}):</span>
+                                                        <span>${(duration * audioRate).toFixed(2)}</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    }
+                                }
 
                                 return (
                                     <>
@@ -885,15 +1233,29 @@ export default function SuperAdminBilling() {
                                                 <Sparkles className="w-16 h-16" />
                                             </div>
                                             <CardHeader className="pb-2">
-                                                <CardTitle className="text-white text-[10px] uppercase tracking-widest font-bold">Defensive Token Requirement</CardTitle>
+                                                <div className="flex justify-between items-center">
+                                                    <CardTitle className="text-white text-[10px] uppercase tracking-widest font-bold">
+                                                        {calcData.is_manual_tokens ? "Manual Token Override" : "Optimized Token Requirement"}
+                                                    </CardTitle>
+                                                    {calcData.is_manual_tokens && (
+                                                        <Badge className="bg-amber-500 text-[8px] h-4">Manual</Badge>
+                                                    )}
+                                                </div>
                                             </CardHeader>
                                             <CardContent>
                                                 <div className="text-5xl font-black text-white">
                                                     {tokensRequired} <span className="text-sm font-normal opacity-60">tokens</span>
                                                 </div>
-                                                <p className="text-white/60 text-[9px] mt-2 italic">
-                                                    Price Protection: {minTokens === 5 ? "Video Floor Active (5 tkn)" : "Standard Floor Active (1 tkn)"}
-                                                </p>
+                                                <div className="flex flex-col gap-1 mt-2">
+                                                    <p className="text-white/60 text-[9px] italic">
+                                                        Defensive Floor: {defensiveTokens} tokens (Break-even)
+                                                    </p>
+                                                    {!calcData.is_manual_tokens && suggestedTokens > defensiveTokens && (
+                                                        <p className="text-emerald-300/80 text-[9px] font-bold">
+                                                            + Profitability Adjustment Applied
+                                                        </p>
+                                                    )}
+                                                </div>
                                             </CardContent>
                                         </Card>
 
@@ -902,7 +1264,14 @@ export default function SuperAdminBilling() {
                                                 <h4 className="text-[10px] text-zinc-500 font-bold uppercase">Balance Sheet</h4>
                                             </CardHeader>
                                             <CardContent className="p-4 space-y-3">
-                                                <div className="flex justify-between items-center text-sm">
+                                                {breakdown}
+                                                {calcData.extra_costs_usd > 0 && (
+                                                    <div className="flex justify-between items-center text-[10px] text-amber-500/70">
+                                                        <span>Exceptional Costs:</span>
+                                                        <span>+${calcData.extra_costs_usd.toFixed(2)}</span>
+                                                    </div>
+                                                )}
+                                                <div className="flex justify-between items-center text-sm border-t border-white/5 pt-2">
                                                     <span className="text-zinc-400">Provider Cost (Real):</span>
                                                     <span className="text-white font-mono font-bold">${realCost.toFixed(3)}</span>
                                                 </div>
@@ -911,8 +1280,11 @@ export default function SuperAdminBilling() {
                                                     <span className="text-zinc-300 font-mono">${trueCost.toFixed(3)}</span>
                                                 </div>
                                                 <div className="flex justify-between items-center border-t border-white/5 pt-3">
-                                                    <span className="text-sm text-zinc-400">Net Business Margin:</span>
-                                                    <span className={`text-lg font-black ${margin < 40 ? 'text-red-400' : margin < 60 ? 'text-amber-400' : 'text-emerald-400'}`}>
+                                                    <div className="flex flex-col">
+                                                        <span className="text-sm text-zinc-400">Net Business Margin:</span>
+                                                        <span className="text-[9px] text-zinc-500">Target: {calcData.target_margin}%</span>
+                                                    </div>
+                                                    <span className={`text-lg font-black ${margin < 30 ? 'text-red-400' : margin < calcData.target_margin ? 'text-amber-400' : 'text-emerald-400'}`}>
                                                         {margin.toFixed(1)}%
                                                     </span>
                                                 </div>
