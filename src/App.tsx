@@ -38,6 +38,7 @@ const SuperAdminMarketplace = lazy(() => import("./components/super-admin/SuperA
 const SuperAdminAnalytics = lazy(() => import("./components/super-admin/SuperAdminAnalytics"));
 const SuperAdminSettings = lazy(() => import("./components/super-admin/SuperAdminSettings"));
 const SuperAdminDevTools = lazy(() => import("./components/super-admin/SuperAdminDevTools"));
+const SuperAdminAlE = lazy(() => import("./components/super-admin/SuperAdminAlE"));
 const AlbumFeedPage = lazy(() => import("./pages/AlbumFeedPage"));
 const StaffDashboard = lazy(() => import("./pages/StaffDashboard"));
 const ViewerDisplayPage = lazy(() => import("./pages/ViewerDisplayPage"));
@@ -266,6 +267,7 @@ const AppContent = () => {
             <Route path="models" element={<SuperAdminAIModels />} />
             <Route path="marketplace" element={<SuperAdminMarketplace />} />
             <Route path="content" element={<SuperAdminContent />} />
+            <Route path="ale" element={<SuperAdminAlE />} />
             <Route path="analytics" element={<SuperAdminAnalytics />} />
             <Route path="settings" element={<SuperAdminSettings />} />
             <Route path="devtools" element={<SuperAdminDevTools />} />

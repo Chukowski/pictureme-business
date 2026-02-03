@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import {
     LayoutDashboard,
     Users,
@@ -17,9 +18,10 @@ import {
     Megaphone,
     Layers,
     AlertTriangle,
-    Bell,
     ChevronDown,
-    Home
+    Home,
+    Zap,
+    ChevronLeft
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getCurrentUser, logoutUser } from "@/services/eventsApi";
@@ -38,6 +40,16 @@ export default function SuperAdminLayout() {
     const location = useLocation();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const currentUser = getCurrentUser();
+    const isAlESection = location.pathname.startsWith('/super-admin/ale');
+    const [isHeaderVisible, setIsHeaderVisible] = useState(true);
+
+    useEffect(() => {
+        if (isAlESection) {
+            setIsHeaderVisible(false);
+        } else {
+            setIsHeaderVisible(true);
+        }
+    }, [isAlESection]);
 
     useEffect(() => {
         if (!currentUser || currentUser.role !== 'superadmin') {
@@ -80,8 +92,23 @@ export default function SuperAdminLayout() {
             <div className="fixed top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[600px] bg-indigo-900/20 rounded-full blur-[120px] -z-10 pointer-events-none" />
             <div className="fixed top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-white/5 via-[#101112]/0 to-[#101112]/0 -z-10 pointer-events-none" />
 
-            {/* Top Navbar */}
-            <header className="fixed top-4 left-1/2 -translate-x-1/2 z-50">
+            {/* Top Navbar Area */}
+            <div 
+                className="fixed top-0 left-0 right-0 h-20 z-50 pointer-events-none"
+                onMouseEnter={() => isAlESection && setIsHeaderVisible(true)}
+            />
+            
+            <motion.header 
+                className="fixed top-4 left-1/2 z-50 pointer-events-auto"
+                initial={{ x: "-50%", y: 0, opacity: 1 }}
+                animate={{ 
+                    y: isHeaderVisible ? 0 : -100,
+                    opacity: isHeaderVisible ? 1 : 0,
+                    x: "-50%"
+                }}
+                transition={{ duration: 0.3, ease: "easeInOut" }}
+                onMouseLeave={() => isAlESection && setIsHeaderVisible(false)}
+            >
                 <nav className="flex items-center gap-2 p-1.5 bg-card/90 backdrop-blur-xl border border-white/10 rounded-full shadow-2xl shadow-black/50">
                     {/* Home Button */}
                     <button
@@ -240,7 +267,20 @@ export default function SuperAdminLayout() {
                         </div>
                     </div>
                 )}
-            </header>
+
+                {/* AL-E Central Button (Integrated) */}
+                {!isAlESection && (
+                    <div className="absolute top-full left-1/2 -translate-x-1/2 mt-0.5 pointer-events-auto transition-all duration-300 hover:mt-1.5">
+                        <Button
+                            onClick={() => navigate('/super-admin/ale')}
+                            className="h-7 px-5 rounded-b-xl rounded-t-none bg-indigo-600/20 backdrop-blur-md border-x border-b border-indigo-500/30 text-indigo-400 font-mono text-[9px] tracking-[0.2em] uppercase hover:bg-indigo-600/40 hover:text-white hover:border-indigo-500/50 shadow-[0_4px_20px_rgba(99,102,241,0.1)] group transition-all"
+                        >
+                            <Zap className="w-3 h-3 mr-2 group-hover:animate-pulse" />
+                            AL-E
+                        </Button>
+                    </div>
+                )}
+            </motion.header>
 
             {/* Main Content */}
             <main className="min-h-screen pt-24 pb-8 px-4 md:px-8">
