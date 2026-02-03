@@ -76,6 +76,7 @@ interface CreationDetailViewProps {
     onUseAsTemplate?: (item: GalleryItem) => void;
     onDownload: (item: GalleryItem) => void;
     onDelete?: (id: string | number) => void;
+    isSuperAdmin?: boolean;
 }
 
 const slideVariants = {
@@ -105,7 +106,8 @@ export function CreationDetailView({
     onReusePrompt,
     onUseAsTemplate,
     onDownload,
-    onDelete
+    onDelete,
+    isSuperAdmin
 }: CreationDetailViewProps) {
     const navigate = useNavigate();
     const currentUser = getCurrentUser();
@@ -507,7 +509,7 @@ export function CreationDetailView({
                         <div className="space-y-4 max-w-2xl">
                             {/* Privacy and Copy Row - TOP LEFT of Details */}
                             <div className="flex items-center gap-2 mb-2">
-                                {item.isOwner && onTogglePublic && (
+                                {(item.isOwner || isSuperAdmin) && onTogglePublic && (
                                     <button
                                         onClick={(e) => { e.stopPropagation(); onTogglePublic(item); }}
                                         className="flex items-center gap-2 bg-white/10 backdrop-blur-md hover:bg-white/20 px-2.5 py-1 rounded-full border border-white/10 transition-colors z-[70]"
@@ -530,7 +532,7 @@ export function CreationDetailView({
                                     <Copy className="w-3 h-3 text-white/40" />
                                 </button>
 
-                                {item.isOwner && onToggleAdult && (
+                                { (item.isOwner || isSuperAdmin) && onToggleAdult && (
                                     <button
                                         onClick={(e) => { e.stopPropagation(); onToggleAdult(item); }}
                                         className="flex items-center gap-2 bg-white/10 backdrop-blur-md hover:bg-white/20 px-2.5 py-1 rounded-full border border-white/10 transition-colors z-[70]"

@@ -255,6 +255,8 @@ function CreatorStudioPageContent({ defaultView }: CreatorStudioPageProps) {
     // Privacy & Tier State
     const isFreeTier = useMemo(() => {
         if (!currentUser) return true;
+        // Super admins can always toggle visibility
+        if (currentUser.role === 'super_admin') return false;
 
         // Check 1: Explicit subscription status (safest indicator)
         if (currentUser.subscription_status === 'active' || currentUser.subscription_status === 'trialing') {
@@ -281,6 +283,8 @@ function CreatorStudioPageContent({ defaultView }: CreatorStudioPageProps) {
         // Default to free
         return true;
     }, [currentUser]);
+
+    const isSuperAdmin = currentUser?.role === 'super_admin';
 
     const maxImages = useMemo(() => {
         switch (userTier) {
@@ -1373,6 +1377,7 @@ function CreatorStudioPageContent({ defaultView }: CreatorStudioPageProps) {
                 onUseAsTemplate={handleUseAsTemplate}
                 onDownload={handleDownload}
                 onDelete={handleDeleteHistory}
+                isSuperAdmin={isSuperAdmin}
             />
 
             <SaveTemplateModal

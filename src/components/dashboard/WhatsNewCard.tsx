@@ -2,7 +2,9 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Sparkles, Package, Zap, ExternalLink, Megaphone, ChevronRight } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Sparkles, Package, Zap, ExternalLink, Megaphone, ChevronRight, X } from "lucide-react";
 import { getHomeContent, type Announcement } from "@/services/contentApi";
 import { useNavigate } from "react-router-dom";
 
@@ -14,6 +16,7 @@ export function WhatsNewCard({ userType = 'business' }: WhatsNewCardProps) {
     const [announcements, setAnnouncements] = useState<Announcement[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [activeTab, setActiveTab] = useState("features");
+    const [selectedAnnouncement, setSelectedAnnouncement] = useState<Announcement | null>(null);
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -74,7 +77,7 @@ export function WhatsNewCard({ userType = 'business' }: WhatsNewCardProps) {
                     <div className="min-h-[140px]">
                         <TabsContent value="features" className="m-0 grid grid-cols-1 xl:grid-cols-2 gap-4 animate-in fade-in slide-in-from-bottom-2">
                             {features.length > 0 ? (
-                                features.map(a => <AnnouncementItem key={a.id} announcement={a} onCTA={handleCTA} />)
+                                features.map(a => <AnnouncementItem key={a.id} announcement={a} onCTA={handleCTA} onImageClick={() => setSelectedAnnouncement(a)} />)
                             ) : (
                                 <div className="xl:col-span-2">
                                     <EmptyState icon={<Package className="w-8 h-8" />} text="No new features yet" />
@@ -84,7 +87,7 @@ export function WhatsNewCard({ userType = 'business' }: WhatsNewCardProps) {
 
                         <TabsContent value="templates" className="m-0 grid grid-cols-1 xl:grid-cols-2 gap-4 animate-in fade-in slide-in-from-bottom-2">
                             {templates.length > 0 ? (
-                                templates.map(a => <AnnouncementItem key={a.id} announcement={a} onCTA={handleCTA} />)
+                                templates.map(a => <AnnouncementItem key={a.id} announcement={a} onCTA={handleCTA} onImageClick={() => setSelectedAnnouncement(a)} />)
                             ) : (
                                 <div className="xl:col-span-2">
                                     <EmptyState icon={<Sparkles className="w-8 h-8" />} text="Stay tuned for pro tips" />
@@ -94,7 +97,7 @@ export function WhatsNewCard({ userType = 'business' }: WhatsNewCardProps) {
 
                         <TabsContent value="other" className="m-0 grid grid-cols-1 xl:grid-cols-2 gap-4 animate-in fade-in slide-in-from-bottom-2">
                             {other.length > 0 ? (
-                                other.map(a => <AnnouncementItem key={a.id} announcement={a} onCTA={handleCTA} />)
+                                other.map(a => <AnnouncementItem key={a.id} announcement={a} onCTA={handleCTA} onImageClick={() => setSelectedAnnouncement(a)} />)
                             ) : (
                                 <div className="xl:col-span-2">
                                     <EmptyState icon={<Megaphone className="w-8 h-8" />} text="Systems are operational" />
@@ -104,19 +107,81 @@ export function WhatsNewCard({ userType = 'business' }: WhatsNewCardProps) {
                     </div>
                 </CardContent>
             </Card>
+
+            {/* Image Modal */}
+            <Dialog open={!!selectedAnnouncement} onOpenChange={() => setSelectedAnnouncement(null)}>
+                <DialogContent className="bg-[#080808] border-white/10 text-white max-w-3xl p-0 overflow-hidden">
+                    <DialogHeader className="p-6 pb-4">
+                        <DialogTitle className="text-xl font-black uppercase tracking-tight">
+                            {selectedAnnouncement?.title}
+                        </DialogTitle>
+                    </DialogHeader>
+                    {selectedAnnouncement?.image_url && (
+                        <div className="relative w-full">
+                            <img 
+                                src={selectedAnnouncement.image_url} 
+                                alt={selectedAnnouncement.title}
+                                className="w-full h-auto max-h-[70vh] object-contain"
+                            />
+                        </div>
+                    )}
+                    <div className="p-6 pt-4 space-y-4">
+                        <p className="text-sm text-zinc-300 leading-relaxed">
+                            {selectedAnnouncement?.content}
+                        </p>
+                        {selectedAnnouncement?.cta_url && (
+                            <Button
+                                onClick={() => {
+                                    handleCTA(selectedAnnouncement.cta_url);
+                                    setSelectedAnnouncement(null);
+                                }}
+                                className="w-full bg-[#D1F349] text-black hover:bg-[#D1F349]/90 font-black uppercase tracking-wider"
+                            >
+                                {selectedAnnouncement.cta_label || 'Learn More'}
+                                <ChevronRight className="w-4 h-4 ml-2" />
+                            </Button>
+                        )}
+                    </div>
+                </DialogContent>
+            </Dialog>
         </Tabs>
     );
 }
 
-function AnnouncementItem({ announcement, onCTA }: { announcement: Announcement; onCTA: (url?: string) => void }) {
+function AnnouncementItem({ announcement, onCTA, onImageClick }: { 
+    announcement: Announcement; 
+    onCTA: (url?: string) => void;
+    onImageClick: () => void;
+}) {
+    const hasImage = !!announcement.image_url;
+
     return (
         <div
-            className={`relative p-5 md:p-6 rounded-2xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.04] transition-all duration-300 group/item`}
+            className={`relative p-5 md:p-6 rounded-2xl border border-white/5 hover:border-white/10 transition-all duration-300 group/item overflow-hidden ${
+                hasImage ? 'cursor-pointer' : 'bg-white/[0.02] hover:bg-white/[0.04]'
+            }`}
+            onClick={hasImage ? onImageClick : undefined}
         >
-            <div className="flex items-start justify-between gap-4">
+            {/* Background Image with Overlay */}
+            {hasImage && (
+                <>
+                    <div 
+                        className="absolute inset-0 bg-cover bg-center transition-transform duration-300 group-hover/item:scale-105"
+                        style={{ backgroundImage: `url(${announcement.image_url})` }}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/80 to-black/40" />
+                </>
+            )}
+
+            {/* Content */}
+            <div className="relative z-10 flex items-start justify-between gap-4">
                 <div className="space-y-2 w-full">
                     <div className="flex flex-wrap items-center gap-2">
-                        <h4 className="text-[13px] md:text-base font-black text-white group-hover/item:text-[#D1F349] transition-colors uppercase tracking-tight">
+                        <h4 className={`text-[13px] md:text-base font-black uppercase tracking-tight transition-colors ${
+                            hasImage 
+                                ? 'text-white group-hover/item:text-[#D1F349]' 
+                                : 'text-white group-hover/item:text-[#D1F349]'
+                        }`}>
                             {announcement.title}
                         </h4>
                         <div className="hidden sm:block w-1 h-1 rounded-full bg-zinc-700" />
@@ -124,12 +189,17 @@ function AnnouncementItem({ announcement, onCTA }: { announcement: Announcement;
                             {new Date(announcement.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
                         </span>
                     </div>
-                    <p className="text-[12px] md:text-xs text-zinc-400 leading-relaxed max-w-full">
+                    <p className={`text-[12px] md:text-xs leading-relaxed max-w-full line-clamp-2 ${
+                        hasImage ? 'text-zinc-200' : 'text-zinc-400'
+                    }`}>
                         {announcement.content}
                     </p>
-                    {announcement.cta_url && (
+                    {announcement.cta_url && !hasImage && (
                         <button
-                            onClick={() => onCTA(announcement.cta_url)}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onCTA(announcement.cta_url);
+                            }}
                             className="mt-3 flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-[#D1F349] hover:text-white transition-colors py-1 group/btn"
                         >
                             {announcement.cta_label || 'Learn More'}

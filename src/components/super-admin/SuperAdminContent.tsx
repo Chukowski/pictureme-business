@@ -34,7 +34,9 @@ import {
   type Announcement,
   type FeaturedTemplate
 } from "@/services/contentApi";
+import { getMarketplaceTemplates, type MarketplaceTemplate } from "@/services/marketplaceApi";
 import { AssetManager } from "./AssetManager";
+import { ENV } from "@/config/env";
 
 export default function SuperAdminContent() {
   const [searchParams] = useSearchParams();
@@ -109,6 +111,16 @@ function AnnouncementsManager() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [filterType, setFilterType] = useState<string>("all");
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  
+  // Template picker state
+  const [showTemplatePicker, setShowTemplatePicker] = useState(false);
+  const [templates, setTemplates] = useState<MarketplaceTemplate[]>([]);
+  const [isLoadingTemplates, setIsLoadingTemplates] = useState(false);
+  const [templateSearch, setTemplateSearch] = useState("");
+  
+  // Drag and drop state
+  const [isDragging, setIsDragging] = useState(false);
 
   // Form State
   const [formData, setFormData] = useState<Partial<Announcement>>({
@@ -118,7 +130,8 @@ function AnnouncementsManager() {
     visibility: "global",
     published: true,
     cta_label: "",
-    cta_url: ""
+    cta_url: "",
+    image_url: ""
   });
   const [editingId, setEditingId] = useState<number | null>(null);
 
@@ -225,6 +238,126 @@ function AnnouncementsManager() {
     setIsDialogOpen(true);
   };
 
+  const uploadImageFile = async (file: File) => {
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error("Please upload an image file");
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image size must be less than 5MB");
+      return;
+    }
+
+    try {
+      setIsUploadingImage(true);
+      
+      // Create FormData
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('category', 'media');
+      
+      // Upload to server
+      const response = await fetch(`${ENV.API_URL}/api/media/upload`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+        },
+        body: formData
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Upload failed');
+      }
+
+      const data = await response.json();
+      setFormData(prev => ({ ...prev, image_url: data.url }));
+      toast.success("Image uploaded successfully");
+    } catch (error) {
+      console.error('Image upload error:', error);
+      toast.error(error instanceof Error ? error.message : "Failed to upload image");
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    await uploadImageFile(file);
+  };
+
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!isDragging) {
+      setIsDragging(true);
+    }
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // Only set to false if we're leaving the container, not a child element
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const x = e.clientX;
+    const y = e.clientY;
+    if (x <= rect.left || x >= rect.right || y <= rect.top || y >= rect.bottom) {
+      setIsDragging(false);
+    }
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    const files = Array.from(e.dataTransfer.files);
+    if (files.length === 0) {
+      toast.error("No file detected");
+      return;
+    }
+
+    const file = files[0];
+    await uploadImageFile(file);
+  };
+
+  const handleRemoveImage = () => {
+    setFormData({ ...formData, image_url: "" });
+  };
+
+  const loadTemplates = async () => {
+    try {
+      setIsLoadingTemplates(true);
+      const data = await getMarketplaceTemplates({ 
+        search: templateSearch,
+        limit: 50 
+      });
+      setTemplates(data);
+    } catch (error) {
+      console.error("Failed to load templates:", error);
+      toast.error("Failed to load templates");
+    } finally {
+      setIsLoadingTemplates(false);
+    }
+  };
+
+  const handleSelectTemplate = (template: MarketplaceTemplate) => {
+    const imageUrl = template.preview_url || template.preview_images?.[0] || "";
+    setFormData({ ...formData, image_url: imageUrl });
+    setShowTemplatePicker(false);
+    toast.success(`Template "${template.name}" selected`);
+  };
+
   const resetForm = () => {
     setFormData({
       title: "",
@@ -233,7 +366,8 @@ function AnnouncementsManager() {
       visibility: "global",
       published: true,
       cta_label: "",
-      cta_url: ""
+      cta_url: "",
+      image_url: ""
     });
     setEditingId(null);
   };
@@ -361,6 +495,82 @@ function AnnouncementsManager() {
               />
             </div>
 
+            <div className="space-y-2">
+              <Label>Image/Template (Optional)</Label>
+              <div className="space-y-2">
+                {formData.image_url ? (
+                  <div className="relative group">
+                    <img 
+                      src={formData.image_url} 
+                      alt="Preview" 
+                      className="w-full h-40 object-cover rounded-lg border border-white/10"
+                    />
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={handleRemoveImage}
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="relative">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageUpload}
+                        className="hidden"
+                        id="announcement-image-upload"
+                        disabled={isUploadingImage}
+                      />
+                      <label
+                        htmlFor="announcement-image-upload"
+                        onDragEnter={handleDragEnter}
+                        onDragOver={handleDragOver}
+                        onDragLeave={handleDragLeave}
+                        onDrop={handleDrop}
+                        className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer transition-all ${
+                          isDragging 
+                            ? 'border-indigo-500 bg-indigo-500/10 scale-105' 
+                            : 'border-white/10 hover:border-white/20 bg-card'
+                        }`}
+                      >
+                        {isUploadingImage ? (
+                          <Loader2 className="w-8 h-8 animate-spin text-zinc-500" />
+                        ) : (
+                          <>
+                            <ImageIcon className={`w-8 h-8 mb-2 transition-colors pointer-events-none ${
+                              isDragging ? 'text-indigo-400' : 'text-zinc-500'
+                            }`} />
+                            <p className={`text-xs transition-colors pointer-events-none ${
+                              isDragging ? 'text-indigo-300' : 'text-zinc-400'
+                            }`}>
+                              {isDragging ? 'Drop image here' : 'Upload or Drag Image'}
+                            </p>
+                            <p className="text-[10px] text-zinc-600 mt-1 pointer-events-none">PNG, JPG up to 5MB</p>
+                          </>
+                        )}
+                      </label>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowTemplatePicker(true);
+                        loadTemplates();
+                      }}
+                      className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-white/10 rounded-lg hover:border-white/20 transition-colors bg-card cursor-pointer"
+                    >
+                      <Sparkles className="w-8 h-8 text-zinc-500 mb-2" />
+                      <p className="text-xs text-zinc-400">Select Template</p>
+                      <p className="text-[10px] text-zinc-600 mt-1">From Marketplace</p>
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>CTA Label (Optional)</Label>
@@ -396,6 +606,80 @@ function AnnouncementsManager() {
             <Button onClick={handleSubmit} disabled={isSaving} className="bg-indigo-600 hover:bg-indigo-700">
               {isSaving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               Save Announcement
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Template Picker Dialog */}
+      <Dialog open={showTemplatePicker} onOpenChange={setShowTemplatePicker}>
+        <DialogContent className="bg-card border-white/10 text-white max-w-4xl max-h-[80vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Select Template from Marketplace</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 flex-1 overflow-hidden flex flex-col">
+            <Input
+              placeholder="Search templates..."
+              value={templateSearch}
+              onChange={(e) => setTemplateSearch(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && loadTemplates()}
+              className="bg-card border-white/10"
+            />
+
+            <div className="flex-1 overflow-y-auto">
+              {isLoadingTemplates ? (
+                <div className="flex justify-center items-center py-12">
+                  <Loader2 className="w-8 h-8 animate-spin text-zinc-500" />
+                </div>
+              ) : templates.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 text-zinc-500">
+                  <Sparkles className="w-12 h-12 opacity-20 mb-3" />
+                  <p className="text-sm">No templates found</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                  {templates.map((template) => {
+                    const imageUrl = template.preview_url || template.preview_images?.[0];
+                    return (
+                      <button
+                        key={template.id}
+                        onClick={() => handleSelectTemplate(template)}
+                        className="group relative aspect-square rounded-lg overflow-hidden border border-white/10 hover:border-indigo-500 transition-all hover:scale-105"
+                      >
+                        {imageUrl ? (
+                          <img
+                            src={imageUrl}
+                            alt={template.name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-zinc-800 flex items-center justify-center">
+                            <ImageIcon className="w-8 h-8 text-zinc-600" />
+                          </div>
+                        )}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+                          <div className="absolute bottom-0 left-0 right-0 p-3">
+                            <p className="text-xs font-bold text-white truncate">{template.name}</p>
+                            <p className="text-[10px] text-zinc-400 truncate">{template.category}</p>
+                          </div>
+                        </div>
+                        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <div className="w-6 h-6 rounded-full bg-indigo-500 flex items-center justify-center">
+                            <Check className="w-4 h-4 text-white" />
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowTemplatePicker(false)} className="border-white/10 text-white hover:bg-white/5">
+              Cancel
             </Button>
           </DialogFooter>
         </DialogContent>
