@@ -11,6 +11,7 @@ export interface Announcement {
   visibility: 'global' | 'business_only' | 'personal_only';
   published: boolean;
   scheduled_at?: string;
+  notify_via_ale?: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -157,10 +158,10 @@ export async function deleteAnnouncement(id: number) {
   return response.json();
 }
 
-export async function publishAnnouncement(id: number, publish: boolean) {
+export async function publishAnnouncement(id: number, publish: boolean, notify: boolean = false) {
   const response = await fetchWithAuth(`${getApiUrl()}/api/admin/content/announcements/${id}/publish`, {
     method: 'POST',
-    body: JSON.stringify({ published: publish })
+    body: JSON.stringify({ published: publish, notify_via_ale: notify })
   });
   if (!response.ok) throw new Error('Failed to update publish state');
   return response.json();

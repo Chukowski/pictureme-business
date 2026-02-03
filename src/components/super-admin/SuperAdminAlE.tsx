@@ -14,7 +14,8 @@ import {
   X,
   ChevronLeft,
   Menu,
-  Activity
+  Activity,
+  Megaphone
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -27,6 +28,7 @@ import { EmailComposerTab } from "./SuperAdminAlE/EmailComposerTab";
 import { TemplatesTab } from "./SuperAdminAlE/TemplatesTab";
 import { TriggersTab } from "./SuperAdminAlE/TriggersTab";
 import { CommunicationLogsTab } from "./SuperAdminAlE/CommunicationLogsTab";
+import { AnnouncementsTab } from "./SuperAdminAlE/AnnouncementsTab";
 
 export default function SuperAdminAlE() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -40,7 +42,8 @@ export default function SuperAdminAlE() {
 
   const tabs = [
     { id: 'settings', label: 'CORE_CONFIG', icon: SettingsIcon, tooltip: 'Global system configuration and master switches.' },
-    { id: 'composer', label: 'TRANSMISSION', icon: Mail, tooltip: 'Manual manual message routing and broadcast control.' },
+    { id: 'announcements', label: 'BROADCAST', icon: Megaphone, tooltip: 'Manage platform announcements and Al-e automated notifications.' },
+    { id: 'composer', label: 'TRANSMISSION', icon: Mail, tooltip: 'Manual message routing and broadcast control.' },
     { id: 'templates', label: 'DATA_VAULT', icon: Layout, tooltip: 'Manage reusable transmission protocols and templates.' },
     { id: 'triggers', label: 'NEURAL_LINKS', icon: Zap, tooltip: 'Configure event-to-action autonomous protocols.' },
     { id: 'logs', label: 'COMMS_LOG', icon: History, tooltip: 'Immutable stream of all system-human interactions.' },
@@ -164,6 +167,16 @@ export default function SuperAdminAlE() {
                   {activeTab === 'settings' && (
                     <TabAnimationWrapper key="settings">
                       <AlESettingsTab />
+                    </TabAnimationWrapper>
+                  )}
+                </AnimatePresence>
+              </TabsContent>
+
+              <TabsContent value="announcements" className="m-0 focus-visible:ring-0">
+                <AnimatePresence mode="wait">
+                  {activeTab === 'announcements' && (
+                    <TabAnimationWrapper key="announcements">
+                      <AnnouncementsTab />
                     </TabAnimationWrapper>
                   )}
                 </AnimatePresence>

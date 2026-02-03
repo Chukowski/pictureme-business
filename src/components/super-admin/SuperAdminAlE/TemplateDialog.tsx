@@ -147,8 +147,8 @@ export function TemplateDialog({ template, open, onClose, onSave }: { template: 
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label className="text-[10px] uppercase tracking-widest text-zinc-500">Transmission Body</Label>
-                  <div className="flex gap-1">
-                    {['{{user_name}}', '{{username}}', '{{email}}', '{{tokens}}'].map((v) => (
+                  <div className="flex flex-wrap gap-1">
+                    {['{{user_name}}', '{{username}}', '{{email}}', '{{tokens}}', '{{feature}}', '{{content}}'].map((v) => (
                       <button
                         key={v}
                         onClick={() => insertVariable(v)}
