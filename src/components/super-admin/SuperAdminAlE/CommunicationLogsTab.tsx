@@ -93,33 +93,30 @@ export function CommunicationLogsTab() {
                   </td>
                   <td className="p-4">
                     <div className="flex flex-col">
-                      <span className="text-[11px] text-white font-bold">{log.user_email || 'System'}</span>
+                      <span className="text-[11px] text-white font-bold">{log.email || 'System'}</span>
                       <span className="text-[8px] text-zinc-600 uppercase tracking-tighter">ID: {log.user_id?.slice(0, 8) || 'SYSTEM'}</span>
                     </div>
                   </td>
                   <td className="p-4">
                     <div className="flex items-center gap-2">
-                      <div className={cn(
-                        "w-1.5 h-1.5 rounded-full",
-                        log.channel === 'email' ? "bg-indigo-500" : "bg-amber-500"
-                      )} />
-                      <span className="text-[10px] text-zinc-300 uppercase">{log.channel}</span>
+                      <div className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
+                      <span className="text-[10px] text-zinc-300 uppercase">EMAIL</span>
                     </div>
                   </td>
                   <td className="p-4">
                     <div className="flex items-center gap-2">
                       <Badge variant="outline" className="text-[8px] font-mono border-white/10 text-zinc-500 uppercase rounded-none">
-                        {log.trigger_type}
+                        {log.trigger_type || 'MANUAL'}
                       </Badge>
                       {log.template_id && <FileText className="w-3 h-3 text-zinc-700" />}
                     </div>
                   </td>
                   <td className="p-4 text-right">
                     <div className="flex items-center justify-end gap-3">
-                      {log.tokens_granted > 0 && (
+                      {log.token_reward > 0 && (
                         <div className="flex items-center gap-1 text-amber-500">
                           <Database className="w-3 h-3" />
-                          <span className="text-[10px] font-bold">+{log.tokens_granted}</span>
+                          <span className="text-[10px] font-bold">+{log.token_reward}</span>
                         </div>
                       )}
                       <button className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:text-indigo-400">

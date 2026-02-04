@@ -133,12 +133,14 @@ export function EmailComposerTab() {
     setSending(true);
     try {
       await sendEmail({
-        recipientType,
-        recipientId: selectedUser?.id,
-        filters: recipientType === 'segment' ? segmentFilters : undefined,
+        recipient_type: recipientType,
+        recipient_id: selectedUser?.id,
+        recipient_segment: recipientType === 'segment' ? segmentFilters : undefined,
         subject,
         body,
-        tokenReward
+        token_reward: tokenReward,
+        template_id: selectedTemplateId || undefined,
+        notify_by_email: true
       });
       toast.success("Transmission broadcast successful");
     } catch (error) {
