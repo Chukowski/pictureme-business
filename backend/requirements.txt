@@ -3,7 +3,7 @@
 # ================================
 
 # FastAPI & Server
-fastapi>=0.115.0
+fastapi>=0.111.1,<0.112.0
 uvicorn[standard]>=0.32.0
 python-multipart>=0.0.12
 sse-starlette>=2.1.3
