@@ -142,7 +142,8 @@ export function CreatorStudioSidebar({
 
     const supportedResolutions = useMemo(() => {
         if (mode === 'video') return ["720p", "1080p", "4k"];
-        if (model === 'nano-banana-pro' || model.includes('seedream')) return ["standard", "hd"];
+        if (model === 'nano-banana-pro') return ["1K", "2K", "4K"];
+        if (model.includes('seedream')) return ["standard", "hd"];
         if (model.includes('flux')) return ["standard", "hd"];
         return [];
     }, [model, mode]);
@@ -262,10 +263,10 @@ export function CreatorStudioSidebar({
             case 'xAI':
                 return (
                     <svg className={className} viewBox="0 0 727.27 778.68" fill="currentColor">
-                        <polygon transform="translate(-134,-113.32)" points="508.67 574.07 761.27 213.32 639.19 213.32 447.64 486.9"/>
-                        <polygon transform="translate(-134,-113.32)" points="356.08 792 417.12 704.83 356.08 617.66 234 792"/>
-                        <polygon transform="translate(-134,-113.32)" points="508.67 792 630.75 792 356.08 399.72 234 399.72"/>
-                        <polygon transform="translate(-134,-113.32)" points="761.27 256.91 661.27 399.72 671.27 792 751.27 792"/>
+                        <polygon transform="translate(-134,-113.32)" points="508.67 574.07 761.27 213.32 639.19 213.32 447.64 486.9" />
+                        <polygon transform="translate(-134,-113.32)" points="356.08 792 417.12 704.83 356.08 617.66 234 792" />
+                        <polygon transform="translate(-134,-113.32)" points="508.67 792 630.75 792 356.08 399.72 234 399.72" />
+                        <polygon transform="translate(-134,-113.32)" points="761.27 256.91 661.27 399.72 671.27 792 751.27 792" />
                     </svg>
                 );
             case 'Google':
@@ -454,10 +455,10 @@ export function CreatorStudioSidebar({
 
     const dynamicCost = useMemo(() => {
         if (!selectedModelObj) return 0;
-        
+
         let totalCost = selectedModelObj.cost || 0;
         const rules = selectedModelObj.cost_rules || {};
-        
+
         // 1. Resolution Rule
         if (rules.resolution && resolution) {
             const resCost = rules.resolution[resolution];
@@ -465,7 +466,7 @@ export function CreatorStudioSidebar({
                 totalCost += resCost;
             }
         }
-        
+
         // 2. Audio Rule (Video only)
         if (mode === 'video' && rules.audio) {
             const audioKey = audio ? 'true' : 'false';
@@ -484,7 +485,7 @@ export function CreatorStudioSidebar({
                 totalCost += durCost;
             }
         }
-        
+
         // 3. Aspect Ratio mapping to Resolution Rules (Image only fallback)
         if (mode === 'image' && rules.resolution && aspectRatio) {
             const mapping: Record<string, string> = {

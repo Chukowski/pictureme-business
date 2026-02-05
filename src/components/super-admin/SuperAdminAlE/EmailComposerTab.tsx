@@ -14,34 +14,34 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
-import { 
-  Loader2, 
-  Mail, 
-  Info, 
-  Send, 
-  Eye, 
-  Check, 
-  ChevronRight, 
-  Zap, 
+import {
+  Loader2,
+  Mail,
+  Info,
+  Send,
+  Eye,
+  Check,
+  ChevronRight,
+  Zap,
   Database,
   Cpu
 } from "lucide-react";
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
 } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { 
-  getTemplates, 
-  searchUsers, 
-  sendEmail, 
+import {
+  getTemplates,
+  searchUsers,
+  sendEmail,
   previewEmail,
-  type EmailTemplate 
+  type EmailTemplate
 } from "@/services/aleApi";
 import { HUDContainer, TechnicalTooltip } from "./ale-shared";
 
@@ -62,7 +62,7 @@ export function EmailComposerTab() {
   const [open, setOpen] = useState(false);
   const [templates, setTemplates] = useState<EmailTemplate[]>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
-  
+
   // Preview state
   const [isPreviewing, setIsPreviewing] = useState(false);
   const [previewData, setPreviewData] = useState<any>(null);
@@ -170,7 +170,7 @@ export function EmailComposerTab() {
     setBody(prev => prev + variable);
   };
 
-  const selectedUserDisplay = selectedUser 
+  const selectedUserDisplay = selectedUser
     ? (selectedUser.full_name || selectedUser.username || selectedUser.email)
     : "SELECT_TARGET_NODE";
 
@@ -320,8 +320,8 @@ export function EmailComposerTab() {
                     </span>
                     <div className="flex gap-1">
                       <TechnicalTooltip text="Use Al-e's neural engine to draft this transmission.">
-                        <Button 
-                          variant="outline" 
+                        <Button
+                          variant="outline"
                           size="sm"
                           onClick={() => toast.info("AI Neural Engine is currently in standby mode (Phase 4 Implementation Pending)")}
                           className="px-2 py-1 bg-indigo-500/10 border-indigo-500/20 text-[9px] font-mono text-indigo-400 hover:bg-indigo-500 hover:text-white transition-all h-7 rounded"
@@ -395,7 +395,7 @@ export function EmailComposerTab() {
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <Button 
+              <Button
                 variant="outline"
                 onClick={() => {
                   setSubject('');
@@ -409,7 +409,7 @@ export function EmailComposerTab() {
               >
                 Clear_All
               </Button>
-              <Button 
+              <Button
                 variant="outline"
                 onClick={handlePreview}
                 disabled={isPreviewing || !subject || !body}
@@ -419,10 +419,10 @@ export function EmailComposerTab() {
                 Preview
               </Button>
             </div>
-            
-            <Button 
-              onClick={handleSend} 
-              disabled={sending || !subject || !body || (recipientType === 'single' && !selectedUser)} 
+
+            <Button
+              onClick={handleSend}
+              disabled={sending || !subject || !body || (recipientType === 'single' && !selectedUser)}
               className="w-full h-20 rounded-none bg-indigo-600 hover:bg-indigo-500 text-white font-mono uppercase tracking-[0.3em] text-xs shadow-[0_0_30px_rgba(99,102,241,0.3)] transition-all group overflow-hidden relative"
             >
               <div className="absolute inset-0 w-full h-full bg-white/5 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out" />
@@ -456,10 +456,11 @@ export function EmailComposerTab() {
               <Badge variant="outline" className="font-mono text-[10px] border-zinc-200">Format: HTML5</Badge>
             </div>
           </DialogHeader>
-          <div className="overflow-y-auto p-10 bg-white">
-            <div 
-              className="prose prose-zinc max-w-none"
-              dangerouslySetInnerHTML={{ __html: previewData?.body_html }} 
+          <div className="flex-1 bg-[#f4f4f5] p-2 sm:p-4 overflow-hidden min-h-[500px]">
+            <iframe
+              title="Transmission Preview"
+              className="w-full h-full border-none bg-white shadow-sm"
+              srcDoc={previewData?.body_html}
             />
           </div>
           <DialogFooter className="p-4 border-t border-zinc-100 bg-zinc-50 shrink-0">

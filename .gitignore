@@ -103,6 +103,8 @@ SPECS_*.md
 .env.development
 .env.production
 .env.staging
+.env.backup*
+.env.*.backup*
 
 # AWS credentials
 aws-exports.js

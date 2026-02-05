@@ -5,19 +5,19 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { 
-  Loader2, 
-  Activity, 
-  Eye, 
-  Database, 
-  Shield 
+import {
+  Loader2,
+  Activity,
+  Eye,
+  Database,
+  Shield
 } from "lucide-react";
 import { toast } from "sonner";
-import { 
-  createTemplate, 
-  updateTemplate, 
-  previewEmail, 
-  type EmailTemplate 
+import {
+  createTemplate,
+  updateTemplate,
+  previewEmail,
+  type EmailTemplate
 } from "@/services/aleApi";
 
 export function TemplateDialog({ template, open, onClose, onSave }: { template: EmailTemplate | null; open: boolean; onClose: () => void; onSave: () => void }) {
@@ -185,9 +185,9 @@ export function TemplateDialog({ template, open, onClose, onSave }: { template: 
             <div className="space-y-4">
               <div className="flex items-center justify-between mb-2">
                 <Label className="text-[10px] uppercase tracking-widest text-zinc-500">Heuristic Preview</Label>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={generatePreview}
                   disabled={loadingPreview}
                   className="h-7 text-[9px] uppercase font-mono border-white/10 bg-white/5"
@@ -196,18 +196,19 @@ export function TemplateDialog({ template, open, onClose, onSave }: { template: 
                   Refresh_Preview
                 </Button>
               </div>
-              
+
               <div className="h-full border border-white/5 rounded-lg overflow-hidden bg-zinc-900/50 flex flex-col min-h-[500px]">
                 {showPreview && previewData ? (
                   <div className="flex-1 flex flex-col bg-white overflow-hidden">
                     <div className="p-4 border-b border-zinc-200 bg-zinc-50 shrink-0">
-                      <div className="text-[10px] uppercase font-bold text-zinc-400 mb-1">Subject:</div>
+                      <div className="text-[10px] uppercase font-bold text-zinc-400 mb-1">Transmission Subject:</div>
                       <div className="text-zinc-900 font-bold text-sm">{previewData.subject}</div>
                     </div>
-                    <div className="flex-1 overflow-y-auto p-6">
-                      <div 
-                        className="prose prose-sm prose-zinc max-w-none text-zinc-900"
-                        dangerouslySetInnerHTML={{ __html: previewData.body_html }} 
+                    <div className="flex-1 bg-[#f4f4f5] p-4 overflow-hidden">
+                      <iframe
+                        title="Email Preview"
+                        className="w-full h-full border-none bg-white shadow-sm rounded-sm"
+                        srcDoc={previewData.body_html}
                       />
                     </div>
                   </div>
@@ -223,15 +224,15 @@ export function TemplateDialog({ template, open, onClose, onSave }: { template: 
         </div>
 
         <DialogFooter className="border-t border-white/5 pt-6 shrink-0">
-          <Button 
-            variant="ghost" 
+          <Button
+            variant="ghost"
             onClick={onClose}
             className="rounded-none uppercase tracking-widest text-[10px] hover:bg-white/5 text-zinc-500 hover:text-white"
           >
             Abort
           </Button>
-          <Button 
-            onClick={handleSave} 
+          <Button
+            onClick={handleSave}
             disabled={saving}
             className="rounded-none bg-indigo-600 hover:bg-indigo-500 text-white uppercase tracking-widest text-[10px] px-8 h-10 shadow-[0_0_20px_rgba(99,102,241,0.2)]"
           >
