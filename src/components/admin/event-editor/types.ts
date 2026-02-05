@@ -72,6 +72,7 @@ export interface EventFormData extends Omit<EventConfig, 'id' | '_id' | 'user_id
   branding: Omit<EventConfig['branding'], 'watermark'> & {
     watermark?: ExtendedWatermarkConfig;
     logoPath?: string;
+    coverPath?: string;
     footerPath?: string;
     showLogoInBooth?: boolean;
     showLogoInFeed?: boolean;

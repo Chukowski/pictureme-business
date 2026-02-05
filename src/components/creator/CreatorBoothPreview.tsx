@@ -5,7 +5,7 @@
  * as the creator configures it.
  */
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { EventFormData } from "@/components/admin/event-editor/types";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -57,17 +57,34 @@ export function CreatorBoothPreview({
     const { theme, title, description, branding, monetization } = formData;
     const [previewState, setPreviewState] = useState<'landing' | 'select'>('landing');
     const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
+    const slideshow = (branding as any)?.backgroundSlideshow;
+
+    // Background images logic
+    const activeImages = useMemo(() => {
+        const manualImages = (branding as any)?.backgroundSlideshow?.images || [];
+        if ((branding as any)?.backgroundSlideshow?.enabled && manualImages.length > 0) {
+            return manualImages;
+        }
+        if (branding?.coverPath) {
+            return [branding.coverPath];
+        }
+        // Fallback: use all unique images from templates
+        const templateImages = Array.from(new Set((formData.templates || []).flatMap(t => t.images || [])));
+        return templateImages;
+    }, [branding, formData.templates]);
 
     // Background slideshow effect
-    const slideshow = (branding as any)?.backgroundSlideshow;
     useEffect(() => {
-        if (!slideshow?.enabled || !slideshow?.images?.length) return;
-        const duration = (slideshow.duration || 5) * 1000;
+        if (activeImages.length <= 1) {
+            setCurrentSlideIndex(0);
+            return;
+        }
+        const duration = (slideshow?.duration || 5) * 1000;
         const interval = setInterval(() => {
-            setCurrentSlideIndex(prev => (prev + 1) % slideshow.images.length);
+            setCurrentSlideIndex(prev => (prev + 1) % activeImages.length);
         }, duration);
         return () => clearInterval(interval);
-    }, [slideshow]);
+    }, [activeImages, slideshow?.duration]);
 
     const primaryColor = theme?.primaryColor || '#6366F1';
     const displayName = branding?.creatorDisplayName || creatorName || 'Creator Name';
@@ -103,10 +120,10 @@ export function CreatorBoothPreview({
 
     return (
         <div className="w-full h-full flex flex-col bg-[#101112] relative overflow-hidden">
-            {/* Background Image Slideshow */}
-            {slideshow?.enabled && slideshow?.images?.length > 0 && previewState === 'landing' && (
+            {/* Background Image Slideshow / Cover / Fallback */}
+            {activeImages.length > 0 && previewState === 'landing' && (
                 <div className="absolute inset-0 z-0">
-                    {slideshow.images.map((imgUrl: string, idx: number) => (
+                    {activeImages.map((imgUrl, idx) => (
                         <div
                             key={idx}
                             className="absolute inset-0 transition-opacity duration-1000"
@@ -120,13 +137,13 @@ export function CreatorBoothPreview({
                     ))}
                     <div
                         className="absolute inset-0 bg-black"
-                        style={{ opacity: (slideshow.overlayOpacity || 60) / 100 }}
+                        style={{ opacity: ((branding as any)?.backgroundSlideshow?.overlayOpacity || 60) / 100 }}
                     />
                 </div>
             )}
 
-            {/* Background Animation (only if no slideshow) */}
-            {!(slideshow?.enabled && slideshow?.images?.length > 0) && backgroundAnimation !== 'none' && previewState === 'landing' && (
+            {/* Background Animation (only if no active images) */}
+            {activeImages.length === 0 && backgroundAnimation !== 'none' && previewState === 'landing' && (
                 <div className="absolute inset-0 pointer-events-none z-0 opacity-30">
                     {backgroundAnimation === 'grid' && (
                         <div className="absolute bottom-0 left-0 right-0 h-[60%] [mask-image:linear-gradient(to_top,black_20%,transparent_100%)]">

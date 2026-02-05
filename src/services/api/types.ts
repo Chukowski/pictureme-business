@@ -129,7 +129,14 @@ export interface EventConfig {
     templates: Template[];
     branding: {
         logoPath?: string;
+        coverPath?: string;
         footerPath?: string;
+        backgroundSlideshow?: {
+            enabled: boolean;
+            images: string[];
+            duration: number;
+            overlayOpacity: number;
+        };
         headerBackgroundColor?: string;
         footerBackgroundColor?: string;
         taglineText?: string;

@@ -198,19 +198,34 @@ export default function PublicCreatorBooth() {
         };
     }, [config]);
 
+    // Background images logic
+    const activeBackgroundImages = useMemo(() => {
+        if (!config) return [];
+        const manualImages = (config.branding as any)?.backgroundSlideshow?.images || [];
+        if ((config.branding as any)?.backgroundSlideshow?.enabled && manualImages.length > 0) {
+            return manualImages;
+        }
+        if ((config.branding as any)?.coverPath) {
+            return [(config.branding as any).coverPath];
+        }
+        // Fallback: use all unique images from templates
+        return Array.from(new Set((config.templates || []).flatMap(t => t.images || [])));
+    }, [config]);
+
     // Background slideshow effect
     useEffect(() => {
-        if (!config) return;
+        if (!config || activeBackgroundImages.length <= 1) {
+            setCurrentSlideIndex(0);
+            return;
+        }
         const slideshow = (config.branding as any)?.backgroundSlideshow;
-        if (!slideshow?.enabled || !slideshow?.images?.length) return;
-
-        const duration = (slideshow.duration || 5) * 1000;
+        const duration = (slideshow?.duration || 5) * 1000;
         const interval = setInterval(() => {
-            setCurrentSlideIndex(prev => (prev + 1) % slideshow.images.length);
+            setCurrentSlideIndex(prev => (prev + 1) % activeBackgroundImages.length);
         }, duration);
 
         return () => clearInterval(interval);
-    }, [config]);
+    }, [config, activeBackgroundImages]);
 
     // Session restoration after Stripe redirect
     useEffect(() => {
@@ -533,57 +548,54 @@ export default function PublicCreatorBooth() {
                     <ProcessingLoader status="Verifying payment..." />
                 )}
 
-                {/* Background Image Slideshow */}
-                {(config.branding as any)?.backgroundSlideshow?.enabled &&
-                    (config.branding as any)?.backgroundSlideshow?.images?.length > 0 &&
-                    boothState === 'landing' && (
-                        <div className="fixed inset-0 z-0">
-                            {(config.branding as any).backgroundSlideshow.images.map((imgUrl: string, idx: number) => (
-                                <div
-                                    key={idx}
-                                    className="absolute inset-0 transition-opacity duration-1000"
-                                    style={{
-                                        opacity: idx === currentSlideIndex ? 1 : 0,
-                                        backgroundImage: `url(${imgUrl})`,
-                                        backgroundSize: 'cover',
-                                        backgroundPosition: 'center',
-                                    }}
-                                />
-                            ))}
-                            {/* Dark overlay */}
+                {/* Background Image Slideshow / Cover / Fallback */}
+                {activeBackgroundImages.length > 0 && boothState === 'landing' && (
+                    <div className="fixed inset-0 z-0">
+                        {activeBackgroundImages.map((imgUrl, idx) => (
                             <div
-                                className="absolute inset-0 bg-black"
-                                style={{ opacity: ((config.branding as any)?.backgroundSlideshow?.overlayOpacity || 60) / 100 }}
+                                key={idx}
+                                className="absolute inset-0 transition-opacity duration-1000"
+                                style={{
+                                    opacity: idx === currentSlideIndex ? 1 : 0,
+                                    backgroundImage: `url(${imgUrl})`,
+                                    backgroundSize: 'cover',
+                                    backgroundPosition: 'center',
+                                }}
                             />
-                        </div>
-                    )}
+                        ))}
+                        {/* Dark overlay */}
+                        <div
+                            className="absolute inset-0 bg-black"
+                            style={{ opacity: ((config.branding as any)?.backgroundSlideshow?.overlayOpacity || 60) / 100 }}
+                        />
+                    </div>
+                )}
 
-                {/* Background Animation (only if no slideshow) */}
-                {!((config.branding as any)?.backgroundSlideshow?.enabled && (config.branding as any)?.backgroundSlideshow?.images?.length > 0) &&
-                    config.theme?.backgroundAnimation && config.theme.backgroundAnimation !== 'none' && boothState === 'landing' && (
-                        <div className="fixed inset-0 pointer-events-none z-0 opacity-30">
-                            {config.theme.backgroundAnimation === 'grid' && (
-                                <div
-                                    className="absolute inset-0"
-                                    style={{
-                                        backgroundImage: `linear-gradient(${primaryColor}22 1px, transparent 1px), linear-gradient(90deg, ${primaryColor}22 1px, transparent 1px)`,
-                                        backgroundSize: '40px 40px',
-                                    }}
-                                />
-                            )}
-                            {config.theme.backgroundAnimation === 'particles' && (
-                                <ShaderBackground />
-                            )}
-                            {config.theme.backgroundAnimation === 'pulse' && (
-                                <div
-                                    className="absolute inset-0 animate-pulse"
-                                    style={{
-                                        background: `radial-gradient(circle at 50% 50%, ${primaryColor}20 0%, transparent 70%)`,
-                                    }}
-                                />
-                            )}
-                        </div>
-                    )}
+                {/* Background Animation (only if no active background images) */}
+                {activeBackgroundImages.length === 0 && config.theme?.backgroundAnimation && config.theme.backgroundAnimation !== 'none' && boothState === 'landing' && (
+                    <div className="fixed inset-0 pointer-events-none z-0 opacity-30">
+                        {config.theme.backgroundAnimation === 'grid' && (
+                            <div
+                                className="absolute inset-0"
+                                style={{
+                                    backgroundImage: `linear-gradient(${primaryColor}22 1px, transparent 1px), linear-gradient(90deg, ${primaryColor}22 1px, transparent 1px)`,
+                                    backgroundSize: '40px 40px',
+                                }}
+                            />
+                        )}
+                        {config.theme.backgroundAnimation === 'particles' && (
+                            <ShaderBackground />
+                        )}
+                        {config.theme.backgroundAnimation === 'pulse' && (
+                            <div
+                                className="absolute inset-0 animate-pulse"
+                                style={{
+                                    background: `radial-gradient(circle at 50% 50%, ${primaryColor}20 0%, transparent 70%)`,
+                                }}
+                            />
+                        )}
+                    </div>
+                )}
 
                 {/* Landing/Biolink View */}
                 {boothState === 'landing' && (

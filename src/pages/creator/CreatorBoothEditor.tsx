@@ -31,7 +31,7 @@ import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { EventTemplates } from "@/components/admin/event-editor/EventTemplates";
-import { DollarSign, Palette, Lock, Settings2, Sparkles, Upload, Copy, ExternalLink, Camera, Globe, Trash2, Image as ImageIcon, Loader2 } from "lucide-react";
+import { DollarSign, Palette, Lock, Settings2, Sparkles, Upload, Copy, ExternalLink, Camera, Globe, Trash2, Image as ImageIcon, Loader2, Plus, X } from "lucide-react";
 import { ENV } from "@/config/env";
 import { getAuthToken } from "@/services/eventsApi";
 import { MediaLibrary } from "@/components/MediaLibrary";
@@ -40,7 +40,8 @@ import {
     DialogContent,
     DialogHeader,
     DialogTitle,
-    DialogTrigger
+    DialogTrigger,
+    DialogDescription
 } from "@/components/ui/dialog";
 
 // Simplified theme preset for creators
@@ -114,6 +115,89 @@ export default function CreatorBoothEditor() {
         } catch (error) {
             console.error(error);
             toast.error("Failed to upload logo");
+        } finally {
+            setIsUploading(false);
+        }
+    };
+
+    const handleCoverUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        try {
+            setIsUploading(true);
+            const token = getAuthToken();
+            const formDataUpload = new FormData();
+            formDataUpload.append("file", file);
+
+            const response = await fetch(`${ENV.API_URL}/api/media/upload`, {
+                method: "POST",
+                headers: {
+                    "Authorization": `Bearer ${token}`
+                },
+                body: formDataUpload
+            });
+
+            if (!response.ok) throw new Error("Upload failed");
+
+            const data = await response.json();
+            setFormData(prev => ({
+                ...prev,
+                branding: { ...prev.branding, coverPath: data.url }
+            }));
+            toast.success("Cover uploaded successfully");
+        } catch (error) {
+            console.error(error);
+            toast.error("Failed to upload cover");
+        } finally {
+            setIsUploading(false);
+        }
+    };
+
+    const handleSlideshowUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = Array.from(e.target.files || []);
+        if (files.length === 0) return;
+
+        try {
+            setIsUploading(true);
+            const token = getAuthToken();
+            const uploadedUrls: string[] = [];
+
+            for (const file of files) {
+                const formDataUpload = new FormData();
+                formDataUpload.append("file", file);
+
+                const response = await fetch(`${ENV.API_URL}/api/media/upload`, {
+                    method: "POST",
+                    headers: {
+                        "Authorization": `Bearer ${token}`
+                    },
+                    body: formDataUpload
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    uploadedUrls.push(data.url);
+                }
+            }
+
+            if (uploadedUrls.length > 0) {
+                const currentImages = (formData.branding as any)?.backgroundSlideshow?.images || [];
+                setFormData(prev => ({
+                    ...prev,
+                    branding: {
+                        ...prev.branding,
+                        backgroundSlideshow: {
+                            ...((prev.branding as any)?.backgroundSlideshow || { enabled: true, interval: 5000, blur: false }),
+                            images: [...currentImages, ...uploadedUrls]
+                        }
+                    } as any
+                }));
+                toast.success(`Uploaded ${uploadedUrls.length} images to slideshow`);
+            }
+        } catch (error) {
+            console.error(error);
+            toast.error("Failed to upload slideshow images");
         } finally {
             setIsUploading(false);
         }
@@ -683,9 +767,12 @@ export default function CreatorBoothEditor() {
                                                                 Logo Library
                                                             </Button>
                                                         </DialogTrigger>
-                                                        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto" aria-describedby={undefined}>
+                                                        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
                                                             <DialogHeader>
                                                                 <DialogTitle>Media Library</DialogTitle>
+                                                                <DialogDescription>
+                                                                    Select a previously uploaded image to use as your booth logo.
+                                                                </DialogDescription>
                                                             </DialogHeader>
                                                             <MediaLibrary
                                                                 selectedUrl={formData.branding?.logoPath}
@@ -808,112 +895,205 @@ export default function CreatorBoothEditor() {
                                         </div>
                                     </div>
 
-                                    {/* Background Image Slideshow */}
-                                    <div className="space-y-3 pt-2">
-                                        <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Landing Page Background Images</Label>
-                                        <p className="text-[10px] text-zinc-500">Select images from your templates to display as a slideshow background</p>
-
-                                        <div className="flex items-center gap-3 mb-3">
-                                            <Switch
-                                                checked={(formData.branding as any)?.backgroundSlideshow?.enabled || false}
-                                                onCheckedChange={(checked) => setFormData({
-                                                    ...formData,
-                                                    branding: {
-                                                        ...formData.branding,
-                                                        backgroundSlideshow: {
-                                                            ...((formData.branding as any)?.backgroundSlideshow || {}),
-                                                            enabled: checked
-                                                        }
-                                                    } as any
-                                                })}
-                                            />
-                                            <span className="text-xs text-zinc-400">Enable background slideshow</span>
+                                    {/* Cover & Slideshow section */}
+                                    <div className="space-y-4 pt-4 border-t border-white/5">
+                                        <div className="flex items-center justify-between">
+                                            <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Cover & Slideshow</Label>
+                                            <Badge variant="outline" className="text-[9px] uppercase">New</Badge>
                                         </div>
 
-                                        {(formData.branding as any)?.backgroundSlideshow?.enabled && (
-                                            <div className="space-y-3">
-                                                <div className="grid grid-cols-4 gap-2 max-h-[200px] overflow-y-auto p-1">
-                                                    {/* Get all images from templates */}
-                                                    {Array.from(new Set(
-                                                        (formData.templates || []).flatMap(t => t.images || [])
-                                                    )).map((imgUrl, idx) => (
-                                                        <div
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            {/* Cover Upload */}
+                                            <div className="p-4 rounded-xl bg-card/40 border border-white/5 space-y-3">
+                                                <div className="flex items-center justify-between">
+                                                    <div>
+                                                        <Label className="text-xs">Main Cover Image</Label>
+                                                        <p className="text-[9px] text-muted-foreground">This image will be the primary cover</p>
+                                                    </div>
+                                                    {formData.branding?.coverPath && (
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            className="h-6 w-6 text-zinc-500 hover:text-red-400"
+                                                            onClick={() => setFormData({ ...formData, branding: { ...formData.branding, coverPath: "" } })}
+                                                        >
+                                                            <Trash2 className="w-3 h-3" />
+                                                        </Button>
+                                                    )}
+                                                </div>
+
+                                                <div
+                                                    onClick={() => !isUploading && document.getElementById('cover-upload')?.click()}
+                                                    className={cn(
+                                                        "aspect-[16/9] rounded-lg border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all overflow-hidden relative group",
+                                                        formData.branding?.coverPath
+                                                            ? "border-transparent"
+                                                            : "border-white/10 hover:border-indigo-500/50 hover:bg-indigo-500/5"
+                                                    )}
+                                                >
+                                                    {formData.branding?.coverPath ? (
+                                                        <>
+                                                            <img src={formData.branding.coverPath} alt="Cover" className="w-full h-full object-cover" />
+                                                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                                                <Upload className="w-5 h-5 text-white" />
+                                                            </div>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <ImageIcon className="w-6 h-6 text-zinc-600 mb-2" />
+                                                            <span className="text-[10px] font-bold text-zinc-500">Upload Cover</span>
+                                                        </>
+                                                    )}
+                                                    {isUploading && (
+                                                        <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                                                            <Loader2 className="w-5 h-5 text-indigo-400 animate-spin" />
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <input id="cover-upload" type="file" className="hidden" accept="image/*" onChange={handleCoverUpload} />
+                                            </div>
+
+                                            {/* Slideshow Toggle & Upload */}
+                                            <div className="p-4 rounded-xl bg-card/40 border border-white/5 space-y-3">
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-2">
+                                                        <Switch
+                                                            checked={(formData.branding as any)?.backgroundSlideshow?.enabled || false}
+                                                            onCheckedChange={(checked) => setFormData({
+                                                                ...formData,
+                                                                branding: {
+                                                                    ...formData.branding,
+                                                                    backgroundSlideshow: {
+                                                                        ...((formData.branding as any)?.backgroundSlideshow || {}),
+                                                                        enabled: checked
+                                                                    }
+                                                                } as any
+                                                            })}
+                                                        />
+                                                        <Label className="text-xs">Background Slideshow</Label>
+                                                    </div>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        className="h-7 text-[10px] text-indigo-400 hover:text-indigo-300 hover:bg-indigo-500/10 px-2"
+                                                        onClick={() => document.getElementById('slideshow-upload')?.click()}
+                                                    >
+                                                        <Plus className="w-3 h-3 mr-1" /> Add Photos
+                                                    </Button>
+                                                </div>
+
+                                                <div className="grid grid-cols-3 gap-2 max-h-[120px] overflow-y-auto pr-1">
+                                                    {((formData.branding as any)?.backgroundSlideshow?.images || []).map((imgUrl: string, idx: number) => (
+                                                        <div key={idx} className="aspect-square rounded-md overflow-hidden border border-white/10 relative group">
+                                                            <img src={imgUrl} alt="" className="w-full h-full object-cover" />
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    const current = (formData.branding as any)?.backgroundSlideshow?.images || [];
+                                                                    setFormData({
+                                                                        ...formData,
+                                                                        branding: {
+                                                                            ...formData.branding,
+                                                                            backgroundSlideshow: {
+                                                                                ...((formData.branding as any)?.backgroundSlideshow || {}),
+                                                                                images: current.filter((u: string) => u !== imgUrl)
+                                                                            }
+                                                                        } as any
+                                                                    });
+                                                                }}
+                                                                className="absolute top-1 right-1 w-5 h-5 rounded-full bg-red-500/80 text-white opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center scale-75"
+                                                            >
+                                                                <X className="w-3 h-3" />
+                                                            </button>
+                                                        </div>
+                                                    ))}
+                                                    {((formData.branding as any)?.backgroundSlideshow?.images || []).length === 0 && (
+                                                        <div className="col-span-3 aspect-[16/9] rounded-lg border border-dashed border-white/5 flex flex-col items-center justify-center text-zinc-700">
+                                                            <p className="text-[9px]">No photos added</p>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <input id="slideshow-upload" type="file" className="hidden" accept="image/*" multiple onChange={handleSlideshowUpload} />
+                                            </div>
+                                        </div>
+
+                                        {/* Get from templates helper */}
+                                        <div className="space-y-2">
+                                            <Label className="text-[10px] text-zinc-500">Suggested from your templates:</Label>
+                                            <div className="flex flex-wrap gap-2">
+                                                {Array.from(new Set((formData.templates || []).flatMap(t => t.images || [])))
+                                                    .filter(img => !((formData.branding as any)?.backgroundSlideshow?.images || []).includes(img))
+                                                    .slice(0, 6)
+                                                    .map((imgUrl, idx) => (
+                                                        <button
                                                             key={idx}
                                                             onClick={() => {
                                                                 const current = (formData.branding as any)?.backgroundSlideshow?.images || [];
-                                                                const isSelected = current.includes(imgUrl);
                                                                 setFormData({
                                                                     ...formData,
                                                                     branding: {
                                                                         ...formData.branding,
                                                                         backgroundSlideshow: {
-                                                                            ...((formData.branding as any)?.backgroundSlideshow || {}),
-                                                                            images: isSelected
-                                                                                ? current.filter((u: string) => u !== imgUrl)
-                                                                                : [...current, imgUrl]
+                                                                            ...((formData.branding as any)?.backgroundSlideshow || { enabled: true }),
+                                                                            images: [...current, imgUrl]
                                                                         }
                                                                     } as any
                                                                 });
                                                             }}
-                                                            className={cn(
-                                                                "aspect-[3/4] rounded-lg overflow-hidden cursor-pointer border-2 transition-all",
-                                                                ((formData.branding as any)?.backgroundSlideshow?.images || []).includes(imgUrl)
-                                                                    ? "border-indigo-500 ring-2 ring-indigo-500/30"
-                                                                    : "border-transparent hover:border-white/20"
-                                                            )}
+                                                            className="w-12 h-12 rounded-lg border border-white/10 overflow-hidden hover:border-indigo-500/50 transition-all active:scale-95"
                                                         >
-                                                            <img src={imgUrl} alt="" className="w-full h-full object-cover" />
-                                                        </div>
-                                                    ))}
-                                                    {(formData.templates || []).flatMap(t => t.images || []).length === 0 && (
-                                                        <div className="col-span-4 text-center py-6 text-zinc-600 text-xs">
-                                                            Add templates with images first
-                                                        </div>
-                                                    )}
-                                                </div>
+                                                            <img src={imgUrl} alt="" className="w-full h-full object-cover opacity-60 hover:opacity-100" />
+                                                        </button>
+                                                    ))
+                                                }
+                                            </div>
+                                        </div>
 
-                                                <div className="flex items-center gap-4">
-                                                    <div className="flex-1 space-y-1">
-                                                        <Label className="text-[10px] text-zinc-500">Slide Duration (seconds)</Label>
-                                                        <Input
-                                                            type="number"
-                                                            min={2}
-                                                            max={15}
-                                                            value={(formData.branding as any)?.backgroundSlideshow?.duration || 5}
-                                                            onChange={(e) => setFormData({
-                                                                ...formData,
-                                                                branding: {
-                                                                    ...formData.branding,
-                                                                    backgroundSlideshow: {
-                                                                        ...((formData.branding as any)?.backgroundSlideshow || {}),
-                                                                        duration: parseInt(e.target.value) || 5
-                                                                    }
-                                                                } as any
-                                                            })}
-                                                            className="h-8 text-xs"
-                                                        />
-                                                    </div>
-                                                    <div className="flex-1 space-y-1">
-                                                        <Label className="text-[10px] text-zinc-500">Overlay Opacity</Label>
-                                                        <select
-                                                            value={(formData.branding as any)?.backgroundSlideshow?.overlayOpacity || 60}
-                                                            onChange={(e) => setFormData({
-                                                                ...formData,
-                                                                branding: {
-                                                                    ...formData.branding,
-                                                                    backgroundSlideshow: {
-                                                                        ...((formData.branding as any)?.backgroundSlideshow || {}),
-                                                                        overlayOpacity: parseInt(e.target.value)
-                                                                    }
-                                                                } as any
-                                                            })}
-                                                            className="w-full h-8 px-2 rounded-md border border-border bg-background text-xs"
-                                                        >
-                                                            <option value={40}>Light (40%)</option>
-                                                            <option value={60}>Medium (60%)</option>
-                                                            <option value={80}>Dark (80%)</option>
-                                                        </select>
-                                                    </div>
+                                        {/* Slideshow settings */}
+                                        {(formData.branding as any)?.backgroundSlideshow?.enabled && (
+                                            <div className="flex items-center gap-4 text-zinc-500 text-[10px]">
+                                                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5">
+                                                    <span>Interval:</span>
+                                                    <select
+                                                        value={(formData.branding as any)?.backgroundSlideshow?.duration || 5}
+                                                        onChange={(e) => setFormData({
+                                                            ...formData,
+                                                            branding: {
+                                                                ...formData.branding,
+                                                                backgroundSlideshow: {
+                                                                    ...((formData.branding as any)?.backgroundSlideshow || {}),
+                                                                    duration: parseInt(e.target.value)
+                                                                }
+                                                            } as any
+                                                        })}
+                                                        className="bg-transparent border-none focus:ring-0 p-0 text-white font-bold"
+                                                    >
+                                                        <option value={3}>3s</option>
+                                                        <option value={5}>5s</option>
+                                                        <option value={8}>8s</option>
+                                                        <option value={12}>12s</option>
+                                                    </select>
+                                                </div>
+                                                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5">
+                                                    <span>Opacity:</span>
+                                                    <select
+                                                        value={(formData.branding as any)?.backgroundSlideshow?.overlayOpacity || 60}
+                                                        onChange={(e) => setFormData({
+                                                            ...formData,
+                                                            branding: {
+                                                                ...formData.branding,
+                                                                backgroundSlideshow: {
+                                                                    ...((formData.branding as any)?.backgroundSlideshow || {}),
+                                                                    overlayOpacity: parseInt(e.target.value)
+                                                                }
+                                                            } as any
+                                                        })}
+                                                        className="bg-transparent border-none focus:ring-0 p-0 text-white font-bold"
+                                                    >
+                                                        <option value={40}>Medium</option>
+                                                        <option value={60}>Dark</option>
+                                                        <option value={80}>Ultra Dark</option>
+                                                    </select>
                                                 </div>
                                             </div>
                                         )}
