@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Home, Library, Camera, User, Sparkles, Settings, CreditCard, LogOut, ChevronRight, X, Wand2, Plus } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { getCurrentUser, logoutUser } from "@/services/eventsApi";
@@ -20,7 +20,7 @@ export const CreatorBottomNav = ({ onOpenCreate, onLibraryClick, onHomeClick, ac
     const currentUser = getCurrentUser();
 
     // Map activeTab or path to index
-    const getActiveIndex = () => {
+    const getActiveIndex = useCallback(() => {
         if (activeTab === 'home') return 0;
         if (activeTab === 'gallery') return 1;
         if (activeTab === 'create') return 2;
@@ -34,16 +34,16 @@ export const CreatorBottomNav = ({ onOpenCreate, onLibraryClick, onHomeClick, ac
         if (path.includes('/creator/profile') || path.includes('/creator/settings')) return 4;
 
         return 0;
-    };
+    }, [activeTab, location.pathname, location.search, location.state]);
 
-    const [activeIndex, setActiveIndex] = useState(getActiveIndex());
+    const [activeIndex, setActiveIndex] = useState(() => getActiveIndex());
     const [pendingCount, setPendingCount] = useState(0);
     const [showSuccess, setShowSuccess] = useState(false);
 
     // Sync active index
     useEffect(() => {
         setActiveIndex(getActiveIndex());
-    }, [activeTab, location.pathname, location.state]);
+    }, [getActiveIndex]);
 
     // Polling as fallback and initial load, with SSE for real-time
     useEffect(() => {
@@ -66,7 +66,7 @@ export const CreatorBottomNav = ({ onOpenCreate, onLibraryClick, onHomeClick, ac
         };
 
         // Handlers for SSE events (dispatched by useSSE in App.tsx)
-        const handleJobUpdate = (event: any) => {
+        const handleJobUpdate = (event: CustomEvent<{ job_id?: string; status?: string }>) => {
             const data = event.detail;
             console.log("🔔 [Nav] Job update received:", data.job_id, data.status);
 
@@ -91,7 +91,7 @@ export const CreatorBottomNav = ({ onOpenCreate, onLibraryClick, onHomeClick, ac
         fetchPendingStatus();
 
         // Listen for events
-        window.addEventListener('job-updated', handleJobUpdate);
+        window.addEventListener('job-updated', handleJobUpdate as EventListener);
         window.addEventListener('tokens-updated', handleTokensUpdate);
 
         // Smart polling - only poll if tab is visible AND there are pending items
@@ -136,7 +136,7 @@ export const CreatorBottomNav = ({ onOpenCreate, onLibraryClick, onHomeClick, ac
         }
 
         return () => {
-            window.removeEventListener('job-updated', handleJobUpdate);
+            window.removeEventListener('job-updated', handleJobUpdate as EventListener);
             window.removeEventListener('tokens-updated', handleTokensUpdate);
             document.removeEventListener('visibilitychange', handleVisibilityChange);
             stopPolling();
@@ -181,7 +181,7 @@ export const CreatorBottomNav = ({ onOpenCreate, onLibraryClick, onHomeClick, ac
 
     return (
         <div className="fixed bottom-0 left-0 right-0 z-[100] bg-[#101112]/95 backdrop-blur-xl border-t border-white/10 md:hidden pb-[env(safe-area-inset-bottom,20px)]">
-            <nav className="flex items-center justify-around px-4 w-full h-13 max-w-lg mx-auto">
+            <nav className="flex items-center justify-around px-4 w-full h-[52px] max-w-lg mx-auto">
                 {items.map((item, index) => {
                     const isActive = index === activeIndex;
                     const IconComponent = item.icon;

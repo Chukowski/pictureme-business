@@ -492,7 +492,7 @@ export function BoothEditorLayout({
                                     )}
 
                                     <div
-                                        className="absolute inset-0 flex items-center justify-center p-8 transition-all duration-300 pointer-events-none md:min-h-full"
+                                        className="min-h-full w-full flex items-center justify-center p-8 transition-all duration-300 pointer-events-none"
                                         style={{
                                             transform: `scale(${zoom / 100})`,
                                             transformOrigin: 'center'

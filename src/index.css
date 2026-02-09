@@ -168,7 +168,8 @@ All colors MUST be HSL.
   }
 
   html {
-    height: 100%;
+    min-height: 100dvh;
+    scroll-behavior: smooth;
   }
 
   body {
@@ -176,8 +177,8 @@ All colors MUST be HSL.
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    min-height: 100%;
     -webkit-tap-highlight-color: transparent;
+    min-height: 100dvh;
   }
 
   h1,
@@ -206,6 +207,25 @@ All colors MUST be HSL.
 
   ::-webkit-scrollbar-thumb:hover {
     background: hsl(220 13% 35%);
+  }
+
+  /* Mobile UX Improvements */
+  @media (max-width: 768px) {
+
+    input,
+    select,
+    textarea {
+      font-size: 16px !important;
+    }
+
+    button {
+      min-height: 44px;
+      /* Better tap target for mobile */
+    }
+  }
+
+  .custom-scrollbar-hide::-webkit-scrollbar {
+    display: none;
   }
 }
 

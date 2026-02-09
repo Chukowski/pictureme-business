@@ -101,7 +101,7 @@ export function CreatorNavbar({ user, creatingCount = 0 }: CreatorNavbarProps) {
                                     <Menu className="w-8 h-8" />
                                 </Button>
                             </SheetTrigger>
-                            <SheetContent side="left" className="bg-[#101112]/95 backdrop-blur-xl border-white/5 text-white p-0">
+                            <SheetContent side="left" className="bg-[#101112]/95 backdrop-blur-xl border-white/5 text-white p-0 z-[200]" overlayClassName="z-[200]">
                                 <div className="flex flex-col h-full">
                                     {/* Logo in Menu Header */}
                                     <div className="px-6 pt-10 pb-6 border-b border-white/5 flex items-center gap-3">
@@ -110,10 +110,46 @@ export function CreatorNavbar({ user, creatingCount = 0 }: CreatorNavbarProps) {
                                         </div>
                                         <span className="text-xl font-bold tracking-tight text-white whitespace-nowrap">PictureMe</span>
                                     </div>
-                                    <div className="px-6 py-4 space-y-6 flex-1 overflow-y-auto">
+                                    <div className="px-6 py-4 space-y-6 flex-1 overflow-y-auto scrollbar-hide">
                                         {/* Featured Section */}
                                         <div className="space-y-3">
                                             <h3 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest px-1">Creators Tools</h3>
+                                            <SheetClose asChild>
+                                                <button
+                                                    onClick={() => { navigate('/creator/studio'); }}
+                                                    className="w-full flex items-center justify-between p-4 rounded-2xl bg-[#D1F349]/10 border border-[#D1F349]/20 hover:bg-[#D1F349]/20 transition-all text-left"
+                                                >
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="w-10 h-10 rounded-xl bg-[#D1F349] flex items-center justify-center shadow-lg shadow-[#D1F349]/20">
+                                                            <Sparkles className="w-6 h-6 text-black" />
+                                                        </div>
+                                                        <div>
+                                                            <h4 className="text-sm font-bold text-white">Create in Studio</h4>
+                                                            <p className="text-[10px] text-zinc-400">Professional AI snapshots</p>
+                                                        </div>
+                                                    </div>
+                                                    <ChevronDown className="w-4 h-4 text-zinc-600 -rotate-90" />
+                                                </button>
+                                            </SheetClose>
+
+                                            <SheetClose asChild>
+                                                <button
+                                                    onClick={() => { navigate('/creator/booth'); }}
+                                                    className="w-full flex items-center justify-between p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/20 transition-all text-left"
+                                                >
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="w-10 h-10 rounded-xl bg-amber-500 flex items-center justify-center shadow-lg shadow-amber-500/20">
+                                                            <Camera className="w-5 h-5 text-white" />
+                                                        </div>
+                                                        <div>
+                                                            <h4 className="text-sm font-bold text-white">My Booths</h4>
+                                                            <p className="text-[10px] text-zinc-400">Manage real-time events</p>
+                                                        </div>
+                                                    </div>
+                                                    <ChevronDown className="w-4 h-4 text-zinc-600 -rotate-90" />
+                                                </button>
+                                            </SheetClose>
+
                                             <SheetClose asChild>
                                                 <button
                                                     onClick={() => { navigate('/creator/chat'); }}
@@ -126,42 +162,6 @@ export function CreatorNavbar({ user, creatingCount = 0 }: CreatorNavbarProps) {
                                                         <div>
                                                             <h4 className="text-sm font-bold text-white">AI Assistant</h4>
                                                             <p className="text-[10px] text-zinc-400">Your creative companion</p>
-                                                        </div>
-                                                    </div>
-                                                    <ChevronDown className="w-4 h-4 text-zinc-600 -rotate-90" />
-                                                </button>
-                                            </SheetClose>
-
-                                            <SheetClose asChild>
-                                                <button
-                                                    onClick={() => { navigate('/creator/marketplace'); }}
-                                                    className="w-full flex items-center justify-between p-4 rounded-2xl bg-zinc-800/40 border border-white/5 hover:bg-zinc-800/60 transition-all text-left"
-                                                >
-                                                    <div className="flex items-center gap-4">
-                                                        <div className="w-10 h-10 rounded-xl bg-zinc-700 flex items-center justify-center">
-                                                            <ShoppingBag className="w-5 h-5 text-white" />
-                                                        </div>
-                                                        <div>
-                                                            <h4 className="text-sm font-bold text-white">Marketplace</h4>
-                                                            <p className="text-[10px] text-zinc-400">Discover AI templates</p>
-                                                        </div>
-                                                    </div>
-                                                    <ChevronDown className="w-4 h-4 text-zinc-600 -rotate-90" />
-                                                </button>
-                                            </SheetClose>
-
-                                            <SheetClose asChild>
-                                                <button
-                                                    onClick={() => { navigate('/creator/templates'); }}
-                                                    className="w-full flex items-center justify-between p-4 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 hover:bg-indigo-500/20 transition-all text-left"
-                                                >
-                                                    <div className="flex items-center gap-4">
-                                                        <div className="w-10 h-10 rounded-xl bg-indigo-500 flex items-center justify-center">
-                                                            <Palette className="w-5 h-5 text-white" />
-                                                        </div>
-                                                        <div>
-                                                            <h4 className="text-sm font-bold text-white">My Styles</h4>
-                                                            <p className="text-[10px] text-zinc-400">Manage your templates</p>
                                                         </div>
                                                     </div>
                                                     <ChevronDown className="w-4 h-4 text-zinc-600 -rotate-90" />
@@ -218,6 +218,18 @@ export function CreatorNavbar({ user, creatingCount = 0 }: CreatorNavbarProps) {
                                                 >
                                                     <Camera className="w-5 h-5" />
                                                     <span className="text-sm font-medium">Booth Events</span>
+                                                </button>
+                                            </SheetClose>
+                                            <SheetClose asChild>
+                                                <button
+                                                    onClick={() => navigate('/creator/marketplace')}
+                                                    className={cn(
+                                                        "w-full flex items-center gap-4 p-3 rounded-xl transition-all",
+                                                        location.pathname === '/creator/marketplace' ? "bg-white/5 text-white" : "text-zinc-400 hover:text-white"
+                                                    )}
+                                                >
+                                                    <ShoppingBag className="w-5 h-5" />
+                                                    <span className="text-sm font-medium">Marketplace</span>
                                                 </button>
                                             </SheetClose>
                                         </div>

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { User } from "@/services/eventsApi";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -12,6 +13,7 @@ interface IndividualDashboardProps {
 }
 
 export default function IndividualDashboard({ currentUser }: IndividualDashboardProps) {
+    const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState("overview");
 
     return (
@@ -43,7 +45,6 @@ export default function IndividualDashboard({ currentUser }: IndividualDashboard
                         </TabsTrigger>
                         <TabsTrigger
                             value="templates"
-                            onClick={() => navigate('/creator/templates')}
                             className="flex items-center gap-2 px-4 py-2 sm:px-6 sm:py-3 rounded-xl data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-zinc-400 transition-all"
                         >
                             <Palette className="w-4 h-4" />
@@ -169,7 +170,7 @@ export default function IndividualDashboard({ currentUser }: IndividualDashboard
                         <p className="text-zinc-400 max-w-md mx-auto mb-6 text-center px-4">
                             Manage your custom AI templates, drafts, and marketplace submissions in the dedicated styles manager.
                         </p>
-                        <Button 
+                        <Button
                             className="bg-indigo-600 hover:bg-indigo-500 text-white px-8 h-12 rounded-2xl"
                             onClick={() => navigate('/creator/templates')}
                         >

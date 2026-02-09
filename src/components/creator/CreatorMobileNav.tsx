@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
     LayoutDashboard,
     ShoppingBag,
+    Camera,
     Image as ImageIcon,
     Video,
     Sparkles,
@@ -119,7 +120,7 @@ export function CreatorMobileNav() {
                     {/* 3. CENTER ACTION BUTTON - Create */}
                     <div className="flex-1 flex flex-col items-center justify-end h-full relative -top-4 w-16">
                         <button
-                            onClick={() => navigate('/creator/create')}
+                            onClick={() => navigate('/creator/studio?view=create')}
                             className="group relative w-14 h-14 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-purple-500/30 hover:shadow-purple-500/50 hover:scale-105 transition-all duration-300 border-2 border-black"
                         >
                             <Plus className="w-8 h-8 text-white stroke-[3]" />
