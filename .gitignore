@@ -128,3 +128,8 @@ service-account.json
 
 # Infrastructure config
 cloudflare-config/
+
+# Agent tooling artifacts
+.agent/
+.agents/
+.cursor/
