@@ -83,7 +83,6 @@ export function TopNavbar() {
     location.pathname === '/apply' ||
     location.pathname === '/auth' ||
     location.pathname === '/register' ||
-    location.pathname.startsWith('/creator') || // Hide in creator dashboard
     location.pathname.startsWith('/super-admin') || // Hide in super admin dashboard
     [
       '/registration',
@@ -303,7 +302,7 @@ export function TopNavbar() {
 
             {/* Home Shortcut */}
             <button
-              onClick={() => navigate(isBusinessUser ? '/business/home' : '/creator/dashboard')}
+              onClick={() => navigate('/business/home')}
               className="w-8 h-8 flex items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 text-white shadow-lg ml-1 hover:scale-105 transition-transform"
             >
               <Menu className="w-4 h-4" />
@@ -451,40 +450,8 @@ export function TopNavbar() {
                 </button>
               </DropdownMenuTrigger>
 
-              {/* Individual Token Display - Circular Percentage (outside button) */}
-              {!isBusinessUser && (
-                <div className="flex items-center justify-center p-1" title={`${tokens} tokens remaining`}>
-                  <div className="relative w-6 h-6 flex items-center justify-center">
-                    <svg className="w-full h-full transform -rotate-90">
-                      <circle
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        className="text-white/10"
-                        strokeWidth="2"
-                        fill="none"
-                        stroke="currentColor"
-                      />
-                      <circle
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        className={cn(
-                          "transition-all duration-500",
-                          tokens > 20 ? "text-indigo-500" : "text-amber-500"
-                        )}
-                        strokeWidth="2"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeDasharray={63} // Circumference of r=10 is ~62.8
-                        strokeDashoffset={63 - (63 * (Math.min(tokens, 100) / 100))}
-                        strokeLinecap="round"
-                      />
-                    </svg>
-                    <Zap className="w-2.5 h-2.5 absolute text-white/50" />
-                  </div>
-                </div>
-              )}
+
+
               <DropdownMenuContent
                 side={isMobile ? "top" : "bottom"}
                 sideOffset={15}
@@ -506,7 +473,7 @@ export function TopNavbar() {
                 <DropdownMenuSeparator className="bg-white/10" />
 
                 <DropdownMenuItem
-                  onClick={() => navigate(isBusinessUser ? '/business/home' : '/creator/dashboard')}
+                  onClick={() => navigate('/business/home')}
                   className="flex items-center gap-2 px-2 py-1.5 cursor-pointer hover:bg-white/5 rounded-md focus:bg-white/5 focus:text-white"
                 >
                   <Menu className="w-4 h-4 text-zinc-400" />
@@ -516,10 +483,7 @@ export function TopNavbar() {
                 {(currentUser?.slug || currentUser?.username) && (
                   <DropdownMenuItem
                     onClick={() => {
-                      const profilePath = isBusinessUser
-                        ? `/org/${currentUser?.slug || currentUser?.username}`
-                        : `/profile/${currentUser?.slug || currentUser?.username}`;
-                      navigate(profilePath);
+                      navigate(`/org/${currentUser?.slug || currentUser?.username}`);
                     }}
                     className="flex items-center gap-2 px-2 py-1.5 cursor-pointer hover:bg-white/5 rounded-md focus:bg-white/5 focus:text-white"
                   >
@@ -528,23 +492,13 @@ export function TopNavbar() {
                   </DropdownMenuItem>
                 )}
 
-                {isBusinessUser ? (
-                  <DropdownMenuItem
-                    onClick={() => navigate('/business/settings')}
-                    className="flex items-center gap-2 px-2 py-1.5 cursor-pointer hover:bg-white/5 rounded-md focus:bg-white/5 focus:text-white text-indigo-400"
-                  >
-                    <Building2 className="w-4 h-4" />
-                    <span>Business Settings</span>
-                  </DropdownMenuItem>
-                ) : (
-                  <DropdownMenuItem
-                    onClick={() => navigate('/creator/settings')}
-                    className="flex items-center gap-2 px-2 py-1.5 cursor-pointer hover:bg-white/5 rounded-md focus:bg-white/5 focus:text-white"
-                  >
-                    <Settings className="w-4 h-4 text-zinc-400" />
-                    <span>Account Settings</span>
-                  </DropdownMenuItem>
-                )}
+                <DropdownMenuItem
+                  onClick={() => navigate('/business/settings')}
+                  className="flex items-center gap-2 px-2 py-1.5 cursor-pointer hover:bg-white/5 rounded-md focus:bg-white/5 focus:text-white text-indigo-400"
+                >
+                  <Building2 className="w-4 h-4" />
+                  <span>Business Settings</span>
+                </DropdownMenuItem>
 
                 {isBusinessUser && (
                   <DropdownMenuItem

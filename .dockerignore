@@ -67,7 +67,6 @@ Dockerfile.dev
 .editorconfig
 .prettierrc
 .eslintrc*
-tsconfig*.json
 *.code-workspace
 
 # Scripts not needed in production
