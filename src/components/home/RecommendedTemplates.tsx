@@ -40,9 +40,9 @@ export function RecommendedTemplates({ templates = [] }: RecommendedTemplatesPro
               viewTemplate(template.id);
               const isFree = (template.price === 0 || !template.price) && (template.tokens_cost === 0 || !template.tokens_cost);
               if (template.is_owned || isFree) {
-                navigate('/creator/studio', { state: { view: 'create', selectedTemplate: template } });
+                navigate('/business/playground', { state: { view: 'create', selectedTemplate: template } });
               } else {
-                navigate(`/creator/marketplace?templateId=${template.id}`);
+                navigate(`/business/marketplace?templateId=${template.id}`);
               }
             }}
             className="group cursor-pointer"

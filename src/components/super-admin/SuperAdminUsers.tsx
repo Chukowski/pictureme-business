@@ -502,11 +502,12 @@ export default function SuperAdminUsers() {
             // Dispatch event to update auth state across app
             window.dispatchEvent(new Event("auth-change"));
 
-            // Redirect based on role
+            // Redirect based on role — business app only has business routes
             if (data.user.role.startsWith('business')) {
-                window.location.href = "/admin/home";
+                window.location.href = "/business/home";
             } else {
-                window.location.href = "/creator/dashboard";
+                // Non-business users: redirect to auth (no creator routes in this app)
+                window.location.href = "/auth";
             }
 
         } catch (error: any) {

@@ -27,7 +27,7 @@ export function PlanInsightsCard({ user }: PlanInsightsCardProps) {
     } else if (isBusiness) {
       navigate('/business/settings?tab=billing&showPlans=true');
     } else {
-      navigate('/creator/billing');
+      navigate('/business/settings?tab=billing');
     }
   };
 

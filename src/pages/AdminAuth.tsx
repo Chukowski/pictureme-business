@@ -91,8 +91,11 @@ export default function AdminAuth() {
         const isBusiness = user.role?.startsWith('business') && user.role !== 'business_pending';
         if (isBusiness) {
           navigate("/business/home");
+        } else if (user.role === 'superadmin') {
+          navigate("/super-admin");
         } else {
-          navigate("/creator/dashboard");
+          // Non-business users shouldn't use this app
+          navigate("/auth");
         }
       }
 

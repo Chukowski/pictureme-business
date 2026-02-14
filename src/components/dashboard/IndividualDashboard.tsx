@@ -136,7 +136,7 @@ export default function IndividualDashboard({ currentUser }: IndividualDashboard
                                 <div className="text-xs text-zinc-500">Launch your personal photo booth</div>
                             </div>
                         </Button>
-                        <Button variant="outline" className="h-auto py-4 border-white/10 bg-card/30 hover:bg-zinc-800 hover:text-white justify-start" onClick={() => navigate('/creator/templates')}>
+                        <Button variant="outline" className="h-auto py-4 border-white/10 bg-card/30 hover:bg-zinc-800 hover:text-white justify-start" onClick={() => navigate('/business/marketplace')}>
                             <div className="p-2 rounded-lg bg-purple-500/10 mr-4">
                                 <Palette className="w-6 h-6 text-purple-400" />
                             </div>
@@ -172,7 +172,7 @@ export default function IndividualDashboard({ currentUser }: IndividualDashboard
                         </p>
                         <Button
                             className="bg-indigo-600 hover:bg-indigo-500 text-white px-8 h-12 rounded-2xl"
-                            onClick={() => navigate('/creator/templates')}
+                            onClick={() => navigate('/business/marketplace')}
                         >
                             Go to My Styles
                         </Button>

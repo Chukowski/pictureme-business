@@ -466,7 +466,7 @@ export default function CreatorBoothFeed() {
                         remixMode: remixMode,
                         view: 'create'
                     };
-                    navigate('/creator/studio?view=create', { state: remixState });
+                    navigate('/business/playground', { state: remixState });
                 }}
             />
         </>

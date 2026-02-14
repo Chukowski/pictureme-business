@@ -165,7 +165,7 @@ export function BusinessSettingsPage() {
       const isBusiness = userData.role?.startsWith('business') && userData.role !== 'business_pending';
       if (!isBusiness) {
         toast.error('Business account required');
-        navigate('/creator/settings');
+        navigate('/auth');
         return;
       }
 

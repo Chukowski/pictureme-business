@@ -712,7 +712,7 @@ export function CreationDetailView({
                                             variant="primary" 
                                             onClick={() => {
                                                 onClose();
-                                                navigate('/creator/templates/new', { 
+                                                navigate('/business/marketplace', { 
                                                     state: { 
                                                         action: 'create_template',
                                                         creation: item 

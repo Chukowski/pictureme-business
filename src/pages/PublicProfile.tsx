@@ -271,7 +271,7 @@ export default function PublicProfile() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => navigate((currentUser?.role || '').startsWith('business') ? '/business/settings' : '/creator/settings')}
+                    onClick={() => navigate('/business/settings')}
                     className="border-white/30 bg-white/10 text-white hover:bg-white/20"
                   >
                     <Edit2 className="w-4 h-4 mr-1" />
@@ -428,7 +428,7 @@ export default function PublicProfile() {
             remixMode: remixMode,
             view: 'create'
           };
-          navigate('/creator/studio?view=create', { state: remixState });
+          navigate('/business/playground', { state: remixState });
         }}
         onToggleAdult={handleToggleAdult}
       />
