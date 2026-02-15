@@ -14,7 +14,6 @@ const PhotoBoothPage = lazy(() => import("./pages/PhotoBoothPage").then(module =
 const EventFeedPage = lazy(() => import("./pages/EventFeedPage").then(module => ({ default: module.EventFeedPage })));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const AdminAuth = lazy(() => import("./pages/AdminAuth"));
-const AdminRegister = lazy(() => import("./pages/AdminRegister"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const AdminEventForm = lazy(() => import("./pages/AdminEventForm"));
 const AdminEventPhotos = lazy(() => import("./pages/AdminEventPhotos"));
@@ -170,7 +169,7 @@ const AppContent = () => {
 
           {/* AUTH ROUTES */}
           <Route path="/auth" element={<AdminAuth />} />
-          <Route path="/register" element={<AdminRegister />} />
+          <Route path="/register" element={<Navigate to="/auth" replace />} />
 
           {/* SUPER ADMIN ROUTES */}
           <Route path="/super-admin" element={<SuperAdminLayout />}>
@@ -248,7 +247,7 @@ const AppContent = () => {
 
           {/* LEGACY REDIRECTS — /admin/* → /business/* */}
           <Route path="/admin/auth" element={<Navigate to="/auth" replace />} />
-          <Route path="/admin/register" element={<Navigate to="/register" replace />} />
+          <Route path="/admin/register" element={<Navigate to="/auth" replace />} />
           <Route path="/admin/login" element={<Navigate to="/auth" replace />} />
           <Route path="/admin" element={<Navigate to="/business/home" replace />} />
           <Route path="/admin/home" element={<Navigate to="/business/home" replace />} />
