@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,45 +8,53 @@ import { authClient } from "@/lib/auth-client";
 import { Sparkles, ArrowRight, Lock, User } from "lucide-react";
 import { ENV } from "@/config/env";
 
+// Check for SSO hash BEFORE rendering anything (prevents login form flash)
+function consumeSSOHash(): boolean {
+  const hash = window.location.hash;
+  if (!hash.includes('sso=')) return false;
+
+  try {
+    const ssoParam = new URLSearchParams(hash.slice(1)).get('sso');
+    if (!ssoParam) return false;
+
+    const { token, user } = JSON.parse(atob(decodeURIComponent(ssoParam)));
+    if (!token || !user) return false;
+
+    // Store credentials
+    localStorage.setItem('auth_token', token);
+    localStorage.setItem('user', JSON.stringify(user));
+
+    // Redirect with full page reload so the app picks up the new auth state
+    const isBusiness = user.role?.startsWith('business') && user.role !== 'business_pending';
+    if (user.role === 'superadmin') {
+      window.location.replace('/super-admin');
+    } else if (isBusiness) {
+      window.location.replace('/business/home');
+    } else {
+      window.location.replace('/auth');
+    }
+    return true;
+  } catch (e) {
+    console.error('SSO handoff failed:', e);
+    return false;
+  }
+}
+
+// Run SSO check at module level — blocks rendering if SSO is active
+const _ssoActive = consumeSSOHash();
+
 export default function AdminAuth() {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
 
-  // SSO: consume token from URL hash (passed by creator app)
-  useEffect(() => {
-    const hash = window.location.hash;
-    if (!hash.includes('sso=')) return;
-
-    try {
-      const ssoParam = new URLSearchParams(hash.slice(1)).get('sso');
-      if (!ssoParam) return;
-
-      const { token, user } = JSON.parse(atob(decodeURIComponent(ssoParam)));
-      if (!token || !user) return;
-
-      // Store credentials
-      localStorage.setItem('auth_token', token);
-      localStorage.setItem('user', JSON.stringify(user));
-
-      // Clean the URL hash immediately (security)
-      window.history.replaceState(null, '', '/auth');
-
-      toast.success(`Welcome back, ${user.name || user.email}!`);
-
-      // Redirect based on role
-      const isBusiness = user.role?.startsWith('business') && user.role !== 'business_pending';
-      if (user.role === 'superadmin') {
-        navigate("/super-admin", { replace: true });
-      } else if (isBusiness) {
-        navigate("/business/home", { replace: true });
-      } else {
-        navigate("/auth", { replace: true });
-      }
-    } catch (e) {
-      console.error('SSO handoff failed:', e);
-      // Fall through to normal login form
-    }
-  }, [navigate]);
+  // If SSO redirect is in progress, show nothing (prevents login form flash)
+  if (_ssoActive) {
+    return (
+      <div className="min-h-screen bg-[#101112] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-500" />
+      </div>
+    );
+  }
 
   // Login form state
   const [loginData, setLoginData] = useState({
