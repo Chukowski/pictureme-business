@@ -55,7 +55,7 @@ INSERT INTO account (
     NULL,
     NULL,
     NULL,
-    '$2b$12$P0pmFgzu1gXJGRbRIFW9jOPovfgsIspjlNHIz.27sQcL.IgGspZVu', -- Password: Mc4tnqjb.
+    '$2b$12$PLACEHOLDER_HASH_REPLACE_WITH_REAL_BCRYPT.-- Password: <set via env>
     CURRENT_TIMESTAMP,
     CURRENT_TIMESTAMP
 )

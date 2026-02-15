@@ -2,7 +2,7 @@ import asyncio
 import asyncpg
 import os
 
-DB_URL = "postgresql://photouser:Mc4tnqjb.@5.161.255.18:5432/photodb"
+DB_URL = "postgresql://user:password@localhost:5432/photodb"
 
 async def run_migration():
     print("Running migration 005_add_profile_details.sql...")

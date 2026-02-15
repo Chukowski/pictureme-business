@@ -1,7 +1,7 @@
 import asyncio
 import asyncpg
 
-DB_URL = "postgresql://photouser:Mc4tnqjb.@5.161.255.18:5432/photodb"
+DB_URL = "postgresql://user:password@localhost:5432/photodb"
 
 async def fix_user_email():
     print("Fixing email for User ID 6...")

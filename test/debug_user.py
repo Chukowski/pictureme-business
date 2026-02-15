@@ -3,7 +3,7 @@ import asyncpg
 import os
 
 # Use the connection string from the user's previous request or environment
-DB_URL = "postgresql://photouser:Mc4tnqjb.@5.161.255.18:5432/photodb"
+DB_URL = "postgresql://user:password@localhost:5432/photodb"
 
 async def check_user(email):
     print(f"Checking for user with email: {email}")

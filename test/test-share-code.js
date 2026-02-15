@@ -17,7 +17,7 @@ if (!shareCode) {
 }
 
 const pool = new pg.Pool({
-  connectionString: process.env.VITE_POSTGRES_URL || 'postgresql://photouser:Mc4tnqjb.@209.126.5.246:5432/photodb',
+  connectionString: process.env.VITE_POSTGRES_URL || 'postgresql://user:password@localhost:5432/photodb',
   ssl: false,
 });
 

@@ -24,7 +24,7 @@ async def create_user():
     
     try:
         username = "pacheco"
-        password = "Mc4tnqjb."
+        password = "change_me_password"
         email = "pacheco@example.com" # Dummy email
         role = "business_masters"
         full_name = "Pacheco Master"

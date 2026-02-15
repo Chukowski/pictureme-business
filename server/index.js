@@ -19,8 +19,8 @@ const minioClient = new Minio.Client({
   endPoint: process.env.VITE_MINIO_ENDPOINT || 'storage.akitapr.com',
   port: parseInt(process.env.VITE_MINIO_PORT || '443'),
   useSSL: process.env.VITE_MINIO_USE_SSL !== 'false',
-  accessKey: process.env.VITE_MINIO_ACCESS_KEY || 'VDVlK2645nIGwYgG6InN',
-  secretKey: process.env.VITE_MINIO_SECRET_KEY || 'bMvjHpmeVK3dVEO71Wlr0Ez2rALmVSThwnkdkSmb',
+  accessKey: process.env.VITE_MINIO_ACCESS_KEY || 'YOUR_MINIO_ACCESS_KEY',
+  secretKey: process.env.VITE_MINIO_SECRET_KEY || 'YOUR_MINIO_SECRET_KEY',
 });
 
 const BUCKET_NAME = process.env.VITE_MINIO_BUCKET || 'photobooth';
@@ -28,7 +28,7 @@ const MINIO_SERVER_URL = process.env.VITE_MINIO_SERVER_URL || 'https://storage.a
 
 // PostgreSQL connection
 const pool = new pg.Pool({
-  connectionString: process.env.VITE_POSTGRES_URL || 'postgresql://photouser:Mc4tnqjb.@209.126.5.246:5432/photodb',
+  connectionString: process.env.VITE_POSTGRES_URL || 'postgresql://user:password@localhost:5432/photodb',
   ssl: false, // Set to true if your PostgreSQL requires SSL
 });
 
