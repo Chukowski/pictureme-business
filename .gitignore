@@ -129,6 +129,12 @@ service-account.json
 # Infrastructure config
 cloudflare-config/
 
+# Sensitive documentation and setups
+DOKPLOY_SETUP.md
+PRODUCTION_TROUBLESHOOTING.md
+DOKPLOY_QUICK_FIX.md
+docs/
+
 # Agent tooling artifacts
 .agent/
 .agents/
