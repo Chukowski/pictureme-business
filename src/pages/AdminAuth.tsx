@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,42 @@ import { ENV } from "@/config/env";
 export default function AdminAuth() {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
+
+  // SSO: consume token from URL hash (passed by creator app)
+  useEffect(() => {
+    const hash = window.location.hash;
+    if (!hash.includes('sso=')) return;
+
+    try {
+      const ssoParam = new URLSearchParams(hash.slice(1)).get('sso');
+      if (!ssoParam) return;
+
+      const { token, user } = JSON.parse(atob(decodeURIComponent(ssoParam)));
+      if (!token || !user) return;
+
+      // Store credentials
+      localStorage.setItem('auth_token', token);
+      localStorage.setItem('user', JSON.stringify(user));
+
+      // Clean the URL hash immediately (security)
+      window.history.replaceState(null, '', '/auth');
+
+      toast.success(`Welcome back, ${user.name || user.email}!`);
+
+      // Redirect based on role
+      const isBusiness = user.role?.startsWith('business') && user.role !== 'business_pending';
+      if (user.role === 'superadmin') {
+        navigate("/super-admin", { replace: true });
+      } else if (isBusiness) {
+        navigate("/business/home", { replace: true });
+      } else {
+        navigate("/auth", { replace: true });
+      }
+    } catch (e) {
+      console.error('SSO handoff failed:', e);
+      // Fall through to normal login form
+    }
+  }, [navigate]);
 
   // Login form state
   const [loginData, setLoginData] = useState({
