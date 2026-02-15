@@ -1,6 +1,9 @@
 /**
- * Analytics API Service
+ * Analytics API Service (LEGACY)
  * Provides real-time statistics for tokens, albums, photos, and usage
+ *
+ * @deprecated Migrate to businessClient.ts for analytics endpoints.
+ * See: API_MIGRATION_V3.md
  */
 
 import { ENV } from "@/config/env";

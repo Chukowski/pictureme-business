@@ -1,3 +1,11 @@
+/**
+ * Media API Service (LEGACY)
+ * Handles media library operations for uploading, retrieving, and managing media files
+ *
+ * @deprecated Migrate to businessClient.ts for media library endpoints.
+ * See: API_MIGRATION_V3.md
+ */
+
 import { ENV } from "@/config/env";
 
 const API_URL = ENV.API_URL;

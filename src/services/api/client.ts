@@ -1,6 +1,14 @@
 /**
- * Base API Client
- * centralized configuration for API requests
+ * Base API Client (LEGACY)
+ *
+ * @deprecated Use domain-specific clients instead:
+ *   - publicClient.ts   → /api/v3/public/*   (no auth)
+ *   - sharedClient.ts   → /api/v3/shared/*   (auth, both apps)
+ *   - businessClient.ts → /api/v3/business/* (auth, business-only)
+ *   - adminClient.ts    → /api/v3/admin/*    (auth, admin-only)
+ *
+ * This file will be removed after full migration to v3.
+ * See: API_MIGRATION_V3.md
  */
 import { ENV } from "@/config/env";
 

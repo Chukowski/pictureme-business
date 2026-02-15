@@ -1,3 +1,11 @@
+/**
+ * Marketplace API Service (LEGACY)
+ * Handles marketplace template browsing, library management, and admin operations
+ *
+ * @deprecated Migrate to sharedClient.ts (user) and adminClient.ts (admin) for marketplace endpoints.
+ * See: API_MIGRATION_V3.md
+ */
+
 import { ENV } from "@/config/env";
 
 export interface MarketplaceTemplate {

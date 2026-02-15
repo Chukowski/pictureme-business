@@ -1,3 +1,10 @@
+/**
+ * Events API Service (LEGACY)
+ * Handles event configuration and photo feeds
+ *
+ * @deprecated Migrate to publicClient.ts for public event endpoints.
+ * See: API_MIGRATION_V3.md
+ */
 
 // Import shared types
 import { EventConfig, User, UserCreation, PhotoFeed } from './api/types';

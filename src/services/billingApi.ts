@@ -1,11 +1,14 @@
 /**
- * Billing API Service
+ * Billing API Service (LEGACY)
  * 
  * Handles all billing-related API calls including:
  * - Token purchases
  * - Invoice management
  * - Usage tracking
  * - Stripe integration
+ *
+ * @deprecated Migrate to sharedClient.ts for billing endpoints.
+ * See: API_MIGRATION_V3.md
  */
 
 import { ENV } from '@/config/env';

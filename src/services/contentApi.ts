@@ -1,3 +1,11 @@
+/**
+ * Content API Service (LEGACY)
+ * Handles content endpoints for announcements, templates, and public creations
+ *
+ * @deprecated Migrate to publicClient.ts (public) and adminClient.ts (admin) for content endpoints.
+ * See: API_MIGRATION_V3.md
+ */
+
 import { ENV } from "@/config/env";
 
 export interface Announcement {

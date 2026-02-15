@@ -1,3 +1,11 @@
+/**
+ * Al-e CRM API Service (LEGACY)
+ * Handles Al-e CRM endpoints for email automation, templates, triggers, and communication logs
+ *
+ * @deprecated Migrate to adminClient.ts for Al-e CRM endpoints.
+ * See: API_MIGRATION_V3.md
+ */
+
 import { ENV } from "@/config/env";
 
 const API_BASE = ENV.API_URL;

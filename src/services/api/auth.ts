@@ -1,17 +1,24 @@
 /**
  * Auth API Service
  * Handles login, registration, and user session management
+ *
+ * Uses v3 domain clients:
+ *   - publicFetch  → /api/v3/public/auth/*  (login, register, session)
+ *   - sharedFetch  → /api/v3/shared/*       (user profile, password)
  */
-import { apiFetch, getAuthToken } from './client';
+import { publicFetch, getAuthToken } from './publicClient';
+import { sharedFetch } from './sharedClient';
 import { User } from './types';
+
+// Re-export for backward compatibility
+export { getAuthToken };
 
 /**
  * Login user
  */
 export async function loginUser(username: string, password: string): Promise<{ token: string; user: User }> {
-    const response = await apiFetch('/auth/login', {
+    const response = await publicFetch('/auth/login', {
         method: 'POST',
-        skipAuth: true,
         body: JSON.stringify({ username, password }),
     });
 
@@ -42,9 +49,8 @@ export async function registerUser(
     password: string,
     fullName?: string
 ): Promise<{ token: string; user: User }> {
-    const response = await apiFetch('/auth/register', {
+    const response = await publicFetch('/auth/register', {
         method: 'POST',
-        skipAuth: true,
         body: JSON.stringify({
             username,
             email,
@@ -108,7 +114,7 @@ export function getCurrentUser(): User | null {
  */
 export async function getCurrentUserProfile(): Promise<User | null> {
     try {
-        const response = await apiFetch('/users/me');
+        const response = await sharedFetch('/users/me');
 
         if (response.status === 401) {
             logoutUser();
@@ -116,7 +122,6 @@ export async function getCurrentUserProfile(): Promise<User | null> {
         }
 
         if (!response.ok) {
-            // If 404/401, maybe token is invalid, but let caller handle
             return null;
         }
 
@@ -124,8 +129,6 @@ export async function getCurrentUserProfile(): Promise<User | null> {
 
         // Update local storage if valid
         if (userData && userData.id) {
-            // Merge with existing user to keep any local-only flags if any? 
-            // Actually safer to overwrite if backend is truth
             localStorage.setItem('user', JSON.stringify(userData));
         }
 
@@ -159,23 +162,8 @@ export function logoutUser(): void {
 }
 
 export const updateUser = async (data: Partial<User> & { password?: string }): Promise<User> => {
-    // Try to get token from localStorage (old auth) or use credentials for Better Auth
-    const token = getAuthToken();
-
-    const headers: HeadersInit = {};
-
-    // Add Authorization header if token exists (old auth)
-    if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-    }
-
-    const response = await apiFetch('/users/me', {
+    const response = await sharedFetch('/users/me', {
         method: 'PUT',
-        headers, // apiFetch does not automatically add 'Authorization' if skipAuth is not true? Wait, apiFetch ADDS it if not skipAuth.
-        // But apiFetch assumes 'application/json' by default.
-        // Let's rely on apiFetch's default behavior for token if we don't pass anything, but here we might want to be explicit?
-        // Actually, apiFetch handles tokens. 'credentials: include' is default in apiFetch?
-        // Let's check apiFetch default.
         body: JSON.stringify(data),
     });
 

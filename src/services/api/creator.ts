@@ -1,6 +1,11 @@
 /**
- * Creator API Service
- * Handles AI generation, assets, and Creator Studio logic
+ * Creator API Service (LEGACY - DEPRECATED in business app)
+ *
+ * @deprecated This file should NOT be used in the business app.
+ * Creator endpoints belong to the creator app only.
+ *
+ * TODO: Remove this file from business app after migration.
+ * See: API_MIGRATION_V3.md
  */
 import { apiFetch } from './client';
 import { Template } from './types';

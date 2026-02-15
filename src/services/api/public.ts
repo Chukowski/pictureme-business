@@ -1,16 +1,19 @@
 /**
  * Public API Service
  * Handles public-facing functionality: Profiles, Feed, Username checks
+ *
+ * Uses v3 domain clients:
+ *   - publicFetch  → /api/v3/public/* (profiles, username checks)
+ *   - sharedFetch  → /api/v3/shared/* (like creation - requires auth)
  */
-import { apiFetch, getAuthToken } from './client';
+import { publicFetch, getAuthToken } from './publicClient';
+import { sharedFetch } from './sharedClient';
 import { PublicProfileResponse } from './types';
 
 // Check if username is available
 export async function checkUsernameAvailability(username: string): Promise<{ available: boolean; message: string }> {
     try {
-        const response = await apiFetch(`/users/check-username/${encodeURIComponent(username)}`, {
-            method: 'GET',
-        });
+        const response = await publicFetch(`/users/check-username/${encodeURIComponent(username)}`);
 
         if (!response.ok) {
             throw new Error('Failed to check username');
@@ -25,10 +28,10 @@ export async function checkUsernameAvailability(username: string): Promise<{ ava
 
 export async function getPublicUserProfile(usernameOrSlug: string): Promise<PublicProfileResponse | null> {
     try {
-        const response = await apiFetch(`/users/profile/${usernameOrSlug}`, { skipAuth: true });
+        const response = await publicFetch(`/users/profile/${usernameOrSlug}`);
         if (!response.ok) return null;
         const data = await response.json();
-        return data; // Return full response { profile, creations }
+        return data;
     } catch (error) {
         console.error("Failed to fetch public profile:", error);
         return null;
@@ -42,7 +45,7 @@ export async function toggleLike(creationId: number): Promise<{ success: boolean
     const token = getAuthToken();
     if (!token) throw new Error('Authentication required');
 
-    const response = await apiFetch(`/creations/${creationId}/like`, {
+    const response = await sharedFetch(`/creations/${creationId}/like`, {
         method: 'POST',
     });
 
