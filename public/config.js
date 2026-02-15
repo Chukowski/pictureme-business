@@ -9,9 +9,9 @@ window.ENV = {
   VITE_API_URL: 'http://localhost:3002',
   VITE_AUTH_URL: 'http://localhost:3002',
   VITE_BASE_URL: 'http://localhost:8080',
+  VITE_CREATOR_APP_URL: 'http://localhost:8080',
   VITE_MINIO_ENDPOINT: 's3.amazonaws.com',
   VITE_MINIO_BUCKET: 'pictureme.now',
   VITE_MINIO_SERVER_URL: 'https://s3.amazonaws.com',
   VITE_STRIPE_PUBLISHABLE_KEY: '',
 };
-

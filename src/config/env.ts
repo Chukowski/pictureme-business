@@ -10,6 +10,7 @@ interface EnvConfig {
   VITE_API_URL: string;
   VITE_AUTH_URL: string;
   VITE_BASE_URL: string;
+  VITE_CREATOR_APP_URL: string;
   VITE_MINIO_ENDPOINT: string;
   VITE_MINIO_BUCKET: string;
   VITE_MINIO_SERVER_URL: string;
@@ -146,7 +147,7 @@ function getEnv(key: keyof EnvConfig): string {
   }
 
   // 4. Auto-upgrade http to https for URL-type configs to prevent Mixed Content errors
-  const urlKeys: (keyof EnvConfig)[] = ['VITE_API_URL', 'VITE_AUTH_URL', 'VITE_BASE_URL', 'VITE_MINIO_SERVER_URL'];
+  const urlKeys: (keyof EnvConfig)[] = ['VITE_API_URL', 'VITE_AUTH_URL', 'VITE_BASE_URL', 'VITE_CREATOR_APP_URL', 'VITE_MINIO_SERVER_URL'];
   if (urlKeys.includes(key)) {
     return enforceHttps(value);
   }
@@ -161,6 +162,7 @@ export const ENV = {
   get API_URL() { return getEnv('VITE_API_URL'); },
   get AUTH_URL() { return getEnv('VITE_AUTH_URL'); },
   get BASE_URL() { return getEnv('VITE_BASE_URL'); },
+  get CREATOR_APP_URL() { return getEnv('VITE_CREATOR_APP_URL'); },
   get MINIO_ENDPOINT() { return getEnv('VITE_MINIO_ENDPOINT'); },
   get MINIO_BUCKET() { return getEnv('VITE_MINIO_BUCKET'); },
   get MINIO_SERVER_URL() { return getEnv('VITE_MINIO_SERVER_URL'); },
@@ -177,4 +179,3 @@ if (import.meta.env.DEV) {
     });
   }, 100);
 }
-

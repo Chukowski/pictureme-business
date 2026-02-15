@@ -189,8 +189,18 @@ export default function AdminAuth() {
         <div className="mt-8 text-center">
           <p className="text-sm text-zinc-500">
             Don't have an account?{" "}
-            <button onClick={() => navigate("/register")} className="text-indigo-400 hover:text-indigo-300 font-medium transition-colors">
-              Start free trial
+            <button
+              onClick={() => {
+                const creatorAppUrl = ENV.CREATOR_APP_URL?.replace(/\/+$/, "");
+                if (creatorAppUrl) {
+                  window.location.href = `${creatorAppUrl}/apply`;
+                  return;
+                }
+                toast.error("Set VITE_CREATOR_APP_URL to redirect applicants.");
+              }}
+              className="text-indigo-400 hover:text-indigo-300 font-medium transition-colors"
+            >
+              Apply as Partner
             </button>
           </p>
         </div>

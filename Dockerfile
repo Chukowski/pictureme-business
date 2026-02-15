@@ -35,6 +35,7 @@ RUN echo '#!/bin/sh' > /docker-entrypoint.sh && \
     echo '  VITE_API_URL: "${VITE_API_URL}",' >> /docker-entrypoint.sh && \
     echo '  VITE_AUTH_URL: "${VITE_AUTH_URL}",' >> /docker-entrypoint.sh && \
     echo '  VITE_BASE_URL: "${VITE_BASE_URL}",' >> /docker-entrypoint.sh && \
+    echo '  VITE_CREATOR_APP_URL: "${VITE_CREATOR_APP_URL}",' >> /docker-entrypoint.sh && \
     echo '  VITE_MINIO_ENDPOINT: "${VITE_MINIO_ENDPOINT}",' >> /docker-entrypoint.sh && \
     echo '  VITE_MINIO_BUCKET: "${VITE_MINIO_BUCKET}",' >> /docker-entrypoint.sh && \
     echo '  VITE_MINIO_SERVER_URL: "${VITE_MINIO_SERVER_URL}",' >> /docker-entrypoint.sh && \
